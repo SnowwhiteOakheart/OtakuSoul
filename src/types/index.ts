@@ -88,6 +88,8 @@ import type { LayerRecommendation } from './generated/LayerRecommendation';
 import type { Live2dCatalogItem } from './generated/Live2dCatalogItem';
 import type { Inochi2dCatalogItem } from './generated/Inochi2dCatalogItem';
 import type { ScannedInochi2d } from './generated/ScannedInochi2d';
+import type { Inochi2dMapping } from './generated/Inochi2dMapping';
+import type { Inochi2dChannel } from './generated/Inochi2dChannel';
 import type { LlmProviderType } from './generated/LlmProviderType';
 import type { LogEntry } from './generated/LogEntry';
 import type { MemoryBackupInfo } from './generated/MemoryBackupInfo';
@@ -223,6 +225,8 @@ export type {
   Live2dCatalogItem,
   Inochi2dCatalogItem,
   ScannedInochi2d,
+  Inochi2dMapping,
+  Inochi2dChannel,
   LlmProviderType,
   LogEntry,
   MemoryBackupInfo,

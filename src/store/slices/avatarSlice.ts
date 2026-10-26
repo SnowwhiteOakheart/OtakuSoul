@@ -35,6 +35,9 @@ export interface AvatarSlice {
   activeInochi2dPath: string | null;
   setActiveInochi2dPath: (path: string | null) => void;
   refreshInochi2dModels: () => Promise<void>;
+  /** Counts saved puppet settings (channels, emotion clips); viewers apply them again on it. */
+  inochi2dMappingRevision: number;
+  bumpInochi2dMappingRevision: () => void;
   avatarMode: AvatarMode;
   setAvatarMode: (mode: AvatarMode) => void;
   /** 2D portraits breathe, sway and move with the voice (per device). */
@@ -128,6 +131,10 @@ export const createAvatarSlice: SliceCreator<AvatarSlice> = (set, get) => ({
       console.error('Failed to scan Inochi2D models:', e);
     }
   },
+
+  inochi2dMappingRevision: 0,
+
+  bumpInochi2dMappingRevision: () => set((state) => ({ inochi2dMappingRevision: state.inochi2dMappingRevision + 1 })),
 
   // Picture by default; a saved choice (3D, Live2D) wins once settings are loaded.
   avatarMode: '2d',

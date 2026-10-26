@@ -1,6 +1,6 @@
 // Inochi2D puppets: import an .inp, show it in the chat (own WebGL renderer), the setting is kept,
 // the avatar library lists it with a preview picture, it can be given to a character, renamed and
-// removed into the trash. The catalog lists the official example models (not downloaded here).
+// removed into the trash, its own animations play and its controls can be set by hand. The catalog lists the official example models (not downloaded here).
 import assert from 'node:assert/strict';
 import { existsSync, readdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -64,6 +64,11 @@ try {
   assert.ok(drawn > 0.02, `Puppe nicht gezeichnet (${drawn})`);
   await browser.pause(500);
   await browser.saveScreenshot(path.join(screenshotDir, '110-inochi2d-chat.png'));
+  // Own animations: the menu plays one, a mood holds its clip.
+  assert.equal(await viewer.getAttribute('data-inochi2d-clips'), '2', 'Eigene Animationen (ohne Idle) fehlen');
+  await browser.$('button[aria-label="Animationen der Puppe"]').click();
+  await browser.$('[role="menu"]').$('button*=Wink L').click();
+  await browser.waitUntil(async () => (await viewer.getAttribute('data-inochi2d-playing')) === 'Wink_L', { timeout: 3000, timeoutMsg: 'Animation startet nicht' });
   const settings = await invoke('load_settings');
   assert.equal(settings.avatar_mode, 'inochi2d');
   // Without an own choice the first puppet is the default (kept as a choice once picked).
@@ -92,6 +97,35 @@ try {
   await browser.saveScreenshot(path.join(screenshotDir, '111-inochi2d-manager.png'));
   await row.$('input[type="checkbox"]').click();
   await browser.waitUntil(async () => !(await usesModel()), { timeout: 10_000, timeoutMsg: 'Zuweisung nicht entfernt' });
+
+  // Puppet settings: switch the mouth off by hand, saved per puppet, then back to automatic.
+  await browser.$('[data-inochi2d-mapping] summary').click();
+  const mouthSelect = await browser.$('[data-inochi2d-channel="mouthOpen"] select');
+  await mouthSelect.waitForDisplayed({ timeout: 20_000, timeoutMsg: 'Puppen-Einstellungen fehlen' });
+  assert.match(await mouthSelect.$('option[value="auto"]').getText(), /Mouth:: Open/);
+  // Toasts sit at the bottom right: bring each control to the middle first.
+  const operate = async (selector, action) => {
+    const el = await browser.$(selector);
+    await el.scrollIntoView({ block: 'center' });
+    try {
+      await action(el);
+    } catch (e) {
+      await browser.saveScreenshot(path.join(screenshotDir, 'inochi2d-intercepted.png'));
+      throw e;
+    }
+  };
+  await operate('[data-inochi2d-channel="mouthOpen"] select', (el) => el.selectByAttribute('value', 'none'));
+  await operate('[data-inochi2d-emotion="embarrassment"] select', (el) => el.selectByAttribute('value', 'none'));
+  await operate('[data-inochi2d-mapping-save]', (el) => el.click());
+  await browser.waitUntil(async () => {
+    const m = await invoke('get_inochi2d_mapping', { modelPath: model.model_path });
+    return m.channels?.mouthOpen === null && m.emotions?.embarrassment === '';
+  }, { timeout: 5000, timeoutMsg: 'Puppen-Einstellungen nicht gespeichert' });
+  await browser.saveScreenshot(path.join(screenshotDir, '112-inochi2d-mapping.png'));
+  // The success message covers the buttons for a moment.
+  await browser.$('div*=Einstellungen der Puppe gespeichert').waitForExist({ reverse: true, timeout: 15_000 });
+  await operate('button=Alles automatisch', (el) => el.click());
+  await browser.waitUntil(async () => Object.keys((await invoke('get_inochi2d_mapping', { modelPath: model.model_path })).channels ?? {}).length === 0, { timeout: 5000, timeoutMsg: 'Zurücksetzen nicht gespeichert' });
 
   // Own name and removal into the trash.
   await invoke('rename_avatar', { kind: 'inochi2d', path: model.model_path, name: 'Puppe Eins' });

@@ -6,6 +6,7 @@ import { useStoreFields } from '../../store/useAppStore';
 import { useTranslation } from '../../i18n';
 import { AvatarSkeleton } from '../ui';
 import type { AvatarKind } from '../../types';
+import type { PuppetInfo } from '../../services/inochi2d/controls';
 
 const MmdViewer = lazy(() => import('../avatar/MmdViewer'));
 const Inochi2dViewer = lazy(() => import('../avatar/Inochi2dViewer'));
@@ -27,6 +28,8 @@ interface AvatarPreviewProps {
   captureRef?: MutableRefObject<(() => string | null) | null>;
   /** Takes a picture by itself once the model shows (for models without a preview picture). */
   onAutoSnapshot?: (picture: string) => void;
+  /** Inochi2D: what the loaded puppet offers (for its settings editor). */
+  onInochi2dInfo?: (info: PuppetInfo) => void;
 }
 
 /** Tries for a picture this often, `AUTO_SNAPSHOT_MS` apart (large models load for a while). */
@@ -34,7 +37,7 @@ const AUTO_SNAPSHOT_TRIES = 12;
 const AUTO_SNAPSHOT_MS = 1500;
 
 /** A live, movable preview of one model, with the same viewer as the chat. */
-export function AvatarPreview({ kind, path, captureRef, onAutoSnapshot }: AvatarPreviewProps) {
+export function AvatarPreview({ kind, path, captureRef, onAutoSnapshot, onInochi2dInfo }: AvatarPreviewProps) {
   const { t, tEmotion } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const autoSnapshot = useRef(onAutoSnapshot);
@@ -83,7 +86,7 @@ export function AvatarPreview({ kind, path, captureRef, onAutoSnapshot }: Avatar
             </Suspense>
           ) : (
             <Suspense fallback={<AvatarSkeleton label={t('avatar.inochi2dLoading')} />}>
-              <Inochi2dViewer key={path} modelPath={path} emotion={emotion} />
+              <Inochi2dViewer key={path} modelPath={path} emotion={emotion} onPuppet={onInochi2dInfo} />
             </Suspense>
           )}
         </div>

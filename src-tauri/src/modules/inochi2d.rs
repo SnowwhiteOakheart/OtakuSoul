@@ -493,6 +493,95 @@ pub async fn download_inochi2d_model(model_id: &str) -> Result<ScannedInochi2d, 
         .ok_or_else(|| crate::err!("backend.inochi2d.notPuppet"))
 }
 
+/// One controlled value of a puppet set by hand: a parameter axis, optionally reversed.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct Inochi2dChannel {
+    pub param: String,
+    /// 0 = x, 1 = y (2D parameters).
+    #[serde(default)]
+    pub axis: u8,
+    /// The parameter means the opposite (e.g. "eye open" for blinking).
+    #[serde(default)]
+    pub inverted: bool,
+}
+
+/// Hand-made settings of a puppet: channels (`mouthOpen`, `blinkLeft`, …) and which of its own
+/// animations shows an emotion. Missing entries are found automatically; `null` / `""` means
+/// "none".
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct Inochi2dMapping {
+    #[serde(default)]
+    pub channels: std::collections::BTreeMap<String, Option<Inochi2dChannel>>,
+    #[serde(default)]
+    pub emotions: std::collections::BTreeMap<String, String>,
+}
+
+const MAPPINGS_FILE: &str = "inochi2d_mappings.json";
+/// Keys a mapping may hold; anything else is dropped when saving.
+pub const CHANNEL_KEYS: [&str; 15] = [
+    "headYaw",
+    "headPitch",
+    "headRoll",
+    "bodyYaw",
+    "bodyPitch",
+    "bodyRoll",
+    "eyeX",
+    "eyeY",
+    "blinkLeft",
+    "blinkRight",
+    "mouthOpen",
+    "smile",
+    "breath",
+    "cheek",
+    "brows",
+];
+
+fn mappings_path(data_dir: &Path) -> PathBuf {
+    data_dir.join(MAPPINGS_FILE)
+}
+
+fn load_mappings(data_dir: &Path) -> std::collections::BTreeMap<String, Inochi2dMapping> {
+    fs::read_to_string(mappings_path(data_dir))
+        .ok()
+        .and_then(|text| serde_json::from_str(&text).ok())
+        .unwrap_or_default()
+}
+
+/// The hand-made settings of the puppet at `path` (empty when there are none).
+pub fn mapping_for(data_dir: &Path, key: &str) -> Inochi2dMapping {
+    load_mappings(data_dir).remove(key).unwrap_or_default()
+}
+
+/// Stores the settings of a puppet; an empty mapping removes the entry.
+pub fn set_mapping(data_dir: &Path, key: &str, mut mapping: Inochi2dMapping) -> Result<(), String> {
+    mapping.channels.retain(|k, v| {
+        CHANNEL_KEYS.contains(&k.as_str())
+            && v.as_ref()
+                .is_none_or(|c| !c.param.trim().is_empty() && c.axis <= 1)
+    });
+    mapping
+        .emotions
+        .retain(|k, v| k.len() <= 40 && v.chars().count() <= 200);
+    let mut all = load_mappings(data_dir);
+    if mapping == Inochi2dMapping::default() {
+        all.remove(key);
+    } else {
+        all.insert(key.to_string(), mapping);
+    }
+    let json = serde_json::to_string_pretty(&all)
+        .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
+    fs::create_dir_all(data_dir).map_err(|e| crate::err!("backend.common.dirCreate", error = e))?;
+    fs::write(mappings_path(data_dir), json)
+        .map_err(|e| crate::err!("backend.common.fileWrite", error = e))
+}
+
+/// Key of a puppet in the settings files (its path below the puppet folders).
+pub fn puppet_key(path: &Path) -> String {
+    crate::modules::avatar_library::key_for(path, &inochi2d_roots())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -578,6 +667,35 @@ mod tests {
         assert_eq!(second.file_name().unwrap(), "Aka (2).inx");
         assert!(store(&dir, "x.inp", b"not a puppet").is_err());
         assert_eq!(puppet_files(&dir).len(), 2);
+        let _ = fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn mappings_are_kept_per_puppet_and_cleaned() {
+        let dir = temp("mapping");
+        let mut mapping = Inochi2dMapping::default();
+        mapping.channels.insert(
+            "mouthOpen".into(),
+            Some(Inochi2dChannel {
+                param: "Mouth::Open".into(),
+                axis: 0,
+                inverted: false,
+            }),
+        );
+        mapping.channels.insert("blinkLeft".into(), None);
+        mapping.channels.insert("unknown".into(), None);
+        mapping.emotions.insert("joy".into(), "Laugh".into());
+        set_mapping(&dir, "nagatoro.inp", mapping).unwrap();
+        let read = mapping_for(&dir, "nagatoro.inp");
+        assert_eq!(read.channels.len(), 2, "unknown channel dropped");
+        assert_eq!(read.channels["blinkLeft"], None, "explicit none kept");
+        assert_eq!(read.emotions["joy"], "Laugh");
+        assert_eq!(mapping_for(&dir, "other.inp"), Inochi2dMapping::default());
+        set_mapping(&dir, "nagatoro.inp", Inochi2dMapping::default()).unwrap();
+        assert_eq!(
+            mapping_for(&dir, "nagatoro.inp"),
+            Inochi2dMapping::default()
+        );
         let _ = fs::remove_dir_all(dir);
     }
 

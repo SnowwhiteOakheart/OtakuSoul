@@ -697,7 +697,19 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Knoten-z darf nicht clippen (`ortho` setzt z auf 0), UVs außerhalb 0…1 bleiben leer (kein CLAMP_TO_BORDER in WebGL).
   `controls.ts` findet Parameter am Namen (Inochi2D „Head:: Yaw-Pitch“/„Mouth:: Shape“, Eigenbau „Head::Turn“/„Eye::L::Open“,
   Live2D „ParamAngleX“) und treibt Lippen (`audioPlayer.onAudioFrame`), Blinzeln, Atmen, Blick, Emotions-Posen (`EMOTION_POSES`).
-  Viewer `avatar/Inochi2dViewer.tsx` (lazy, Ansicht in `avatarViewState` unter `inochi2d`, `data-inochi2d-viewer`).
+  Eigene Animationen (`animation.ts`, `animations` der Puppe: Spuren je Parameterachse, Linear/Stepped/Nearest/Cubic,
+  Forced/Additive/Multiplicative): drei Schichten im `PuppetAnimator` – „Idle“-Schleife unten (Atmen/Körperwiegen
+  überlässt die Prozedur ihr), Prozedur in der Mitte, oben Clips: Gefühls-Clip per Namenswort (de/en, `EMOTION_WORDS`;
+  hält die Mitte 30–70 % solange das Gefühl bleibt, Freude bewusst ohne Lach-Clip), Gesten (`GESTURE_WORDS`, Antippen =
+  `tap`, Chat-Geste `GestureRequest.role`/`clip`). Blinzeln und Stimme kommen über Clips hinweg durch (`keep`).
+  Mundformen: `audioPlayer`-Viseme auf eigene A/I/U/E/O-Parameter, sonst auf die Mundform-Achse (E breit, O rund).
+  Hand-Einstellungen je Puppe: `<Daten>/inochi2d_mappings.json` (`get/set_inochi2d_mapping`, Schlüssel = Pfad unter den
+  Puppen-Ordnern): `channels` (`null` = keiner) und `emotions` (`""` = nur Gesichtsausdruck); Editor
+  `avatars/Inochi2dMappingSettings.tsx` im Avatar-Manager, Infos per `onPuppet` aus dem Viewer, Neuanwendung über
+  `avatarSlice.inochi2dMappingRevision` ohne Neuladen. Bindungen mit `Cubic` per Catmull-Rom. Texturen dekodiert
+  `textureWorker.ts` (Rückfall auf den Hauptthread). `<fieldset>` braucht `min-w-0`, sonst sprengen lange Optionen das Panel.
+  Viewer `avatar/Inochi2dViewer.tsx` (lazy, Ansicht in `avatarViewState` unter `inochi2d`, `data-inochi2d-viewer`,
+  `data-inochi2d-clips`, `data-inochi2d-playing`, Animationsmenü).
   Backend `inochi2d.rs`: Einzeldateien in `<Daten>/inochi2d/` und `assets/inochi2d/` (+1 Unterordnerebene), Kopf-Metadaten,
   eingebettetes PNG-Vorschaubild, Import `.inp/.inx/.zip`, Katalog Aka/Midori (CC BY 4.0, SHA-256, nur Download),
   `AvatarKind::Inochi2d` (Namen/Papierkorb/Vorschaubilder wie die anderen). Karte: `custom_inochi2d` = Dateiname.

@@ -90,6 +90,7 @@ import {
   Live2dCatalogItem,
   ScannedInochi2d,
   Inochi2dCatalogItem,
+  Inochi2dMapping,
   AvatarKind,
   EmotionResult,
   GatewayCharacterEntry,
@@ -1516,6 +1517,13 @@ export const api = {
 
   importInochi2dModel: async (sourcePath: string): Promise<ScannedInochi2d> =>
     await invoke<ScannedInochi2d>('import_inochi2d_model', { sourcePath }),
+
+  /** Hand-made channels and emotion clips of a puppet (empty = all found by name). */
+  getInochi2dMapping: async (modelPath: string): Promise<Inochi2dMapping> =>
+    await invoke<Inochi2dMapping>('get_inochi2d_mapping', { modelPath }),
+
+  setInochi2dMapping: async (modelPath: string, mapping: Inochi2dMapping): Promise<void> =>
+    await invoke<void>('set_inochi2d_mapping', { modelPath, mapping }),
 
   // Soul Hub (Soul Gateway, Chub AI, World Lorebooks, Stage Scenarios)
   fetchSoulGatewayRegistry: async (): Promise<GatewayCharacterEntry[]> => {

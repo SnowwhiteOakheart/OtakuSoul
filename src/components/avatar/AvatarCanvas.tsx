@@ -446,6 +446,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
               modelPath={inochi2dPath}
               emotion={currentEmotion.portrait ?? currentEmotion.emotion}
               isSpeaking={isSpeaking}
+              gesture={avatarGesture}
             />
           </Suspense>
         ) : (

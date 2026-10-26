@@ -1,16 +1,20 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Loader2, RefreshCw, Sparkles } from 'lucide-react';
+import { Film, Loader2, RefreshCw, Sparkles } from 'lucide-react';
 import { api } from '../../services/api';
 import { audioPlayer } from '../../services/audioPlayer';
 import { answerSnapshots } from '../../services/avatarSnapshot';
 import { loadLive2DViewState, saveLive2DViewState } from '../../services/avatarViewState';
-import { PuppetAnimator } from '../../services/inochi2d/controls';
+import { playableAnimations, readAnimations } from '../../services/inochi2d/animation';
+import { PuppetAnimator, puppetInfo, type PuppetInfo } from '../../services/inochi2d/controls';
+import { useAppStore } from '../../store/useAppStore';
 import { parseInp } from '../../services/inochi2d/inp';
 import { identity, multiply, ortho } from '../../services/inochi2d/math';
 import { Puppet } from '../../services/inochi2d/puppet';
 import { decodeTextures, PuppetRenderer } from '../../services/inochi2d/renderer';
 import { translate, useTranslation } from '../../i18n';
 import { errorMessage } from '../../utils/errors';
+import type { GestureRequest } from '../../utils/avatarGestures';
+import { DropdownMenu } from '../ui/DropdownMenu';
 
 interface Inochi2dViewerProps {
   /** Absolute path of the `.inp`/`.inx` file. */
@@ -18,7 +22,16 @@ interface Inochi2dViewerProps {
   /** GoEmotions label (or an extra mood such as "blush"). */
   emotion?: string;
   isSpeaking?: boolean;
+  /** Gesture from the chat (by use) or a clip picked by name; the puppet plays its own if it has one. */
+  gesture?: GestureRequest | null;
+  /** Reports what the puppet offers, for the settings editor in the avatar library. */
+  onPuppet?: (info: PuppetInfo) => void;
 }
+
+/** Emotions the settings editor lets one give an own animation (the most common ones). */
+export const MAPPABLE_EMOTIONS = [
+  'joy', 'amusement', 'teasing', 'love', 'embarrassment', 'surprise', 'confusion', 'sadness', 'anger', 'annoyance', 'fear',
+] as const;
 
 /** Voice frames older than this count as silence (the mouth closes). */
 const AUDIO_TIMEOUT_MS = 180;
@@ -36,7 +49,7 @@ interface View {
  * Inochi2D puppet in the chat and the avatar library: WebGL2 canvas, drag to move, wheel to zoom,
  * lips follow the voice, face follows the emotion, eyes and head follow the pointer.
  */
-export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emotion = 'neutral', isSpeaking: _isSpeaking = false }) => {
+export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emotion = 'neutral', isSpeaking: _isSpeaking = false, gesture = null, onPuppet }) => {
   const { t, tEmotion } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -48,6 +61,16 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
   const viewRef = useRef<View | null>(null);
   const defaultViewRef = useRef<View>({ xRatio: 0.5, yRatio: 0.5, zoom: 1 });
   const emotionRef = useRef(emotion);
+  const onPuppetRef = useRef(onPuppet);
+  useEffect(() => {
+    onPuppetRef.current = onPuppet;
+  });
+  // Puppet and animations of the loaded model, so saved settings can be applied without reloading.
+  const loadedRef = useRef<{ puppet: Puppet; animations: ReturnType<typeof readAnimations> } | null>(null);
+  const mappingRevision = useAppStore((s) => s.inochi2dMappingRevision);
+  // The puppet's own animations (everything but the idle loop), to try by hand.
+  const [clips, setClips] = useState<string[]>([]);
+  const [playing, setPlaying] = useState<string | null>(null);
 
   useLayoutEffect(() => {
     emotionRef.current = emotion;
@@ -89,9 +112,13 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
     let puppet: Puppet | null = null;
     let bounds: [number, number, number, number] = [-1, -1, 1, 1];
     let lastAudio = 0;
-    const stopAudio = audioPlayer.onAudioFrame((amplitude) => {
+    const playingRef = { current: null as string | null };
+    const stopAudio = audioPlayer.onAudioFrame((amplitude, visemes) => {
       lastAudio = performance.now();
-      if (animatorRef.current) animatorRef.current.level = amplitude;
+      if (animatorRef.current) {
+        animatorRef.current.level = amplitude;
+        animatorRef.current.visemes = visemes;
+      }
     });
 
     /** Fits the canvas to the viewer (device pixels, at most 2× for speed). */
@@ -132,9 +159,17 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
       last = now;
       const animator = animatorRef.current;
       if (animator && puppet) {
-        if (now - lastAudio > AUDIO_TIMEOUT_MS) animator.level = 0;
+        if (now - lastAudio > AUDIO_TIMEOUT_MS) {
+          animator.level = 0;
+          animator.visemes = null;
+        }
         animator.update(dt);
         puppet.update(dt);
+        const clip = animator.playing;
+        if (clip !== playingRef.current) {
+          playingRef.current = clip;
+          setPlaying(clip);
+        }
         draw();
       }
       frame = requestAnimationFrame(loop);
@@ -156,7 +191,13 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
         if (disposed) return;
         const file = parseInp(bytes);
         puppet = new Puppet(file);
-        const animator = new PuppetAnimator(puppet);
+        const animations = readAnimations(file.puppet, puppet);
+        const mapping = await api.getInochi2dMapping(modelPath).catch(() => null);
+        if (disposed) return;
+        loadedRef.current = { puppet, animations };
+        const animator = new PuppetAnimator(puppet, animations, mapping);
+        onPuppetRef.current?.(puppetInfo(puppet, animations, MAPPABLE_EMOTIONS));
+        setClips(playableAnimations(animations).map((a) => a.name));
         animator.emotion = emotionRef.current;
         animatorRef.current = animator;
         const textures = await decodeTextures(file, abort.signal);
@@ -241,6 +282,7 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
       stopSnapshots?.();
       renderer?.dispose();
       animatorRef.current = null;
+      loadedRef.current = null;
       viewRef.current = null;
       canvas.removeEventListener('webglcontextlost', onContextLost);
       canvas.removeEventListener('webglcontextrestored', onContextRestored);
@@ -253,13 +295,48 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
     };
   }, [modelPath, generation]);
 
+  // Saved puppet settings: a new driver for the loaded puppet with them.
+  const firstRevision = useRef(mappingRevision);
+  useEffect(() => {
+    if (mappingRevision === firstRevision.current) return;
+    let cancelled = false;
+    void api
+      .getInochi2dMapping(modelPath)
+      .catch(() => null)
+      .then((mapping) => {
+        const loaded = loadedRef.current;
+        const old = animatorRef.current;
+        if (cancelled || !loaded || !old) return;
+        const animator = new PuppetAnimator(loaded.puppet, loaded.animations, mapping);
+        animator.emotion = emotionRef.current;
+        animator.pointer = old.pointer;
+        animatorRef.current = animator;
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [mappingRevision, modelPath]);
+
+  // Chat gestures: the puppet's own clip for the use, or one picked by name.
+  useEffect(() => {
+    const animator = animatorRef.current;
+    if (!gesture || !animator) return;
+    if (gesture.clip) animator.playAnimation(gesture.clip);
+    else if (gesture.role) animator.playGesture(gesture.role);
+  }, [gesture]);
+
   const resetView = () => {
     viewRef.current = { ...defaultViewRef.current };
     saveLive2DViewState(modelPath, viewRef.current, 'inochi2d');
   };
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden bg-app/60 select-none" data-inochi2d-viewer={loading ? 'loading' : error ? 'error' : 'ready'}>
+    <div
+      className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden bg-app/60 select-none"
+      data-inochi2d-viewer={loading ? 'loading' : error ? 'error' : 'ready'}
+      data-inochi2d-clips={clips.length}
+      data-inochi2d-playing={playing ?? undefined}
+    >
       <div ref={containerRef} className="w-full h-full cursor-grab active:cursor-grabbing touch-none">
         <canvas ref={canvasRef} className="block w-full h-full" />
       </div>
@@ -279,6 +356,21 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
       )}
 
       <div className="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 bg-slate-900/80 p-1 rounded-xl border border-slate-700/60 backdrop-blur shadow-lg text-slate-300">
+        {clips.length > 0 && (
+          <DropdownMenu
+            triggerLabel={t('avatar.inochi2dAnimations')}
+            triggerClassName="p-1.5 hover:text-accent-400 hover:bg-slate-800 rounded-lg transition-colors text-xs outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
+            trigger={<Film className="w-3.5 h-3.5" />}
+            heading={t('avatar.inochi2dAnimations')}
+            menuClassName="max-h-64 overflow-y-auto"
+            placement="top"
+            items={clips.map((name) => ({
+              label: name.replace(/_/g, ' '),
+              checked: playing === name,
+              onSelect: () => animatorRef.current?.playAnimation(name),
+            }))}
+          />
+        )}
         <button
           type="button"
           onClick={() => animatorRef.current?.poke()}

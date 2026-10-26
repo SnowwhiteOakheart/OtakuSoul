@@ -1,6 +1,6 @@
 // A small Inochi2D puppet (.inp) for tests: a body, a face with a mouth that opens with
-// "Mouth:: Open", eyes that close with "Eye:: Left:: Blink", a hair strand on a physics pendulum and
-// a `Mask` node. Textures are raw TGA, so no picture library is needed.
+// "Mouth:: Open", eyes that close with "Eye:: Left:: Blink", a hair strand on a physics pendulum,
+// a `Mask` node and own animations (Idle, Expr_Verlegen, Wink_L). Textures are raw TGA, so no picture library is needed.
 
 /** Uncompressed 32-bit TGA, one colour, rows from the top. */
 function tga(width, height, [r, g, b, a]) {
@@ -58,6 +58,18 @@ export function makeInp({ name = 'Testpuppe' } = {}) {
         is_vec2: true, min: [-1, -1], max: [1, 1], axis_points: [[0, 1], [0, 1]],
       }),
     ],
+    // Own animations as Inochi Creator 0.8 writes them: an idle loop, a mood and a gesture.
+    animations: {
+      Idle: { timestep: 1 / 30, length: 60, additive: false, animationWeight: 1, leadIn: -1, leadOut: -1, lanes: [
+        { uuid: 104, target: 0, interpolation: 'Linear', merge_mode: 'Forced', keyframes: [{ frame: 0, value: -0.3, tension: 0.5 }, { frame: 30, value: 0.3, tension: 0.5 }, { frame: 59, value: -0.3, tension: 0.5 }] },
+      ] },
+      Expr_Verlegen: { timestep: 1 / 30, length: 60, additive: false, animationWeight: 1, leadIn: -1, leadOut: -1, lanes: [
+        { uuid: 101, target: 0, interpolation: 'Linear', merge_mode: 'Forced', keyframes: [{ frame: 0, value: 0, tension: 0.5 }, { frame: 10, value: 0.4, tension: 0.5 }, { frame: 59, value: 0.4, tension: 0.5 }] },
+      ] },
+      Wink_L: { timestep: 1 / 30, length: 30, additive: false, animationWeight: 1, leadIn: -1, leadOut: -1, lanes: [
+        { uuid: 102, target: 0, interpolation: 'Linear', merge_mode: 'Forced', keyframes: [{ frame: 0, value: 0, tension: 0.5 }, { frame: 10, value: 1, tension: 0.5 }, { frame: 29, value: 0, tension: 0.5 }] },
+      ] },
+    },
   };
   const textures = [
     tga(8, 8, [240, 240, 250, 255]),

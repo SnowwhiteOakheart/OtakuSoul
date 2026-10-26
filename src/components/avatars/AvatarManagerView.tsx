@@ -11,6 +11,8 @@ import { radioGroupKeyDown, radioTabIndex } from '../../utils/radioGroup';
 import { AvatarActions } from '../settings/AvatarActions';
 import { toast } from '../ui/feedback';
 import { AvatarPreview } from './AvatarPreview';
+import { Inochi2dMappingSettings } from './Inochi2dMappingSettings';
+import type { PuppetInfo } from '../../services/inochi2d/controls';
 import { importInochi2dFromDialog, importLive2dFromDialog, importVrmFromDialog } from './avatarImport';
 import { usesInochi2d, usesLive2d, usesVrm } from './avatarMatch';
 import type { AvatarKind, AvatarMode, CharacterProfile, Inochi2dCatalogItem } from '../../types';
@@ -99,6 +101,8 @@ export function AvatarManagerView() {
   );
   const [catalog, setCatalog] = useState<Inochi2dCatalogItem[]>([]);
   const [downloading, setDownloading] = useState<string | null>(null);
+  // What the puppet shown in the preview offers (for its settings), by path.
+  const [puppetInfo, setPuppetInfo] = useState<{ path: string; info: PuppetInfo } | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
   const [query, setQuery] = useState('');
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
@@ -405,6 +409,7 @@ export function AvatarManagerView() {
                   kind={selected.kind}
                   path={selected.path}
                   captureRef={capture}
+                  onInochi2dInfo={(info) => setPuppetInfo({ path: selected.path, info })}
                   onAutoSnapshot={
                     selected.previewImage || fresh[selected.path] ? undefined : (picture) => void savePicture(selected, picture, false)
                   }
@@ -501,6 +506,14 @@ export function AvatarManagerView() {
                   </button>
                   <p id="avatar-retake-hint" className="text-[11px] text-slate-400">{t('avatars.retakeThumbnailHint')}</p>
                 </div>
+              )}
+
+              {selected.kind === 'inochi2d' && (
+                <Inochi2dMappingSettings
+                  key={selected.path}
+                  path={selected.path}
+                  info={puppetInfo?.path === selected.path ? puppetInfo.info : null}
+                />
               )}
 
               {selected.kind === 'vrm' && (

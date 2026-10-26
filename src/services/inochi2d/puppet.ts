@@ -123,6 +123,8 @@ interface Binding {
   node: PuppetNode;
   target: BindingTarget;
   nearest: boolean;
+  /** Smooth curve through the neighbouring keys (Catmull-Rom) instead of straight lines. */
+  cubic: boolean;
   /** values[x][y]: a number, or the vertex offsets (deform). */
   values: (number | Float32Array)[][];
 }
@@ -196,6 +198,12 @@ const lerp = (t: number, a: number, b: number, va: number, vb: number, nearest: 
   if (b === a) return va;
   if (nearest) return b - t < t - a ? vb : va;
   return va + ((t - a) * (vb - va)) / (b - a);
+};
+
+/** Catmull-Rom between p1 and p2 at t (0…1). */
+const catmull = (p0: number, p1: number, p2: number, p3: number, t: number) => {
+  const t2 = t * t;
+  return 0.5 * (2 * p1 + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 + (-p0 + 3 * p1 - 3 * p2 + p3) * t2 * t);
 };
 
 /** The two neighbouring axis points around `v` (indices into `axis`, sorted ascending). */
@@ -370,7 +378,7 @@ export class Puppet {
         }),
       );
       if (values.length !== param.axisX.length || values.some((column) => column.length !== param.axisY.length)) continue;
-      param.bindings.push({ node, target, nearest: b.interpolate_mode === 'Nearest', values });
+      param.bindings.push({ node, target, nearest: b.interpolate_mode === 'Nearest', cubic: b.interpolate_mode === 'Cubic', values });
     }
     return param;
   }
@@ -501,8 +509,31 @@ export class Puppet {
     const tx = Math.min(Math.max(nx, ax0), ax1);
     const ty = Math.min(Math.max(ny, ay0), ay1);
 
+    // Cubic bindings: Catmull-Rom over the axis keys, neighbours clamped at the ends.
+    const lastX = param.axisX.length - 1;
+    const lastY = param.axisY.length - 1;
+    const ux = ax1 === ax0 ? 0 : (tx - ax0) / (ax1 - ax0);
+    const uy = ay1 === ay0 ? 0 : (ty - ay0) / (ay1 - ay0);
+    const cubic2 = (get: (ix: number, iy: number) => number) => {
+      const row = (iy: number) =>
+        catmull(get(Math.max(x0 - 1, 0), iy), get(x0, iy), get(x1, iy), get(Math.min(x1 + 1, lastX), iy), ux);
+      return catmull(row(Math.max(y0 - 1, 0)), row(y0), row(y1), row(Math.min(y1 + 1, lastY)), uy);
+    };
+
     for (const b of param.bindings) {
       const v = b.values;
+      if (b.cubic) {
+        if (b.target === 'deform') {
+          const target = b.node.part?.deform ?? b.node.meshGroup?.deform;
+          if (!target) continue;
+          for (let i = 0; i < target.length; i += 1) {
+            target[i]! += cubic2((ix, iy) => (v[ix]![iy] as Float32Array)[i] ?? 0);
+          }
+        } else {
+          this.applyValue(b, cubic2((ix, iy) => v[ix]![iy] as number));
+        }
+        continue;
+      }
       if (b.target === 'deform') {
         const target = b.node.part?.deform ?? b.node.meshGroup?.deform;
         if (!target) continue;
@@ -520,20 +551,24 @@ export class Puppet {
       }
       const top = lerp(tx, ax0, ax1, v[x0]![y0] as number, v[x1]![y0] as number, b.nearest);
       const bottom = lerp(tx, ax0, ax1, v[x0]![y1] as number, v[x1]![y1] as number, b.nearest);
-      const out = lerp(ty, ay0, ay1, top, bottom, b.nearest);
-      const rel = b.node.rel;
-      switch (b.target) {
-        case 'tx': rel.t[0] += out; break;
-        case 'ty': rel.t[1] += out; break;
-        case 'tz': rel.t[2] += out; break;
-        case 'rx': rel.r[0] += out; break;
-        case 'ry': rel.r[1] += out; break;
-        case 'rz': rel.r[2] += out; break;
-        case 'sx': rel.s[0] *= out; break;
-        case 'sy': rel.s[1] *= out; break;
-        case 'zsort': b.node.z += out; break;
-        case 'opacity': b.node.opacityFactor *= out; break;
-      }
+      this.applyValue(b, lerp(ty, ay0, ay1, top, bottom, b.nearest));
+    }
+  }
+
+  /** Adds (translation, rotation, zsort) or multiplies (scale, opacity) a binding's value. */
+  private applyValue(b: Binding, out: number) {
+    const rel = b.node.rel;
+    switch (b.target) {
+      case 'tx': rel.t[0] += out; break;
+      case 'ty': rel.t[1] += out; break;
+      case 'tz': rel.t[2] += out; break;
+      case 'rx': rel.r[0] += out; break;
+      case 'ry': rel.r[1] += out; break;
+      case 'rz': rel.r[2] += out; break;
+      case 'sx': rel.s[0] *= out; break;
+      case 'sy': rel.s[1] *= out; break;
+      case 'zsort': b.node.z += out; break;
+      case 'opacity': b.node.opacityFactor *= out; break;
     }
   }
 

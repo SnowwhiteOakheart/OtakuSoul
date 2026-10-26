@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { cleanText, decodePng, decodeTga, InpError, isInpFile, parseInp } from '../services/inochi2d/inp';
 import { axisRange, Puppet } from '../services/inochi2d/puppet';
-import { findChannels, poseFor, PuppetAnimator } from '../services/inochi2d/controls';
+import { findChannels, poseFor, puppetInfo, PuppetAnimator } from '../services/inochi2d/controls';
+import { findEmotionClip, findGestureClip, findIdle, readAnimations, sampleLane, type AnimationLane } from '../services/inochi2d/animation';
 import { resolveInochi2dPath, usesInochi2d } from '../components/avatars/avatarMatch';
 import type { CharacterProfile } from '../types';
 
@@ -251,5 +252,125 @@ describe('Inochi2D character match', () => {
     expect(resolveInochi2dPath(character({}), models, '/data/inochi2d/nagatoro.inp')).toBe('/data/inochi2d/nagatoro.inp');
     expect(resolveInochi2dPath(character({ custom_inochi2d: 'gone.inp' }), models, null)).toBe('/data/inochi2d/Aka.inx');
     expect(resolveInochi2dPath(null, [], null)).toBe('');
+  });
+});
+
+describe('Inochi2D animations', () => {
+  /** A puppet with a mouth, eyes, breath and own animations (as Inochi Creator writes them). */
+  function animated() {
+    const params = [
+      ['Mouth::Open', [0, 0], [1, 1], [0, 0]],
+      ['Eye::L::Open', [0, 0], [1, 1], [1, 0]],
+      ['Body::Breath', [0, 0], [1, 1], [0, 0]],
+      ['Expression', [0, 0], [5, 1], [0, 1]],
+    ] as const;
+    const lane = (uuid: number, keys: [number, number][], interpolation = 'Linear', target = 0) => ({
+      uuid, target, interpolation, merge_mode: 'Forced', keyframes: keys.map(([frame, value]) => ({ frame, value, tension: 0.5 })),
+    });
+    const json = {
+      meta: {}, physics: {}, nodes: node(1, 'Node'),
+      param: params.map(([name, min, max, defaults], i) => ({
+        uuid: 200 + i, name, is_vec2: name === 'Expression', min, max, defaults, axis_points: [[0, 1], [0, 1]], bindings: [],
+      })),
+      animations: {
+        Idle: { timestep: 0.1, length: 20, lanes: [lane(202, [[0, 0], [10, 1], [19, 0]])] },
+        Expr_Verlegen: { timestep: 0.1, length: 30, lanes: [lane(203, [[0, 3], [29, 0]], 'Stepped'), lane(201, [[0, 1], [3, 0.5], [26, 0.5], [29, 1]])] },
+        Wink_L: { timestep: 0.1, length: 10, lanes: [lane(201, [[0, 1], [5, 0], [9, 1]])] },
+        Blink: { timestep: 0.1, length: 5, lanes: [lane(201, [[0, 1], [2, 0], [4, 1]])] },
+      },
+    };
+    const file = parseInp(inp(json));
+    const puppet = new Puppet(file);
+    return { puppet, animations: readAnimations(file.puppet, puppet) };
+  }
+
+  it('samples lanes linear, stepped, nearest and cubic', () => {
+    const { puppet } = animated();
+    const base = { param: puppet.params.get('Mouth::Open')!, axis: 0 as const, merge: 'forced' as const, keyframes: [{ frame: 0, value: 0 }, { frame: 10, value: 1 }, { frame: 20, value: 0 }] };
+    const at = (interpolation: AnimationLane['interpolation'], frame: number) => sampleLane({ ...base, interpolation }, frame);
+    expect(at('linear', 5)).toBeCloseTo(0.5);
+    expect(at('stepped', 9)).toBe(0);
+    expect(at('nearest', 6)).toBe(1);
+    expect(at('cubic', 10)).toBeCloseTo(1);
+    expect(at('linear', -3)).toBe(0);
+    expect(at('linear', 99)).toBe(0);
+  });
+
+  it('finds the idle loop, emotion clips and gestures by name', () => {
+    const { animations } = animated();
+    expect(animations.map((a) => a.name)).toEqual(['Idle', 'Expr_Verlegen', 'Wink_L', 'Blink']);
+    expect(findIdle(animations)?.name).toBe('Idle');
+    expect(findEmotionClip(animations, 'embarrassment')?.name).toBe('Expr_Verlegen');
+    expect(findEmotionClip(animations, 'joy')).toBeUndefined();
+    expect(findGestureClip(animations, 'tap')?.name).toBe('Wink_L');
+    // Tools like "Blink" are never picked as a gesture.
+    expect(findGestureClip(animations, 'nod')).toBeUndefined();
+    const info = puppetInfo(animated().puppet, animations, ['embarrassment', 'joy']);
+    expect(info.emotionClips).toEqual({ embarrassment: 'Expr_Verlegen', joy: null });
+    expect(info.detected.mouthOpen).toBe('Mouth::Open');
+  });
+
+  it('lets the idle loop breathe and holds the emotion clip while the mood lasts', () => {
+    const { puppet, animations } = animated();
+    const animator = new PuppetAnimator(puppet, animations);
+    for (let i = 0; i < 10; i += 1) animator.update(0.1);
+    // Frame 10 of the idle loop: breath at its top (the procedural breath stays out of it).
+    expect(puppet.getParam('Body::Breath')![0]).toBeCloseTo(1, 1);
+
+    animator.emotion = 'embarrassment';
+    for (let i = 0; i < 40; i += 1) animator.update(0.1);
+    expect(animator.playing).toBe('Expr_Verlegen');
+    expect(puppet.getParam('Expression')![0]).toBe(3);
+    expect(puppet.getParam('Eye::L::Open')![0]).toBeLessThanOrEqual(0.55);
+
+    animator.emotion = 'neutral';
+    for (let i = 0; i < 10; i += 1) animator.update(0.1);
+    expect(animator.playing).toBeNull();
+    expect(puppet.getParam('Expression')![0]).toBe(0);
+  });
+
+  it('plays gestures once, keeps the voice on the mouth and follows hand-made settings', () => {
+    const { puppet, animations } = animated();
+    const animator = new PuppetAnimator(puppet, animations, {
+      channels: { mouthOpen: null },
+      emotions: { embarrassment: '', joy: 'Wink_L' },
+    });
+    animator.poke();
+    animator.update(0.1);
+    expect(animator.playing).toBe('Wink_L');
+    for (let i = 0; i < 15; i += 1) animator.update(0.1);
+    expect(animator.playing).toBeNull();
+    // Mouth switched off by hand: the voice does not move it.
+    animator.level = 1;
+    for (let i = 0; i < 5; i += 1) animator.update(0.1);
+    expect(puppet.getParam('Mouth::Open')![0]).toBe(0);
+    // "Face only" for embarrassment, an own pick for joy.
+    animator.emotion = 'embarrassment';
+    animator.update(0.1);
+    expect(animator.playing).toBeNull();
+    animator.emotion = 'joy';
+    animator.update(0.1);
+    expect(animator.playing).toBe('Wink_L');
+  });
+});
+
+describe('Inochi2D cubic bindings', () => {
+  it('curves through the keys instead of straight lines', () => {
+    const json = {
+      meta: {}, physics: {},
+      nodes: node(1, 'Node', { children: [part(2)] }),
+      param: [{
+        uuid: 10, name: 'Wave', is_vec2: false, min: [0, 0], max: [1, 1], defaults: [0, 0], axis_points: [[0, 0.5, 1], [0]],
+        bindings: [{ node: 2, param_name: 'transform.t.x', interpolate_mode: 'Cubic', isSet: [[true], [true], [true]], values: [[0], [100], [0]] }],
+      }],
+    };
+    const p = new Puppet(parseInp(inp(json)));
+    p.setParam('Wave', 0.5);
+    p.update(0);
+    expect(p.node(2)!.abs[12]).toBeCloseTo(100);
+    p.setParam('Wave', 0.25);
+    p.update(0);
+    // A straight line would give 50; the curve bulges above it.
+    expect(p.node(2)!.abs[12]).toBeGreaterThan(55);
   });
 });

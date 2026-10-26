@@ -5,7 +5,10 @@
  * Inochi2D has no expression files: emotions become a small pose (smile, open mouth, narrowed
  * eyes, head tilt) that is blended in smoothly.
  */
+import { applyAnimation, findEmotionClip, findGestureClip, findIdle, type PuppetAnimation } from './animation';
 import type { Param, Puppet } from './puppet';
+import type { Visemes } from '../lipSync';
+import type { Inochi2dMapping } from '../../types/generated/Inochi2dMapping';
 
 /** One controllable value on one axis of a parameter. */
 interface Axis {
@@ -31,6 +34,8 @@ export interface PuppetChannels {
   breath?: Axis;
   cheek?: Axis;
   brows?: Axis;
+  /** Own vowel shapes (A, I, U, E, O), when the puppet has them. */
+  vowels?: Partial<Record<keyof Visemes, Axis>>;
 }
 
 /** "ParamAngleX" → "param angle x", "Head:: Yaw-Pitch" → "head yaw pitch". */
@@ -41,8 +46,58 @@ const norm = (name: string) =>
     .replace(/[^a-z0-9]+/g, ' ')
     .trim();
 
-/** Finds channels of a puppet by the names of its parameters. */
-export function findChannels(puppet: Puppet): PuppetChannels {
+/** Channels a puppet setting may name by hand (as in `CHANNEL_KEYS` of `inochi2d.rs`). */
+export const CHANNEL_KEYS = [
+  'headYaw', 'headPitch', 'headRoll', 'bodyYaw', 'bodyPitch', 'bodyRoll', 'eyeX', 'eyeY',
+  'blinkLeft', 'blinkRight', 'mouthOpen', 'smile', 'breath', 'cheek', 'brows',
+] as const;
+export type ChannelKey = (typeof CHANNEL_KEYS)[number];
+
+/**
+ * Finds channels of a puppet by the names of its parameters; `mapping` (set by hand in the avatar
+ * library) wins: a parameter axis, or `null` for "none".
+ */
+export function findChannels(puppet: Puppet, mapping?: Inochi2dMapping | null): PuppetChannels {
+  const found = detectChannels(puppet);
+  for (const [key, chosen] of Object.entries(mapping?.channels ?? {})) {
+    if (!(CHANNEL_KEYS as readonly string[]).includes(key)) continue;
+    const param = chosen ? puppet.params.get(chosen.param) : undefined;
+    const a: Axis | undefined = param ? { param, axis: chosen!.axis === 1 ? 1 : 0, inverted: chosen!.inverted } : undefined;
+    if (key === 'eyeX' || key === 'eyeY') found[key] = a ? [a] : [];
+    else if (chosen === null || a) found[key as Exclude<ChannelKey, 'eyeX' | 'eyeY'>] = a;
+  }
+  return found;
+}
+
+/** What a puppet offers for the settings editor: its parameters, animations and the automatic picks. */
+export interface PuppetInfo {
+  params: { name: string; isVec2: boolean }[];
+  animations: string[];
+  /** Automatically found channel per key, as "Name" or "Name (y)", null if none. */
+  detected: Record<ChannelKey, string | null>;
+  /** Automatically chosen own clip per emotion (null = pose only). */
+  emotionClips: Record<string, string | null>;
+}
+
+const describeAxis = (a: Axis | undefined) => (a ? `${a.param.name}${a.param.isVec2 ? (a.axis ? ' (y)' : ' (x)') : ''}` : null);
+
+export function puppetInfo(puppet: Puppet, animations: PuppetAnimation[], emotions: readonly string[]): PuppetInfo {
+  const ch = detectChannels(puppet);
+  const detected = Object.fromEntries(
+    CHANNEL_KEYS.map((key) => {
+      const value = ch[key];
+      return [key, Array.isArray(value) ? (value.map(describeAxis).join(', ') || null) : describeAxis(value)];
+    }),
+  ) as Record<ChannelKey, string | null>;
+  return {
+    params: [...puppet.params.values()].filter((p) => !p.driven).map((p) => ({ name: p.name, isVec2: p.isVec2 })),
+    animations: animations.map((a) => a.name),
+    detected,
+    emotionClips: Object.fromEntries(emotions.map((e) => [e, findEmotionClip(animations, e)?.name ?? null])),
+  };
+}
+
+function detectChannels(puppet: Puppet): PuppetChannels {
   const params = [...puppet.params.values()].filter((p) => !p.driven);
   const find = (re: RegExp, exclude?: RegExp) => params.find((p) => re.test(norm(p.name)) && !(exclude && exclude.test(norm(p.name))));
   const axis = (param: Param | undefined, a: 0 | 1 = 0, inverted = false): Axis | undefined =>
@@ -97,6 +152,13 @@ export function findChannels(puppet: Puppet): PuppetChannels {
   ch.smile ??= axis(find(/mouth.*(smile|form)|param mouth form|\bsmile\b/));
   ch.breath = axis(find(/breath/));
   ch.brows = axis(find(/brow/));
+  // Vowel shapes: "Mouth:: A", "Mouth_E", "ParamA" (VBridge/Live2D style) …
+  const vowels: Partial<Record<keyof Visemes, Axis>> = {};
+  for (const [viseme, letter] of [['aa', 'a'], ['ih', 'i'], ['ou', 'u'], ['ee', 'e'], ['oh', 'o']] as const) {
+    const found = axis(find(new RegExp(`^(mouth|param|vowel|lip)s? (shape )?${letter}$`)));
+    if (found) vowels[viseme] = found;
+  }
+  if (Object.keys(vowels).length >= 2) ch.vowels = vowels;
   ch.cheek = axis(find(/cheek|blush/));
   return ch;
 }
@@ -176,13 +238,45 @@ export const poseFor = (emotion: string): EmotionPose => EMOTION_POSES[emotion] 
 
 const approach = (from: number, to: number, rate: number, dt: number) => from + (to - from) * (1 - Math.exp(-rate * dt));
 
+/** Share of an axis' range (0…1) a parameter value stands at, from the channel's point of view. */
+function share(a: Axis, value: number): number {
+  const min = a.param.min[a.axis];
+  const max = a.param.max[a.axis];
+  const t = max === min ? 0 : (value - min) / (max - min);
+  return Math.min(Math.max(a.inverted ? 1 - t : t, 0), 1);
+}
+
+const fromShare = (a: Axis, t: number) => {
+  const v = a.inverted ? 1 - t : t;
+  return a.param.min[a.axis] + (a.param.max[a.axis] - a.param.min[a.axis]) * v;
+};
+
+/** A clip being played: one-shot gestures, or emotion clips that hold their middle while the mood lasts. */
+interface ClipState {
+  animation: PuppetAnimation;
+  time: number;
+  weight: number;
+  /** Emotion clips loop their middle part; gestures play once. */
+  hold: boolean;
+  fadingOut: boolean;
+}
+
+/** Seconds to blend clips in and out. */
+const FADE_IN = 0.2;
+const FADE_OUT = 0.35;
+
 /**
- * Per-frame driver: blink, breath, gentle sway, the pointer, the voice and the emotion pose.
- * `update` sets the parameters on the puppet (before `puppet.update`).
+ * Per-frame driver in three layers: the puppet's own idle loop (if it has one), the procedural
+ * life (blink, breath, sway, pointer, voice, emotion pose) and the puppet's own clips (an emotion
+ * held while it lasts, gestures played once). `update` sets the parameters (before `puppet.update`).
  */
 export class PuppetAnimator {
   readonly channels: PuppetChannels;
+  readonly animations: PuppetAnimation[];
   private readonly puppet: Puppet;
+  private readonly idle: PuppetAnimation | undefined;
+  /** Axes the idle loop moves for breath and sway: the procedural ones leave them to it. */
+  private readonly idleAxes = new Set<string>();
   private time = 0;
   private nextBlink = 2 + Math.random() * 3;
   private blinkPhase = -1;
@@ -190,17 +284,29 @@ export class PuppetAnimator {
   private mouth = 0;
   private look: [number, number] = [0, 0];
   private lookTarget: [number, number] = [0, 0];
+  private clips: ClipState[] = [];
+  private clipEmotion = '';
   /** Voice level 0…1 (set from the audio player). */
   level = 0;
+  /** Vowel weights of the voice right now (from `lipSync`), or null while silent. */
+  visemes: Visemes | null = null;
+  private vowelForm = 0;
   emotion = 'neutral';
   /** Pointer over the viewer, -1…1 each way (null: look ahead). */
   pointer: [number, number] | null = null;
-  /** Until this time a tap shows a happy little nod (Inochi2D has no motion files). */
+  /** Until this time a tap shows a happy little nod (when the puppet has no gesture of its own). */
   private pokeUntil = -1;
 
-  constructor(puppet: Puppet) {
+  /** Emotion → own animation chosen by hand ("" = none, missing = found by name). */
+  private readonly emotionClips: Record<string, string>;
+
+  constructor(puppet: Puppet, animations: PuppetAnimation[] = [], mapping?: Inochi2dMapping | null) {
     this.puppet = puppet;
-    this.channels = findChannels(puppet);
+    this.channels = findChannels(puppet, mapping);
+    this.emotionClips = mapping?.emotions ?? {};
+    this.animations = animations;
+    this.idle = findIdle(animations);
+    for (const lane of this.idle?.lanes ?? []) this.idleAxes.add(`${lane.param.uuid}:${lane.axis}`);
   }
 
   /** Whether the puppet has a mouth the voice can move. */
@@ -208,15 +314,70 @@ export class PuppetAnimator {
     return !!this.channels.mouthOpen;
   }
 
-  /** Reaction to a tap: smile and a little nod for a moment. */
+  /** Name of the clip playing now (for tests and the viewer), if any. */
+  get playing(): string | null {
+    return this.clips.find((c) => !c.fadingOut)?.animation.name ?? null;
+  }
+
+  /** Reaction to a tap: the puppet's own gesture (wink, laugh …) or a smile and a little nod. */
   poke() {
-    this.pokeUntil = this.time + 1.2;
+    if (!this.playGesture('tap')) this.pokeUntil = this.time + 1.2;
+  }
+
+  /** Plays the puppet's clip for a chat gesture (`MotionRole`); false if it has none. */
+  playGesture(role: string): boolean {
+    const clip = findGestureClip(this.animations, role);
+    if (clip) this.start(clip, false);
+    return !!clip;
+  }
+
+  /** Plays one of the puppet's animations by name, once. */
+  playAnimation(name: string): boolean {
+    const clip = this.animations.find((a) => a.name === name);
+    if (clip) this.start(clip, false);
+    return !!clip;
+  }
+
+  private start(animation: PuppetAnimation, hold: boolean) {
+    for (const c of this.clips) c.fadingOut = true;
+    this.clips.push({ animation, time: 0, weight: 0, hold, fadingOut: false });
+  }
+
+  private covered(a: Axis | undefined) {
+    return !!a && this.idleAxes.has(`${a.param.uuid}:${a.axis}`);
   }
 
   update(dt: number) {
     const ch = this.channels;
     this.time += dt;
     const values = new Map<Param, [number, number]>();
+
+    // 1. The puppet's own idle loop underneath everything.
+    if (this.idle) {
+      const frame = (this.time / this.idle.timestep) % this.idle.length;
+      applyAnimation(this.idle, frame, 1, values);
+    }
+
+    // An own clip for the mood replaces the generic pose's part it covers.
+    if (this.emotion !== this.clipEmotion) {
+      this.clipEmotion = this.emotion;
+      const chosen = this.emotionClips[this.emotion];
+      const clip =
+        chosen !== undefined
+          ? this.animations.find((a) => a.name === chosen)
+          : this.emotion === 'neutral'
+            ? undefined
+            : findEmotionClip(this.animations, this.emotion);
+      const running = this.clips.find((c) => c.hold && !c.fadingOut);
+      if (clip && running?.animation === clip) {
+        // The same clip fits the new mood too: keep holding it.
+      } else if (clip) {
+        this.start(clip, true);
+      } else {
+        for (const c of this.clips) if (c.hold) c.fadingOut = true;
+      }
+    }
+
     const poked = this.time < this.pokeUntil;
     const target = poked ? poseFor('amusement') : poseFor(this.emotion);
     for (const key of Object.keys(this.current) as (keyof EmotionPose)[]) {
@@ -224,7 +385,7 @@ export class PuppetAnimator {
     }
     const face = this.current;
 
-    // Blink every few seconds (quick close and open), less while squinting.
+    // 2. Procedural life. Blink every few seconds (quick close and open).
     if (this.blinkPhase < 0 && this.time >= this.nextBlink) this.blinkPhase = 0;
     let blink = 0;
     if (this.blinkPhase >= 0) {
@@ -243,13 +404,24 @@ export class PuppetAnimator {
     const voice = Math.min(1, this.level * 2.2);
     this.mouth = approach(this.mouth, Math.max(voice, face.open), voice > this.mouth ? 30 : 14, dt);
     put(ch.mouthOpen, this.mouth, 'unit', values);
-    put(ch.smile, face.smile, 'signed', values);
+    // Vowels while speaking: own A/I/U/E/O shapes, else the mouth form (E wide, O round).
+    const v = voice > 0.05 ? this.visemes : null;
+    const total = v ? v.aa + v.ih + v.ou + v.ee + v.oh : 0;
+    if (ch.vowels) {
+      for (const [viseme, a] of Object.entries(ch.vowels) as [keyof Visemes, Axis][]) {
+        put(a, v && total > 0 ? Math.min(1, (v[viseme] / total) * voice * 1.6) : 0, 'unit', values);
+      }
+    }
+    const form = v && total > 0 ? (v.ee + 0.6 * v.ih - v.ou - 0.8 * v.oh) / total : 0;
+    this.vowelForm = approach(this.vowelForm, form, 18, dt);
+    const speakingWeight = ch.vowels || !v || total <= 0 ? 0 : Math.min(1, voice * 2) * 0.7;
+    put(ch.smile, face.smile + (this.vowelForm - face.smile) * speakingWeight, 'signed', values);
     put(ch.cheek, face.blush, 'unit', values);
     put(ch.brows, face.brow, 'signed', values);
 
-    // Breath and a slow sway, so the figure never stands frozen.
+    // Breath and a slow sway, so the figure never stands frozen (the idle loop's own win).
     const breath = (Math.sin(this.time * ((2 * Math.PI) / 3.6)) + 1) / 2;
-    put(ch.breath, breath, 'unit', values);
+    if (!this.covered(ch.breath)) put(ch.breath, breath, 'unit', values);
     const swayX = Math.sin(this.time * 0.53) * 0.12 + Math.sin(this.time * 0.21) * 0.08;
     const swayY = Math.sin(this.time * 0.37 + 1.3) * 0.06;
 
@@ -262,10 +434,45 @@ export class PuppetAnimator {
     put(ch.headYaw, this.look[0] * 0.6 + swayX, 'signed', values);
     put(ch.headPitch, -this.look[1] * 0.5 + face.pitch + swayY + speaking + nod, 'signed', values);
     put(ch.headRoll, face.roll + swayX * 0.4, 'signed', values);
-    put(ch.bodyYaw, this.look[0] * 0.2 + swayX * 0.5, 'signed', values);
-    put(ch.bodyRoll, swayX * 0.3, 'signed', values);
+    if (!this.covered(ch.bodyYaw)) put(ch.bodyYaw, this.look[0] * 0.2 + swayX * 0.5, 'signed', values);
+    if (!this.covered(ch.bodyRoll)) put(ch.bodyRoll, swayX * 0.3, 'signed', values);
     for (const eye of ch.eyeX ?? []) put(eye, this.look[0] * 0.9, 'signed', values);
     for (const eye of ch.eyeY ?? []) put(eye, -this.look[1] * 0.9, 'signed', values);
+
+    // 3. The puppet's own clips on top; blinking and the voice still get through.
+    const blinkAxes = [ch.blinkLeft, ch.blinkRight].filter((a): a is Axis => !!a);
+    const mouthAxis = ch.mouthOpen;
+    const keep = (param: Param, axisIndex: 0 | 1, animated: number) => {
+      const eye = blinkAxes.find((a) => a.param === param && a.axis === axisIndex);
+      if (eye) return fromShare(eye, Math.max(share(eye, animated), blink));
+      if (mouthAxis && mouthAxis.param === param && mouthAxis.axis === axisIndex && voice > 0.05) {
+        return fromShare(mouthAxis, Math.max(share(mouthAxis, animated), this.mouth));
+      }
+      return animated;
+    };
+    for (const clip of this.clips) {
+      const { animation } = clip;
+      clip.time += dt;
+      let frame = clip.time / animation.timestep;
+      if (clip.hold) {
+        // Into the expression, then loop its middle part while the mood lasts.
+        const from = animation.length * 0.3;
+        const to = animation.length * 0.7;
+        if (frame > to) frame = from + ((frame - from) % Math.max(to - from, 1));
+      } else if (frame >= animation.length) {
+        clip.fadingOut = true;
+        frame = animation.length;
+      }
+      if (clip.fadingOut) {
+        clip.weight -= dt / FADE_OUT;
+      } else {
+        clip.weight = Math.min(1, clip.weight + dt / FADE_IN);
+        // A gesture blends back out over its last frames.
+        if (!clip.hold) clip.weight = Math.min(clip.weight, ((animation.length - frame) * animation.timestep) / FADE_OUT);
+      }
+      applyAnimation(animation, frame, clip.weight, values, keep);
+    }
+    this.clips = this.clips.filter((c) => c.weight > 0 || !c.fadingOut);
 
     this.puppet.resetParams();
     for (const [param, value] of values) this.puppet.setParam(param.name, value[0], value[1]);

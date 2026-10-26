@@ -463,6 +463,8 @@ pub fn run() {
             commands::avatar::get_inochi2d_catalog,
             commands::avatar::download_inochi2d_model,
             commands::avatar::import_inochi2d_model,
+            commands::avatar::get_inochi2d_mapping,
+            commands::avatar::set_inochi2d_mapping,
             commands::avatar::scan_avatar_motions,
             commands::avatar::list_model_clips,
             commands::avatar::set_model_clip_role,

@@ -107,40 +107,79 @@ function compile(gl: WebGL2RenderingContext, vert: string, frag: string, names: 
 /** A decoded texture, ready for upload. */
 type TextureSource = RawImage | ImageBitmap;
 
+/** Decodes one texture on this thread (fallback, and PNG variants only the browser reads). */
+async function decodeHere(tex: InpFile['textures'][number]): Promise<TextureSource | null> {
+  if (tex.encoding === 'tga') return decodeTga(tex.data);
+  if (tex.encoding !== 'png') return null;
+  // Own decoder keeps the stored (premultiplied) bytes in every engine; the browser decoder only
+  // for PNG variants it does not cover (interlaced).
+  return decodePng(tex.data).catch(() =>
+    createImageBitmap(new Blob([tex.data as BlobPart], { type: 'image/png' }), {
+      premultiplyAlpha: 'none',
+      colorSpaceConversion: 'none',
+    }),
+  );
+}
+
+/** A worker for the textures, or null where there is none (tests, a refused worker). */
+function startWorker(): Worker | null {
+  try {
+    return typeof Worker === 'undefined' ? null : new Worker(new URL('./textureWorker.ts', import.meta.url), { type: 'module' });
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Decodes the puppet's textures (TGA here, PNG by the browser), yielding between them. The pixels
- * are kept as stored: Inochi2D textures already carry premultiplied alpha.
+ * Decodes the puppet's textures (TGA and PNG in a worker, so the interface stays responsive).
+ * The pixels are kept as stored: Inochi2D textures already carry premultiplied alpha. BC7 (a GPU
+ * format WebGL cannot take without an extension) and unreadable textures stay empty (null).
  */
 export async function decodeTextures(file: InpFile, signal?: AbortSignal): Promise<(TextureSource | null)[]> {
-  const out: (TextureSource | null)[] = [];
-  for (const tex of file.textures) {
-    if (signal?.aborted) throw new DOMException('aborted', 'AbortError');
-    try {
-      if (tex.encoding === 'tga') {
-        out.push(decodeTga(tex.data));
-      } else if (tex.encoding === 'png') {
-        // Own decoder keeps the stored (premultiplied) bytes in every engine; the browser decoder
-        // only for PNG variants it does not cover (interlaced).
-        out.push(
-          await decodePng(tex.data).catch(() =>
-            createImageBitmap(new Blob([tex.data as BlobPart], { type: 'image/png' }), {
-              premultiplyAlpha: 'none',
-              colorSpaceConversion: 'none',
-            }),
-          ),
-        );
-      } else {
-        // BC7 is a GPU format WebGL cannot take without an extension; such parts stay empty.
-        out.push(null);
-      }
-    } catch (e) {
-      console.warn('Inochi2D: Textur nicht lesbar:', e);
-      out.push(null);
-    }
-    // Let the page breathe between large textures.
-    await new Promise((resolve) => setTimeout(resolve, 0));
+  const worker = startWorker();
+  const pending = new Map<number, (result: { image?: RawImage; error?: string }) => void>();
+  let broken = !worker;
+  if (worker) {
+    worker.onmessage = (e: MessageEvent<{ id: number; image?: RawImage; error?: string }>) => {
+      pending.get(e.data.id)?.(e.data);
+      pending.delete(e.data.id);
+    };
+    worker.onerror = () => {
+      // The worker could not run (e.g. blocked): everything left is decoded here.
+      broken = true;
+      for (const resolve of pending.values()) resolve({ error: 'worker' });
+      pending.clear();
+    };
   }
-  return out;
+  const inWorker = (id: number, tex: InpFile['textures'][number]) =>
+    new Promise<{ image?: RawImage; error?: string }>((resolve) => {
+      pending.set(id, resolve);
+      // A copy: the texture is a view into the whole file, which must stay usable here.
+      const data = tex.data.slice();
+      worker!.postMessage({ id, encoding: tex.encoding, data }, [data.buffer]);
+    });
+  try {
+    const jobs = file.textures.map(async (tex, id): Promise<TextureSource | null> => {
+      try {
+        if (tex.encoding === 'bc7') return null;
+        if (!broken) {
+          const result = await inWorker(id, tex);
+          if (result.image) return result.image;
+        }
+        if (signal?.aborted) return null;
+        return await decodeHere(tex);
+      } catch (e) {
+        console.warn('Inochi2D: Textur nicht lesbar:', e);
+        return null;
+      }
+    });
+    const abort = new Promise<never>((_, reject) =>
+      signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')), { once: true }),
+    );
+    return await Promise.race([Promise.all(jobs), abort]);
+  } finally {
+    worker?.terminate();
+  }
 }
 
 interface PartRange {

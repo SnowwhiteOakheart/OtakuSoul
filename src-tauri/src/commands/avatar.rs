@@ -57,6 +57,24 @@ pub async fn import_inochi2d_model(
     .map_err(|e| e.to_string())?
 }
 
+/// Hand-made channel and emotion settings of an Inochi2D puppet.
+#[tauri::command]
+pub fn get_inochi2d_mapping(model_path: String) -> crate::modules::inochi2d::Inochi2dMapping {
+    let data_dir = std::path::PathBuf::from(crate::modules::paths::resolve_app_paths().data_dir);
+    let key = crate::modules::inochi2d::puppet_key(std::path::Path::new(&model_path));
+    crate::modules::inochi2d::mapping_for(&data_dir, &key)
+}
+
+#[tauri::command]
+pub fn set_inochi2d_mapping(
+    model_path: String,
+    mapping: crate::modules::inochi2d::Inochi2dMapping,
+) -> Result<(), String> {
+    let data_dir = std::path::PathBuf::from(crate::modules::paths::resolve_app_paths().data_dir);
+    let key = crate::modules::inochi2d::puppet_key(std::path::Path::new(&model_path));
+    crate::modules::inochi2d::set_mapping(&data_dir, &key, mapping)
+}
+
 #[tauri::command]
 pub fn scan_avatar_motions() -> Vec<crate::modules::avatar_motions::AvatarMotion> {
     crate::modules::avatar_motions::scan_avatar_motions()
