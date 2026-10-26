@@ -4,7 +4,13 @@ import { bounds, stepBody, usablePlatforms, WALK_SPEED, type Body, type Platform
 const area = { x: 0, y: 0, width: 1920, height: 1040 };
 const size = { width: 300, height: 440 };
 const floor = 1040 - 440;
-const at = (x: number, y: number, support: string | null = null): Body => ({ x, y, vy: 0, support });
+const at = (x: number, y: number, support: string | null = null, edge: Body['edge'] = null): Body => ({
+  x,
+  y,
+  vy: 0,
+  support,
+  edge,
+});
 
 /** Steps at 30 fps until it lands (or gives up). */
 function fall(body: Body, platforms: Platform[] = []) {
@@ -20,7 +26,7 @@ describe('petPhysics on the floor', () => {
   it('falls from the air and lands on the floor of the work area', () => {
     const { body, landed } = fall(at(500, 100));
     expect(landed).toBe(true);
-    expect(body).toEqual(at(500, floor));
+    expect(body).toMatchObject({ x: 500, y: floor, vy: 0, support: null });
   });
 
   it('stands still on the floor and snaps up when below it', () => {
@@ -82,6 +88,25 @@ describe('petPhysics on other windows', () => {
     expect(moved).toMatchObject({ grounded: false, body: { support: null } });
     const closed = stepBody(at(700, 260, 'editor'), size, area, 1 / 30, 0, 1, []);
     expect(closed.body.support).toBeNull();
+  });
+
+  it('rides along with a moved window when riding is on', () => {
+    const standing = at(700, 260, 'editor', { left: 400, right: 1400, y: 700 });
+    // The window went 50 px right and 80 px down.
+    const moved: Platform = { id: 'editor', left: 450, right: 1450, y: 780 };
+    const step = stepBody(standing, size, area, 1 / 30, 0, 1, [moved], true);
+    expect(step).toMatchObject({ grounded: true, landed: false, body: { x: 750, y: 780 - 440, support: 'editor' } });
+    expect(step.body.edge).toEqual({ left: 450, right: 1450, y: 780 });
+    // Without riding it falls.
+    expect(stepBody(standing, size, area, 1 / 30, 0, 1, [moved]).body.support).toBeNull();
+  });
+
+  it('falls off a ridden window that closes or is covered under the feet', () => {
+    const standing = at(700, 260, 'editor', { left: 400, right: 1400, y: 700 });
+    expect(stepBody(standing, size, area, 1 / 30, 0, 1, [], true).body.support).toBeNull();
+    // Now only the left part is visible (width changed: no shift), the feet are not on it.
+    const covered: Platform = { id: 'editor', left: 400, right: 600, y: 760 };
+    expect(stepBody(standing, size, area, 1 / 30, 0, 1, [covered], true).body.support).toBeNull();
   });
 
   it('ignores window edges with no room for the figure above', () => {

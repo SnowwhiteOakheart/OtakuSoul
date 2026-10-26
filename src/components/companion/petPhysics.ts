@@ -3,7 +3,8 @@
  * the floor is the bottom of the monitor's work area (above the taskbar / dock), its sides are
  * walls. Top edges of other windows (`desktop_windows.rs`) are platforms: a falling pet lands on
  * the first one under its feet, walks along it and turns at its ends; when the window moves,
- * closes or gets covered there, the pet falls. Speeds are logical pixels, scaled to the monitor.
+ * closes or gets covered there, the pet falls – or, with `ride`, moves along with the window.
+ * Speeds are logical pixels, scaled to the monitor.
  */
 export interface Rect {
   x: number;
@@ -27,6 +28,8 @@ export interface Body {
   vy: number;
   /** The window it stands on; null = the floor or in the air. */
   support: string | null;
+  /** That window's edge as last seen, to follow it when it moves (riding). */
+  edge: { left: number; right: number; y: number } | null;
 }
 
 export interface StepResult {
@@ -59,6 +62,11 @@ const SUPPORT_TOLERANCE = 2;
  * on it: nobody drops the figure exactly onto the edge.
  */
 export const LANDING_GRACE = 28;
+/**
+ * A stretch of the same window counts as the moved edge when its width changed by at most this
+ * (physical px); otherwise part of it got covered and the horizontal shift is unknown.
+ */
+const SAME_WIDTH = 4;
 
 /** The floor (window top when the feet are on it) and the side limits for a window of `size`. */
 export function bounds(size: Size, area: Rect) {
@@ -86,7 +94,30 @@ export function usablePlatforms(platforms: Platform[], size: Size, area: Rect): 
   );
 }
 
-/** Advances the body by `dt` seconds; `walk` is the walking direction (0 = stand). */
+/**
+ * The window under the feet moved: the same window's edge with the figure shifted along, or
+ * undefined when the feet would not be on it any more (closed, covered there, moved away).
+ */
+function movedEdge(
+  usable: Platform[],
+  support: string,
+  edge: NonNullable<Body['edge']>,
+  feetX: number,
+): { platform: Platform; dx: number } | undefined {
+  const width = edge.right - edge.left;
+  return usable
+    .filter((p) => p.id === support)
+    .map((platform) => ({
+      platform,
+      dx: Math.abs(platform.right - platform.left - width) <= SAME_WIDTH ? platform.left - edge.left : 0,
+    }))
+    .find(({ platform, dx }) => feetX + dx >= platform.left && feetX + dx <= platform.right);
+}
+
+/**
+ * Advances the body by `dt` seconds; `walk` is the walking direction (0 = stand). With `ride`
+ * the figure moves along with the window it stands on instead of falling off it.
+ */
 export function stepBody(
   body: Body,
   size: Size,
@@ -95,10 +126,12 @@ export function stepBody(
   walk: -1 | 0 | 1,
   scale: number,
   platforms: Platform[] = [],
+  ride = false,
 ): StepResult {
   const { floor, minX, maxX } = bounds(size, area);
   const usable = usablePlatforms(platforms, size, area);
   let { x, y, vy, support } = body;
+  const { edge } = body;
   const feetX = () => x + size.width / 2;
   const feetY = y + size.height;
   let landed = false;
@@ -109,6 +142,13 @@ export function stepBody(
     standing = usable.find(
       (p) => p.id === support && Math.abs(p.y - feetY) <= SUPPORT_TOLERANCE && feetX() >= p.left && feetX() <= p.right,
     );
+    if (!standing && ride && edge) {
+      const moved = movedEdge(usable, support, edge, feetX());
+      if (moved) {
+        x += moved.dx;
+        standing = moved.platform;
+      }
+    }
     if (!standing) support = null;
   }
 
@@ -156,5 +196,6 @@ export function stepBody(
     x = right;
     wall = 1;
   }
-  return { body: { x, y, vy, support }, grounded, landed, wall };
+  const nextEdge = standing ? { left: standing.left, right: standing.right, y: standing.y } : null;
+  return { body: { x, y, vy, support, edge: nextEdge }, grounded, landed, wall };
 }

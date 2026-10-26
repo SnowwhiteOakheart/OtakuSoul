@@ -931,7 +931,8 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `cargo test scan_prints_the_desktop -- --ignored --nocapture` zeigt, was der Scan auf dem Rechner sieht). Unsichtbare
   Vollbild-Overlays mit `WS_EX_TRANSPARENT`/`WS_EX_NOACTIVATE` würden sonst alle Titelleisten „verdecken“. Plattformen
   sind physische Pixel wie die Pet-Physik. Jede Änderung unter `src-tauri/` startet die App in `tauri dev` neu – ein
-  Scan-Test läuft dann evtl. ohne OtakuSoul-Fenster.
+  Scan-Test läuft dann evtl. ohne OtakuSoul-Fenster. Mitfahren (`rideWindows`) folgt der Kante nur, solange deren
+  sichtbare Breite gleich bleibt – sonst ist der seitliche Versatz unbekannt und nur die Höhe wird übernommen.
 
 ## Stand
 

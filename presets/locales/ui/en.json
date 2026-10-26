@@ -3875,5 +3875,6 @@
   "pet.wake": "Oh! There you are again.",
   "pet.idleActions": "Moves on its own",
   "pet.chatBubbles": "Chat replies as speech bubble",
-  "pet.physics": "Gravity and walking"
+  "pet.physics": "Gravity and walking",
+  "pet.rideWindows": "Ride along on windows"
 }

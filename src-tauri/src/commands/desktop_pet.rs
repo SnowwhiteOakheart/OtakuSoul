@@ -106,9 +106,10 @@ fn spawn_cursor_watch(app: AppHandle) {
     });
 }
 
-/// Window edges are read this often: a moved window shows up within a quarter second.
+/// Window edges are read this often: often enough that a pet riding on a dragged window keeps
+/// up smoothly (a scan takes about a millisecond, and only changes are sent).
 #[cfg(windows)]
-const PLATFORM_INTERVAL: std::time::Duration = std::time::Duration::from_millis(250);
+const PLATFORM_INTERVAL: std::time::Duration = std::time::Duration::from_millis(100);
 
 /// Sends the top edges of the other windows (`pet:platforms`) whenever they change.
 #[cfg(windows)]

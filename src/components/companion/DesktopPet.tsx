@@ -144,7 +144,7 @@ export const DesktopPet: React.FC = () => {
     const monitor =
       (await within(monitorFromPoint(position.x + size.width / 2, position.y + size.height - 1)).catch(() => null)) ??
       (await within(currentMonitor()).catch(() => null));
-    body.current = { x: position.x, y: position.y, vy: 0, support: null };
+    body.current = { x: position.x, y: position.y, vy: 0, support: null, edge: null };
     windowSize.current = { width: size.width, height: size.height };
     monitorScale.current = factor;
     if (monitor) {
@@ -179,6 +179,7 @@ export const DesktopPet: React.FC = () => {
         walkDirection.current,
         monitorScale.current,
         platforms.current,
+        prefsRef.current.rideWindows,
       );
       behavior.setGrounded(result.grounded, now);
       if (result.wall) behavior.bumped(result.wall);
@@ -202,6 +203,7 @@ export const DesktopPet: React.FC = () => {
             if (kept && body.current) {
               body.current.vy = kept.vy;
               body.current.support = kept.support;
+              body.current.edge = kept.edge;
             }
           })
       }
@@ -425,6 +427,12 @@ export const DesktopPet: React.FC = () => {
           text: t('pet.physics'),
           checked: prefs.physics,
           action: () => setPrefs((p) => ({ ...p, physics: !p.physics })),
+        },
+        {
+          text: t('pet.rideWindows'),
+          checked: prefs.rideWindows,
+          enabled: prefs.physics,
+          action: () => setPrefs((p) => ({ ...p, rideWindows: !p.rideWindows })),
         },
         { item: 'Separator' },
         { text: t('pet.lookAtScreen'), action: () => void askTool('take_screenshot') },

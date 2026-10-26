@@ -104,10 +104,12 @@ export interface PetPrefs {
   chatBubbles: boolean;
   /** Gravity, screen edges and walking along the floor. */
   physics: boolean;
+  /** On a window that gets moved, move along instead of falling off (off by default). */
+  rideWindows: boolean;
 }
 
 const PREFS_KEY = 'otakusoul.desktopPetPrefs';
-const DEFAULT_PREFS: PetPrefs = { idleActions: true, chatBubbles: true, physics: true };
+const DEFAULT_PREFS: PetPrefs = { idleActions: true, chatBubbles: true, physics: true, rideWindows: false };
 
 export function loadPetPrefs(): PetPrefs {
   try {
@@ -116,6 +118,7 @@ export function loadPetPrefs(): PetPrefs {
       idleActions: typeof stored?.idleActions === 'boolean' ? stored.idleActions : DEFAULT_PREFS.idleActions,
       chatBubbles: typeof stored?.chatBubbles === 'boolean' ? stored.chatBubbles : DEFAULT_PREFS.chatBubbles,
       physics: typeof stored?.physics === 'boolean' ? stored.physics : DEFAULT_PREFS.physics,
+      rideWindows: typeof stored?.rideWindows === 'boolean' ? stored.rideWindows : DEFAULT_PREFS.rideWindows,
     };
   } catch {
     return { ...DEFAULT_PREFS };

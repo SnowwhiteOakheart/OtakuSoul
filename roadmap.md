@@ -69,8 +69,6 @@
 - [ ] **Werfen:** Schwung beim Loslassen mitnehmen (seitliche Geschwindigkeit aus den letzten `onMoved`-Ereignissen).
 
 ### Phase 4: Interaktion mit fremden Fenstern (Windows erledigt, siehe `roadmap_abgeschlossen.md`)
-- [ ] **Mitfahren statt Fallen:** Steht die Figur auf einem Fenster, das verschoben wird, könnte sie mitfahren
-  (Versatz der Plattform übernehmen) statt herunterzufallen – als Option, beides hat seinen Reiz.
 - [ ] **macOS-Integration (CoreGraphics / Quartz Window Services):**
   - Window Scanner via `CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements, kCGNullWindowID)`.
   - Auslesen der `kCGWindowBounds`-Rechtecke.
