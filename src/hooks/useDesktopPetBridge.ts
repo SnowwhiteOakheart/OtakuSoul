@@ -28,6 +28,11 @@ import { bubbleText } from '../components/companion/petBehavior';
 import { translate } from '../i18n';
 import { errorMessage } from '../utils/errors';
 
+/** A reply counts as new this long after a generation ended (also a regenerated one). */
+const AFTER_GENERATION_MS = 10_000;
+/** …or while it is at most this old (replies written on their own, without a generation here). */
+const FRESH_REPLY_S = 120;
+
 /** Voice frames to the pet at most this often (mouth shapes are smoothed there). */
 const AUDIO_FRAME_MS = 33;
 
@@ -81,6 +86,7 @@ export function useDesktopPetBridge(enabled = true) {
     // Replies already there when a chat opens are not announced; new and regenerated ones are.
     let replyChat = useAppStore.getState().activeChatId;
     let seenReply = lastReplyKey(useAppStore.getState());
+    let generationEndedAt = 0;
     const announceReply = (s: StoreState) => {
       if (s.activeChatId !== replyChat) {
         replyChat = s.activeChatId;
@@ -92,11 +98,16 @@ export function useDesktopPetBridge(enabled = true) {
       if (!key || key === seenReply) return;
       seenReply = key;
       const last = s.storedMessages[s.storedMessages.length - 1]!;
+      // A chat's history arrives after the chat switch: its last reply is old, not new.
+      const fresh =
+        Date.now() - generationEndedAt < AFTER_GENERATION_MS || Date.now() / 1000 - last.created_at < FRESH_REPLY_S;
+      if (!fresh) return;
       const text = bubbleText(last.content);
       if (open && text) void emitTo(PET_LABEL, PET_SAY_EVENT, { text } satisfies PetSay).catch(() => {});
     };
 
     const unsubscribeStore = useAppStore.subscribe((s, prev) => {
+      if (prev.isGenerating && !s.isGenerating) generationEndedAt = Date.now();
       if (s.storedMessages !== prev.storedMessages || s.isGenerating !== prev.isGenerating || s.activeChatId !== prev.activeChatId) {
         announceReply(s);
       }

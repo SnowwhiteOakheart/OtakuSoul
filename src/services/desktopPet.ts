@@ -83,6 +83,12 @@ export interface PetCursor {
   x: number;
   y: number;
   inside: boolean;
+  /** Left mouse button held (Windows; null elsewhere): its release ends a drag at once. */
+  button: boolean | null;
+  /** Global pointer position (physical px) and the backend's time of reading it (ms). */
+  gx: number;
+  gy: number;
+  t: number;
 }
 
 export type PetSize = 'small' | 'medium' | 'large';

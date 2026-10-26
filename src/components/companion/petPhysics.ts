@@ -26,6 +26,8 @@ export interface Body {
   y: number;
   /** Falling speed, physical px/s (down positive). */
   vy: number;
+  /** Sideways speed in the air (a throw), physical px/s; gone once it lands. */
+  vx?: number;
   /** The window it stands on; null = the floor or in the air. */
   support: string | null;
   /** That window's edge as last seen, to follow it when it moves (riding). */
@@ -50,6 +52,24 @@ export const GRAVITY = 2600;
 export const WALK_SPEED = 55;
 /** Fastest fall, logical px/s. */
 const MAX_FALL = 2400;
+/** Fastest throw, logical px/s (a flick of the mouse should not shoot it off the screen). */
+export const MAX_THROW = 2600;
+/** Share of sideways speed lost per second in the air. */
+const AIR_DRAG = 0.6;
+/** Share of sideways speed kept when bouncing off a wall. */
+const WALL_BOUNCE = 0.45;
+
+/** Speed of a throw from the window's last moves (physical px and ms), clamped to MAX_THROW. */
+export function throwVelocity(samples: { t: number; x: number; y: number }[], scale: number) {
+  if (samples.length < 2) return { vx: 0, vy: 0 };
+  const first = samples[0]!;
+  const last = samples[samples.length - 1]!;
+  const seconds = (last.t - first.t) / 1000;
+  if (seconds <= 0) return { vx: 0, vy: 0 };
+  const limit = MAX_THROW * scale;
+  const clampSpeed = (v: number) => Math.max(-limit, Math.min(limit, v));
+  return { vx: clampSpeed((last.x - first.x) / seconds), vy: clampSpeed((last.y - first.y) / seconds) };
+}
 /**
  * Share of the window that may stand outside the work area at the sides: the figure is
  * narrower than its window and should reach the screen edge.
@@ -131,6 +151,7 @@ export function stepBody(
   const { floor, minX, maxX } = bounds(size, area);
   const usable = usablePlatforms(platforms, size, area);
   let { x, y, vy, support } = body;
+  let vx = body.vx ?? 0;
   const { edge } = body;
   const feetX = () => x + size.width / 2;
   const feetY = y + size.height;
@@ -155,8 +176,11 @@ export function stepBody(
   if (standing) {
     y = standing.y - size.height;
     vy = 0;
-  } else if (y < floor - 0.5) {
+  } else if (y < floor - 0.5 || vy < 0) {
     vy = Math.min(vy + GRAVITY * scale * dt, MAX_FALL * scale);
+    // A throw carries on sideways, slowed by the air.
+    x += vx * dt;
+    vx *= Math.max(0, 1 - AIR_DRAG * dt);
     const nextFeet = feetY + vy * dt;
     // The highest platform passed in this step under the feet (or just above them, see LANDING_GRACE).
     const grace = LANDING_GRACE * scale;
@@ -168,12 +192,14 @@ export function stepBody(
       support = hit.id;
       standing = hit;
       vy = 0;
+      vx = 0;
       landed = true;
     } else {
       y += vy * dt;
       if (y >= floor) {
         y = floor;
         vy = 0;
+        vx = 0;
         landed = true;
       }
     }
@@ -181,6 +207,7 @@ export function stepBody(
     // On the floor, or below it (taskbar moved, other monitor): stand on it.
     y = floor;
     vy = 0;
+    vx = 0;
   }
   const grounded = !!standing || y >= floor - 0.5;
 
@@ -192,10 +219,12 @@ export function stepBody(
   if (x < left) {
     x = left;
     wall = -1;
+    vx = Math.abs(vx) * WALL_BOUNCE;
   } else if (x > right) {
     x = right;
     wall = 1;
+    vx = -Math.abs(vx) * WALL_BOUNCE;
   }
   const nextEdge = standing ? { left: standing.left, right: standing.right, y: standing.y } : null;
-  return { body: { x, y, vy, support, edge: nextEdge }, grounded, landed, wall };
+  return { body: { x, y, vy, vx, support, edge: nextEdge }, grounded, landed, wall };
 }

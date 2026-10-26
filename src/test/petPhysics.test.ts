@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { bounds, stepBody, usablePlatforms, WALK_SPEED, type Body, type Platform } from '../components/companion/petPhysics';
+import {
+  bounds,
+  MAX_THROW,
+  stepBody,
+  throwVelocity,
+  usablePlatforms,
+  WALK_SPEED,
+  type Body,
+  type Platform,
+} from '../components/companion/petPhysics';
 
 const area = { x: 0, y: 0, width: 1920, height: 1040 };
 const size = { width: 300, height: 440 };
@@ -26,7 +35,7 @@ describe('petPhysics on the floor', () => {
   it('falls from the air and lands on the floor of the work area', () => {
     const { body, landed } = fall(at(500, 100));
     expect(landed).toBe(true);
-    expect(body).toMatchObject({ x: 500, y: floor, vy: 0, support: null });
+    expect(body).toMatchObject({ x: 500, y: floor, vy: 0, vx: 0, support: null });
   });
 
   it('stands still on the floor and snaps up when below it', () => {
@@ -51,6 +60,41 @@ describe('petPhysics on the floor', () => {
   it('uses the work area of a second monitor', () => {
     const second = { x: 1920, y: -200, width: 1280, height: 984 };
     expect(stepBody(at(2100, 900), size, second, 0.1, 0, 1).body.y).toBe(-200 + 984 - 440);
+  });
+});
+
+describe('petPhysics when thrown', () => {
+  it('takes the speed of the last moves, clamped', () => {
+    const samples = [
+      { t: 0, x: 100, y: 500 },
+      { t: 50, x: 150, y: 480 },
+      { t: 100, x: 200, y: 460 },
+    ];
+    expect(throwVelocity(samples, 1)).toEqual({ vx: 1000, vy: -400 });
+    expect(throwVelocity([{ t: 0, x: 0, y: 0 }, { t: 10, x: 1000, y: 0 }], 1).vx).toBe(MAX_THROW);
+    expect(throwVelocity([{ t: 0, x: 0, y: 0 }], 1)).toEqual({ vx: 0, vy: 0 });
+  });
+
+  it('flies sideways and up, then lands and stops', () => {
+    let body: Body = { ...at(500, floor), vx: 800, vy: -900 };
+    let maxHeight = floor;
+    let landedAt = -1;
+    for (let i = 0; i < 200 && landedAt < 0; i++) {
+      const step = stepBody(body, size, area, 1 / 30, 0, 1);
+      body = step.body;
+      maxHeight = Math.min(maxHeight, body.y);
+      if (step.landed) landedAt = i;
+    }
+    expect(maxHeight).toBeLessThan(floor - 50);
+    expect(body.x).toBeGreaterThan(600);
+    expect(body).toMatchObject({ y: floor, vx: 0, vy: 0 });
+  });
+
+  it('bounces off a wall in the air', () => {
+    const { maxX } = bounds(size, area);
+    const step = stepBody({ ...at(maxX - 5, 100), vx: 1000 }, size, area, 1 / 30, 0, 1);
+    expect(step.wall).toBe(1);
+    expect(step.body.vx).toBeLessThan(0);
   });
 });
 

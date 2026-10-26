@@ -32,6 +32,13 @@ struct PetCursor {
     x: f64,
     y: f64,
     inside: bool,
+    /// Left mouse button held (Windows); the pet ends a drag and throws on release.
+    button: Option<bool>,
+    /// Global pointer position (physical px) and when it was read (ms on this thread's
+    /// clock): the speed of a throw, measured here rather than from late window events.
+    gx: f64,
+    gy: f64,
+    t: f64,
 }
 
 fn notify_open(app: &AppHandle, open: bool) {
@@ -68,6 +75,7 @@ fn position_on_screen(app: &AppHandle, x: i32, y: i32) -> bool {
 fn spawn_cursor_watch(app: AppHandle) {
     std::thread::spawn(move || {
         let mut last: Option<PetCursor> = None;
+        let clock = std::time::Instant::now();
         loop {
             std::thread::sleep(CURSOR_INTERVAL);
             let Some(window) = app.get_webview_window(PET_LABEL) else {
@@ -92,11 +100,19 @@ fn spawn_cursor_watch(app: AppHandle) {
                 x,
                 y,
                 inside: x >= 0.0 && y >= 0.0 && x < w && y < h,
+                button: crate::modules::desktop_windows::primary_button_down(),
+                gx: cursor.x,
+                gy: cursor.y,
+                t: clock.elapsed().as_secs_f64() * 1000.0,
             };
             let moved = last.is_none_or(|prev| {
                 (prev.x - next.x).abs() > 0.5
                     || (prev.y - next.y).abs() > 0.5
                     || prev.inside != next.inside
+                    || prev.button != next.button
+                    // While the window is dragged the pointer keeps its place in it.
+                    || (prev.gx - next.gx).abs() > 0.5
+                    || (prev.gy - next.gy).abs() > 0.5
             });
             if moved {
                 let _ = window.emit_to(PET_LABEL, "pet:cursor", next);

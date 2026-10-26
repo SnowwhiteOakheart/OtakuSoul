@@ -94,6 +94,20 @@ pub fn screen_state(_exclude: isize) -> ScreenState {
     ScreenState::default()
 }
 
+/// Whether the left mouse button is held (the pet sees the end of a system drag at once);
+/// `None` where that cannot be read.
+#[cfg(windows)]
+pub fn primary_button_down() -> Option<bool> {
+    use windows::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, VK_LBUTTON};
+    // SAFETY: plain query; the high bit means the button is down now.
+    Some(unsafe { GetAsyncKeyState(i32::from(VK_LBUTTON.0)) } < 0)
+}
+
+#[cfg(not(windows))]
+pub fn primary_button_down() -> Option<bool> {
+    None
+}
+
 /// The platforms of all visible windows except `exclude` (the pet's own window handle).
 #[cfg(windows)]
 pub fn scan(exclude: isize) -> Vec<Platform> {

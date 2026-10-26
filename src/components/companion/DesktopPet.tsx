@@ -12,7 +12,7 @@ import { api } from '../../services/api';
 import { audioPlayer } from '../../services/audioPlayer';
 import { SILENT_VISEMES } from '../../services/lipSync';
 import { bubbleMs, HEAD_ZONE_END, PetBehavior, type Gaze, type PetMode, type TouchZone } from './petBehavior';
-import { stepBody, type Body, type Platform, type Rect } from './petPhysics';
+import { stepBody, throwVelocity, type Body, type Platform, type Rect } from './petPhysics';
 import type { GestureRequest } from '../../utils/avatarGestures';
 import {
   loadPetPlacement,
@@ -56,6 +56,13 @@ const STATUS_POLL_MS = 5000;
 const BEHAVIOR_TICK_MS = 100;
 /** No window move for this long: the system drag has ended (or the figure hangs still and calms down). */
 const DRAG_SETTLE_MS = 1200;
+/**
+ * The pointer's moves in this span before its last move give a throw its speed (times from the
+ * backend's pointer poll, so late events do not distort it).
+ */
+const THROW_WINDOW_MS = 150;
+/** Released longer than this after the last move: it was held still, no throw. */
+const THROW_STILL_MS = 250;
 /** A bubble still showing when the voice ends stays this much longer. */
 const BUBBLE_AFTER_VOICE_MS = 2500;
 /** Physics steps (window moves) per second while falling or walking. */
@@ -117,7 +124,13 @@ export const DesktopPet: React.FC = () => {
   /** Where the pointer would have the figure look; the behaviour may look elsewhere. */
   const pointerGaze = useRef<Gaze>({ x: 0, y: 0 });
   const gazeOverride = useRef<Gaze | null>(null);
-  const drag = useRef<{ startedAt: number; movedAt: number; ending?: boolean } | null>(null);
+  const drag = useRef<{
+    startedAt: number;
+    movedAt: number;
+    ending?: boolean;
+    /** Recent pointer positions (physical px, backend ms), for the speed of a throw. */
+    samples: { t: number; x: number; y: number }[];
+  } | null>(null);
   const speakingRef = useRef(false);
   const mouthOpen = useRef(false);
   const prefsRef = useRef(prefs);
@@ -151,6 +164,44 @@ export const DesktopPet: React.FC = () => {
     localGestureId.current -= 1;
     setGesture({ role, id: localGestureId.current });
   }, []);
+
+  /**
+   * The drag is over: the physics takes over where the figure was let go. With `fling`, the
+   * speed of the last moves goes along (a throw), if the mouse was still moving at release.
+   */
+  const finishDrag = useCallback(
+    (fling: boolean) => {
+      const dragging = drag.current;
+      if (!dragging || dragging.ending) return;
+      dragging.ending = true;
+      // The last sample is the release; the last move is where the position last changed.
+      const samples = dragging.samples;
+      const release = samples[samples.length - 1];
+      let moved = samples.length - 1;
+      while (moved > 0 && samples[moved]!.x === samples[moved - 1]!.x && samples[moved]!.y === samples[moved - 1]!.y) {
+        moved -= 1;
+      }
+      const lastMove = samples[moved];
+      const recent =
+        release && lastMove && release.t - lastMove.t <= THROW_STILL_MS
+          ? samples.slice(0, moved + 1).filter((s) => lastMove.t - s.t <= THROW_WINDOW_MS)
+          : [];
+      const speed = fling ? throwVelocity(recent, monitorScale.current) : { vx: 0, vy: 0 };
+      void syncWindow()
+        .catch(() => {})
+        .finally(() => {
+          if (body.current) {
+            body.current.vx = speed.vx;
+            body.current.vy = speed.vy;
+          }
+          drag.current = null;
+          behavior.dragEnd(performance.now());
+        });
+    },
+    // `syncWindow` is declared below; it only reads refs.
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+    [behavior],
+  );
 
   /** Reads where the window stands and the work area of the monitor under its feet. */
   const syncWindow = useCallback(async () => {
@@ -247,14 +298,8 @@ export const DesktopPet: React.FC = () => {
         drag.current = null;
         behavior.dragEnd(now);
       } else if (dragging && !dragging.ending && stillFor > DRAG_SETTLE_MS) {
-        // Where it was let go, the physics takes over (and lets it fall).
-        dragging.ending = true;
-        void syncWindow()
-          .catch(() => {})
-          .finally(() => {
-            drag.current = null;
-            behavior.dragEnd(performance.now());
-          });
+        // Without a button state (outside Windows) the drag ends when the window rests.
+        finishDrag(false);
       }
       if (awayRef.current) return;
       const { frame, cues } = behavior.tick(now);
@@ -282,7 +327,7 @@ export const DesktopPet: React.FC = () => {
       }
     }, BEHAVIOR_TICK_MS);
     return () => window.clearInterval(timer);
-  }, [behavior, say, playLocalGesture, syncWindow]);
+  }, [behavior, say, playLocalGesture, syncWindow, finishDrag]);
 
   // State, voice and pointer from the main window and the backend.
   useEffect(() => {
@@ -337,7 +382,14 @@ export const DesktopPet: React.FC = () => {
       listen<PetScreen>(PET_SCREEN_EVENT, ({ payload }) => {
         setScreen(payload);
       }),
-      listen<PetCursor>(PET_CURSOR_EVENT, ({ payload: { x, y, inside } }) => {
+      listen<PetCursor>(PET_CURSOR_EVENT, ({ payload: { x, y, inside, button, gx, gy, t } }) => {
+        const dragging = drag.current;
+        if (dragging && !dragging.ending) {
+          dragging.samples.push({ t, x: gx, y: gy });
+          if (dragging.samples.length > 30) dragging.samples.shift();
+          // Released: the drag ends now, and a release in motion throws the figure.
+          if (button === false) finishDrag(true);
+        }
         const stage = stageRef.current;
         const { innerWidth: w, innerHeight: h } = window;
         behavior.pointer(performance.now());
@@ -384,7 +436,7 @@ export const DesktopPet: React.FC = () => {
       if (bubbleTimer.current !== null) window.clearTimeout(bubbleTimer.current);
       if (sentenceTimer.current !== null) window.clearTimeout(sentenceTimer.current);
     };
-  }, [setIgnore, behavior, say]);
+  }, [setIgnore, behavior, say, finishDrag]);
 
   // While a reply is written in the main window, the bubble shows typing dots; the reply replaces them.
   const thinking = !!pet?.thinking;
@@ -516,7 +568,7 @@ export const DesktopPet: React.FC = () => {
     if (Math.hypot(e.screenX - press.x, e.screenY - press.y) < DRAG_THRESHOLD) return;
     press.dragging = true;
     const now = performance.now();
-    drag.current = { startedAt: now, movedAt: now };
+    drag.current = { startedAt: now, movedAt: now, samples: [] };
     behavior.dragStart(now);
     // The system moves the window from here and keeps the button release (on Windows the
     // call returns at once; the drag ends when the moves stop).
