@@ -71,6 +71,29 @@ pub fn visible_edges(windows: &[(String, WinRect)]) -> Vec<Platform> {
     platforms
 }
 
+/// What the desktop is doing that the pet should step back for.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScreenState {
+    /// The window in front fills its whole monitor (game, video, presentation).
+    pub fullscreen: bool,
+    /// The session is locked (lock screen, user switch, UAC prompt).
+    pub locked: bool,
+}
+
+#[cfg(windows)]
+pub fn screen_state(exclude: isize) -> ScreenState {
+    ScreenState {
+        fullscreen: win::foreground_fullscreen(exclude),
+        locked: win::session_locked(),
+    }
+}
+
+#[cfg(not(windows))]
+pub fn screen_state(_exclude: isize) -> ScreenState {
+    ScreenState::default()
+}
+
 /// The platforms of all visible windows except `exclude` (the pet's own window handle).
 #[cfg(windows)]
 pub fn scan(exclude: isize) -> Vec<Platform> {
@@ -186,6 +209,58 @@ mod win {
             scan.windows.push((format!("{:x}", hwnd.0 as usize), rect));
         }
         true.into()
+    }
+
+    /// The foreground window covers its whole monitor (taskbar included); a maximised window
+    /// leaves the taskbar free and does not count. The desktop itself never counts.
+    pub fn foreground_fullscreen(exclude: isize) -> bool {
+        use windows::Win32::Graphics::Gdi::{
+            GetMonitorInfoW, MONITOR_DEFAULTTONEAREST, MONITORINFO, MonitorFromWindow,
+        };
+        use windows::Win32::UI::WindowsAndMessaging::GetForegroundWindow;
+        // SAFETY: plain query without arguments.
+        let hwnd = unsafe { GetForegroundWindow() };
+        if hwnd.is_invalid()
+            || hwnd.0 as isize == exclude
+            || SHELL_CLASSES.contains(&class_name(hwnd).as_str())
+        {
+            return false;
+        }
+        let Some(rect) = frame(hwnd) else {
+            return false;
+        };
+        let mut info = MONITORINFO {
+            cbSize: std::mem::size_of::<MONITORINFO>() as u32,
+            ..Default::default()
+        };
+        // SAFETY: `info` is a MONITORINFO with its size set, as the call requires.
+        let found = unsafe {
+            let monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+            GetMonitorInfoW(monitor, &mut info).as_bool()
+        };
+        let screen = info.rcMonitor;
+        found
+            && rect.left <= screen.left
+            && rect.top <= screen.top
+            && rect.right >= screen.right
+            && rect.bottom >= screen.bottom
+    }
+
+    /// The input desktop cannot be opened while the session is locked (secure desktop).
+    pub fn session_locked() -> bool {
+        use windows::Win32::System::StationsAndDesktops::{
+            CloseDesktop, DESKTOP_CONTROL_FLAGS, DESKTOP_SWITCHDESKTOP, OpenInputDesktop,
+        };
+        // SAFETY: the handle is closed right away; nothing else uses it.
+        unsafe {
+            match OpenInputDesktop(DESKTOP_CONTROL_FLAGS(0), false, DESKTOP_SWITCHDESKTOP) {
+                Ok(desktop) => {
+                    let _ = CloseDesktop(desktop);
+                    false
+                }
+                Err(_) => true,
+            }
+        }
     }
 
     /// Visible, normal top-level windows, top to bottom.

@@ -75,7 +75,6 @@
   - Berechtigungsprüfung („Bedienungshilfen“ / „Screen Recording“).
 - [ ] **Mini-Interaktionen & Feinschliff:**
   - Quick-Chat / Mini-Input bei Klick oder Tastenkürzel.
-  - Adaptive Framerate zur GPU-Schonung (15–30 FPS im Leerlauf, Pause bei Bildschirmsperre/Vollbild).
   - Multi-Monitor-Übergang beim Laufen oder Ziehen.
 
 ## 4. Kognitives Gedächtnis (Memory 2.0 – Ausblick & Folgepunkte)

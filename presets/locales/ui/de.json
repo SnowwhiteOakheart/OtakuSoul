@@ -3876,5 +3876,6 @@
   "pet.idleActions": "Eigene Bewegungen",
   "pet.chatBubbles": "Chat-Antworten als Sprechblase",
   "pet.physics": "Schwerkraft und Laufen",
-  "pet.rideWindows": "Auf Fenstern mitfahren"
+  "pet.rideWindows": "Auf Fenstern mitfahren",
+  "pet.hideInFullscreen": "Bei Vollbild ausblenden"
 }

@@ -3876,5 +3876,6 @@
   "pet.idleActions": "Двигается сам",
   "pet.chatBubbles": "Ответы чата в облачке",
   "pet.physics": "Гравитация и ходьба",
-  "pet.rideWindows": "Ездить вместе с окнами"
+  "pet.rideWindows": "Ездить вместе с окнами",
+  "pet.hideInFullscreen": "Скрывать в полноэкранном режиме"
 }

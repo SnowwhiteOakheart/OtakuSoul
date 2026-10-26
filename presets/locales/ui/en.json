@@ -3876,5 +3876,6 @@
   "pet.idleActions": "Moves on its own",
   "pet.chatBubbles": "Chat replies as speech bubble",
   "pet.physics": "Gravity and walking",
-  "pet.rideWindows": "Ride along on windows"
+  "pet.rideWindows": "Ride along on windows",
+  "pet.hideInFullscreen": "Hide during fullscreen"
 }

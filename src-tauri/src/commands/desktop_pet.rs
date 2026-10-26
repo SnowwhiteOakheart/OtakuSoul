@@ -111,11 +111,13 @@ fn spawn_cursor_watch(app: AppHandle) {
 #[cfg(windows)]
 const PLATFORM_INTERVAL: std::time::Duration = std::time::Duration::from_millis(100);
 
-/// Sends the top edges of the other windows (`pet:platforms`) whenever they change.
+/// Sends the top edges of the other windows (`pet:platforms`) and whether a fullscreen window or
+/// the lock screen is in front (`pet:screen`) whenever they change.
 #[cfg(windows)]
 fn spawn_platform_watch(app: AppHandle) {
     std::thread::spawn(move || {
         let mut last: Option<Vec<crate::modules::desktop_windows::Platform>> = None;
+        let mut last_screen = crate::modules::desktop_windows::ScreenState::default();
         loop {
             std::thread::sleep(PLATFORM_INTERVAL);
             let Some(window) = app.get_webview_window(PET_LABEL) else {
@@ -126,6 +128,11 @@ fn spawn_platform_watch(app: AppHandle) {
                 continue;
             }
             let own = window.hwnd().map(|h| h.0 as isize).unwrap_or_default();
+            let screen = crate::modules::desktop_windows::screen_state(own);
+            if screen != last_screen {
+                let _ = window.emit_to(PET_LABEL, "pet:screen", screen);
+                last_screen = screen;
+            }
             let platforms = crate::modules::desktop_windows::scan(own);
             if last.as_ref() != Some(&platforms) {
                 let _ = window.emit_to(PET_LABEL, "pet:platforms", &platforms);

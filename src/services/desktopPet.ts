@@ -23,6 +23,14 @@ export const PET_PICK_EMOTION_EVENT = 'pet:pick-emotion';
 export const PET_VISIBILITY_EVENT = 'pet:visibility';
 /** Backend → pet: global pointer position relative to the pet window. */
 export const PET_CURSOR_EVENT = 'pet:cursor';
+/** Backend → pet: a fullscreen window or the lock screen is in front (Windows only). */
+export const PET_SCREEN_EVENT = 'pet:screen';
+
+export interface PetScreen {
+  fullscreen: boolean;
+  locked: boolean;
+}
+
 /** Backend → pet: walkable top edges of the other windows (Windows only). */
 export const PET_PLATFORMS_EVENT = 'pet:platforms';
 /** Main → pet: a new chat reply of the figure, for the speech bubble. */
@@ -106,10 +114,18 @@ export interface PetPrefs {
   physics: boolean;
   /** On a window that gets moved, move along instead of falling off (off by default). */
   rideWindows: boolean;
+  /** Step back while a game, video or presentation fills the screen. */
+  hideInFullscreen: boolean;
 }
 
 const PREFS_KEY = 'otakusoul.desktopPetPrefs';
-const DEFAULT_PREFS: PetPrefs = { idleActions: true, chatBubbles: true, physics: true, rideWindows: false };
+const DEFAULT_PREFS: PetPrefs = {
+  idleActions: true,
+  chatBubbles: true,
+  physics: true,
+  rideWindows: false,
+  hideInFullscreen: true,
+};
 
 export function loadPetPrefs(): PetPrefs {
   try {
@@ -119,6 +135,8 @@ export function loadPetPrefs(): PetPrefs {
       chatBubbles: typeof stored?.chatBubbles === 'boolean' ? stored.chatBubbles : DEFAULT_PREFS.chatBubbles,
       physics: typeof stored?.physics === 'boolean' ? stored.physics : DEFAULT_PREFS.physics,
       rideWindows: typeof stored?.rideWindows === 'boolean' ? stored.rideWindows : DEFAULT_PREFS.rideWindows,
+      hideInFullscreen:
+        typeof stored?.hideInFullscreen === 'boolean' ? stored.hideInFullscreen : DEFAULT_PREFS.hideInFullscreen,
     };
   } catch {
     return { ...DEFAULT_PREFS };

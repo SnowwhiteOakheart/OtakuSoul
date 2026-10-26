@@ -25,6 +25,7 @@ import {
   PET_PLATFORMS_EVENT,
   PET_READY_EVENT,
   PET_SAY_EVENT,
+  PET_SCREEN_EVENT,
   PET_SIZES,
   PET_STATE_EVENT,
   savePetPlacement,
@@ -33,6 +34,7 @@ import {
   type PetCursor,
   type PetPrefs,
   type PetSay,
+  type PetScreen,
   type PetSize,
   type PetState,
 } from '../../services/desktopPet';
@@ -110,6 +112,10 @@ export const DesktopPet: React.FC = () => {
   const speakingRef = useRef(false);
   const mouthOpen = useRef(false);
   const prefsRef = useRef(prefs);
+  /** Fullscreen window or lock screen in front: the pet steps back (not drawn, no clicks, no moves). */
+  const [screen, setScreen] = useState<PetScreen>({ fullscreen: false, locked: false });
+  const away = screen.locked || (screen.fullscreen && prefs.hideInFullscreen);
+  const awayRef = useRef(away);
   const stageRef = useRef<AvatarStage | null>(null);
   const ignoreRef = useRef<boolean | null>(null);
   /** Pressed on the pet: click-through stays off until released. */
@@ -170,7 +176,7 @@ export const DesktopPet: React.FC = () => {
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
       const current = body.current;
-      if (!prefsRef.current.physics || drag.current || !current || !area.current || moving) return;
+      if (!prefsRef.current.physics || awayRef.current || drag.current || !current || !area.current || moving) return;
       const result = stepBody(
         current,
         windowSize.current,
@@ -241,6 +247,7 @@ export const DesktopPet: React.FC = () => {
             behavior.dragEnd(performance.now());
           });
       }
+      if (awayRef.current) return;
       const { frame, cues } = behavior.tick(now);
       setMode(frame.mode);
       setFaceOverride(frame.expression);
@@ -309,6 +316,9 @@ export const DesktopPet: React.FC = () => {
       listen(PET_HELLO_EVENT, () => {
         void emitTo('main', PET_READY_EVENT).catch(() => {});
       }),
+      listen<PetScreen>(PET_SCREEN_EVENT, ({ payload }) => {
+        setScreen(payload);
+      }),
       listen<PetCursor>(PET_CURSOR_EVENT, ({ payload: { x, y, inside } }) => {
         const stage = stageRef.current;
         const { innerWidth: w, innerHeight: h } = window;
@@ -318,6 +328,10 @@ export const DesktopPet: React.FC = () => {
         if (stage && !gazeOverride.current) {
           stage.mouse.x = pointerGaze.current.x;
           stage.mouse.y = pointerGaze.current.y;
+        }
+        if (awayRef.current) {
+          setIgnore(true);
+          return;
         }
         if (!inside) {
           setIgnore(true);
@@ -434,6 +448,11 @@ export const DesktopPet: React.FC = () => {
           enabled: prefs.physics,
           action: () => setPrefs((p) => ({ ...p, rideWindows: !p.rideWindows })),
         },
+        {
+          text: t('pet.hideInFullscreen'),
+          checked: prefs.hideInFullscreen,
+          action: () => setPrefs((p) => ({ ...p, hideInFullscreen: !p.hideInFullscreen })),
+        },
         { item: 'Separator' },
         { text: t('pet.lookAtScreen'), action: () => void askTool('take_screenshot') },
         { text: t('pet.readClipboard'), action: () => void askTool('read_clipboard') },
@@ -477,7 +496,19 @@ export const DesktopPet: React.FC = () => {
 
   const onStage = useCallback((stage: AvatarStage | null) => {
     stageRef.current = stage;
+    stage?.setPaused(awayRef.current);
   }, []);
+
+  useEffect(() => {
+    awayRef.current = away;
+    stageRef.current?.setPaused(away);
+    if (away) {
+      setIgnore(true);
+    } else {
+      // Back from fullscreen or the lock screen: where it stands may have changed meanwhile.
+      void syncWindow().catch(() => {});
+    }
+  }, [away, setIgnore, syncWindow]);
   const petLink = useMemo(() => ({ onStage }), [onStage]);
 
   const modelPath = pet?.modelPath ?? '';
@@ -494,8 +525,9 @@ export const DesktopPet: React.FC = () => {
 
   return (
     <div
-      className="relative w-screen h-screen overflow-hidden select-none font-sans text-slate-100"
+      className={`relative w-screen h-screen overflow-hidden select-none font-sans text-slate-100 ${away ? 'invisible' : ''}`}
       data-desktop-pet
+      data-pet-away={away || undefined}
       data-pet-mode={mode}
       onContextMenu={(e) => {
         e.preventDefault();

@@ -51,6 +51,8 @@ export interface AvatarStage {
    * eased in the render loop. The camera circles the figure, so every model format turns.
    */
   setTurn: (yaw: number) => void;
+  /** Stops drawing (desktop pet behind a fullscreen window or the lock screen). */
+  setPaused: (paused: boolean) => void;
   dispose: () => void;
 }
 
@@ -67,6 +69,9 @@ const PROBE_ALPHA = 24;
 
 export function createAvatarStage(container: HTMLElement, modelPath: string, options: AvatarStageOptions = {}): AvatarStage {
   const pet = !!options.pet;
+  // Idle frame interval: 30 FPS in the app, 20 FPS for the pet (always on screen, beside work).
+  const idleFrameMs = pet ? 49 : 31;
+  let paused = false;
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(32, container.clientWidth / container.clientHeight, 0.1, 20.0);
   camera.position.fromArray(DEFAULT_CAMERA_POSITION);
@@ -262,7 +267,13 @@ export function createAvatarStage(container: HTMLElement, modelPath: string, opt
     timeNextFrame: (nextModelPath) => {
       timedFrame = nextModelPath;
     },
+    setPaused: (next) => {
+      paused = next;
+      markActive();
+    },
     setTurn: (yaw) => {
+      // Called on every behaviour tick; only a new direction is activity worth full frame rate.
+      if (yaw === turnTarget) return;
       turnTarget = yaw;
       markActive();
     },
@@ -277,13 +288,13 @@ export function createAvatarStage(container: HTMLElement, modelPath: string, opt
         animationFrameId = requestAnimationFrame(animate);
         const now = performance.now();
         if (timedFrame === null) {
-          if (typeof document !== 'undefined' && document.hidden) {
+          if (paused || (typeof document !== 'undefined' && document.hidden)) {
             lastTime = now;
             return;
           }
           // Throttle idle breathing/blinking to ~30 FPS after 2s of no pointer/camera interaction
           // so local LLM/SD GPU workloads aren't starved by 60-144 Hz WebGL redraws.
-          if (now - lastActiveTime > 2000 && now - lastTime < 31) {
+          if (now - lastActiveTime > 2000 && now - lastTime < idleFrameMs) {
             return;
           }
         }
