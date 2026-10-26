@@ -3870,5 +3870,9 @@
   "pet.confirmInApp": "Bitte bestätige das im OtakuSoul-Fenster.",
   "pet.openApp": "OtakuSoul öffnen",
   "pet.noModel": "Kein 3D-Modell gewählt. Lege unter „Avatare“ eins fest.",
-  "pet.feeling": "Gefühl:"
+  "pet.feeling": "Gefühl:",
+  "pet.doze": "Zzz …",
+  "pet.wake": "Oh! Da bist du ja wieder.",
+  "pet.idleActions": "Eigene Bewegungen",
+  "pet.chatBubbles": "Chat-Antworten als Sprechblase"
 }

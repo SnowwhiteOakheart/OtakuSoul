@@ -917,6 +917,11 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   schließt das Fenster ganz (kein WebGL im Hintergrund). Unter Windows muss es denselben Webview-Datenordner wie das
   Hauptfenster nutzen. `tauri dev`: Beim ersten Öffnen optimiert Vite `@tauri-apps/api/menu`/`window` nach und lädt
   alle Fenster neu – nur in der Entwicklung.
+- Pet-Verhalten: `petBehavior.ts` entscheidet nur (Zustände, zufällige Aktionen), `DesktopPet` setzt es um über Blick
+  (`stage.mouse`), Gesicht (`emotion`-Override), Mund (`feedRemoteFrame`, nie über eine echte Stimme) und den CSS-Hüpfer
+  `.pet-hop` – das können alle drei Formate. Gesten-Rollen spielen nur mit passender Animation. `startDragging` kehrt
+  unter Windows sofort zurück: das Ende des Ziehens ist, wenn `onMoved` 1,2 s still ist. Chat-Sprechblasen kommen nur
+  für neue Antworten der offenen Unterhaltung (Schlüssel `id:swipe_index`, beim Chatwechsel neu gesetzt).
 
 ## Stand
 

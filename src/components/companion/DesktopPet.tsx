@@ -10,20 +10,27 @@ import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { useTranslation } from '../../i18n';
 import { api } from '../../services/api';
 import { audioPlayer } from '../../services/audioPlayer';
+import { SILENT_VISEMES } from '../../services/lipSync';
+import { bubbleMs, PetBehavior, type Gaze, type PetMode } from './petBehavior';
 import type { GestureRequest } from '../../utils/avatarGestures';
 import {
   loadPetPlacement,
+  loadPetPrefs,
   PET_AUDIO_EVENT,
   PET_CURSOR_EVENT,
   PET_HELLO_EVENT,
   PET_MOODS,
   PET_PICK_EMOTION_EVENT,
   PET_READY_EVENT,
+  PET_SAY_EVENT,
   PET_SIZES,
   PET_STATE_EVENT,
   savePetPlacement,
+  savePetPrefs,
   type PetAudioFrame,
   type PetCursor,
+  type PetPrefs,
+  type PetSay,
   type PetSize,
   type PetState,
 } from '../../services/desktopPet';
@@ -38,6 +45,12 @@ const BUBBLE_MS = 5000;
 /** Pointer travel (px) after which pressing turns into dragging the window. */
 const DRAG_THRESHOLD = 4;
 const STATUS_POLL_MS = 5000;
+/** The behaviour is advanced this often (gaze and faces are smoothed by the viewer). */
+const BEHAVIOR_TICK_MS = 100;
+/** No window move for this long: the system drag has ended (or the figure hangs still and calms down). */
+const DRAG_SETTLE_MS = 1200;
+/** A bubble still showing when the voice ends stays this much longer. */
+const BUBBLE_AFTER_VOICE_MS = 2500;
 
 const clamp = (value: number) => Math.max(-1, Math.min(1, value));
 
@@ -55,6 +68,18 @@ export const DesktopPet: React.FC = () => {
   const [gesture, setGesture] = useState<GestureRequest | null>(null);
   const [statusOpen, setStatusOpen] = useState(false);
   const [bubble, setBubble] = useState<string | null>(null);
+  const [prefs, setPrefs] = useState<PetPrefs>(loadPetPrefs);
+  const [behavior] = useState(() => new PetBehavior(performance.now()));
+  const [mode, setMode] = useState<PetMode>('idle');
+  const [faceOverride, setFaceOverride] = useState<string | null>(null);
+  const [hop, setHop] = useState(false);
+  /** Where the pointer would have the figure look; the behaviour may look elsewhere. */
+  const pointerGaze = useRef<Gaze>({ x: 0, y: 0 });
+  const gazeOverride = useRef<Gaze | null>(null);
+  const drag = useRef<{ startedAt: number; movedAt: number } | null>(null);
+  const speakingRef = useRef(false);
+  const mouthOpen = useRef(false);
+  const prefsRef = useRef(prefs);
   const stageRef = useRef<AvatarStage | null>(null);
   const ignoreRef = useRef<boolean | null>(null);
   /** Pressed on the pet: click-through stays off until released. */
@@ -70,11 +95,62 @@ export const DesktopPet: React.FC = () => {
     void getCurrentWindow().setIgnoreCursorEvents(ignore).catch(() => {});
   }, []);
 
-  const say = useCallback((text: string) => {
+  const say = useCallback((text: string, ms = BUBBLE_MS) => {
     setBubble(text);
     if (bubbleTimer.current !== null) window.clearTimeout(bubbleTimer.current);
-    bubbleTimer.current = window.setTimeout(() => setBubble(null), BUBBLE_MS);
+    bubbleTimer.current = window.setTimeout(() => setBubble(null), ms);
   }, []);
+
+  const playLocalGesture = useCallback((role: GestureRequest['role']) => {
+    // Negative ids never meet the main window's counter.
+    localGestureId.current -= 1;
+    setGesture({ role, id: localGestureId.current });
+  }, []);
+
+  useEffect(() => {
+    prefsRef.current = prefs;
+    behavior.setIdleActions(prefs.idleActions);
+    savePetPrefs(prefs);
+  }, [behavior, prefs]);
+
+  // The cue texts follow the language without restarting the behaviour timer.
+  const cueTexts = useRef({ doze: '', wake: '' });
+  useEffect(() => {
+    cueTexts.current = { doze: t('pet.doze'), wake: t('pet.wake') };
+  });
+
+  // Behaviour: time-driven state machine (petBehavior.ts) turned into gaze, face, mouth and hops.
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      const now = performance.now();
+      const dragging = drag.current;
+      if (dragging && now - Math.max(dragging.startedAt, dragging.movedAt) > DRAG_SETTLE_MS) {
+        drag.current = null;
+        behavior.dragEnd(now);
+      }
+      const { frame, cues } = behavior.tick(now);
+      setMode(frame.mode);
+      setFaceOverride(frame.expression);
+      setHop(frame.hop);
+      gazeOverride.current = frame.gaze;
+      const stage = stageRef.current;
+      if (stage) {
+        const gaze = frame.gaze ?? pointerGaze.current;
+        stage.mouse.x = gaze.x;
+        stage.mouse.y = gaze.y;
+      }
+      // A yawn opens the mouth through the same path as a voice, but never over a real one.
+      if (!speakingRef.current && (frame.mouth > 0.02 || mouthOpen.current)) {
+        mouthOpen.current = frame.mouth > 0.02;
+        audioPlayer.feedRemoteFrame(frame.mouth, mouthOpen.current ? { ...SILENT_VISEMES, aa: frame.mouth } : null);
+      }
+      for (const cue of cues) {
+        if (cue.kind === 'gesture') playLocalGesture(cue.role);
+        else say(cueTexts.current[cue.text]);
+      }
+    }, BEHAVIOR_TICK_MS);
+    return () => window.clearInterval(timer);
+  }, [behavior, say, playLocalGesture]);
 
   // State, voice and pointer from the main window and the backend.
   useEffect(() => {
@@ -91,8 +167,25 @@ export const DesktopPet: React.FC = () => {
         if (payload.colorMode !== store.colorMode) store.setColorMode(payload.colorMode);
       }),
       listen<PetAudioFrame>(PET_AUDIO_EVENT, ({ payload }) => {
+        const speaking = payload.visemes !== null;
         audioPlayer.feedRemoteFrame(payload.amplitude, payload.visemes);
-        setIsSpeaking(payload.visemes !== null);
+        if (speaking !== speakingRef.current) {
+          speakingRef.current = speaking;
+          mouthOpen.current = false;
+          behavior.setSpeaking(speaking);
+          setIsSpeaking(speaking);
+          // The bubble of the reply stays a moment after the voice ends.
+          if (!speaking && bubbleTimer.current !== null) {
+            window.clearTimeout(bubbleTimer.current);
+            bubbleTimer.current = window.setTimeout(() => setBubble(null), BUBBLE_AFTER_VOICE_MS);
+          }
+        }
+      }),
+      listen<PetSay>(PET_SAY_EVENT, ({ payload }) => {
+        if (!prefsRef.current.chatBubbles || !payload.text) return;
+        const ms = bubbleMs(payload.text);
+        behavior.say(performance.now(), ms);
+        say(payload.text, ms);
       }),
       listen(PET_HELLO_EVENT, () => {
         void emitTo('main', PET_READY_EVENT).catch(() => {});
@@ -100,10 +193,12 @@ export const DesktopPet: React.FC = () => {
       listen<PetCursor>(PET_CURSOR_EVENT, ({ payload: { x, y, inside } }) => {
         const stage = stageRef.current;
         const { innerWidth: w, innerHeight: h } = window;
+        behavior.pointer(performance.now());
         // The figure looks after the pointer, also elsewhere on the desktop.
-        if (stage) {
-          stage.mouse.x = clamp((x - w / 2) / (w / 2));
-          stage.mouse.y = clamp(-(y - h * 0.27) / (h / 2));
+        pointerGaze.current = { x: clamp((x - w / 2) / (w / 2)), y: clamp(-(y - h * 0.27) / (h / 2)) };
+        if (stage && !gazeOverride.current) {
+          stage.mouse.x = pointerGaze.current.x;
+          stage.mouse.y = pointerGaze.current.y;
         }
         if (!inside) {
           setIgnore(true);
@@ -124,6 +219,7 @@ export const DesktopPet: React.FC = () => {
       if (isSubscribed) void emitTo('main', PET_READY_EVENT).catch(() => {});
     });
     const stopMoved = getCurrentWindow().onMoved(({ payload }) => {
+      if (drag.current) drag.current.movedAt = performance.now();
       savePetPlacement({ x: payload.x, y: payload.y });
     });
     return () => {
@@ -132,7 +228,7 @@ export const DesktopPet: React.FC = () => {
       void stopMoved.then((stop) => stop());
       if (bubbleTimer.current !== null) window.clearTimeout(bubbleTimer.current);
     };
-  }, [setIgnore]);
+  }, [setIgnore, behavior, say]);
 
   useEffect(() => {
     if (!statusOpen) return undefined;
@@ -141,14 +237,8 @@ export const DesktopPet: React.FC = () => {
     return () => window.clearInterval(timer);
   }, [statusOpen, fetchCompanionState]);
 
-  const playLocalGesture = (role: GestureRequest['role']) => {
-    // Negative ids never meet the main window's counter.
-    localGestureId.current -= 1;
-    setGesture({ role, id: localGestureId.current });
-  };
-
   const pat = async () => {
-    playLocalGesture('happy');
+    behavior.pat(performance.now());
     say(t('pet.patReply'));
     await applyHormoneInteraction('compliment');
   };
@@ -199,6 +289,16 @@ export const DesktopPet: React.FC = () => {
           text: t('pet.size'),
           items: sizes.map(({ key, label }) => ({ text: label, checked: size === key, action: () => void resize(key) })),
         },
+        {
+          text: t('pet.idleActions'),
+          checked: prefs.idleActions,
+          action: () => setPrefs((p) => ({ ...p, idleActions: !p.idleActions })),
+        },
+        {
+          text: t('pet.chatBubbles'),
+          checked: prefs.chatBubbles,
+          action: () => setPrefs((p) => ({ ...p, chatBubbles: !p.chatBubbles })),
+        },
         { item: 'Separator' },
         { text: t('pet.lookAtScreen'), action: () => void askTool('take_screenshot') },
         { text: t('pet.readClipboard'), action: () => void askTool('read_clipboard') },
@@ -220,7 +320,11 @@ export const DesktopPet: React.FC = () => {
     if (!press || press.dragging) return;
     if (Math.hypot(e.screenX - press.x, e.screenY - press.y) < DRAG_THRESHOLD) return;
     press.dragging = true;
-    // The system moves the window from here and keeps the button release.
+    const now = performance.now();
+    drag.current = { startedAt: now, movedAt: now };
+    behavior.dragStart(now);
+    // The system moves the window from here and keeps the button release (on Windows the
+    // call returns at once; the drag ends when the moves stop).
     void getCurrentWindow()
       .startDragging()
       .catch(() => {})
@@ -244,7 +348,7 @@ export const DesktopPet: React.FC = () => {
   const modelPath = pet?.modelPath ?? '';
   const viewerProps = {
     modelPath,
-    emotion: pet?.expression ?? 'neutral',
+    emotion: faceOverride ?? pet?.expression ?? 'neutral',
     isSpeaking,
     motions: pet?.motions ?? [],
     gesture,
@@ -257,13 +361,14 @@ export const DesktopPet: React.FC = () => {
     <div
       className="relative w-screen h-screen overflow-hidden select-none font-sans text-slate-100"
       data-desktop-pet
+      data-pet-mode={mode}
       onContextMenu={(e) => {
         e.preventDefault();
         void openMenu();
       }}
     >
       <div
-        className="absolute inset-0"
+        className={`absolute inset-0 ${hop ? 'pet-hop' : ''}`}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}

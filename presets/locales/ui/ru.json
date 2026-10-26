@@ -3870,5 +3870,9 @@
   "pet.confirmInApp": "Подтверди это в окне OtakuSoul.",
   "pet.openApp": "Открыть OtakuSoul",
   "pet.noModel": "3D-модель не выбрана. Выбери её в разделе «Аватары».",
-  "pet.feeling": "Чувство:"
+  "pet.feeling": "Чувство:",
+  "pet.doze": "Хррр …",
+  "pet.wake": "Ой! Ты снова здесь.",
+  "pet.idleActions": "Двигается сам",
+  "pet.chatBubbles": "Ответы чата в облачке"
 }

@@ -23,6 +23,12 @@ export const PET_PICK_EMOTION_EVENT = 'pet:pick-emotion';
 export const PET_VISIBILITY_EVENT = 'pet:visibility';
 /** Backend → pet: global pointer position relative to the pet window. */
 export const PET_CURSOR_EVENT = 'pet:cursor';
+/** Main → pet: a new chat reply of the figure, for the speech bubble. */
+export const PET_SAY_EVENT = 'pet:say';
+
+export interface PetSay {
+  text: string;
+}
 
 export interface PetState {
   characterName: string;
@@ -85,6 +91,37 @@ export function savePetPlacement(change: Partial<PetPlacement>) {
     localStorage.setItem(PLACEMENT_KEY, JSON.stringify({ ...loadPetPlacement(), ...change }));
   } catch {
     // Only a convenience: the pet then opens at its default place.
+  }
+}
+
+/** The pet's own switches (its menu), kept in the shared webview storage. */
+export interface PetPrefs {
+  /** Random idle actions (look around, yawn, hop …). */
+  idleActions: boolean;
+  /** New chat replies as speech bubble. */
+  chatBubbles: boolean;
+}
+
+const PREFS_KEY = 'otakusoul.desktopPetPrefs';
+const DEFAULT_PREFS: PetPrefs = { idleActions: true, chatBubbles: true };
+
+export function loadPetPrefs(): PetPrefs {
+  try {
+    const stored = JSON.parse(localStorage.getItem(PREFS_KEY) ?? 'null') as Partial<PetPrefs> | null;
+    return {
+      idleActions: typeof stored?.idleActions === 'boolean' ? stored.idleActions : DEFAULT_PREFS.idleActions,
+      chatBubbles: typeof stored?.chatBubbles === 'boolean' ? stored.chatBubbles : DEFAULT_PREFS.chatBubbles,
+    };
+  } catch {
+    return { ...DEFAULT_PREFS };
+  }
+}
+
+export function savePetPrefs(prefs: PetPrefs) {
+  try {
+    localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+  } catch {
+    // Only a convenience: the defaults apply next time.
   }
 }
 

@@ -59,11 +59,10 @@
 > **Fokus:** Windows & macOS (Linux/Wayland ausgeklammert aufgrund von Compositor-Restriktionen bei freier Fensterplatzierung und Cross-App-Window-Sniffing).
 > Ziel: Aktiven 3D-Avatar (VRM / glTF / MMD) aus OtakuSoul als transparenten, frei schwebenden Begleiter auf den Desktop bringen.
 
-### Phase 2: Verhalten (Phase 1 und die Event-Anbindung sind erledigt, siehe `roadmap_abgeschlossen.md`)
-- [ ] **Idle- & Verhaltens-Logik (State Machine):**
-  - Zustände: `IDLE_STAND`, `IDLE_SIT`, `WALKING`, `FALLING`, `REACTING`, `DRAGGED`.
-  - Zufällige Aktionen bei Inaktivität (umschauen, gähnen, hinsetzen, winken).
-  - Sprechblasen-Overlay über dem Kopf bei eingehenden Chat-Nachrichten.
+### Phase 2: Verhalten (Fenster, Anbindung und Zustandsautomat sind erledigt, siehe `roadmap_abgeschlossen.md`)
+- [ ] **Hinsetzen (`IDLE_SIT`):** Sitzhaltung per Knochen für VRM, glTF (`gltfRig`) und MMD, als weitere
+  Leerlauf-Aktion in `petBehavior.ts`. Ohne importierte Sitz-Animation braucht jedes Format eine eigene Pose.
+- [ ] **Gehen und Fallen (`WALKING`, `FALLING`)** kommen mit der Desktop-Physik (Phase 3) als weitere Zustände dazu.
 
 ### Phase 3: Desktop-Physik & Bildschirmkanten
 - [ ] **Bildschirm-Grenzen erfassen:**

@@ -10,16 +10,25 @@ import {
   PET_LABEL,
   PET_PICK_EMOTION_EVENT,
   PET_READY_EVENT,
+  PET_SAY_EVENT,
   PET_STATE_EVENT,
   PET_VISIBILITY_EVENT,
   type PetAudioFrame,
+  type PetSay,
   type PetState,
 } from '../services/desktopPet';
+import { bubbleText } from '../components/companion/petBehavior';
 
 /** Voice frames to the pet at most this often (mouth shapes are smoothed there). */
 const AUDIO_FRAME_MS = 33;
 
 type StoreState = ReturnType<typeof useAppStore.getState>;
+
+/** The figure's latest finished reply in the open chat (id and shown swipe), or null. */
+function lastReplyKey(s: StoreState): string | null {
+  const last = s.storedMessages[s.storedMessages.length - 1];
+  return last && last.role === 'assistant' ? `${last.id}:${last.swipe_index}` : null;
+}
 
 function petState(s: StoreState): PetState {
   return {
@@ -59,7 +68,28 @@ export function useDesktopPetBridge(enabled = true) {
       void emitTo(PET_LABEL, PET_STATE_EVENT, payload).catch(() => {});
     };
 
+    // Replies already there when a chat opens are not announced; new and regenerated ones are.
+    let replyChat = useAppStore.getState().activeChatId;
+    let seenReply = lastReplyKey(useAppStore.getState());
+    const announceReply = (s: StoreState) => {
+      if (s.activeChatId !== replyChat) {
+        replyChat = s.activeChatId;
+        seenReply = lastReplyKey(s);
+        return;
+      }
+      if (s.isGenerating) return;
+      const key = lastReplyKey(s);
+      if (!key || key === seenReply) return;
+      seenReply = key;
+      const last = s.storedMessages[s.storedMessages.length - 1]!;
+      const text = bubbleText(last.content);
+      if (open && text) void emitTo(PET_LABEL, PET_SAY_EVENT, { text } satisfies PetSay).catch(() => {});
+    };
+
     const unsubscribeStore = useAppStore.subscribe((s, prev) => {
+      if (s.storedMessages !== prev.storedMessages || s.isGenerating !== prev.isGenerating || s.activeChatId !== prev.activeChatId) {
+        announceReply(s);
+      }
       if (
         s.activeCharacter !== prev.activeCharacter ||
         s.scannedVrms !== prev.scannedVrms ||

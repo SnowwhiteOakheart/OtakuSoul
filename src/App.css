@@ -292,6 +292,21 @@
   html.pet-window body {
     background: transparent;
   }
+  /* Small jump of the desktop pet (petBehavior: pats, waking up, idle hops). */
+  .pet-hop {
+    animation: pet-hop 0.6s ease-out;
+  }
+  @keyframes pet-hop {
+    0%, 100% { transform: translateY(0); }
+    35% { transform: translateY(-7%); }
+    60% { transform: translateY(0); }
+    75% { transform: translateY(-2%); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pet-hop {
+      animation: none;
+    }
+  }
 
   /* Chrome elements are not selectable; chat text, logs and error messages stay copyable. */
   button,
