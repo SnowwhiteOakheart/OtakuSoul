@@ -157,3 +157,9 @@ pub fn hide_main_window(window: tauri::WebviewWindow) -> Result<(), String> {
         .hide()
         .map_err(|e| crate::err!("backend.app.hideWindow", error = e))
 }
+
+/// Quits the app from the close dialog ("Beenden" instead of keeping it in the tray).
+#[tauri::command]
+pub fn quit_app(app: tauri::AppHandle) {
+    app.exit(0);
+}

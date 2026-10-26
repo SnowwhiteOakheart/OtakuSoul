@@ -1,6 +1,6 @@
-// Closing the window like the window manager's close button: the first time a hint explains
-// the tray and the window hides only after confirming; later it hides at once; with the setting
-// off the app quits. Needs X11 (the harness runs WebKitGTK with GDK_BACKEND=x11).
+// Closing the window like the window manager's close button: a dialog explains the tray (or
+// offers to quit) until the choice is remembered; then it hides at once; with the setting off
+// the app quits. Needs X11 (the harness runs WebKitGTK with GDK_BACKEND=x11).
 import assert from 'node:assert/strict';
 import { execFileSync, execSync } from 'node:child_process';
 import path from 'node:path';
@@ -37,11 +37,13 @@ try {
   const [pid] = appPids();
   assert.ok(pid, 'App-Prozess nicht gefunden');
 
-  // First close: hint, window stays until confirmed.
+  // First close: dialog, window stays until a choice is made; remember "tray".
   assert.match(clickClose(pid), /^sent [1-9]/, 'kein Fenster der App gefunden');
   const hint = await browser.$('h2=OtakuSoul läuft im Tray weiter');
   await hint.waitForDisplayed({ timeout: 5000 });
   await browser.saveScreenshot(path.join(screenshotDir, '31-tray-hinweis.png'));
+  assert.ok(await browser.$('button=Beenden').isDisplayed(), 'Beenden-Knopf fehlt im Dialog');
+  await browser.$('label=Auswahl merken und nicht mehr fragen').click();
   await browser.$('button=Im Tray weiterlaufen').click();
   await browser.waitUntil(async () => (await invoke('load_settings')).tray_hint_shown === true, { timeout: 5000, timeoutMsg: 'Hinweis nicht gespeichert' });
   assert.deepEqual(appPids(), [pid], 'App hat sich beendet statt ins Tray zu gehen');
@@ -59,7 +61,7 @@ try {
   const quit = Date.now();
   while (appPids().includes(pid) && Date.now() - quit < 15_000) await sleep(250);
   assert.ok(!appPids().includes(pid), 'App läuft nach dem Schließen weiter');
-  console.log('Schließen: Hinweis beim ersten Mal, danach Tray, ausgeschaltet beendet bestanden.');
+  console.log('Schließen: Dialog bis zum Merken, danach Tray, ausgeschaltet beendet bestanden.');
 } finally {
   await close().catch(() => {});
 }

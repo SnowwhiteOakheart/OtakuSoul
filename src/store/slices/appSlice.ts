@@ -99,7 +99,8 @@ export interface AppSlice {
   setExpertMode: (on: boolean) => void;
   /** Shows the first-run wizard again (start page: "set up the AI"). */
   reopenOnboarding: () => void;
-  confirmTrayHint: () => Promise<void>;
+  /** Remembers the choice from the close dialog (tray or quit), so it is not asked again. */
+  rememberCloseChoice: (toTray: boolean) => Promise<void>;
   /** Settings section to open next time the settings view mounts. */
   pendingSettingsSection: SettingsSection | null;
   openSettingsSection: (section: SettingsSection) => void;
@@ -443,7 +444,8 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
   closeToTray: true,
 
   setCloseToTray: (on) => {
-    set({ closeToTray: on });
+    // Chosen in the settings: the close dialog no longer needs to ask.
+    set({ closeToTray: on, trayHintShown: true });
     get().saveCurrentSettings();
   },
 
@@ -530,8 +532,8 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
     get().saveCurrentSettings();
   },
 
-  confirmTrayHint: async () => {
-    set({ trayHintShown: true });
+  rememberCloseChoice: async (toTray) => {
+    set({ trayHintShown: true, closeToTray: toTray });
     // Saved before hiding: the next close reads the flag from settings.json.
     await get().saveCurrentSettings();
   },

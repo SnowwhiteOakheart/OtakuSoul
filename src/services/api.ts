@@ -1337,7 +1337,11 @@ export const api = {
     await invoke('hide_main_window');
   },
 
-  /** First close with "keep running in the tray": the interface explains it before hiding. */
+  quitApp: async (): Promise<void> => {
+    await invoke('quit_app');
+  },
+
+  /** Close with "keep running in the tray" and no remembered choice: the interface asks first. */
   onCloseToTrayHint: async (callback: () => void): Promise<UnlistenFn> => {
     return await listen('close-to-tray-hint', () => callback());
   },

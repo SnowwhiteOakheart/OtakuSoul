@@ -13,6 +13,17 @@ interface ConfirmOptions {
   tone?: 'default' | 'danger';
 }
 
+interface ChoiceOptions extends ConfirmOptions {
+  /** Shows a checkbox (e.g. "remember my choice") whose state comes back with the answer. */
+  checkboxLabel?: string;
+}
+
+/** `dismiss` = closed via Escape or the backdrop, without picking either button. */
+export interface ChoiceResult {
+  choice: 'confirm' | 'cancel' | 'dismiss';
+  checked: boolean;
+}
+
 type ToastKind = 'success' | 'error' | 'info';
 
 /** Optional follow-up for a toast, e.g. "Open in chat" after an import. */
@@ -29,7 +40,7 @@ interface ToastItem {
 }
 
 interface FeedbackState {
-  pendingConfirm: (ConfirmOptions & { resolve: (confirmed: boolean) => void }) | null;
+  pendingConfirm: (ChoiceOptions & { resolve: (result: ChoiceResult) => void }) | null;
   toasts: ToastItem[];
 }
 
@@ -37,15 +48,19 @@ const useFeedbackStore = create<FeedbackState>(() => ({ pendingConfirm: null, to
 
 /** Styled, translatable replacement for `window.confirm`. Resolves `true` when confirmed. */
 export const confirmDialog = (options: ConfirmOptions): Promise<boolean> =>
+  choiceDialog(options).then((result) => result.choice === 'confirm');
+
+/** Like `confirmDialog`, but tells the cancel button apart from dismissing and can show a checkbox. */
+export const choiceDialog = (options: ChoiceOptions): Promise<ChoiceResult> =>
   new Promise((resolve) => {
-    useFeedbackStore.getState().pendingConfirm?.resolve(false);
+    useFeedbackStore.getState().pendingConfirm?.resolve({ choice: 'dismiss', checked: false });
     useFeedbackStore.setState({ pendingConfirm: { ...options, resolve } });
   });
 
-const settleConfirm = (confirmed: boolean) => {
+const settleConfirm = (choice: ChoiceResult['choice'], checked = false) => {
   const pending = useFeedbackStore.getState().pendingConfirm;
   useFeedbackStore.setState({ pendingConfirm: null });
-  pending?.resolve(confirmed);
+  pending?.resolve({ choice, checked });
 };
 
 let nextToastId = 1;
@@ -78,12 +93,15 @@ export const FeedbackHost: React.FC = () => {
   const { t } = useTranslation();
   const pendingConfirm = useFeedbackStore((state) => state.pendingConfirm);
   const toasts = useFeedbackStore((state) => state.toasts);
+  const [checked, setChecked] = React.useState(false);
+  // Every new dialog starts with the checkbox cleared.
+  React.useEffect(() => setChecked(false), [pendingConfirm]);
 
   return (
     <>
       {pendingConfirm && (
         <ModalOverlay
-          onClose={() => settleConfirm(false)}
+          onClose={() => settleConfirm('dismiss')}
           closeOnBackdrop
           aria-labelledby="confirm-dialog-title"
           className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
@@ -104,16 +122,27 @@ export const FeedbackHost: React.FC = () => {
                 )}
               </div>
             </div>
+            {pendingConfirm.checkboxLabel && (
+              <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={(e) => setChecked(e.target.checked)}
+                  className="h-4 w-4 rounded border-slate-600 bg-slate-800 accent-accent-500"
+                />
+                {pendingConfirm.checkboxLabel}
+              </label>
+            )}
             <div className="flex justify-end gap-2">
               <button
-                onClick={() => settleConfirm(false)}
+                onClick={() => settleConfirm('cancel', checked)}
                 className="px-4 py-2 rounded-xl text-sm text-slate-300 hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-accent-400 outline-hidden"
               >
                 {pendingConfirm.cancelLabel ?? t('common.cancel')}
               </button>
               <button
                 data-autofocus
-                onClick={() => settleConfirm(true)}
+                onClick={() => settleConfirm('confirm', checked)}
                 className={`px-4 py-2 rounded-xl text-sm font-semibold text-white focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 outline-hidden ${
                   pendingConfirm.tone === 'danger'
                     ? 'bg-rose-600 hover:bg-rose-500 focus-visible:ring-rose-400'

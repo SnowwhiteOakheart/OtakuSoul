@@ -2,12 +2,13 @@ import { useEffect } from 'react';
 import { api } from '../services/api';
 import { translate } from '../i18n';
 import { useAppStore } from '../store/useAppStore';
-import { confirmDialog, toast } from '../components/ui/feedback';
+import { choiceDialog, toast } from '../components/ui/feedback';
 import { errorMessage } from '../utils/errors';
 
 /**
- * The first time the window is closed while "keep running in the tray" is on, the backend asks
- * the interface to explain that first; the window hides only after the user confirms.
+ * Closing the window while "keep running in the tray" is on and no choice is remembered: the
+ * backend asks the interface first. The dialog explains the tray and offers to quit instead;
+ * "remember" stores the choice so later closes act directly.
  */
 export function useCloseToTray(enabled = true) {
   useEffect(() => {
@@ -15,15 +16,20 @@ export function useCloseToTray(enabled = true) {
     let isSubscribed = true;
     let unlisten: (() => void) | undefined;
     const onHint = async () => {
-      const confirmed = await confirmDialog({
+      const { choice, checked } = await choiceDialog({
         title: translate('tray.hintTitle'),
         message: translate('tray.hintText'),
         confirmLabel: translate('tray.hintConfirm'),
+        cancelLabel: translate('tray.hintQuit'),
+        checkboxLabel: translate('tray.hintRemember'),
       });
-      if (!confirmed) return;
+      if (choice === 'dismiss') return;
+      const toTray = choice === 'confirm';
       try {
-        await useAppStore.getState().confirmTrayHint();
-        await api.hideMainWindow();
+        // Saved before hiding or quitting: the next close reads the choice from settings.json.
+        if (checked) await useAppStore.getState().rememberCloseChoice(toTray);
+        if (toTray) await api.hideMainWindow();
+        else await api.quitApp();
       } catch (e) {
         toast.error(errorMessage(e));
       }

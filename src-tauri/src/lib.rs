@@ -136,8 +136,8 @@ pub fn run() {
                 }
                 let _ = window.show();
 
-                // Closing hides the window into the tray (setting `close_to_tray`), the first
-                // time after a hint in the interface; otherwise it quits the app.
+                // Closing hides the window into the tray (setting `close_to_tray`); until the user
+                // remembers a choice, the interface asks first (tray or quit).
                 let window_clone = window.clone();
                 window.on_window_event(move |event| {
                     if let tauri::WindowEvent::CloseRequested { api, .. } = event {
@@ -361,6 +361,7 @@ pub fn run() {
             commands::companion::evaluate_companion_proactive,
             commands::app::get_app_paths,
             commands::app::hide_main_window,
+            commands::app::quit_app,
             commands::app::log_frontend,
             commands::app::open_avatar_folder,
             commands::app::list_ui_languages,
