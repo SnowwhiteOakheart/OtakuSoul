@@ -113,20 +113,13 @@
 
 ## 3a. Inochi2D-Puppen – Folgepunkte
 
-> Grundintegration fertig (26.10.2026, Details in `roadmap_abgeschlossen.md` Abschnitt 26 und `AI.md` Abschnitt 6):
-> eigene WebGL2-Laufzeit nach Inox2D, Modus „Inochi2D“, Bibliothek, Import, Beispielmodelle Aka/Midori.
+> Grundintegration, eigene Animationen, Mundformen, Hand-Einstellungen je Puppe, Kubik-Bindungen und Worker-Dekodierung
+> fertig (26.10.2026, Details in `roadmap_abgeschlossen.md` Abschnitt 26 und `AI.md` Abschnitt 6).
 
-- [ ] **Puppen-Animationen abspielen:** `animations` aus `.inx`/`.inp` (z. B. „Idle“, „Rig_Check“ bei Nagatoro) als
-  Ruhe-Schleife bzw. Geste nutzen; Spuren sind Parameter-Keyframes (`lanes`, `timestep`, `leadIn`/`leadOut`).
-- [ ] **Parameter-Zuordnung je Puppe:** Editor analog `ModelFaceSettings`, um Mund/Augen/Blick/Gefühle von Hand
-  auf Parameter zu legen, wenn die Namenserkennung danebenliegt; modell-eigene Ausdrucks-Parameter (Nagatoros
-  „Expression“, „Mouth::Laugh“) den Stimmungen zuordnen.
-- [ ] **Mundformen statt nur Öffnung:** Viseme aus `audioPlayer.onAudioFrame` (aa/ih/ou/ee/oh) auf Puppen mit
-  A/E/O-Mundformen legen.
 - [ ] **Fehlende Inochi2D-Funktionen:** Emission/Bump-Licht, BC7-Texturen, `translate_children` und verschachtelte
-  Mesh-Gruppen, Kubik-Interpolation (`Cubic` wird linear gerechnet).
-- [ ] **Texturen im Web Worker dekodieren** (große TGA-Puppen blockieren beim Laden kurz die Oberfläche).
-- [ ] **Inochi2D im Gruppen-Chat und im Desktop-Pet** (siehe Abschnitt 3).
+  Mesh-Gruppen.
+- [ ] **Inochi2D im Gruppen-Chat („Alle zeigen“) und im Desktop-Pet** (siehe Abschnitt 3).
+- [ ] **Puppen aus dem Hub:** Inochi2D-Puppen als Hub-Inhalt (`otakusoul-data`) samt Zuordnung zu Karten.
 
 ## 4. Kognitives Gedächtnis (Memory 2.0 – Ausblick & Folgepunkte)
 
