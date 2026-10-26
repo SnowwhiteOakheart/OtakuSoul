@@ -106,6 +106,34 @@ fn spawn_cursor_watch(app: AppHandle) {
     });
 }
 
+/// Window edges are read this often: a moved window shows up within a quarter second.
+#[cfg(windows)]
+const PLATFORM_INTERVAL: std::time::Duration = std::time::Duration::from_millis(250);
+
+/// Sends the top edges of the other windows (`pet:platforms`) whenever they change.
+#[cfg(windows)]
+fn spawn_platform_watch(app: AppHandle) {
+    std::thread::spawn(move || {
+        let mut last: Option<Vec<crate::modules::desktop_windows::Platform>> = None;
+        loop {
+            std::thread::sleep(PLATFORM_INTERVAL);
+            let Some(window) = app.get_webview_window(PET_LABEL) else {
+                break;
+            };
+            if !window.is_visible().unwrap_or(false) {
+                last = None;
+                continue;
+            }
+            let own = window.hwnd().map(|h| h.0 as isize).unwrap_or_default();
+            let platforms = crate::modules::desktop_windows::scan(own);
+            if last.as_ref() != Some(&platforms) {
+                let _ = window.emit_to(PET_LABEL, "pet:platforms", &platforms);
+                last = Some(platforms);
+            }
+        }
+    });
+}
+
 #[tauri::command]
 pub async fn toggle_desktop_pet(
     app: AppHandle,
@@ -165,6 +193,8 @@ pub async fn toggle_desktop_pet(
             }
         });
         spawn_cursor_watch(app.clone());
+        #[cfg(windows)]
+        spawn_platform_watch(app.clone());
     }
     state.companion_engine.set_overlay_active(enable);
     notify_open(&app, enable);

@@ -4139,6 +4139,7 @@ dependencies = [
  "ts-rs",
  "urlencoding",
  "whisper-rs",
+ "windows",
  "xcap",
  "zip 8.6.0",
 ]

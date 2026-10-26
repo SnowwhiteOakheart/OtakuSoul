@@ -927,6 +927,11 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `syncWindow` Position und Arbeitsbereich neu, sonst fällt das Pet vom alten Platz. Pro Schritt nur ein `setPosition`
   zur Zeit (wartet auf das vorige). Drehung beim Gehen über die Kamera (`stage.setTurn`), nicht am Modell – so
   funktioniert sie für VRM, glTF und MMD gleich.
+- Pet auf fremden Fenstern: `modules/desktop_windows.rs` (nur Windows; `visible_edges` ist plattformneutral getestet,
+  `cargo test scan_prints_the_desktop -- --ignored --nocapture` zeigt, was der Scan auf dem Rechner sieht). Unsichtbare
+  Vollbild-Overlays mit `WS_EX_TRANSPARENT`/`WS_EX_NOACTIVATE` würden sonst alle Titelleisten „verdecken“. Plattformen
+  sind physische Pixel wie die Pet-Physik. Jede Änderung unter `src-tauri/` startet die App in `tauri dev` neu – ein
+  Scan-Test läuft dann evtl. ohne OtakuSoul-Fenster.
 
 ## Stand
 

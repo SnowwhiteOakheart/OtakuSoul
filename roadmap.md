@@ -68,12 +68,9 @@
   (neue Rolle in `MOTION_ROLES` / `avatar_motions::ROLES`) liefe die Figur richtig.
 - [ ] **Werfen:** Schwung beim Loslassen mitnehmen (seitliche Geschwindigkeit aus den letzten `onMoved`-Ereignissen).
 
-### Phase 4: Interaktion mit fremden Fenstern (Windows & macOS)
-- [ ] **Windows-Integration (Win32 API über `windows-rs`):**
-  - Window Scanner (Hintergrund-Thread in Rust): Periodisches Abfragen offener Fenster via `EnumWindows()`.
-  - Filtern ungültiger Fenster (nur sichtbare, keine minimierten, keine Overlays oder das Pet selbst).
-  - Bestimmung der oberen Kante (Titelleiste) via `DwmGetWindowAttribute(DWMWA_EXTENDED_FRAME_BOUNDS)` bzw. `GetWindowRect()`.
-  - Kollisions-Plattformen: Sitzen & Laufen auf der Titelleiste des fokussierten Fensters. Avatar fällt herunter bei Fensterbewegung.
+### Phase 4: Interaktion mit fremden Fenstern (Windows erledigt, siehe `roadmap_abgeschlossen.md`)
+- [ ] **Mitfahren statt Fallen:** Steht die Figur auf einem Fenster, das verschoben wird, könnte sie mitfahren
+  (Versatz der Plattform übernehmen) statt herunterzufallen – als Option, beides hat seinen Reiz.
 - [ ] **macOS-Integration (CoreGraphics / Quartz Window Services):**
   - Window Scanner via `CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements, kCGNullWindowID)`.
   - Auslesen der `kCGWindowBounds`-Rechtecke.

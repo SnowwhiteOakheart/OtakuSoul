@@ -66,3 +66,7 @@ whisper-rs = { version = "0.16", features = ["tracing_backend"] }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
+
+[target.'cfg(windows)'.dependencies]
+# Desktop pet: the windows on the desktop it can stand on (`modules::desktop_windows`).
+windows = { version = "0.62", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_Graphics_Dwm"] }

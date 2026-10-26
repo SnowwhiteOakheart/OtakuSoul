@@ -23,6 +23,8 @@ export const PET_PICK_EMOTION_EVENT = 'pet:pick-emotion';
 export const PET_VISIBILITY_EVENT = 'pet:visibility';
 /** Backend → pet: global pointer position relative to the pet window. */
 export const PET_CURSOR_EVENT = 'pet:cursor';
+/** Backend → pet: walkable top edges of the other windows (Windows only). */
+export const PET_PLATFORMS_EVENT = 'pet:platforms';
 /** Main → pet: a new chat reply of the figure, for the speech bubble. */
 export const PET_SAY_EVENT = 'pet:say';
 

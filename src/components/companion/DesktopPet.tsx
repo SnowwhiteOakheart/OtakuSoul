@@ -12,7 +12,7 @@ import { api } from '../../services/api';
 import { audioPlayer } from '../../services/audioPlayer';
 import { SILENT_VISEMES } from '../../services/lipSync';
 import { bubbleMs, PetBehavior, type Gaze, type PetMode } from './petBehavior';
-import { stepBody, type Body, type Rect } from './petPhysics';
+import { stepBody, type Body, type Platform, type Rect } from './petPhysics';
 import type { GestureRequest } from '../../utils/avatarGestures';
 import {
   loadPetPlacement,
@@ -22,6 +22,7 @@ import {
   PET_HELLO_EVENT,
   PET_MOODS,
   PET_PICK_EMOTION_EVENT,
+  PET_PLATFORMS_EVENT,
   PET_READY_EVENT,
   PET_SAY_EVENT,
   PET_SIZES,
@@ -61,6 +62,18 @@ const PLACEMENT_SAVE_MS = 500;
 
 const clamp = (value: number) => Math.max(-1, Math.min(1, value));
 
+/** Window calls get this long; one that never answers (e.g. after a broken system drag) must not freeze the pet. */
+const WINDOW_CALL_MS = 1000;
+/** A drag whose end does not settle within this long after the last move is ended anyway. */
+const DRAG_GIVE_UP_MS = DRAG_SETTLE_MS + 2000;
+
+function within<T>(promise: Promise<T>, ms = WINDOW_CALL_MS): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => window.setTimeout(() => reject(new Error('window call timed out')), ms)),
+  ]);
+}
+
 /**
  * The desktop pet window (`index.html?pet=true`): the active avatar on a transparent window.
  * Clicks go through everywhere except on the figure and the pet's own panels; pressing and
@@ -87,6 +100,8 @@ export const DesktopPet: React.FC = () => {
   const area = useRef<Rect | null>(null);
   const monitorScale = useRef(1);
   const walkDirection = useRef<-1 | 0 | 1>(0);
+  /** Top edges of the other windows to stand on (empty outside Windows). */
+  const platforms = useRef<Platform[]>([]);
   const placementSavedAt = useRef(0);
   /** Where the pointer would have the figure look; the behaviour may look elsewhere. */
   const pointerGaze = useRef<Gaze>({ x: 0, y: 0 });
@@ -125,11 +140,11 @@ export const DesktopPet: React.FC = () => {
   /** Reads where the window stands and the work area of the monitor under its feet. */
   const syncWindow = useCallback(async () => {
     const win = getCurrentWindow();
-    const [position, size, factor] = await Promise.all([win.outerPosition(), win.outerSize(), win.scaleFactor()]);
+    const [position, size, factor] = await within(Promise.all([win.outerPosition(), win.outerSize(), win.scaleFactor()]));
     const monitor =
-      (await monitorFromPoint(position.x + size.width / 2, position.y + size.height - 1).catch(() => null)) ??
-      (await currentMonitor());
-    body.current = { x: position.x, y: position.y, vy: 0 };
+      (await within(monitorFromPoint(position.x + size.width / 2, position.y + size.height - 1)).catch(() => null)) ??
+      (await within(currentMonitor()).catch(() => null));
+    body.current = { x: position.x, y: position.y, vy: 0, support: null };
     windowSize.current = { width: size.width, height: size.height };
     monitorScale.current = factor;
     if (monitor) {
@@ -156,7 +171,15 @@ export const DesktopPet: React.FC = () => {
       last = now;
       const current = body.current;
       if (!prefsRef.current.physics || drag.current || !current || !area.current || moving) return;
-      const result = stepBody(current, windowSize.current, area.current, dt, walkDirection.current, monitorScale.current);
+      const result = stepBody(
+        current,
+        windowSize.current,
+        area.current,
+        dt,
+        walkDirection.current,
+        monitorScale.current,
+        platforms.current,
+      );
       behavior.setGrounded(result.grounded, now);
       if (result.wall) behavior.bumped(result.wall);
       const [x, y] = [Math.round(result.body.x), Math.round(result.body.y)];
@@ -164,8 +187,7 @@ export const DesktopPet: React.FC = () => {
       if (x === Math.round(current.x) && y === Math.round(current.y)) return;
       // One move at a time; the next step waits for it.
       moving = true;
-      void getCurrentWindow()
-        .setPosition(new PhysicalPosition(x, y))
+      void within(getCurrentWindow().setPosition(new PhysicalPosition(x, y)))
         .catch(() => {})
         .finally(() => {
           moving = false;
@@ -176,10 +198,12 @@ export const DesktopPet: React.FC = () => {
         const kept = body.current;
         void syncWindow()
           .then(() => {
-            // Keep the falling speed across the re-read.
-            if (kept && body.current) body.current.vy = kept.vy;
+            // Keep the falling speed and the window it stands on across the re-read.
+            if (kept && body.current) {
+              body.current.vy = kept.vy;
+              body.current.support = kept.support;
+            }
           })
-          .catch(() => {});
       }
     }, AREA_REFRESH_MS);
     return () => {
@@ -199,7 +223,13 @@ export const DesktopPet: React.FC = () => {
     const timer = window.setInterval(() => {
       const now = performance.now();
       const dragging = drag.current;
-      if (dragging && !dragging.ending && now - Math.max(dragging.startedAt, dragging.movedAt) > DRAG_SETTLE_MS) {
+      const stillFor = dragging ? now - Math.max(dragging.startedAt, dragging.movedAt) : 0;
+      if (dragging?.ending && stillFor > DRAG_GIVE_UP_MS) {
+        // Where it stands now is unknown: the physics waits for the next read (AREA_REFRESH_MS).
+        body.current = null;
+        drag.current = null;
+        behavior.dragEnd(now);
+      } else if (dragging && !dragging.ending && stillFor > DRAG_SETTLE_MS) {
         // Where it was let go, the physics takes over (and lets it fall).
         dragging.ending = true;
         void syncWindow()
@@ -270,6 +300,9 @@ export const DesktopPet: React.FC = () => {
         const ms = bubbleMs(payload.text);
         behavior.say(performance.now(), ms);
         say(payload.text, ms);
+      }),
+      listen<Platform[]>(PET_PLATFORMS_EVENT, ({ payload }) => {
+        platforms.current = payload;
       }),
       listen(PET_HELLO_EVENT, () => {
         void emitTo('main', PET_READY_EVENT).catch(() => {});
