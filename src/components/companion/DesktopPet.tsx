@@ -11,7 +11,7 @@ import { useTranslation } from '../../i18n';
 import { api } from '../../services/api';
 import { audioPlayer } from '../../services/audioPlayer';
 import { SILENT_VISEMES } from '../../services/lipSync';
-import { bubbleMs, PetBehavior, type Gaze, type PetMode } from './petBehavior';
+import { bubbleMs, HEAD_ZONE_END, PetBehavior, type Gaze, type PetMode, type TouchZone } from './petBehavior';
 import { stepBody, type Body, type Platform, type Rect } from './petPhysics';
 import type { GestureRequest } from '../../utils/avatarGestures';
 import {
@@ -397,10 +397,12 @@ export const DesktopPet: React.FC = () => {
     return () => window.clearInterval(timer);
   }, [statusOpen, fetchCompanionState]);
 
-  const pat = async () => {
-    behavior.pat(performance.now());
-    say(t('pet.patReply'));
-    await applyHormoneInteraction('compliment');
+  const pat = async (zone: TouchZone = 'head') => {
+    behavior.pat(performance.now(), zone);
+    const replies =
+      zone === 'head' ? [t('pet.headpatReply1'), t('pet.headpatReply2')] : [t('pet.pokeReply1'), t('pet.pokeReply2')];
+    say(replies[Math.floor(Math.random() * replies.length)]!);
+    await applyHormoneInteraction(zone === 'head' ? 'headpat' : 'poke');
   };
 
   // Screenshots and the clipboard need the user's yes in the main window.
@@ -511,11 +513,11 @@ export const DesktopPet: React.FC = () => {
         holdRef.current = false;
       });
   };
-  const onPointerUp = () => {
+  const onPointerUp = (e: React.PointerEvent) => {
     const press = pressRef.current;
     pressRef.current = null;
     holdRef.current = false;
-    if (press && !press.dragging) void pat();
+    if (press && !press.dragging) void pat(e.clientY / window.innerHeight < HEAD_ZONE_END ? 'head' : 'body');
   };
 
   const onStage = useCallback((stage: AvatarStage | null) => {
@@ -538,7 +540,8 @@ export const DesktopPet: React.FC = () => {
   const modelPath = pet?.modelPath ?? '';
   const viewerProps = {
     modelPath,
-    emotion: faceOverride ?? pet?.expression ?? 'neutral',
+    // Only VRM models have a blush; glTF and MMD show their relaxed face instead.
+    emotion: (faceOverride === 'blush' && /\.(pmx|pmd|glb|gltf)$/i.test(modelPath) ? 'relaxed' : faceOverride) ?? pet?.expression ?? 'neutral',
     isSpeaking,
     motions: pet?.motions ?? [],
     gesture,

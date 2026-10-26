@@ -3857,7 +3857,6 @@
   "pet.hintClickThrough": "Рядом с персонажем клики проходят к окнам за ним.",
   "pet.platformNote": "Рассчитано на Windows и macOS. В Linux прозрачность и сквозные клики зависят от оконного менеджера.",
   "pet.pat": "Погладить",
-  "pet.patReply": "Хи-хи, как приятно!",
   "pet.showStatus": "Показать состояние",
   "pet.hideStatus": "Скрыть состояние",
   "pet.mood": "Настроение",
@@ -3883,5 +3882,9 @@
   "pet.compose": "Сказать что-нибудь …",
   "pet.composePlaceholder": "Напиши что-нибудь для {{name}} …",
   "pet.send": "Отправить",
-  "pet.sendFailed": "Не получилось: {{error}}"
+  "pet.sendFailed": "Не получилось: {{error}}",
+  "pet.headpatReply1": "Мм … мне нравится.",
+  "pet.headpatReply2": "Хи-хи, продолжай~",
+  "pet.pokeReply1": "Эй! Щекотно!",
+  "pet.pokeReply2": "Ой! Что такое?"
 }

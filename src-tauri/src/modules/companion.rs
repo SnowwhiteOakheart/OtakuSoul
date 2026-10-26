@@ -140,6 +140,18 @@ impl Neurohormones {
                 self.cortisol = (self.cortisol - 6.0).clamp(0.0, 100.0);
                 self.fatigue = (self.fatigue + 1.0).clamp(0.0, 100.0);
             }
+            // Desktop pet: stroked on the head – closeness and calm.
+            "headpat" => {
+                self.oxytocin = (self.oxytocin + 12.0).clamp(0.0, 100.0);
+                self.cortisol = (self.cortisol - 8.0).clamp(0.0, 100.0);
+                self.dopamine = (self.dopamine + 3.0).clamp(0.0, 100.0);
+            }
+            // Desktop pet: poked in the side – playful, a little startled.
+            "poke" => {
+                self.dopamine = (self.dopamine + 6.0).clamp(0.0, 100.0);
+                self.cortisol = (self.cortisol + 2.0).clamp(0.0, 100.0);
+                self.oxytocin = (self.oxytocin + 2.0).clamp(0.0, 100.0);
+            }
             "challenge" | "quest" => {
                 self.dopamine = (self.dopamine + 10.0).clamp(0.0, 100.0);
                 self.cortisol = (self.cortisol + 5.0).clamp(0.0, 100.0);
@@ -1273,6 +1285,17 @@ mod tests {
         hormones.apply_interaction("rest");
         assert_eq!(hormones.fatigue, 5.0);
         assert_eq!(hormones.energy_level, 95);
+    }
+
+    #[test]
+    fn a_headpat_calms_more_than_a_poke() {
+        let mut patted = Neurohormones::default();
+        let mut poked = Neurohormones::default();
+        patted.apply_interaction("headpat");
+        poked.apply_interaction("poke");
+        assert!(patted.oxytocin > poked.oxytocin);
+        assert!(patted.cortisol < poked.cortisol);
+        assert!(poked.dopamine > patted.dopamine);
     }
 
     #[test]

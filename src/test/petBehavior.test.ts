@@ -78,12 +78,20 @@ describe('PetBehavior', () => {
     expect(pet.tick(3100).frame.mode).toBe('idle');
   });
 
-  it('smiles and hops when patted and asks for the happy gesture', () => {
+  it('blushes with lowered eyes when stroked on the head', () => {
     const pet = new PetBehavior(0, fixed(0.5));
-    pet.pat(500);
+    pet.pat(500, 'head');
     const { frame, cues } = pet.tick(600);
-    expect(frame).toMatchObject({ mode: 'reacting', expression: 'happy', hop: true });
+    expect(frame).toMatchObject({ mode: 'reacting', expression: 'blush', hop: false });
+    expect(frame.gaze!.y).toBeLessThan(0);
     expect(cues).toEqual([{ kind: 'gesture', role: 'happy' }]);
+  });
+
+  it('startles with a jump when poked on the body', () => {
+    const pet = new PetBehavior(0, fixed(0.5));
+    pet.pat(500, 'body');
+    expect(pet.tick(600).frame).toMatchObject({ mode: 'reacting', expression: 'surprised', hop: true });
+    expect(pet.tick(1500).frame.mode).toBe('idle');
   });
 
   it('attends to a chat reply and does nothing random meanwhile', () => {

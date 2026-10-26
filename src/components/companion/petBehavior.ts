@@ -35,6 +35,15 @@ export interface PetFrame {
   turn: number;
 }
 
+/** Where the figure was touched: a stroke on the head or a poke elsewhere. */
+export type TouchZone = 'head' | 'body';
+
+/**
+ * Upper end of the head in the pet window (share of its height, from the top). The pet's
+ * framing is fixed (`frameFullBody`: top fifth free, figure below), so the head lies there.
+ */
+export const HEAD_ZONE_END = 0.34;
+
 /** One-time things to do this tick. */
 export type PetCue = { kind: 'gesture'; role: MotionRole } | { kind: 'bubble'; text: 'doze' | 'wake' };
 
@@ -75,6 +84,7 @@ export class PetBehavior {
   private mode: PetMode = 'idle';
   private modeUntil = 0;
   private reactExpression: string | null = null;
+  private reactGaze: Gaze | null = null;
   private lastPointer: number;
   private nextActionAt: number;
   private action: RunningAction | null = null;
@@ -99,10 +109,11 @@ export class PetBehavior {
     return min + this.random() * (max - min);
   }
 
-  private react(now: number, expression: string | null, ms = REACT_MS) {
+  private react(now: number, expression: string | null, ms = REACT_MS, gaze: Gaze | null = null) {
     this.mode = 'reacting';
     this.modeUntil = now + ms;
     this.reactExpression = expression;
+    this.reactGaze = gaze;
     this.action = null;
     this.nextActionAt = Math.max(this.nextActionAt, now + ms + this.gap());
   }
@@ -128,11 +139,19 @@ export class PetBehavior {
     if (this.mode === 'dragged') this.react(now, 'relaxed', 900);
   }
 
-  pat(now: number) {
+  /**
+   * Touched by the user: on the head it blushes and lowers its eyes, elsewhere it startles
+   * with a little jump.
+   */
+  pat(now: number, zone: TouchZone = 'head') {
     this.lastPointer = now;
-    this.react(now, 'happy', 1800);
-    this.hopUntil = now + HOP_MS;
-    this.cues.push({ kind: 'gesture', role: 'happy' });
+    if (zone === 'head') {
+      this.react(now, 'blush', 2200, { x: 0, y: -0.35 });
+      this.cues.push({ kind: 'gesture', role: 'happy' });
+    } else {
+      this.react(now, 'surprised', 900);
+      this.hopUntil = now + HOP_MS;
+    }
   }
 
   /** A chat reply is shown for `ms`; the figure attends to it meanwhile. */
@@ -268,7 +287,7 @@ export class PetBehavior {
         frame = { ...still, mode: 'falling', expression: 'surprised', gaze: { x: 0, y: -0.7 } };
         break;
       case 'reacting':
-        frame = { ...still, mode: 'reacting', expression: this.reactExpression, gaze: null };
+        frame = { ...still, mode: 'reacting', expression: this.reactExpression, gaze: this.reactGaze };
         break;
       case 'talking':
         frame = { ...still, mode: 'talking', expression: null, gaze: null };

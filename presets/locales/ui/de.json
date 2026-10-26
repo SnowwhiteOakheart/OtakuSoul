@@ -3857,7 +3857,6 @@
   "pet.hintClickThrough": "Neben der Figur gehen Klicks durch zu den Fenstern dahinter.",
   "pet.platformNote": "Gedacht für Windows und macOS. Unter Linux hängen Transparenz und Durchklicken vom Fenstermanager ab.",
   "pet.pat": "Kraulen",
-  "pet.patReply": "Hehe, das tut gut!",
   "pet.showStatus": "Status anzeigen",
   "pet.hideStatus": "Status ausblenden",
   "pet.mood": "Stimmung",
@@ -3883,5 +3882,9 @@
   "pet.compose": "Etwas sagen …",
   "pet.composePlaceholder": "Schreib {{name}} etwas …",
   "pet.send": "Senden",
-  "pet.sendFailed": "Das hat nicht geklappt: {{error}}"
+  "pet.sendFailed": "Das hat nicht geklappt: {{error}}",
+  "pet.headpatReply1": "Mmh … das mag ich.",
+  "pet.headpatReply2": "Hehe, mach ruhig weiter~",
+  "pet.pokeReply1": "Hey! Das kitzelt!",
+  "pet.pokeReply2": "Huch! Was gibt's?"
 }

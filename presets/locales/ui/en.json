@@ -3857,7 +3857,6 @@
   "pet.hintClickThrough": "Next to the character, clicks go through to the windows behind it.",
   "pet.platformNote": "Made for Windows and macOS. On Linux, transparency and click-through depend on the window manager.",
   "pet.pat": "Pat",
-  "pet.patReply": "Hehe, that feels nice!",
   "pet.showStatus": "Show status",
   "pet.hideStatus": "Hide status",
   "pet.mood": "Mood",
@@ -3883,5 +3882,9 @@
   "pet.compose": "Say something …",
   "pet.composePlaceholder": "Write something to {{name}} …",
   "pet.send": "Send",
-  "pet.sendFailed": "That did not work: {{error}}"
+  "pet.sendFailed": "That did not work: {{error}}",
+  "pet.headpatReply1": "Mmh … I like that.",
+  "pet.headpatReply2": "Hehe, keep going~",
+  "pet.pokeReply1": "Hey! That tickles!",
+  "pet.pokeReply2": "Oh! What is it?"
 }

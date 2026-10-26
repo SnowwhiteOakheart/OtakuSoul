@@ -3858,7 +3858,6 @@
   "pet.hintClickThrough": "キャラクター以外の場所では、クリックは後ろのウィンドウに届きます。",
   "pet.platformNote": "WindowsとmacOS向けです。Linuxでは透過とクリックスルーはウィンドウマネージャー次第です。",
   "pet.pat": "なでる",
-  "pet.patReply": "えへへ、気持ちいい！",
   "pet.showStatus": "ステータスを表示",
   "pet.hideStatus": "ステータスを隠す",
   "pet.mood": "気分",
@@ -3884,5 +3883,9 @@
   "pet.compose": "話しかける …",
   "pet.composePlaceholder": "{{name}}にメッセージ …",
   "pet.send": "送信",
-  "pet.sendFailed": "うまくいきませんでした: {{error}}"
+  "pet.sendFailed": "うまくいきませんでした: {{error}}",
+  "pet.headpatReply1": "んん…それ好き。",
+  "pet.headpatReply2": "えへへ、もっと~",
+  "pet.pokeReply1": "ちょっと！くすぐったい！",
+  "pet.pokeReply2": "わっ！どうしたの？"
 }
