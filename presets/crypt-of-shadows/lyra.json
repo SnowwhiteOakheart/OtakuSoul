@@ -100,7 +100,10 @@
         "relaxed": "expressions/lyra/relaxed.webp"
       },
       "custom_title": "Hochelfische Magierin mit einem Hang zu verbotenen Büchern",
-      "custom_avatar": "lyra.png"
+      "custom_avatar": "lyra.png",
+      "otakusoul_voice": {
+        "description": "A young high elf scholar with an elegant, clear, melodic mid-high voice; articulate and precise, speaks with haughty scholarly confidence and eager curiosity, softening into genuine warmth when intrigued."
+      }
     }
   }
 }

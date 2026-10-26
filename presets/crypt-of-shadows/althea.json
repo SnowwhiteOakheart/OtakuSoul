@@ -100,7 +100,10 @@
         "relaxed": "expressions/althea/relaxed.webp"
       },
       "custom_title": "Klerikerin der Morgensonne, Heilerin und Gewissen der Gruppe",
-      "custom_avatar": "althea.png"
+      "custom_avatar": "althea.png",
+      "otakusoul_voice": {
+        "description": "A woman in her late twenties with a warm, steady, melodic contralto voice; comforting and resolute, speaks with calm authority and cheerful reassurance, turning firm and unyielding when protecting others."
+      }
     }
   }
 }

@@ -7,6 +7,15 @@ import { cardVoiceDescription, loadCharacterVoiceConfig, withCardVoice } from '.
 import { resetApiMocks } from './mockApi';
 import type { CharacterProfile, VoiceConfig } from '../types';
 
+import shioriCard from '../../presets/characters/shiori_amane.json';
+import sotaCard from '../../presets/characters/sota_minase.json';
+import lirwenCard from '../../presets/characters/lirwen.json';
+import faelionCard from '../../presets/characters/faelion.json';
+import thorinCard from '../../presets/crypt-of-shadows/thorin.json';
+import lyraCard from '../../presets/crypt-of-shadows/lyra.json';
+import finnCard from '../../presets/crypt-of-shadows/finn.json';
+import altheaCard from '../../presets/crypt-of-shadows/althea.json';
+
 const shiori = {
   id: 'shiori_amane',
   card: { data: { name: 'Shiori', extensions: { otakusoul_voice: { description: ' A soft, bookish young woman ' } } } },
@@ -34,5 +43,23 @@ describe('character voice from the card', () => {
     const loaded = await loadCharacterVoiceConfig('shiori_amane', [plain, null, shiori]);
     expect(api.getCharacterVoiceConfig).toHaveBeenCalledWith('shiori_amane');
     expect(loaded.openai_instructions).toBe('A soft, bookish young woman');
+  });
+
+  it('verifies that all bundled preset characters define an otakusoul_voice description', () => {
+    const bundledCards = [
+      shioriCard,
+      sotaCard,
+      lirwenCard,
+      faelionCard,
+      thorinCard,
+      lyraCard,
+      finnCard,
+      altheaCard,
+    ];
+    for (const card of bundledCards) {
+      const voiceDesc = card.data.extensions.otakusoul_voice?.description;
+      expect(typeof voiceDesc, `${card.data.name} should have a voice description string`).toBe('string');
+      expect(voiceDesc.trim().length, `${card.data.name} voice description should not be empty`).toBeGreaterThan(10);
+    }
   });
 });

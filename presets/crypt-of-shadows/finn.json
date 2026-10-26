@@ -100,7 +100,10 @@
         "relaxed": "expressions/finn/relaxed.webp"
       },
       "custom_title": "Halbling-Schurke mit losem Mundwerk und flinken Fingern",
-      "custom_avatar": "finn.png"
+      "custom_avatar": "finn.png",
+      "otakusoul_voice": {
+        "description": "A young halfling rogue with a lively, light, nimble tenor voice; cheeky and playful, speaks quickly with sharp wit, cheerful banter and a sly, warm-hearted grin."
+      }
     }
   }
 }

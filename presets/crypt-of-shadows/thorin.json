@@ -100,7 +100,10 @@
         "relaxed": "expressions/thorin/relaxed.webp"
       },
       "custom_title": "Zwergischer Kämpfer und Schildwall der Gruppe",
-      "custom_avatar": "thorin.png"
+      "custom_avatar": "thorin.png",
+      "otakusoul_voice": {
+        "description": "A seasoned dwarven warrior with a deep, gravelly, resonant bass voice; gruff and blunt, speaks slowly and tersely with dry, sardonic humor, unyielding and protective beneath the rough edge."
+      }
     }
   }
 }

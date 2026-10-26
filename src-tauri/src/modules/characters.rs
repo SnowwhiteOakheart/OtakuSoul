@@ -1375,6 +1375,40 @@ mod tests {
             for path in expressions.values().filter_map(|p| p.as_str()) {
                 assert!(dir.join(path).is_file(), "{slug}: {path} fehlt");
             }
+            let voice_desc = profile.card.data.extensions["otakusoul_voice"]["description"]
+                .as_str()
+                .unwrap_or_default();
+            assert!(
+                !voice_desc.trim().is_empty(),
+                "{slug}: otakusoul_voice description fehlt"
+            );
+        }
+    }
+
+    #[test]
+    fn test_crypt_characters_load_with_voice() {
+        let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| ".".to_string());
+        let dir = Path::new(&manifest_dir)
+            .parent()
+            .unwrap()
+            .join("presets/crypt-of-shadows");
+        for (slug, name) in [
+            ("thorin", "Thorin Eisenbart"),
+            ("lyra", "Lyra Sternenhain"),
+            ("finn", "Finn Flinkfuß"),
+            ("althea", "Althea Sonnwind"),
+        ] {
+            let profile = load_character_from_file(&dir.join(format!("{slug}.json")))
+                .unwrap_or_else(|e| panic!("{slug}: {e}"));
+            assert_eq!(profile.card.data.name, name);
+            assert!(profile.avatar_data_url.is_some(), "{slug}: Avatar fehlt");
+            let voice_desc = profile.card.data.extensions["otakusoul_voice"]["description"]
+                .as_str()
+                .unwrap_or_default();
+            assert!(
+                !voice_desc.trim().is_empty(),
+                "{slug}: otakusoul_voice description fehlt"
+            );
         }
     }
 
