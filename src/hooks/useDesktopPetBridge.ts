@@ -1,0 +1,119 @@
+import { useEffect } from 'react';
+import { emitTo, listen } from '@tauri-apps/api/event';
+import { useAppStore } from '../store/useAppStore';
+import { audioPlayer } from '../services/audioPlayer';
+import { manualEmotion, resolveVrmPath } from '../components/avatars/avatarMatch';
+import { APP_DEFAULT_COMPANION_NAME } from '../constants/branding';
+import {
+  PET_AUDIO_EVENT,
+  PET_HELLO_EVENT,
+  PET_LABEL,
+  PET_PICK_EMOTION_EVENT,
+  PET_READY_EVENT,
+  PET_STATE_EVENT,
+  PET_VISIBILITY_EVENT,
+  type PetAudioFrame,
+  type PetState,
+} from '../services/desktopPet';
+
+/** Voice frames to the pet at most this often (mouth shapes are smoothed there). */
+const AUDIO_FRAME_MS = 33;
+
+type StoreState = ReturnType<typeof useAppStore.getState>;
+
+function petState(s: StoreState): PetState {
+  return {
+    characterName: s.activeCharacter?.card.data.name || APP_DEFAULT_COMPANION_NAME,
+    modelPath: resolveVrmPath(s.activeCharacter, s.scannedVrms, s.activeVrmPath),
+    emotion: s.currentEmotion.emotion,
+    expression: s.currentEmotion.vrm_expression,
+    motions: s.avatarMotions,
+    gesture: s.avatarGesture,
+    appLanguage: s.appLanguage,
+    theme: s.theme,
+    colorMode: s.colorMode,
+  };
+}
+
+/**
+ * Main window side of the desktop pet: while the pet window is open it gets the active figure,
+ * mood, gestures and the voice's mouth shapes; moods picked in the pet's menu come back here.
+ */
+export function useDesktopPetBridge(enabled = true) {
+  useEffect(() => {
+    if (!enabled) return undefined;
+    let isSubscribed = true;
+    let open = false;
+    let lastSent = '';
+    let staleGestureId: number | null = null;
+
+    const send = (force = false) => {
+      if (!open) return;
+      const state = petState(useAppStore.getState());
+      // A gesture plays once: a freshly opened pet does not repeat the one from before.
+      if (force) staleGestureId = state.gesture?.id ?? null;
+      const payload = { ...state, gesture: state.gesture?.id === staleGestureId ? null : state.gesture };
+      const key = JSON.stringify(payload);
+      if (!force && key === lastSent) return;
+      lastSent = key;
+      void emitTo(PET_LABEL, PET_STATE_EVENT, payload).catch(() => {});
+    };
+
+    const unsubscribeStore = useAppStore.subscribe((s, prev) => {
+      if (
+        s.activeCharacter !== prev.activeCharacter ||
+        s.scannedVrms !== prev.scannedVrms ||
+        s.activeVrmPath !== prev.activeVrmPath ||
+        s.currentEmotion !== prev.currentEmotion ||
+        s.avatarMotions !== prev.avatarMotions ||
+        s.avatarGesture !== prev.avatarGesture ||
+        s.appLanguage !== prev.appLanguage ||
+        s.theme !== prev.theme ||
+        s.colorMode !== prev.colorMode ||
+        s.localeRevision !== prev.localeRevision
+      ) {
+        send();
+      }
+    });
+
+    let lastFrameAt = 0;
+    let voiced = false;
+    const stopFrames = audioPlayer.onAudioFrame((amplitude, visemes) => {
+      if (!open) return;
+      const playing = audioPlayer.isPlaying();
+      const now = performance.now();
+      // The last silent frame always goes, or the pet's mouth would stay open.
+      if (playing && now - lastFrameAt < AUDIO_FRAME_MS) return;
+      if (!playing && !voiced) return;
+      lastFrameAt = now;
+      voiced = playing;
+      const frame: PetAudioFrame = { amplitude, visemes: playing ? visemes : null };
+      void emitTo(PET_LABEL, PET_AUDIO_EVENT, frame).catch(() => {});
+    });
+
+    const unlisteners: Promise<() => void>[] = [
+      listen<boolean>(PET_VISIBILITY_EVENT, (event) => {
+        open = event.payload;
+        if (open) send(true);
+      }),
+      listen(PET_READY_EVENT, () => {
+        open = true;
+        send(true);
+      }),
+      listen<string>(PET_PICK_EMOTION_EVENT, (event) => {
+        useAppStore.getState().setCurrentEmotion(manualEmotion(event.payload));
+      }),
+    ];
+    // A pet that was open before this window (re)loaded reports back.
+    void Promise.all(unlisteners).then(() => {
+      if (isSubscribed) void emitTo(PET_LABEL, PET_HELLO_EVENT).catch(() => {});
+    });
+
+    return () => {
+      isSubscribed = false;
+      unsubscribeStore();
+      stopFrames();
+      for (const unlisten of unlisteners) void unlisten.then((stop) => stop());
+    };
+  }, [enabled]);
+}

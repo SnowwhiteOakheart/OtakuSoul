@@ -908,6 +908,15 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
 - Companion-Tools: nur ausdrücklich geprüfte interne Tools in `companion.rs` → `tool_allows_auto_approval`
   dürfen automatisch freigegeben werden. MCP-/unbekannte Tools, Screenshots, Zwischenablage und schreibende
   Dateiaktionen laufen über den Bestätigungsbanner; ausgeführt wird in `execute_internal_sync`.
+- Desktop-Pet (`commands/desktop_pet.rs`, `components/companion/DesktopPet.tsx`): eigenes Webview mit eigenem Store
+  ohne `initApp` – alles, was es zeigt, kommt per Event aus dem Hauptfenster (`hooks/useDesktopPetBridge.ts`, Namen in
+  `services/desktopPet.ts`); Lippensync über `audioPlayer.feedRemoteFrame`. Rechte stehen in
+  `capabilities/desktop-pet.json` (ohne Eintrag dort kein `listen`, Ziehen oder Click-Through). Ein mausdurchlässiges
+  Fenster bekommt keine Mausereignisse: Rust schickt deshalb den globalen Zeiger (`pet:cursor`), das Pet prüft per
+  `stage.probe` die Deckkraft des Pixels; eigene Panels zählen über `data-pet-solid` als „getroffen“. Ausblenden
+  schließt das Fenster ganz (kein WebGL im Hintergrund). Unter Windows muss es denselben Webview-Datenordner wie das
+  Hauptfenster nutzen. `tauri dev`: Beim ersten Öffnen optimiert Vite `@tauri-apps/api/menu`/`window` nach und lädt
+  alle Fenster neu – nur in der Entwicklung.
 
 ## Stand
 

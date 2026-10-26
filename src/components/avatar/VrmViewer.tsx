@@ -12,7 +12,7 @@ import { mouthTarget, SILENT_VISEMES, type Visemes } from '../../services/lipSyn
 import type { AvatarMotion } from '../../types';
 import type { GestureRequest } from '../../utils/avatarGestures';
 import { loadMotionClip, AvatarMotionPlayer } from './vrmMotions';
-import { createAvatarStage, createBlinker } from './avatarStage';
+import { createAvatarStage, createBlinker, type AvatarStage } from './avatarStage';
 import { AvatarViewerChrome } from './AvatarViewerChrome';
 import { useAvatarMotions } from './useAvatarMotions';
 
@@ -27,6 +27,11 @@ export interface AvatarViewerProps {
   gesture?: GestureRequest | null;
   /** A quick emotion button was pressed (GoEmotions name). */
   onPickEmotion?: (emotion: string) => void;
+  /**
+   * Desktop pet: transparent, whole figure, no camera controls or buttons. Receives the stage
+   * (pointer for looking, hit test for click-through) and `null` when it goes.
+   */
+  pet?: { onStage: (stage: AvatarStage | null) => void };
 }
 
 const VISEME_KEYS = Object.keys(SILENT_VISEMES) as (keyof Visemes)[];
@@ -87,6 +92,7 @@ export const VrmViewer = ({
   motions = [],
   gesture = null,
   onPickEmotion = () => {},
+  pet,
 }: AvatarViewerProps) => {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -98,6 +104,10 @@ export const VrmViewer = ({
   const [loadedVrm, setLoadedVrm] = useState<VRM | null>(null);
   const motionPlayerRef = useRef<AvatarMotionPlayer | null>(null);
   const [playingGesture, setPlayingGesture] = useState('');
+  const petRef = useRef(pet);
+  useEffect(() => {
+    petRef.current = pet;
+  }, [pet]);
 
   useEffect(() => {
     emotionRef.current = emotion;
@@ -124,8 +134,9 @@ export const VrmViewer = ({
     const cleanupAudio = audioPlayer.onAudioFrame((_amplitude, visemes) => {
       audioVisemes = visemes;
     });
-    const stage = createAvatarStage(container, modelPath);
+    const stage = createAvatarStage(container, modelPath, { pet: !!petRef.current });
     resetViewRef.current = stage.resetView;
+    petRef.current?.onStage(stage);
 
     const loader = new GLTFLoader();
     loader.register((parser) => new VRMLoaderPlugin(parser));
@@ -293,6 +304,7 @@ export const VrmViewer = ({
     return () => {
       isDisposed = true;
       resetViewRef.current = null;
+      petRef.current?.onStage(null);
       cleanupAudio();
       stage.dispose();
       motionPlayerRef.current?.dispose();
@@ -315,14 +327,14 @@ export const VrmViewer = ({
   });
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden bg-linear-to-b from-slate-900/40 via-accent-950/20 to-app">
+    <div className={pet ? 'relative w-full h-full overflow-hidden' : 'relative w-full h-full flex flex-col items-center justify-center overflow-hidden bg-linear-to-b from-slate-900/40 via-accent-950/20 to-app'}>
       <div
         ref={containerRef}
         data-motions={motionCount}
         data-gesture={playingGesture}
-        className="w-full h-full cursor-grab active:cursor-grabbing"
+        className={pet ? 'w-full h-full' : 'w-full h-full cursor-grab active:cursor-grabbing'}
       />
-      <AvatarViewerChrome
+      {!pet && <AvatarViewerChrome
         loading={loading}
         loadingLabel={t('avatar.vrmLoading')}
         error={error}
@@ -330,7 +342,7 @@ export const VrmViewer = ({
         expression={emotion}
         onPickEmotion={onPickEmotion}
         onResetView={() => resetViewRef.current?.()}
-      />
+      />}
     </div>
   );
 };

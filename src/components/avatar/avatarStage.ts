@@ -5,6 +5,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import {
   clearVrmViewState,
+  frameFullBody,
   frameUpperBody,
   loadVrmViewState,
   saveVrmViewState,
@@ -40,15 +41,34 @@ export interface AvatarStage {
   start: (onFrame: (delta: number, elapsed: number) => void) => void;
   /** Times the next rendered frame (shader compile and texture upload of a new model) as `avatar:firstFrame`. */
   timeNextFrame: (modelPath: string) => void;
+  /**
+   * Whether the model covers the point (CSS pixels in the viewer) in the next rendered frame:
+   * the desktop pet lets clicks through everywhere else. A newer probe drops an unanswered one.
+   */
+  probe: (x: number, y: number, onResult: (hit: boolean) => void) => void;
   dispose: () => void;
 }
 
-export function createAvatarStage(container: HTMLElement, modelPath: string): AvatarStage {
+export interface AvatarStageOptions {
+  /**
+   * Desktop pet: whole figure, no camera controls and no remembered view; the pet window
+   * sets `mouse` itself (from the global pointer, also outside the window).
+   */
+  pet?: boolean;
+}
+
+/** Alpha above which a pixel counts as part of the model (soft hair edges stay click-through). */
+const PROBE_ALPHA = 24;
+
+export function createAvatarStage(container: HTMLElement, modelPath: string, options: AvatarStageOptions = {}): AvatarStage {
+  const pet = !!options.pet;
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(32, container.clientWidth / container.clientHeight, 0.1, 20.0);
   camera.position.fromArray(DEFAULT_CAMERA_POSITION);
 
   const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'high-performance' });
+  // Fully transparent background (the desktop pet window shows the desktop through it).
+  renderer.setClearColor(0x000000, 0);
   renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -68,10 +88,12 @@ export function createAvatarStage(container: HTMLElement, modelPath: string): Av
   controls.minDistance = 0.4;
   controls.maxDistance = 2.5;
   controls.maxPolarAngle = Math.PI / 2 + 0.1;
+  // The pet is dragged as a whole window; the camera stays put.
+  controls.enabled = !pet;
 
   // Earlier versions stored the fixed start view even without a camera move; that is no
   // choice of the user and must not hide the framing of the model.
-  const storedView = loadVrmViewState(modelPath);
+  const storedView = pet ? null : loadVrmViewState(modelPath);
   const savedView =
     storedView &&
     !(
@@ -92,7 +114,7 @@ export function createAvatarStage(container: HTMLElement, modelPath: string): Av
   // Only a camera the user moved is remembered; otherwise the model framing applies.
   let userMoved = !!savedView;
   const saveViewState = () => {
-    if (!userMoved) return;
+    if (!userMoved || pet) return;
     saveVrmViewState(modelPath, {
       camera: [camera.position.x, camera.position.y, camera.position.z],
       target: [controls.target.x, controls.target.y, controls.target.z],
@@ -145,8 +167,10 @@ export function createAvatarStage(container: HTMLElement, modelPath: string): Av
       mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
     }
   };
-  container.addEventListener('mouseenter', invalidateRect);
-  container.addEventListener('mousemove', handleMouseMove);
+  if (!pet) {
+    container.addEventListener('mouseenter', invalidateRect);
+    container.addEventListener('mousemove', handleMouseMove);
+  }
 
   const handleResize = () => {
     invalidateRect();
@@ -162,12 +186,30 @@ export function createAvatarStage(container: HTMLElement, modelPath: string): Av
   let outline: OutlineEffect | null = null;
   let toon = false;
   let timedFrame: string | null = null;
+  let pendingProbe: { x: number; y: number; onResult: (hit: boolean) => void } | null = null;
+  const probePixel = new Uint8Array(4);
+  // Right after rendering, before the frame is shown, the drawing buffer still holds it.
+  const answerProbe = () => {
+    if (!pendingProbe) return;
+    const { x, y, onResult } = pendingProbe;
+    pendingProbe = null;
+    const gl = renderer.getContext();
+    const ratio = gl.drawingBufferWidth / Math.max(1, container.clientWidth);
+    const px = Math.floor(x * ratio);
+    const py = Math.floor(gl.drawingBufferHeight - y * ratio);
+    if (px < 0 || py < 0 || px >= gl.drawingBufferWidth || py >= gl.drawingBufferHeight) {
+      onResult(false);
+      return;
+    }
+    gl.readPixels(px, py, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, probePixel);
+    onResult(probePixel[3]! > PROBE_ALPHA);
+  };
   return {
     scene,
     camera,
     mouse,
     frameModel: (headY, topY) => {
-      defaultView = frameUpperBody(headY, topY, camera.fov, camera.aspect);
+      defaultView = pet ? frameFullBody(topY, camera.fov, camera.aspect) : frameUpperBody(headY, topY, camera.fov, camera.aspect);
       if (!savedView) applyView(defaultView);
     },
     resetView: () => {
@@ -199,6 +241,10 @@ export function createAvatarStage(container: HTMLElement, modelPath: string): Av
     timeNextFrame: (nextModelPath) => {
       timedFrame = nextModelPath;
     },
+    probe: (x, y, onResult) => {
+      // A newer pointer position replaces one not yet answered.
+      pendingProbe = { x, y, onResult };
+    },
     start: (onFrame) => {
       let lastTime = performance.now();
       const startTime = lastTime;
@@ -224,6 +270,7 @@ export function createAvatarStage(container: HTMLElement, modelPath: string): Av
         const frameStart = timedFrame === null ? 0 : performance.now();
         if (toon && outline) outline.render(scene, camera);
         else renderer.render(scene, camera);
+        answerProbe();
         if (timedFrame !== null) {
           // A WebGL call returns before the GPU finishes; reading one pixel waits for it.
           renderer.getContext().readPixels(0, 0, 1, 1, WebGL2RenderingContext.RGBA, WebGL2RenderingContext.UNSIGNED_BYTE, new Uint8Array(4));
@@ -241,6 +288,7 @@ export function createAvatarStage(container: HTMLElement, modelPath: string): Av
       if (saveTimer !== null) window.clearTimeout(saveTimer);
       saveViewState();
       cancelAnimationFrame(animationFrameId);
+      pendingProbe = null;
       stopSnapshots();
       controls.removeEventListener('start', markMoved);
       controls.removeEventListener('change', markChanged);

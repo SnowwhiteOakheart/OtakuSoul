@@ -7,7 +7,7 @@ import { PORTRAIT_MOODS, assetAsBlobUrl, getPortraitExpressions, loadDisplayable
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { translate, useTranslation, type TranslationKey } from '../../i18n';
 import { DropdownMenu } from '../ui/DropdownMenu';
-import { resolveLive2dPath } from '../avatars/avatarMatch';
+import { manualEmotion, resolveLive2dPath, resolveVrmPath } from '../avatars/avatarMatch';
 import { AvatarSkeleton, ScrollText } from '../ui';
 import { languageCode, localizeCard } from '../../utils/cardI18n';
 import { audioPlayer } from '../../services/audioPlayer';
@@ -235,15 +235,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
 
   // 1. Resolve VRM path (Character override or global setting). A character's model that is no
   // longer in the list (removed in the settings) falls back to the default avatar.
-  const characterVrm =
-    (character?.card.data.extensions?.custom_vrm as string) ||
-    (character?.card.data.extensions?.sow_vrm as string) ||
-    '';
-  const normalize = (path: string) => path.replace(/\\/g, '/').toLowerCase();
-  const characterVrmKnown =
-    !!characterVrm &&
-    (scannedVrms.length === 0 || scannedVrms.some((vrm) => normalize(vrm.path).endsWith(normalize(characterVrm))));
-  const vrmPath = (characterVrmKnown ? characterVrm : '') || activeVrmPath || '';
+  const vrmPath = resolveVrmPath(character, scannedVrms, activeVrmPath);
 
   // 2. Resolve Live2D model path (Character override or global setting fallback)
   const live2dPath = resolveLive2dPath(character, scannedLive2ds, activeLive2dPath);
@@ -258,27 +250,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
 
   const charName = character?.card.data.name || 'OtakuSoul Companion';
 
-  const handleSelectManualEmotion = (em: string) => {
-    const vrm = ['joy', 'amusement', 'excitement', 'love', 'optimism', 'pride', 'gratitude', 'admiration'].includes(em)
-      ? 'happy'
-      : ['anger', 'annoyance', 'disapproval', 'disgust'].includes(em)
-      ? 'angry'
-      : ['sadness', 'grief', 'disappointment', 'remorse'].includes(em)
-      ? 'sad'
-      : ['surprise', 'confusion', 'curiosity'].includes(em)
-      ? 'surprised'
-      : em === 'neutral'
-      ? 'neutral'
-      : 'relaxed';
-
-    setCurrentEmotion({
-      emotion: em,
-      vrm_expression: vrm,
-      live2d_expression: `${em}_animation`,
-      confidence: 1.0,
-      intensity: 0.8,
-    });
-  };
+  const handleSelectManualEmotion = (em: string) => setCurrentEmotion(manualEmotion(em));
 
   // The extra portraits this card has can be tried out too (the emotion behind each drives 3D).
   const extraPortraits = PORTRAIT_MOODS.filter((m) => m.group !== 'standard' && getPortraitExpressions(character)[m.key]);

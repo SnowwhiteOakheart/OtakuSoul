@@ -7,6 +7,8 @@ import { useAppStore } from './store/useAppStore';
 import { useTabHistory } from './hooks/useTabHistory';
 import { useCloseToTray } from './hooks/useCloseToTray';
 import { useProactiveMessages } from './hooks/useProactiveMessages';
+import { useDesktopPetBridge } from './hooks/useDesktopPetBridge';
+import { isPetWindow } from './services/desktopPet';
 import { useTranslation } from './i18n';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { FeedbackHost } from './components/ui/feedback';
@@ -23,7 +25,7 @@ const StageView = lazy(() => import('./components/stage/StageView').then((module
 const CompanionView = lazy(() => import('./components/companion/CompanionView').then((module) => ({ default: module.CompanionView })));
 const HubView = lazy(() => import('./components/hub/HubView').then((module) => ({ default: module.HubView })));
 const IntegrationsView = lazy(() => import('./components/integrations/IntegrationsView').then((module) => ({ default: module.IntegrationsView })));
-const FloatingCompanionOverlay = lazy(() => import('./components/companion/FloatingCompanionOverlay').then((module) => ({ default: module.FloatingCompanionOverlay })));
+const DesktopPet = lazy(() => import('./components/companion/DesktopPet').then((module) => ({ default: module.DesktopPet })));
 const CharacterAiAssistantModal = lazy(() => import('./components/characters/CharacterAiAssistantModal').then((module) => ({ default: module.CharacterAiAssistantModal })));
 const LogViewerModal = lazy(() => import('./components/logging/LogViewerModal').then((module) => ({ default: module.LogViewerModal })));
 const FirstRunWizard = lazy(() => import('./components/onboarding/FirstRunWizard').then((module) => ({ default: module.FirstRunWizard })));
@@ -37,19 +39,17 @@ export function App() {
   const isPersonaManagerOpen = useAppStore((s) => s.isPersonaManagerOpen);
   const setIsPersonaManagerOpen = useAppStore((s) => s.setIsPersonaManagerOpen);
   const { t } = useTranslation();
-  const isOverlayMode =
-    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('overlay') === 'true';
-  useTabHistory(!isOverlayMode);
-  useCloseToTray(!isOverlayMode);
-  useProactiveMessages(!isOverlayMode);
+  const isPet = isPetWindow();
+  useTabHistory(!isPet);
+  useCloseToTray(!isPet);
+  useProactiveMessages(!isPet);
+  useDesktopPetBridge(!isPet);
 
-  if (isOverlayMode) {
+  if (isPet) {
     return (
-      <div className="w-screen h-screen bg-transparent overflow-hidden font-sans">
-        <Suspense fallback={null}>
-          <FloatingCompanionOverlay />
-        </Suspense>
-      </div>
+      <Suspense fallback={null}>
+        <DesktopPet />
+      </Suspense>
     );
   }
 

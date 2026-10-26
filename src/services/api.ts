@@ -838,8 +838,16 @@ export const api = {
     return await invoke<string>('execute_companion_plugin', { pluginId, arguments: args });
   },
 
-  toggleCompanionOverlay: async (enable: boolean, clickThrough: boolean = false): Promise<boolean> => {
-    return await invoke<boolean>('toggle_companion_overlay', { enable, clickThrough });
+  /** Opens or hides the desktop pet; a new window starts at `placement` (physical position, logical size). */
+  toggleDesktopPet: async (
+    enable: boolean,
+    placement?: { x?: number; y?: number; width: number; height: number },
+  ): Promise<boolean> => {
+    return await invoke<boolean>('toggle_desktop_pet', { enable, placement: placement ?? null });
+  },
+
+  showMainWindow: async (): Promise<void> => {
+    await invoke('show_main_window');
   },
 
   evaluateCompanionProactive: async (): Promise<[string, string] | null> => {

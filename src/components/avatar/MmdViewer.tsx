@@ -44,6 +44,7 @@ export const MmdViewer = ({
   motions = [],
   gesture = null,
   onPickEmotion = () => {},
+  pet,
 }: AvatarViewerProps) => {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -55,6 +56,10 @@ export const MmdViewer = ({
   const [loaded, setLoaded] = useState<MMD | null>(null);
   const motionPlayerRef = useRef<AvatarMotionPlayer | null>(null);
   const [playingGesture, setPlayingGesture] = useState('');
+  const petRef = useRef(pet);
+  useEffect(() => {
+    petRef.current = pet;
+  }, [pet]);
 
   useEffect(() => {
     emotionRef.current = emotion;
@@ -74,7 +79,8 @@ export const MmdViewer = ({
     const cleanupAudio = audioPlayer.onAudioFrame((_amplitude, visemes) => {
       audioVisemes = visemes;
     });
-    const stage = createAvatarStage(container, modelPath);
+    const stage = createAvatarStage(container, modelPath, { pet: !!petRef.current });
+    petRef.current?.onStage(stage);
     resetViewRef.current = stage.resetView;
 
     let mmd: MMD | null = null;
@@ -193,6 +199,7 @@ export const MmdViewer = ({
     return () => {
       isDisposed = true;
       resetViewRef.current = null;
+      petRef.current?.onStage(null);
       cleanupAudio();
       stage.dispose();
       motionPlayerRef.current?.dispose();
@@ -214,22 +221,22 @@ export const MmdViewer = ({
   });
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden bg-linear-to-b from-slate-900/40 via-accent-950/20 to-app">
+    <div className={pet ? 'relative w-full h-full overflow-hidden' : 'relative w-full h-full flex flex-col items-center justify-center overflow-hidden bg-linear-to-b from-slate-900/40 via-accent-950/20 to-app'}>
       <div
         ref={containerRef}
         data-avatar-format="mmd"
         data-motions={motionCount}
         data-gesture={playingGesture}
-        className="w-full h-full cursor-grab active:cursor-grabbing"
+        className={pet ? 'w-full h-full' : 'w-full h-full cursor-grab active:cursor-grabbing'}
       />
-      <AvatarViewerChrome
+      {!pet && <AvatarViewerChrome
         loading={loading}
         loadingLabel={t('avatar.vrmLoading')}
         error={error}
         expression={emotion}
         onPickEmotion={onPickEmotion}
         onResetView={() => resetViewRef.current?.()}
-      />
+      />}
     </div>
   );
 };

@@ -5,6 +5,7 @@ pub mod avatar;
 pub mod characters;
 pub mod chat;
 pub mod companion;
+pub mod desktop_pet;
 pub mod ecosystem;
 pub mod hub;
 pub mod llm;

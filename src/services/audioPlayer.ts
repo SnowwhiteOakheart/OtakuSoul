@@ -52,6 +52,8 @@ export class AudioPlaybackManager {
   /** Audio-clock time the next clip may start at. */
   private nextStart = 0;
   private playing = false;
+  /** Voice playing in another window (desktop pet: the main window plays, the pet moves its mouth). */
+  private remotePlaying = false;
   private generation = 0;
   private state: AudioPlaybackState = 'idle';
 
@@ -265,7 +267,17 @@ export class AudioPlaybackManager {
   }
 
   public isPlaying(): boolean {
-    return this.playing;
+    return this.playing || this.remotePlaying;
+  }
+
+  /**
+   * A frame of the voice another window plays (`visemes` null: it stopped). The avatar viewers
+   * here then move the mouth as if this player played it.
+   */
+  public feedRemoteFrame(amplitude: number, visemes: Visemes | null) {
+    this.remotePlaying = visemes !== null;
+    const frame = visemes ?? SILENT_VISEMES;
+    this.onFrameCallbacks.forEach((callback) => callback(visemes ? amplitude : 0, frame));
   }
 
   public isBusy(): boolean {

@@ -88,7 +88,7 @@ pub fn run() {
             }))
             .plugin(
                 tauri_plugin_window_state::Builder::default()
-                    .with_denylist(&["companion_overlay"])
+                    .with_denylist(&[commands::desktop_pet::PET_LABEL])
                     .build(),
             )
     };
@@ -357,7 +357,8 @@ pub fn run() {
             commands::companion::list_companion_plugins,
             commands::companion::save_companion_plugin,
             commands::companion::execute_companion_plugin,
-            commands::companion::toggle_companion_overlay,
+            commands::desktop_pet::toggle_desktop_pet,
+            commands::desktop_pet::show_main_window,
             commands::companion::evaluate_companion_proactive,
             commands::app::get_app_paths,
             commands::app::hide_main_window,

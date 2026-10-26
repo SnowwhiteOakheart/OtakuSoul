@@ -142,6 +142,7 @@ export const GltfViewer = ({
   motions = [],
   gesture = null,
   onPickEmotion = () => {},
+  pet,
 }: AvatarViewerProps) => {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -153,6 +154,10 @@ export const GltfViewer = ({
   const [loaded, setLoaded] = useState<LoadedRig | null>(null);
   const motionPlayerRef = useRef<AvatarMotionPlayer | null>(null);
   const [playingGesture, setPlayingGesture] = useState('');
+  const petRef = useRef(pet);
+  useEffect(() => {
+    petRef.current = pet;
+  }, [pet]);
   const [embedded, setEmbedded] = useState<THREE.AnimationClip[]>([]);
   const [ownClips, setOwnClips] = useState<Map<MotionRole, THREE.AnimationClip[]> | undefined>(undefined);
   const [extraClips, setExtraClips] = useState<THREE.AnimationClip[]>([]);
@@ -189,7 +194,8 @@ export const GltfViewer = ({
     const cleanupAudio = audioPlayer.onAudioFrame((_amplitude, visemes) => {
       audioVisemes = visemes;
     });
-    const stage = createAvatarStage(container, modelPath);
+    const stage = createAvatarStage(container, modelPath, { pet: !!petRef.current });
+    petRef.current?.onStage(stage);
     stage.useStudioEnvironment();
     stageRef.current = stage;
     resetViewRef.current = stage.resetView;
@@ -312,6 +318,7 @@ export const GltfViewer = ({
     return () => {
       isDisposed = true;
       resetViewRef.current = null;
+      petRef.current?.onStage(null);
       stageRef.current = null;
       cleanupAudio();
       stage.dispose();
@@ -417,7 +424,7 @@ export const GltfViewer = ({
   });
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden bg-linear-to-b from-slate-900/40 via-accent-950/20 to-app">
+    <div className={pet ? 'relative w-full h-full overflow-hidden' : 'relative w-full h-full flex flex-col items-center justify-center overflow-hidden bg-linear-to-b from-slate-900/40 via-accent-950/20 to-app'}>
       <div
         ref={containerRef}
         data-avatar-format="gltf"
@@ -429,9 +436,9 @@ export const GltfViewer = ({
         data-idle-clip={playingClips.idle}
         data-clip-misfits={clipMisfits[modelPath]?.length ?? 0}
         data-gesture-clip={playingGesture ? playingClips.gesture : ''}
-        className="w-full h-full cursor-grab active:cursor-grabbing"
+        className={pet ? 'w-full h-full' : 'w-full h-full cursor-grab active:cursor-grabbing'}
       />
-      <AvatarViewerChrome
+      {!pet && <AvatarViewerChrome
         loading={loading}
         loadingLabel={t('avatar.vrmLoading')}
         error={error}
@@ -441,7 +448,7 @@ export const GltfViewer = ({
         gestureClips={extraClips.map((clip) => clip.name)}
         onPlayGesture={playAvatarClip}
         toon={loaded ? { enabled: toon, onToggle: () => setToon(!toon) } : undefined}
-      />
+      />}
     </div>
   );
 };

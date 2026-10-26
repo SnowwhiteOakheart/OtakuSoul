@@ -7,7 +7,7 @@ import { ThoughtsTab } from './tabs/ThoughtsTab';
 import { GoalsTab } from './tabs/GoalsTab';
 import { ToolWorkbenchTab } from './tabs/ToolWorkbenchTab';
 import { McpPluginsTab } from './tabs/McpPluginsTab';
-import { DesktopOverlayTab } from './tabs/DesktopOverlayTab';
+import { DesktopPetTab } from './tabs/DesktopPetTab';
 
 export const CompanionView: React.FC = () => {
   const { t, tOptional } = useTranslation();
@@ -148,7 +148,7 @@ export const CompanionView: React.FC = () => {
       {activeSubTab === 'goals' && <GoalsTab />}
       {activeSubTab === 'tools' && <ToolWorkbenchTab />}
       {activeSubTab === 'mcp' && <McpPluginsTab />}
-      {activeSubTab === 'overlay' && <DesktopOverlayTab />}
+      {activeSubTab === 'overlay' && <DesktopPetTab />}
     </div>
   );
 };

@@ -59,26 +59,7 @@
 > **Fokus:** Windows & macOS (Linux/Wayland ausgeklammert aufgrund von Compositor-Restriktionen bei freier Fensterplatzierung und Cross-App-Window-Sniffing).
 > Ziel: Aktiven 3D-Avatar (VRM / glTF / MMD) aus OtakuSoul als transparenten, frei schwebenden Begleiter auf den Desktop bringen.
 
-### Phase 1: Transparentes Companion-Fenster & Klick-Verhalten
-- [ ] **Multi-Window-Setup in Tauri 2:**
-  - Separater Window-Builder (`desktop_pet_window`) in Rust: `transparent: true`, `decorations: false`, `always_on_top: true`, `skip_taskbar: true`, `shadow: false`.
-  - Dedizierte schlanke Route im Frontend (`/desktop-pet` oder eigener HTML-Einstiegspunkt), die nur den Viewer lädt.
-- [ ] **Rendering & Transparenz:**
-  - Three.js WebGLRenderer mit `alpha: true` und Hintergrund `setClearColor(0x000000, 0)`.
-  - Wiederverwendung von `VrmViewer` / `AvatarCanvas` ohne Hintergrund-Mesh, Vignette oder Standard-Bühne.
-- [ ] **Intelligentes Click-Through (Maus-Durchlässigkeit):**
-  - Raycaster im Webview prüft kontinuierlich oder per `mousemove`, ob der Zeiger über einem Mesh/Knochen des Avatars liegt.
-  - Wenn Cursor über dem Avatar: `window.set_ignore_cursor_events(false)` (Avatar ist greifbar & anklickbar).
-  - Wenn Cursor über transparentem Leerraum: `window.set_ignore_cursor_events(true)` (Klicks gehen transparent an darunterliegende Desktop-Fenster durch).
-- [ ] **Manuelles Drag & Drop:**
-  - Greifen mit linker Maustaste bewegt das Fenster (`start_dragging()`).
-  - Kontextmenü mit Rechtsklick (z. B. „Zurück zur Haupt-App“, „Ausblenden“, „Stimmung wählen“).
-
-### Phase 2: Anbindung an OtakuSoul (Zustände, Gesten & Sprache)
-- [ ] **Synchronisation über Tauri-Events:**
-  - Übertragen des aktuellen Charakters & Modells an das Pet-Fenster (`pet:set-model`).
-  - Übertragen von Stimmungen und Gesten aus Chat-Antworten (`pet:play-gesture`, `pet:set-mood`).
-  - TTS & Lip-Sync Event-Bridge: Mundbewegungen synchron zum aktuellen Audio.
+### Phase 2: Verhalten (Phase 1 und die Event-Anbindung sind erledigt, siehe `roadmap_abgeschlossen.md`)
 - [ ] **Idle- & Verhaltens-Logik (State Machine):**
   - Zustände: `IDLE_STAND`, `IDLE_SIT`, `WALKING`, `FALLING`, `REACTING`, `DRAGGED`.
   - Zufällige Aktionen bei Inaktivität (umschauen, gähnen, hinsetzen, winken).

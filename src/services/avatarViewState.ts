@@ -110,3 +110,18 @@ export function frameUpperBody(headY: number, topY: number, fovDegrees: number, 
   const distance = Math.min(2.4, Math.max(0.6, halfHeight / tan, halfWidth / (tan * Math.max(aspect, 0.1))));
   return { camera: [0, centerY + 0.03, distance], target: [0, centerY, 0] };
 }
+
+/**
+ * Whole figure from the feet (y = 0) to the top, for the desktop pet: the figure fills the
+ * lower part of the window, the top fifth stays free for speech bubbles and the status panel.
+ */
+export function frameFullBody(topY: number, fovDegrees: number, aspect: number): VrmViewState {
+  const tan = Math.tan((fovDegrees * Math.PI) / 360);
+  const height = Math.max(0.5, topY);
+  const bottom = -height * 0.02;
+  const halfHeight = (height - bottom) / 0.8 / 2;
+  const centerY = bottom + halfHeight;
+  const halfWidth = height * 0.24;
+  const distance = Math.max(halfHeight / tan, halfWidth / (tan * Math.max(aspect, 0.1)));
+  return { camera: [0, centerY, distance], target: [0, centerY, 0] };
+}

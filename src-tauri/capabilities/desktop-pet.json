@@ -1,0 +1,15 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "desktop-pet",
+  "description": "Capability for the desktop pet window: events from the main window, dragging, click-through, size and position",
+  "windows": [
+    "desktop_pet"
+  ],
+  "permissions": [
+    "core:default",
+    "core:window:allow-start-dragging",
+    "core:window:allow-set-ignore-cursor-events",
+    "core:window:allow-set-size",
+    "core:window:allow-set-position"
+  ]
+}

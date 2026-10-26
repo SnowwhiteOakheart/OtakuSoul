@@ -12,8 +12,9 @@ import type {
 } from '../../types';
 import type { SliceCreator } from '../storeTypes';
 import { reportFailure } from '../reportFailure';
+import { loadPetPlacement, PET_SIZES } from '../../services/desktopPet';
 
-/** Desktop companion: hormones, tools, goals, MCP servers, plugins and overlay. */
+/** Desktop companion: hormones, tools, goals, MCP servers, plugins and the desktop pet. */
 export interface CompanionSlice {
   companionState: CompanionState | null;
   fetchCompanionState: () => Promise<void>;
@@ -37,7 +38,8 @@ export interface CompanionSlice {
   fetchCompanionPlugins: () => Promise<void>;
   saveCompanionPlugin: (plugin: CompanionPlugin) => Promise<void>;
   executeCompanionPlugin: (pluginId: string, args: JsonObject) => Promise<string | null>;
-  toggleCompanionOverlay: (enable: boolean, clickThrough?: boolean) => Promise<boolean>;
+  /** Opens (at its remembered place and size) or hides the desktop pet. */
+  toggleDesktopPet: (enable: boolean) => Promise<boolean>;
   detectDesktopWindow: () => Promise<string>;
 }
 
@@ -226,13 +228,14 @@ export const createCompanionSlice: SliceCreator<CompanionSlice> = (set, get) => 
     }
   },
 
-  toggleCompanionOverlay: async (enable, clickThrough = false) => {
+  toggleDesktopPet: async (enable) => {
     try {
-      const res = await api.toggleCompanionOverlay(enable, clickThrough);
+      const placement = loadPetPlacement();
+      const res = await api.toggleDesktopPet(enable, { x: placement.x, y: placement.y, ...PET_SIZES[placement.size] });
       await get().fetchCompanionState();
       return res;
     } catch (e) {
-      reportFailure('Failed to toggle companion overlay:', e);
+      reportFailure('Failed to toggle desktop pet:', e);
       return false;
     }
   },

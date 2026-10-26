@@ -1,4 +1,4 @@
-//! Desktop companion: hormones, tool calls, goals, MCP servers, plugins and overlay.
+//! Desktop companion: hormones, tool calls, goals, MCP servers and plugins (the desktop pet window: `desktop_pet.rs`).
 
 use crate::state::AppState;
 use tauri::State;
@@ -188,45 +188,6 @@ pub async fn execute_companion_plugin(
         .mcp()
         .execute_plugin(&plugin_id, arguments)
         .await
-}
-
-#[tauri::command]
-pub async fn toggle_companion_overlay(
-    app: tauri::AppHandle,
-    state: State<'_, AppState>,
-    enable: bool,
-    click_through: bool,
-) -> Result<bool, String> {
-    use tauri::Manager;
-    if let Some(window) = app.get_webview_window("companion_overlay") {
-        if enable {
-            let _ = window.show();
-            let _ = window.set_focus();
-            let _ = window.set_ignore_cursor_events(click_through);
-        } else {
-            let _ = window.hide();
-        }
-    } else if enable {
-        let builder = tauri::WebviewWindowBuilder::new(
-            &app,
-            "companion_overlay",
-            tauri::WebviewUrl::App("index.html?overlay=true".into()),
-        )
-        .title("OtakuSoul Companion")
-        .inner_size(380.0, 560.0)
-        .resizable(true)
-        .decorations(false)
-        .transparent(true)
-        .always_on_top(true)
-        .shadow(false);
-
-        let window = builder
-            .build()
-            .map_err(|e| crate::err!("backend.companion.overlayWindow", error = e))?;
-        let _ = window.set_ignore_cursor_events(click_through);
-    }
-    state.companion_engine.set_overlay_active(enable);
-    Ok(enable)
 }
 
 #[tauri::command]
