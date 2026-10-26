@@ -3879,5 +3879,9 @@
   "pet.rideWindows": "Ride along on windows",
   "pet.hideInFullscreen": "Hide during fullscreen",
   "tray.pet": "Desktop pet on/off",
-  "pet.hintShortcut": "Ctrl+Alt+Shift+P or the tray icon shows and hides the pet. If it was open last, it comes back at the next start."
+  "pet.hintShortcut": "Ctrl+Alt+Shift+P or the tray icon shows and hides the pet. If it was open last, it comes back at the next start.",
+  "pet.compose": "Say something …",
+  "pet.composePlaceholder": "Write something to {{name}} …",
+  "pet.send": "Send",
+  "pet.sendFailed": "That did not work: {{error}}"
 }

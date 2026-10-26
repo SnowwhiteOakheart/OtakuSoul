@@ -36,6 +36,9 @@ export interface PetScreen {
 
 /** Backend → pet: walkable top edges of the other windows (Windows only). */
 export const PET_PLATFORMS_EVENT = 'pet:platforms';
+/** Pet → main: the user wrote something in the pet's quick chat (sent to the active chat). */
+export const PET_SEND_EVENT = 'pet:send';
+
 /** Main → pet: a new chat reply of the figure, for the speech bubble. */
 export const PET_SAY_EVENT = 'pet:say';
 
@@ -55,6 +58,8 @@ export interface PetState {
   appLanguage: string;
   theme: string;
   colorMode: ColorModePreference;
+  /** A reply is being written in the main window. */
+  thinking: boolean;
 }
 
 export interface PetAudioFrame {

@@ -3880,5 +3880,9 @@
   "pet.rideWindows": "ウィンドウと一緒に移動",
   "pet.hideInFullscreen": "全画面表示中は隠す",
   "tray.pet": "デスクトップペット オン/オフ",
-  "pet.hintShortcut": "Ctrl+Alt+Shift+P またはトレイアイコンでペットを表示・非表示にできます。最後に開いていた場合は次回起動時にまた現れます。"
+  "pet.hintShortcut": "Ctrl+Alt+Shift+P またはトレイアイコンでペットを表示・非表示にできます。最後に開いていた場合は次回起動時にまた現れます。",
+  "pet.compose": "話しかける …",
+  "pet.composePlaceholder": "{{name}}にメッセージ …",
+  "pet.send": "送信",
+  "pet.sendFailed": "うまくいきませんでした: {{error}}"
 }

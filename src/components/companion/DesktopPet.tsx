@@ -3,7 +3,7 @@ import type React from 'react';
 import { emitTo, listen } from '@tauri-apps/api/event';
 import { currentMonitor, getCurrentWindow, LogicalSize, monitorFromPoint, PhysicalPosition } from '@tauri-apps/api/window';
 import { Menu } from '@tauri-apps/api/menu';
-import { Brain, Camera, Clipboard, Flame, Heart, Moon, Smile, X, Zap } from 'lucide-react';
+import { Brain, Camera, Clipboard, Flame, Heart, MessageCircle, Moon, Send, Smile, X, Zap } from 'lucide-react';
 import { VrmViewer } from '../avatar/VrmViewer';
 import type { AvatarStage } from '../avatar/avatarStage';
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
@@ -26,6 +26,7 @@ import {
   PET_READY_EVENT,
   PET_SAY_EVENT,
   PET_SCREEN_EVENT,
+  PET_SEND_EVENT,
   PET_SIZES,
   PET_STATE_EVENT,
   savePetPlacement,
@@ -89,6 +90,9 @@ export const DesktopPet: React.FC = () => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [gesture, setGesture] = useState<GestureRequest | null>(null);
   const [statusOpen, setStatusOpen] = useState(false);
+  /** Quick chat: a small input on the pet that writes into the active chat. */
+  const [composeOpen, setComposeOpen] = useState(false);
+  const [draft, setDraft] = useState('');
   const [bubble, setBubble] = useState<string | null>(null);
   const [prefs, setPrefs] = useState<PetPrefs>(loadPetPrefs);
   const [behavior] = useState(() => new PetBehavior(performance.now()));
@@ -367,6 +371,25 @@ export const DesktopPet: React.FC = () => {
     };
   }, [setIgnore, behavior, say]);
 
+  // While a reply is written in the main window, the bubble shows typing dots; the reply replaces them.
+  const thinking = !!pet?.thinking;
+  const shownBubble = thinking && prefs.chatBubbles ? '…' : bubble;
+
+  const openCompose = () => {
+    setStatusOpen(false);
+    setComposeOpen(true);
+    // The pet window opens without focus; typing needs it.
+    void getCurrentWindow().setFocus().catch(() => {});
+  };
+  const sendDraft = () => {
+    const text = draft.trim();
+    if (!text) return;
+    setDraft('');
+    setComposeOpen(false);
+    behavior.say(performance.now(), BUBBLE_MS);
+    void emitTo('main', PET_SEND_EVENT, { text } satisfies PetSay).catch(() => {});
+  };
+
   useEffect(() => {
     if (!statusOpen) return undefined;
     void fetchCompanionState();
@@ -413,6 +436,7 @@ export const DesktopPet: React.FC = () => {
       items: [
         { text: pet?.characterName ?? t('pet.title'), enabled: false },
         { item: 'Separator' },
+        { text: t('pet.compose'), action: openCompose },
         { text: t('pet.pat'), action: () => void pat() },
         { text: t(statusOpen ? 'pet.hideStatus' : 'pet.showStatus'), action: () => setStatusOpen((open) => !open) },
         {
@@ -558,16 +582,67 @@ export const DesktopPet: React.FC = () => {
         ) : null}
       </div>
 
-      {bubble && !statusOpen && (
+      {shownBubble && !statusOpen && !composeOpen && (
         <button
           type="button"
           data-pet-solid
           aria-live="polite"
+          title={t('pet.compose')}
           className="absolute top-2 inset-x-3 rounded-2xl bg-app/90 border border-accent-500/40 px-3 py-2 text-left text-xs text-slate-100 shadow-lg"
-          onClick={() => setBubble(null)}
+          onClick={openCompose}
         >
-          {bubble}
+          {shownBubble}
         </button>
+      )}
+
+      {composeOpen && (
+        <form
+          data-pet-solid
+          className="absolute top-2 inset-x-2 flex items-end gap-1.5 rounded-2xl bg-app/95 border border-accent-500/40 p-2 shadow-xl"
+          onPointerDown={(e) => e.stopPropagation()}
+          onSubmit={(e) => {
+            e.preventDefault();
+            sendDraft();
+          }}
+        >
+          <textarea
+            // oxlint-disable-next-line jsx-a11y/no-autofocus -- opened on purpose to type right away
+            autoFocus
+            rows={2}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') setComposeOpen(false);
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendDraft();
+              }
+            }}
+            placeholder={t('pet.composePlaceholder', { name: pet?.characterName ?? '' })}
+            aria-label={t('pet.compose')}
+            className="flex-1 resize-none rounded-xl bg-slate-900/90 border border-slate-700 px-2 py-1.5 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-hidden focus:border-accent-500"
+          />
+          <div className="flex flex-col gap-1">
+            <button
+              type="submit"
+              title={t('pet.send')}
+              aria-label={t('pet.send')}
+              disabled={!draft.trim() || thinking}
+              className="p-1.5 rounded-lg bg-accent-600 text-white disabled:opacity-40"
+            >
+              <Send className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setComposeOpen(false)}
+              title={t('common.close')}
+              aria-label={t('common.close')}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </form>
       )}
 
       {statusOpen && (
@@ -614,7 +689,10 @@ export const DesktopPet: React.FC = () => {
               </span>
             </div>
           )}
-          <div className="grid grid-cols-3 gap-1.5">
+          <div className="grid grid-cols-4 gap-1.5">
+            <button onClick={openCompose} title={t('pet.compose')} aria-label={t('pet.compose')} className="flex items-center justify-center rounded-xl border border-accent-500/30 bg-accent-950/40 py-1.5 text-accent-300 hover:bg-accent-900/50">
+              <MessageCircle className="w-3 h-3" aria-hidden />
+            </button>
             <button onClick={() => void pat()} className="flex items-center justify-center gap-1 rounded-xl border border-accent2-500/30 bg-accent2-950/40 py-1.5 text-accent2-300 hover:bg-accent2-900/50">
               <Smile className="w-3 h-3" aria-hidden />{t('pet.pat')}
             </button>

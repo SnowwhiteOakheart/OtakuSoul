@@ -11,6 +11,7 @@ import {
   PET_PICK_EMOTION_EVENT,
   PET_READY_EVENT,
   PET_SAY_EVENT,
+  PET_SEND_EVENT,
   PET_STATE_EVENT,
   PET_TOGGLE_EVENT,
   PET_VISIBILITY_EVENT,
@@ -20,6 +21,8 @@ import {
   type PetState,
 } from '../services/desktopPet';
 import { bubbleText } from '../components/companion/petBehavior';
+import { translate } from '../i18n';
+import { errorMessage } from '../utils/errors';
 
 /** Voice frames to the pet at most this often (mouth shapes are smoothed there). */
 const AUDIO_FRAME_MS = 33;
@@ -43,6 +46,7 @@ function petState(s: StoreState): PetState {
     appLanguage: s.appLanguage,
     theme: s.theme,
     colorMode: s.colorMode,
+    thinking: s.isGenerating,
   };
 }
 
@@ -102,6 +106,7 @@ export function useDesktopPetBridge(enabled = true) {
         s.appLanguage !== prev.appLanguage ||
         s.theme !== prev.theme ||
         s.colorMode !== prev.colorMode ||
+        s.isGenerating !== prev.isGenerating ||
         s.localeRevision !== prev.localeRevision
       ) {
         send();
@@ -134,6 +139,16 @@ export function useDesktopPetBridge(enabled = true) {
       }),
       listen<string>(PET_PICK_EMOTION_EVENT, (event) => {
         useAppStore.getState().setCurrentEmotion(manualEmotion(event.payload));
+      }),
+      // The pet's quick chat: into the active chat, as if typed there; the reply comes back as bubble.
+      listen<PetSay>(PET_SEND_EVENT, (event) => {
+        useAppStore
+          .getState()
+          .sendMessage(event.payload.text)
+          .catch((e: unknown) => {
+            const text = translate('pet.sendFailed', { error: errorMessage(e) });
+            void emitTo(PET_LABEL, PET_SAY_EVENT, { text } satisfies PetSay).catch(() => {});
+          });
       }),
       // Tray menu and global shortcut.
       listen(PET_TOGGLE_EVENT, () => {
