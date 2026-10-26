@@ -98,7 +98,7 @@
   nacheinander sprechen (eigene Fenster, gemeinsame Physik).
 
 ### Darstellung
-- [ ] **Live2D- und Porträt-Pet:** Für Nutzer ohne 3D-Modell das Live2D-Modell bzw. das atmende Porträt als Pet
+- [ ] **Live2D-, Inochi2D- und Porträt-Pet:** Für Nutzer ohne 3D-Modell das Live2D-Modell, die Inochi2D-Puppe bzw. das atmende Porträt als Pet
   (Treffertest und Zonen über `hitTest` bzw. Bildmaske).
 - [ ] **Weicher Schatten unter den Füßen** auf Boden und Titelleisten, damit die Figur „steht“ statt schwebt.
 - [ ] **Sprechblase mit Zeiger zum Kopf**, automatisch links/rechts, wenn die Figur am Bildschirmrand steht, und
@@ -110,6 +110,23 @@
 - [ ] **Sparmodus im Akkubetrieb:** Leerlauf mit 10–15 FPS und ohne zufällige Aktionen, wenn das Gerät auf Akku läuft.
 - [ ] **Speicher des Pet-Webviews messen** (zweiter WebView2-Prozess, Modell doppelt geladen) und ggf. Modelldaten aus
   dem Hauptfenster übergeben statt erneut zu lesen.
+
+## 3a. Inochi2D-Puppen – Folgepunkte
+
+> Grundintegration fertig (26.10.2026, Details in `roadmap_abgeschlossen.md` Abschnitt 26 und `AI.md` Abschnitt 6):
+> eigene WebGL2-Laufzeit nach Inox2D, Modus „Inochi2D“, Bibliothek, Import, Beispielmodelle Aka/Midori.
+
+- [ ] **Puppen-Animationen abspielen:** `animations` aus `.inx`/`.inp` (z. B. „Idle“, „Rig_Check“ bei Nagatoro) als
+  Ruhe-Schleife bzw. Geste nutzen; Spuren sind Parameter-Keyframes (`lanes`, `timestep`, `leadIn`/`leadOut`).
+- [ ] **Parameter-Zuordnung je Puppe:** Editor analog `ModelFaceSettings`, um Mund/Augen/Blick/Gefühle von Hand
+  auf Parameter zu legen, wenn die Namenserkennung danebenliegt; modell-eigene Ausdrucks-Parameter (Nagatoros
+  „Expression“, „Mouth::Laugh“) den Stimmungen zuordnen.
+- [ ] **Mundformen statt nur Öffnung:** Viseme aus `audioPlayer.onAudioFrame` (aa/ih/ou/ee/oh) auf Puppen mit
+  A/E/O-Mundformen legen.
+- [ ] **Fehlende Inochi2D-Funktionen:** Emission/Bump-Licht, BC7-Texturen, `translate_children` und verschachtelte
+  Mesh-Gruppen, Kubik-Interpolation (`Cubic` wird linear gerechnet).
+- [ ] **Texturen im Web Worker dekodieren** (große TGA-Puppen blockieren beim Laden kurz die Oberfläche).
+- [ ] **Inochi2D im Gruppen-Chat und im Desktop-Pet** (siehe Abschnitt 3).
 
 ## 4. Kognitives Gedächtnis (Memory 2.0 – Ausblick & Folgepunkte)
 
