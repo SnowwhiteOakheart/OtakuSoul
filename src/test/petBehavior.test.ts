@@ -104,6 +104,51 @@ describe('PetBehavior', () => {
   });
 });
 
+describe('PetBehavior on the desktop floor', () => {
+  // Random 0.99: longest pause (20 s), then the last weighted action (walk), to the right.
+  it('walks along the floor, turned into the walking direction', () => {
+    const pet = new PetBehavior(0, fixed(0.99));
+    const { frame } = run(pet, 0, 21_000);
+    expect(frame).toMatchObject({ mode: 'walking', walk: 1 });
+    expect(frame.turn).toBeGreaterThan(0);
+  });
+
+  it('turns around at a wall', () => {
+    const pet = new PetBehavior(0, fixed(0.99));
+    run(pet, 0, 21_000);
+    pet.bumped(1);
+    const { frame } = pet.tick(21_100);
+    expect(frame.walk).toBe(-1);
+    expect(frame.turn).toBeLessThan(0);
+  });
+
+  it('does not walk without physics', () => {
+    const pet = new PetBehavior(0, fixed(0.99));
+    pet.setPhysics(false);
+    const { frame } = run(pet, 0, 21_000);
+    expect(frame.walk).toBe(0);
+  });
+
+  it('falls when it leaves the floor and lands surprised', () => {
+    const pet = new PetBehavior(0, fixed(0.5));
+    pet.setGrounded(false, 100);
+    expect(pet.tick(200).frame).toMatchObject({ mode: 'falling', expression: 'surprised', walk: 0 });
+    pet.setGrounded(true, 900);
+    expect(pet.tick(1000).frame).toMatchObject({ mode: 'reacting', expression: 'surprised', hop: true });
+    expect(pet.tick(1700).frame.mode).toBe('idle');
+  });
+
+  it('stays dragged while held in the air and falls after release', () => {
+    const pet = new PetBehavior(0, fixed(0.5));
+    pet.dragStart(100);
+    pet.setGrounded(false, 200);
+    expect(pet.tick(300).frame.mode).toBe('dragged');
+    pet.dragEnd(400);
+    pet.setGrounded(false, 450);
+    expect(pet.tick(500).frame.mode).toBe('falling');
+  });
+});
+
 describe('bubbleText', () => {
   it('drops markdown marks, think blocks and the emotion tag', () => {
     expect(bubbleText('<think>hmm</think>*lächelt* Hallo **du**!\n\n[emotion: joy]')).toBe('lächelt Hallo du!');

@@ -62,16 +62,11 @@
 ### Phase 2: Verhalten (Fenster, Anbindung und Zustandsautomat sind erledigt, siehe `roadmap_abgeschlossen.md`)
 - [ ] **Hinsetzen (`IDLE_SIT`):** Sitzhaltung per Knochen für VRM, glTF (`gltfRig`) und MMD, als weitere
   Leerlauf-Aktion in `petBehavior.ts`. Ohne importierte Sitz-Animation braucht jedes Format eine eigene Pose.
-- [ ] **Gehen und Fallen (`WALKING`, `FALLING`)** kommen mit der Desktop-Physik (Phase 3) als weitere Zustände dazu.
 
-### Phase 3: Desktop-Physik & Bildschirmkanten
-- [ ] **Bildschirm-Grenzen erfassen:**
-  - Abfrage der Monitore via Tauri: `window.available_monitors()`.
-  - Erkennung der Taskleiste / des Docks (Work-Area vs. Gesamtauflösung).
-- [ ] **Gravitation & Kanten-Kollision:**
-  - Avatar hat Schwerkraft: Beim Loslassen in der Luft fällt das Modell nach unten.
-  - Landung auf der unteren Bildschirmkante (bzw. oberhalb der Windows-Taskleiste / macOS-Menüleiste).
-  - Wand-Kollision links/rechts: Umdrehen beim Erreichen des Bildschirmrands.
+### Phase 3: Desktop-Physik (erledigt bis auf Feinschliff, siehe `roadmap_abgeschlossen.md`)
+- [ ] **Geh-Animation:** Gehen ist bisher Drehung plus Wippen; mit einer importierten Bewegung der Rolle „Gehen“
+  (neue Rolle in `MOTION_ROLES` / `avatar_motions::ROLES`) liefe die Figur richtig.
+- [ ] **Werfen:** Schwung beim Loslassen mitnehmen (seitliche Geschwindigkeit aus den letzten `onMoved`-Ereignissen).
 
 ### Phase 4: Interaktion mit fremden Fenstern (Windows & macOS)
 - [ ] **Windows-Integration (Win32 API über `windows-rs`):**

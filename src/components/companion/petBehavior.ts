@@ -7,11 +7,12 @@ import { withoutEmotionTag } from '../../utils/replyTags';
  * the frames into gaze, face, mouth and hops, which every model format can show. Gestures are
  * extra: they play only when the figure has a motion for that use.
  *
- * Walking and falling come with the desktop physics (screen edges, gravity).
+ * With desktop physics on (`petPhysics.ts`) the figure also walks along the floor and falls
+ * when let go in the air; `DesktopPet` reports the floor contact and walls back.
  */
-export type PetMode = 'idle' | 'dozing' | 'reacting' | 'dragged' | 'talking';
+export type PetMode = 'idle' | 'walking' | 'falling' | 'dozing' | 'reacting' | 'dragged' | 'talking';
 
-export type PetAction = 'lookAround' | 'yawn' | 'hop' | 'wave' | 'think' | 'nod';
+export type PetAction = 'lookAround' | 'yawn' | 'hop' | 'wave' | 'think' | 'nod' | 'walk';
 
 export interface Gaze {
   x: number;
@@ -28,6 +29,10 @@ export interface PetFrame {
   mouth: number;
   /** A small jump is running. */
   hop: boolean;
+  /** Walking direction on the floor: -1 left, 1 right, 0 standing. */
+  walk: -1 | 0 | 1;
+  /** Turn of the figure (radians, positive = towards the right of the screen). */
+  turn: number;
 }
 
 /** One-time things to do this tick. */
@@ -41,6 +46,10 @@ const LOOK_AROUND_AFTER_MS = 4000;
 const ACTION_GAP_MS: [number, number] = [8000, 20_000];
 const REACT_MS = 1400;
 const HOP_MS = 600;
+/** A walk lasts this long (random within). */
+const WALK_MS: [number, number] = [3000, 7000];
+/** How far the figure turns into its walking direction (about 50°, the face stays visible). */
+export const WALK_TURN = 0.9;
 
 const DURATION: Record<PetAction, number> = {
   lookAround: 3600,
@@ -49,6 +58,7 @@ const DURATION: Record<PetAction, number> = {
   wave: 2500,
   think: 2800,
   nod: 1500,
+  walk: WALK_MS[0],
 };
 
 interface RunningAction {
@@ -57,6 +67,8 @@ interface RunningAction {
   end: number;
   /** Look targets of `lookAround`, one per third. */
   gazes?: Gaze[];
+  /** Direction of `walk`. */
+  direction?: -1 | 1;
 }
 
 export class PetBehavior {
@@ -71,6 +83,8 @@ export class PetBehavior {
   private speaking = false;
   private cues: PetCue[] = [];
   private idleActions = true;
+  private physics = true;
+  private grounded = true;
 
   constructor(
     now: number,
@@ -137,6 +151,36 @@ export class PetBehavior {
     if (!on) this.action = null;
   }
 
+  /** Gravity and walking on or off (pet menu); without them the figure stays where it is put. */
+  setPhysics(on: boolean) {
+    this.physics = on;
+    if (!on) {
+      this.grounded = true;
+      if (this.action?.kind === 'walk') this.action = null;
+      if (this.mode === 'falling') this.mode = 'idle';
+    }
+  }
+
+  /** Floor contact from the physics: leaving it starts a fall, touching it again is a landing. */
+  setGrounded(grounded: boolean, now: number) {
+    if (!this.physics) return;
+    const was = this.grounded;
+    this.grounded = grounded;
+    if (!grounded && this.mode !== 'dragged' && this.mode !== 'falling') {
+      this.mode = 'falling';
+      this.action = null;
+    } else if (grounded && !was && this.mode === 'falling') {
+      this.react(now, 'surprised', 700);
+      this.hopUntil = now + HOP_MS;
+    }
+  }
+
+  /** The figure ran into a side wall (-1 left, 1 right): a walk that way turns around. */
+  bumped(wall: -1 | 1) {
+    const action = this.action;
+    if (action?.kind === 'walk' && action.direction === wall) action.direction = wall === 1 ? -1 : 1;
+  }
+
   private startAction(now: number) {
     const pointerIdle = now - this.lastPointer > LOOK_AROUND_AFTER_MS;
     // Looking around only when the pointer rests; otherwise the figure looks after it.
@@ -147,11 +191,16 @@ export class PetBehavior {
       ['wave', 10],
       ['think', 15],
       ['nod', 10],
+      ['walk', this.physics && this.grounded ? 30 : 0],
     ];
     const total = weights.reduce((sum, [, w]) => sum + w, 0);
     let pick = this.random() * total;
     const kind = weights.find(([, w]) => (pick -= w) < 0)?.[0] ?? 'hop';
     const action: RunningAction = { kind, start: now, end: now + DURATION[kind] };
+    if (kind === 'walk') {
+      action.direction = this.random() < 0.5 ? -1 : 1;
+      action.end = now + WALK_MS[0] + this.random() * (WALK_MS[1] - WALK_MS[0]);
+    }
     if (kind === 'lookAround') {
       const side = this.random() < 0.5 ? -1 : 1;
       action.gazes = [
@@ -169,6 +218,7 @@ export class PetBehavior {
   private actionFrame(now: number): Pick<PetFrame, 'expression' | 'gaze' | 'mouth'> {
     const action = this.action;
     if (!action) return { expression: null, gaze: null, mouth: 0 };
+    if (action.kind === 'walk') return { expression: null, gaze: { x: action.direction! * 0.5, y: -0.1 }, mouth: 0 };
     const t = Math.min(1, (now - action.start) / (action.end - action.start));
     switch (action.kind) {
       case 'lookAround':
@@ -205,22 +255,34 @@ export class PetBehavior {
       this.startAction(now);
     }
 
+    const still = { mouth: 0, hop: false, walk: 0 as const, turn: 0 };
     let frame: PetFrame;
     switch (this.mode) {
       case 'dozing':
-        frame = { mode: 'dozing', expression: 'relaxed', gaze: { x: 0, y: -0.8 }, mouth: 0, hop: false };
+        frame = { ...still, mode: 'dozing', expression: 'relaxed', gaze: { x: 0, y: -0.8 } };
         break;
       case 'dragged':
-        frame = { mode: 'dragged', expression: 'surprised', gaze: { x: 0, y: -0.6 }, mouth: 0, hop: false };
+        frame = { ...still, mode: 'dragged', expression: 'surprised', gaze: { x: 0, y: -0.6 } };
+        break;
+      case 'falling':
+        frame = { ...still, mode: 'falling', expression: 'surprised', gaze: { x: 0, y: -0.7 } };
         break;
       case 'reacting':
-        frame = { mode: 'reacting', expression: this.reactExpression, gaze: null, mouth: 0, hop: false };
+        frame = { ...still, mode: 'reacting', expression: this.reactExpression, gaze: null };
         break;
       case 'talking':
-        frame = { mode: 'talking', expression: null, gaze: null, mouth: 0, hop: false };
+        frame = { ...still, mode: 'talking', expression: null, gaze: null };
         break;
-      default:
-        frame = { mode: 'idle', ...this.actionFrame(now), hop: false };
+      default: {
+        const direction = this.action?.kind === 'walk' ? this.action.direction! : 0;
+        frame = {
+          ...still,
+          ...this.actionFrame(now),
+          mode: direction ? 'walking' : 'idle',
+          walk: direction,
+          turn: direction * WALK_TURN,
+        };
+      }
     }
     frame.hop = now < this.hopUntil && this.mode !== 'dragged';
     const cues = this.cues;

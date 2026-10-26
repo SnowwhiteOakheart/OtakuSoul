@@ -100,10 +100,12 @@ export interface PetPrefs {
   idleActions: boolean;
   /** New chat replies as speech bubble. */
   chatBubbles: boolean;
+  /** Gravity, screen edges and walking along the floor. */
+  physics: boolean;
 }
 
 const PREFS_KEY = 'otakusoul.desktopPetPrefs';
-const DEFAULT_PREFS: PetPrefs = { idleActions: true, chatBubbles: true };
+const DEFAULT_PREFS: PetPrefs = { idleActions: true, chatBubbles: true, physics: true };
 
 export function loadPetPrefs(): PetPrefs {
   try {
@@ -111,6 +113,7 @@ export function loadPetPrefs(): PetPrefs {
     return {
       idleActions: typeof stored?.idleActions === 'boolean' ? stored.idleActions : DEFAULT_PREFS.idleActions,
       chatBubbles: typeof stored?.chatBubbles === 'boolean' ? stored.chatBubbles : DEFAULT_PREFS.chatBubbles,
+      physics: typeof stored?.physics === 'boolean' ? stored.physics : DEFAULT_PREFS.physics,
     };
   } catch {
     return { ...DEFAULT_PREFS };

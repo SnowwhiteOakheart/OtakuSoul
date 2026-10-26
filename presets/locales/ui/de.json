@@ -3874,5 +3874,6 @@
   "pet.doze": "Zzz …",
   "pet.wake": "Oh! Da bist du ja wieder.",
   "pet.idleActions": "Eigene Bewegungen",
-  "pet.chatBubbles": "Chat-Antworten als Sprechblase"
+  "pet.chatBubbles": "Chat-Antworten als Sprechblase",
+  "pet.physics": "Schwerkraft und Laufen"
 }

@@ -922,6 +922,11 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `.pet-hop` – das können alle drei Formate. Gesten-Rollen spielen nur mit passender Animation. `startDragging` kehrt
   unter Windows sofort zurück: das Ende des Ziehens ist, wenn `onMoved` 1,2 s still ist. Chat-Sprechblasen kommen nur
   für neue Antworten der offenen Unterhaltung (Schlüssel `id:swipe_index`, beim Chatwechsel neu gesetzt).
+- Pet-Physik (`petPhysics.ts`): rechnet in physischen Pixeln mit dem Fenster als Körper; Geschwindigkeiten sind logisch
+  und werden mit dem Monitor-Skalierungsfaktor multipliziert. Während des Ziehens ruht sie; nach dem Ziehen liest
+  `syncWindow` Position und Arbeitsbereich neu, sonst fällt das Pet vom alten Platz. Pro Schritt nur ein `setPosition`
+  zur Zeit (wartet auf das vorige). Drehung beim Gehen über die Kamera (`stage.setTurn`), nicht am Modell – so
+  funktioniert sie für VRM, glTF und MMD gleich.
 
 ## Stand
 

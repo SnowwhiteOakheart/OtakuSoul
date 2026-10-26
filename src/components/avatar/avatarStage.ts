@@ -46,6 +46,11 @@ export interface AvatarStage {
    * the desktop pet lets clicks through everywhere else. A newer probe drops an unanswered one.
    */
   probe: (x: number, y: number, onResult: (hit: boolean) => void) => void;
+  /**
+   * Desktop pet: turns the figure (radians, positive = towards the right of the screen),
+   * eased in the render loop. The camera circles the figure, so every model format turns.
+   */
+  setTurn: (yaw: number) => void;
   dispose: () => void;
 }
 
@@ -102,10 +107,26 @@ export function createAvatarStage(container: HTMLElement, modelPath: string, opt
     )
       ? storedView
       : null;
+  // The pet's turn: the camera offset from the target in the framed view, turned around Y.
+  const baseOffset = new THREE.Vector3();
+  const turnedOffset = new THREE.Vector3();
+  const upAxis = new THREE.Vector3(0, 1, 0);
+  let turn = 0;
+  let turnTarget = 0;
   const applyView = (view: VrmViewState) => {
     camera.position.fromArray(view.camera);
     controls.target.fromArray(view.target);
     controls.update();
+    baseOffset.subVectors(camera.position, controls.target);
+    turn = 0;
+  };
+  const applyTurn = (delta: number) => {
+    if (!pet || baseOffset.lengthSq() === 0 || Math.abs(turnTarget - turn) < 1e-4) return;
+    turn += (turnTarget - turn) * Math.min(1, delta * 5);
+    // Turning the figure to the right is the camera going round to its left.
+    turnedOffset.copy(baseOffset).applyAxisAngle(upAxis, -turn);
+    camera.position.copy(controls.target).add(turnedOffset);
+    camera.lookAt(controls.target);
   };
   if (savedView) applyView(savedView);
   controls.update();
@@ -241,6 +262,10 @@ export function createAvatarStage(container: HTMLElement, modelPath: string, opt
     timeNextFrame: (nextModelPath) => {
       timedFrame = nextModelPath;
     },
+    setTurn: (yaw) => {
+      turnTarget = yaw;
+      markActive();
+    },
     probe: (x, y, onResult) => {
       // A newer pointer position replaces one not yet answered.
       pendingProbe = { x, y, onResult };
@@ -266,6 +291,7 @@ export function createAvatarStage(container: HTMLElement, modelPath: string, opt
         const delta = Math.min(0.1, (now - lastTime) / 1000);
         lastTime = now;
         controls.update();
+        applyTurn(delta);
         onFrame(delta, (now - startTime) / 1000);
         const frameStart = timedFrame === null ? 0 : performance.now();
         if (toon && outline) outline.render(scene, camera);

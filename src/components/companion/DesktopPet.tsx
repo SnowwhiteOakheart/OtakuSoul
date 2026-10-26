@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type React from 'react';
 import { emitTo, listen } from '@tauri-apps/api/event';
-import { getCurrentWindow, LogicalSize, PhysicalPosition } from '@tauri-apps/api/window';
+import { currentMonitor, getCurrentWindow, LogicalSize, monitorFromPoint, PhysicalPosition } from '@tauri-apps/api/window';
 import { Menu } from '@tauri-apps/api/menu';
 import { Brain, Camera, Clipboard, Flame, Heart, Moon, Smile, X, Zap } from 'lucide-react';
 import { VrmViewer } from '../avatar/VrmViewer';
@@ -12,6 +12,7 @@ import { api } from '../../services/api';
 import { audioPlayer } from '../../services/audioPlayer';
 import { SILENT_VISEMES } from '../../services/lipSync';
 import { bubbleMs, PetBehavior, type Gaze, type PetMode } from './petBehavior';
+import { stepBody, type Body, type Rect } from './petPhysics';
 import type { GestureRequest } from '../../utils/avatarGestures';
 import {
   loadPetPlacement,
@@ -51,6 +52,12 @@ const BEHAVIOR_TICK_MS = 100;
 const DRAG_SETTLE_MS = 1200;
 /** A bubble still showing when the voice ends stays this much longer. */
 const BUBBLE_AFTER_VOICE_MS = 2500;
+/** Physics steps (window moves) per second while falling or walking. */
+const PHYSICS_TICK_MS = 33;
+/** The monitor's work area is read again this often (taskbar moved, resolution changed). */
+const AREA_REFRESH_MS = 3000;
+/** The remembered position is written at most this often while the pet moves itself. */
+const PLACEMENT_SAVE_MS = 500;
 
 const clamp = (value: number) => Math.max(-1, Math.min(1, value));
 
@@ -73,10 +80,18 @@ export const DesktopPet: React.FC = () => {
   const [mode, setMode] = useState<PetMode>('idle');
   const [faceOverride, setFaceOverride] = useState<string | null>(null);
   const [hop, setHop] = useState(false);
+  const [walking, setWalking] = useState(false);
+  /** Desktop physics: the window (physical px), its size, the floor's work area and the scale. */
+  const body = useRef<Body | null>(null);
+  const windowSize = useRef({ width: 0, height: 0 });
+  const area = useRef<Rect | null>(null);
+  const monitorScale = useRef(1);
+  const walkDirection = useRef<-1 | 0 | 1>(0);
+  const placementSavedAt = useRef(0);
   /** Where the pointer would have the figure look; the behaviour may look elsewhere. */
   const pointerGaze = useRef<Gaze>({ x: 0, y: 0 });
   const gazeOverride = useRef<Gaze | null>(null);
-  const drag = useRef<{ startedAt: number; movedAt: number } | null>(null);
+  const drag = useRef<{ startedAt: number; movedAt: number; ending?: boolean } | null>(null);
   const speakingRef = useRef(false);
   const mouthOpen = useRef(false);
   const prefsRef = useRef(prefs);
@@ -107,11 +122,71 @@ export const DesktopPet: React.FC = () => {
     setGesture({ role, id: localGestureId.current });
   }, []);
 
+  /** Reads where the window stands and the work area of the monitor under its feet. */
+  const syncWindow = useCallback(async () => {
+    const win = getCurrentWindow();
+    const [position, size, factor] = await Promise.all([win.outerPosition(), win.outerSize(), win.scaleFactor()]);
+    const monitor =
+      (await monitorFromPoint(position.x + size.width / 2, position.y + size.height - 1).catch(() => null)) ??
+      (await currentMonitor());
+    body.current = { x: position.x, y: position.y, vy: 0 };
+    windowSize.current = { width: size.width, height: size.height };
+    monitorScale.current = factor;
+    if (monitor) {
+      const { position: at, size: extent } = monitor.workArea;
+      area.current = { x: at.x, y: at.y, width: extent.width, height: extent.height };
+    }
+  }, []);
+
   useEffect(() => {
     prefsRef.current = prefs;
     behavior.setIdleActions(prefs.idleActions);
+    behavior.setPhysics(prefs.physics);
+    if (prefs.physics) void syncWindow().catch(() => {});
     savePetPrefs(prefs);
-  }, [behavior, prefs]);
+  }, [behavior, prefs, syncWindow]);
+
+  // Desktop physics: falling to the floor above the taskbar, walking, turning at the walls.
+  useEffect(() => {
+    let last = performance.now();
+    let moving = false;
+    const step = window.setInterval(() => {
+      const now = performance.now();
+      const dt = Math.min(0.1, (now - last) / 1000);
+      last = now;
+      const current = body.current;
+      if (!prefsRef.current.physics || drag.current || !current || !area.current || moving) return;
+      const result = stepBody(current, windowSize.current, area.current, dt, walkDirection.current, monitorScale.current);
+      behavior.setGrounded(result.grounded, now);
+      if (result.wall) behavior.bumped(result.wall);
+      const [x, y] = [Math.round(result.body.x), Math.round(result.body.y)];
+      body.current = result.body;
+      if (x === Math.round(current.x) && y === Math.round(current.y)) return;
+      // One move at a time; the next step waits for it.
+      moving = true;
+      void getCurrentWindow()
+        .setPosition(new PhysicalPosition(x, y))
+        .catch(() => {})
+        .finally(() => {
+          moving = false;
+        });
+    }, PHYSICS_TICK_MS);
+    const refresh = window.setInterval(() => {
+      if (prefsRef.current.physics && !drag.current) {
+        const kept = body.current;
+        void syncWindow()
+          .then(() => {
+            // Keep the falling speed across the re-read.
+            if (kept && body.current) body.current.vy = kept.vy;
+          })
+          .catch(() => {});
+      }
+    }, AREA_REFRESH_MS);
+    return () => {
+      window.clearInterval(step);
+      window.clearInterval(refresh);
+    };
+  }, [behavior, syncWindow]);
 
   // The cue texts follow the language without restarting the behaviour timer.
   const cueTexts = useRef({ doze: '', wake: '' });
@@ -124,16 +199,25 @@ export const DesktopPet: React.FC = () => {
     const timer = window.setInterval(() => {
       const now = performance.now();
       const dragging = drag.current;
-      if (dragging && now - Math.max(dragging.startedAt, dragging.movedAt) > DRAG_SETTLE_MS) {
-        drag.current = null;
-        behavior.dragEnd(now);
+      if (dragging && !dragging.ending && now - Math.max(dragging.startedAt, dragging.movedAt) > DRAG_SETTLE_MS) {
+        // Where it was let go, the physics takes over (and lets it fall).
+        dragging.ending = true;
+        void syncWindow()
+          .catch(() => {})
+          .finally(() => {
+            drag.current = null;
+            behavior.dragEnd(performance.now());
+          });
       }
       const { frame, cues } = behavior.tick(now);
       setMode(frame.mode);
       setFaceOverride(frame.expression);
       setHop(frame.hop);
+      setWalking(frame.walk !== 0);
+      walkDirection.current = frame.walk;
       gazeOverride.current = frame.gaze;
       const stage = stageRef.current;
+      stage?.setTurn(frame.turn);
       if (stage) {
         const gaze = frame.gaze ?? pointerGaze.current;
         stage.mouse.x = gaze.x;
@@ -150,7 +234,7 @@ export const DesktopPet: React.FC = () => {
       }
     }, BEHAVIOR_TICK_MS);
     return () => window.clearInterval(timer);
-  }, [behavior, say, playLocalGesture]);
+  }, [behavior, say, playLocalGesture, syncWindow]);
 
   // State, voice and pointer from the main window and the backend.
   useEffect(() => {
@@ -219,8 +303,12 @@ export const DesktopPet: React.FC = () => {
       if (isSubscribed) void emitTo('main', PET_READY_EVENT).catch(() => {});
     });
     const stopMoved = getCurrentWindow().onMoved(({ payload }) => {
-      if (drag.current) drag.current.movedAt = performance.now();
-      savePetPlacement({ x: payload.x, y: payload.y });
+      const now = performance.now();
+      if (drag.current) drag.current.movedAt = now;
+      if (drag.current || now - placementSavedAt.current > PLACEMENT_SAVE_MS) {
+        placementSavedAt.current = now;
+        savePetPlacement({ x: payload.x, y: payload.y });
+      }
     });
     return () => {
       isSubscribed = false;
@@ -262,6 +350,7 @@ export const DesktopPet: React.FC = () => {
     await win.setSize(new LogicalSize(width, height));
     await win.setPosition(new PhysicalPosition(x, y));
     savePetPlacement({ size, x, y });
+    await syncWindow();
   };
 
   const openMenu = async () => {
@@ -298,6 +387,11 @@ export const DesktopPet: React.FC = () => {
           text: t('pet.chatBubbles'),
           checked: prefs.chatBubbles,
           action: () => setPrefs((p) => ({ ...p, chatBubbles: !p.chatBubbles })),
+        },
+        {
+          text: t('pet.physics'),
+          checked: prefs.physics,
+          action: () => setPrefs((p) => ({ ...p, physics: !p.physics })),
         },
         { item: 'Separator' },
         { text: t('pet.lookAtScreen'), action: () => void askTool('take_screenshot') },
@@ -368,7 +462,7 @@ export const DesktopPet: React.FC = () => {
       }}
     >
       <div
-        className={`absolute inset-0 ${hop ? 'pet-hop' : ''}`}
+        className={`absolute inset-0 ${hop ? 'pet-hop' : walking ? 'pet-walk' : ''}`}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}

@@ -3874,5 +3874,6 @@
   "pet.doze": "Хррр …",
   "pet.wake": "Ой! Ты снова здесь.",
   "pet.idleActions": "Двигается сам",
-  "pet.chatBubbles": "Ответы чата в облачке"
+  "pet.chatBubbles": "Ответы чата в облачке",
+  "pet.physics": "Гравитация и ходьба"
 }

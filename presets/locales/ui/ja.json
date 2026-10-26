@@ -3875,5 +3875,6 @@
   "pet.doze": "すやすや…",
   "pet.wake": "あっ！おかえり。",
   "pet.idleActions": "自分で動く",
-  "pet.chatBubbles": "チャットの返事を吹き出しで表示"
+  "pet.chatBubbles": "チャットの返事を吹き出しで表示",
+  "pet.physics": "重力と歩行"
 }
