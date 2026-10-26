@@ -7,7 +7,8 @@ import { useState } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { useStoreFields } from '../../../store/useAppStore';
 import { useTranslation } from '../../../i18n';
-import { importLive2dFromDialog, importVrmFromDialog } from '../../avatars/avatarImport';
+import { importInochi2dFromDialog, importLive2dFromDialog, importVrmFromDialog } from '../../avatars/avatarImport';
+import type { AvatarKind } from '../../../types';
 import { api } from '../../../services/api';
 import { toast } from '../../ui/feedback';
 import { Toggle } from '../../ui/Toggle';
@@ -22,6 +23,7 @@ import {
   Sparkles,
   Check,
   Smile,
+  Feather,
   Palette,
   Globe,
   Monitor,
@@ -47,11 +49,13 @@ export const GeneralSettings = () => {
     scannedVrms, activeVrmPath, setActiveVrmPath, refreshVrmModels, scannedLive2ds, activeLive2dPath,
     setActiveLive2dPath, refreshLive2dModels, replyLanguage, setReplyLanguage, closeToTray, setCloseToTray,
     setActiveTab, availableLanguages, refreshLanguages, importUiLanguage, removeUiLanguage,
+    scannedInochi2ds, activeInochi2dPath, setActiveInochi2dPath, refreshInochi2dModels,
   } = useStoreFields(
     'appPaths', 'theme', 'setTheme', 'colorMode', 'setColorMode', 'appLanguage', 'setAppLanguage', 'setIsLogViewerOpen', 'setIsUpdaterOpen',
     'scannedVrms', 'activeVrmPath', 'setActiveVrmPath', 'refreshVrmModels', 'scannedLive2ds', 'activeLive2dPath',
     'setActiveLive2dPath', 'refreshLive2dModels', 'replyLanguage', 'setReplyLanguage', 'closeToTray', 'setCloseToTray',
     'setActiveTab', 'availableLanguages', 'refreshLanguages', 'importUiLanguage', 'removeUiLanguage',
+    'scannedInochi2ds', 'activeInochi2dPath', 'setActiveInochi2dPath', 'refreshInochi2dModels',
   );
   const ownLanguages = availableLanguages.filter((l) => l.custom);
 
@@ -78,18 +82,31 @@ export const GeneralSettings = () => {
   const live2ds = scannedLive2ds.filter((l2d) => !hidden.includes(l2d.model_path));
   const selectedVrm = vrms.find((vrm) => vrm.path === activeVrmPath);
   const selectedLive2d = live2ds.find((l2d) => l2d.model_path === activeLive2dPath);
+  const inochi2ds = scannedInochi2ds.filter((m) => !hidden.includes(m.model_path));
+  const selectedInochi2d = inochi2ds.find((m) => m.model_path === activeInochi2dPath);
   // Removing the chosen avatar picks another one; undo returns to it.
-  const hideAvatar = (kind: 'vrm' | 'live2d', path: string) => {
+  const hideAvatar = (kind: AvatarKind, path: string) => {
     setHidden((list) => [...list, path]);
     if (kind === 'vrm' && activeVrmPath === path) setActiveVrmPath(vrms.find((v) => v.path !== path)?.path ?? null);
     if (kind === 'live2d' && activeLive2dPath === path) {
       setActiveLive2dPath(live2ds.find((l) => l.model_path !== path)?.model_path ?? null);
     }
+    if (kind === 'inochi2d' && activeInochi2dPath === path) {
+      setActiveInochi2dPath(inochi2ds.find((m) => m.model_path !== path)?.model_path ?? null);
+    }
   };
-  const unhideAvatar = (kind: 'vrm' | 'live2d', path: string) => {
+  const unhideAvatar = (kind: AvatarKind, path: string) => {
     setHidden((list) => list.filter((p) => p !== path));
     if (kind === 'vrm') setActiveVrmPath(path);
-    else setActiveLive2dPath(path);
+    else if (kind === 'live2d') setActiveLive2dPath(path);
+    else setActiveInochi2dPath(path);
+  };
+
+  const handleBrowseInochi2d = async () => {
+    const path = await importInochi2dFromDialog();
+    if (!path) return;
+    setActiveInochi2dPath(path);
+    setJustImported(path);
   };
 
   const handleBrowseVrm = async () => {
@@ -502,6 +519,48 @@ export const GeneralSettings = () => {
           refresh={refreshLive2dModels}
           hide={(path) => hideAvatar('live2d', path)}
           unhide={(path) => unhideAvatar('live2d', path)}
+        />
+      </div>
+
+      {/* Inochi2D: freie 2D-Puppen (.inp/.inx) */}
+      <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3" id="setting-inochi2d">
+        <h3 className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+          <Feather className="w-3.5 h-3.5 text-accent-400" />
+          <span>{t('settings.inochi2dDefault')}</span>
+        </h3>
+        <div className="flex flex-wrap gap-2 text-xs">
+          <select
+            aria-label={t('settings.inochi2dDefault')}
+            value={activeInochi2dPath || ''}
+            onChange={(e) => setActiveInochi2dPath(e.target.value || null)}
+            className="flex-1 min-w-[200px] bg-app border border-slate-800 rounded-lg px-3 py-2 text-slate-200 focus:outline-hidden focus:border-accent-500"
+          >
+            {inochi2ds.length === 0 && <option value="">{t('settings.inochi2dNone')}</option>}
+            {inochi2ds.map((m) => (
+              <option key={m.model_path} value={m.model_path}>
+                {m.name} ({m.id})
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={handleBrowseInochi2d}
+            className="px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium flex items-center gap-1.5 transition-colors border border-slate-700"
+            title={t('settings.importInochi2dHint')}
+          >
+            <FolderOpen className="w-3.5 h-3.5 text-accent-400" />
+            <span className="whitespace-nowrap">{t('settings.importInochi2d')}</span>
+          </button>
+        </div>
+        <p className="text-[11px] text-slate-500">{t('settings.inochi2dHint')}</p>
+        <AvatarActions
+          key={`inochi2d:${selectedInochi2d?.model_path}:${justImported === selectedInochi2d?.model_path}`}
+          startEditing={!!selectedInochi2d && justImported === selectedInochi2d.model_path}
+          kind="inochi2d"
+          entry={selectedInochi2d && { name: selectedInochi2d.name, path: selectedInochi2d.model_path, removable: selectedInochi2d.removable }}
+          refresh={refreshInochi2dModels}
+          hide={(path) => hideAvatar('inochi2d', path)}
+          unhide={(path) => unhideAvatar('inochi2d', path)}
         />
       </div>
     </div>

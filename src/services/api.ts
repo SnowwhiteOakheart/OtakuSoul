@@ -88,6 +88,9 @@ import {
   KokoroInstallResult,
   ScannedLive2d,
   Live2dCatalogItem,
+  ScannedInochi2d,
+  Inochi2dCatalogItem,
+  AvatarKind,
   EmotionResult,
   GatewayCharacterEntry,
   GatewayLorebookEntry,
@@ -965,13 +968,13 @@ export const api = {
     return await invoke<ScannedVrm>('import_vrm_model', { sourcePath });
   },
 
-  /** Own name for an avatar (`kind` = `vrm` or `live2d`); an empty name restores the original. */
-  renameAvatar: async (kind: 'vrm' | 'live2d', path: string, name: string): Promise<void> => {
+  /** Own name for an avatar; an empty name restores the original. */
+  renameAvatar: async (kind: AvatarKind, path: string, name: string): Promise<void> => {
     await invoke('rename_avatar', { kind, path, name });
   },
 
   /** Moves an imported avatar with its folder to the app's trash. */
-  deleteAvatar: async (kind: 'vrm' | 'live2d', path: string): Promise<void> => {
+  deleteAvatar: async (kind: AvatarKind, path: string): Promise<void> => {
     await invoke('delete_avatar', { kind, path });
   },
 
@@ -983,7 +986,7 @@ export const api = {
     return await invoke<void>('save_settings', { settings });
   },
 
-  saveAvatarThumbnail: async (kind: 'vrm' | 'live2d', path: string, dataUrl: string): Promise<string> =>
+  saveAvatarThumbnail: async (kind: AvatarKind, path: string, dataUrl: string): Promise<string> =>
     await invoke<string>('save_avatar_thumbnail', { kind, path, dataUrl }),
 
   saveCharacterCard: async (
@@ -1501,6 +1504,18 @@ export const api = {
   importLive2dModel: async (sourcePath: string): Promise<ScannedLive2d> => {
     return await invoke<ScannedLive2d>('import_live2d_model', { sourcePath });
   },
+
+  // Inochi2D puppets (.inp/.inx), rendered by `services/inochi2d`.
+  scanInochi2dModels: async (): Promise<ScannedInochi2d[]> => await invoke<ScannedInochi2d[]>('scan_inochi2d_models'),
+
+  getInochi2dCatalog: async (): Promise<Inochi2dCatalogItem[]> => await invoke<Inochi2dCatalogItem[]>('get_inochi2d_catalog'),
+
+  /** Downloads an official example puppet (SHA-256 checked). */
+  downloadInochi2dModel: async (modelId: string): Promise<ScannedInochi2d> =>
+    await invoke<ScannedInochi2d>('download_inochi2d_model', { modelId }),
+
+  importInochi2dModel: async (sourcePath: string): Promise<ScannedInochi2d> =>
+    await invoke<ScannedInochi2d>('import_inochi2d_model', { sourcePath }),
 
   // Soul Hub (Soul Gateway, Chub AI, World Lorebooks, Stage Scenarios)
   fetchSoulGatewayRegistry: async (): Promise<GatewayCharacterEntry[]> => {

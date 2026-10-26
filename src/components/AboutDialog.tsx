@@ -182,6 +182,7 @@ export function AboutDialog({ onClose }: AboutDialogProps) {
                 {/* Third-party asset attributions (Live2D, Unity-Chan, VRM) */}
                 <div data-testid="live2d-attribution" className="space-y-1 text-[11px] leading-relaxed text-slate-400">
                   <p>{t('about.credits.live2d')}</p>
+                  <p data-testid="inochi2d-attribution">{t('about.credits.inochi2d')}</p>
                 </div>
 
                 {/* External Links */}

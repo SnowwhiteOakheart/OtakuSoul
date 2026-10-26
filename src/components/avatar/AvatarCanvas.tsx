@@ -1,13 +1,13 @@
 import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { VrmViewer } from './VrmViewer';
 import { loadCubismCore } from '../../services/live2dRuntime';
-import { Box, Image, Sparkles, Smile, ChevronDown, Wind } from 'lucide-react';
+import { Box, Feather, Image, Sparkles, Smile, ChevronDown, Wind } from 'lucide-react';
 import { CharacterProfile } from '../../types';
 import { PORTRAIT_MOODS, assetAsBlobUrl, getPortraitExpressions, loadDisplayableImage, selectCharacterPortrait } from '../../utils/characterPortraits';
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { translate, useTranslation, type TranslationKey } from '../../i18n';
 import { DropdownMenu } from '../ui/DropdownMenu';
-import { manualEmotion, resolveLive2dPath, resolveVrmPath } from '../avatars/avatarMatch';
+import { manualEmotion, resolveInochi2dPath, resolveLive2dPath, resolveVrmPath } from '../avatars/avatarMatch';
 import { AvatarSkeleton, ScrollText } from '../ui';
 import { languageCode, localizeCard } from '../../utils/cardI18n';
 import { audioPlayer } from '../../services/audioPlayer';
@@ -24,6 +24,9 @@ const Live2DViewer = lazy(() =>
     .then(() => import('./Live2DViewer'))
     .then((module) => ({ default: module.Live2DViewer }))
 );
+
+// The Inochi2D runtime (parser, physics, WebGL renderer) only loads for Inochi2D avatars.
+const Inochi2dViewer = lazy(() => import('./Inochi2dViewer'));
 
 const ALL_GO_EMOTIONS = [
   'admiration', 'amusement', 'anger', 'annoyance', 'approval', 'caring',
@@ -216,6 +219,8 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
   const {
     activeVrmPath,
     activeLive2dPath,
+    activeInochi2dPath,
+    scannedInochi2ds,
     avatarMode,
     portraitMotion,
     setPortraitMotion,
@@ -228,7 +233,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
     replyLanguage,
     scannedVrms,
   } = useStoreFields(
-    'activeVrmPath', 'activeLive2dPath', 'avatarMode', 'setAvatarMode', 'scannedLive2ds', 'portraitMotion', 'setPortraitMotion',
+    'activeVrmPath', 'activeLive2dPath', 'activeInochi2dPath', 'scannedInochi2ds', 'avatarMode', 'setAvatarMode', 'scannedLive2ds', 'portraitMotion', 'setPortraitMotion',
     'currentEmotion', 'setCurrentEmotion', 'avatarMotions', 'avatarGesture', 'replyLanguage', 'scannedVrms',
   );
   const { t, tEmotion } = useTranslation();
@@ -239,6 +244,9 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
 
   // 2. Resolve Live2D model path (Character override or global setting fallback)
   const live2dPath = resolveLive2dPath(character, scannedLive2ds, activeLive2dPath);
+
+  // 2b. Inochi2D puppet (Character override or global setting)
+  const inochi2dPath = resolveInochi2dPath(character, scannedInochi2ds, activeInochi2dPath);
 
   // 3. Resolve granular/canonical emotion portrait, then fall back to neutral/base avatar.
   const emotionImage = selectCharacterPortrait(
@@ -330,6 +338,21 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
           </button>
 
           <button
+            onClick={() => setAvatarMode('inochi2d')}
+            aria-pressed={avatarMode === 'inochi2d'}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-all outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
+              avatarMode === 'inochi2d'
+                ? 'bg-accent-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title={t('avatar.modeInochi2dHint')}
+            aria-label={t('avatar.modeInochi2d')}
+          >
+            <Feather className="w-3 h-3" />
+            <span className="hidden @sm:inline">{t('avatar.modeInochi2d')}</span>
+          </button>
+
+          <button
             onClick={() => setAvatarMode('2d')}
             aria-pressed={avatarMode === '2d'}
             className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-all outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
@@ -413,6 +436,23 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
             <Smile className="w-12 h-12 text-accent-400/50 mb-2" />
             <p className="text-sm font-semibold text-slate-200">{t('avatar.noLive2dTitle')}</p>
             <p className="text-xs text-slate-400 mt-1 max-w-xs">{t('avatar.noLive2dText')}</p>
+          </div>
+        )
+      ) : avatarMode === 'inochi2d' ? (
+        inochi2dPath ? (
+          <Suspense fallback={<AvatarSkeleton label={t('avatar.inochi2dLoading')} />}>
+            <Inochi2dViewer
+              key={inochi2dPath}
+              modelPath={inochi2dPath}
+              emotion={currentEmotion.portrait ?? currentEmotion.emotion}
+              isSpeaking={isSpeaking}
+            />
+          </Suspense>
+        ) : (
+          <div className="flex flex-col items-center justify-center p-6 text-center text-slate-400" data-inochi2d-empty>
+            <Feather className="w-12 h-12 text-accent-400/50 mb-2" />
+            <p className="text-sm font-semibold text-slate-200">{t('avatar.noInochi2dTitle')}</p>
+            <p className="text-xs text-slate-400 mt-1 max-w-xs">{t('avatar.noInochi2dText')}</p>
           </div>
         )
       ) : (

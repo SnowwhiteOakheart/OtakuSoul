@@ -2,6 +2,7 @@ import { api } from '../../services/api';
 import { soundFx } from '../../services/soundFx';
 import { isAdultMarked } from '../../utils/adultContent';
 import type {
+  AvatarKind,
   CharacterProfile,
   StateVariable,
   UserPersona,
@@ -24,7 +25,7 @@ export interface CharacterSlice {
    * Gives a character its own 3D or Live2D model (`null` = back to the default avatar). The card is
    * saved; errors go to the caller.
    */
-  assignCharacterAvatar: (charId: string, kind: 'vrm' | 'live2d', model: string | null) => Promise<void>;
+  assignCharacterAvatar: (charId: string, kind: AvatarKind, model: string | null) => Promise<void>;
   restoreHiddenCharacters: () => Promise<void>;
   updateStateVariable: (name: string, value: string) => void;
   personas: UserPersona[];
@@ -156,8 +157,9 @@ export const createCharacterSlice: SliceCreator<CharacterSlice> = (set, get) => 
     if (!char) return;
     const extensions = { ...(char.card.data.extensions || {}) };
     // The old Soul of Waifu keys would win over an emptied custom key.
-    const [key, legacy] = kind === 'vrm' ? ['custom_vrm', 'sow_vrm'] : ['custom_live2d', 'sow_live2d'];
-    delete extensions[legacy];
+    const [key, legacy] =
+      kind === 'vrm' ? ['custom_vrm', 'sow_vrm'] : kind === 'live2d' ? ['custom_live2d', 'sow_live2d'] : ['custom_inochi2d', ''];
+    if (legacy) delete extensions[legacy];
     if (model) extensions[key] = model;
     else delete extensions[key];
     const updated: CharacterProfile = { ...char, card: { ...char.card, data: { ...char.card.data, extensions } } };

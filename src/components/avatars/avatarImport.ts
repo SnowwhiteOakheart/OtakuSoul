@@ -33,6 +33,25 @@ export async function importVrmFromDialog(): Promise<string | null> {
   }
 }
 
+/** Picks an Inochi2D puppet (.inp, .inx or a ZIP with one), imports it and reloads the list; the new path or null. */
+export async function importInochi2dFromDialog(): Promise<string | null> {
+  try {
+    const selected = await open({
+      multiple: false,
+      filters: [{ name: translate('settings.fileFilterInochi2d'), extensions: ['inp', 'inx', 'zip'] }],
+    });
+    if (!selected || typeof selected !== 'string') return null;
+    const imported = await api.importInochi2dModel(selected);
+    await useAppStore.getState().refreshInochi2dModels();
+    toast.success(translate('settings.inochi2dImported', { name: imported.name }));
+    return imported.model_path;
+  } catch (e) {
+    console.error('Failed to import Inochi2D puppet:', e);
+    toast.error(translate('settings.importFailed', { error: errorMessage(e) }));
+    return null;
+  }
+}
+
 /** Picks a Live2D model (ZIP or model JSON), imports it and reloads the list; the new model path or null. */
 export async function importLive2dFromDialog(): Promise<string | null> {
   try {

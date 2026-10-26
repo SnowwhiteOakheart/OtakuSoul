@@ -11,7 +11,11 @@ export type AppSettings = { server_config: LlamaServerConfig, sampling: Sampling
 /**
  * Context window sent to cloud models; older messages are left out beyond it.
  */
-cloud_context_tokens: number, active_preset_id: string | null, reply_language: string, lorebook_scan_depth: number, active_character_id: string | null, active_persona_id: string | null, active_vrm_path: string | null, active_live2d_path: string | null, global_lorebooks: Array<string>, scene_tension_enabled: boolean, hidden_character_ids: Array<string>, avatar_mode: string, app_language: string, theme: string, color_mode: string, 
+cloud_context_tokens: number, active_preset_id: string | null, reply_language: string, lorebook_scan_depth: number, active_character_id: string | null, active_persona_id: string | null, active_vrm_path: string | null, active_live2d_path: string | null, 
+/**
+ * Default Inochi2D puppet (file path).
+ */
+active_inochi2d_path: string | null, global_lorebooks: Array<string>, scene_tension_enabled: boolean, hidden_character_ids: Array<string>, avatar_mode: string, app_language: string, theme: string, color_mode: string, 
 /**
  * False only on a fresh install, so the first-run wizard shows once. Settings files
  * from before the wizard existed count as already set up.

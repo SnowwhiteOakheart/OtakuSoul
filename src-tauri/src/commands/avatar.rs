@@ -1,4 +1,4 @@
-//! Live2D models and emotion classification.
+//! Live2D and Inochi2D models, avatar library and emotion classification.
 
 #[tauri::command]
 pub fn scan_live2d_models() -> Vec<crate::modules::live2d::ScannedLive2d> {
@@ -26,6 +26,35 @@ pub fn import_live2d_model(
     source_path: String,
 ) -> Result<crate::modules::live2d::ScannedLive2d, String> {
     crate::modules::live2d::import_live2d_model(&source_path)
+}
+
+#[tauri::command]
+pub fn scan_inochi2d_models() -> Vec<crate::modules::inochi2d::ScannedInochi2d> {
+    crate::modules::inochi2d::scan_inochi2d_models()
+}
+
+#[tauri::command]
+pub fn get_inochi2d_catalog() -> Vec<crate::modules::inochi2d::Inochi2dCatalogItem> {
+    crate::modules::inochi2d::catalog()
+}
+
+#[tauri::command]
+pub async fn download_inochi2d_model(
+    model_id: String,
+) -> Result<crate::modules::inochi2d::ScannedInochi2d, String> {
+    crate::modules::inochi2d::download_inochi2d_model(&model_id).await
+}
+
+/// Imports an Inochi2D puppet (`.inp`, `.inx` or a ZIP with one); file access stays off the main thread.
+#[tauri::command]
+pub async fn import_inochi2d_model(
+    source_path: String,
+) -> Result<crate::modules::inochi2d::ScannedInochi2d, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::modules::inochi2d::import_inochi2d_model(&source_path)
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
@@ -88,7 +117,7 @@ pub fn delete_avatar_motion(file: String) -> Result<(), String> {
 }
 
 /// Key of an avatar in the name list: a 3D model by its path below the avatar folders, a Live2D
-/// model by its folder.
+/// model by its folder, an Inochi2D puppet by its file below the puppet folders.
 fn avatar_key(kind: crate::modules::avatar_library::AvatarKind, path: &str) -> String {
     use crate::modules::avatar_library::{AvatarKind, key_for};
     let path = std::path::Path::new(path);
@@ -99,10 +128,11 @@ fn avatar_key(kind: crate::modules::avatar_library::AvatarKind, path: &str) -> S
             .and_then(|p| p.file_name())
             .map(|n| n.to_string_lossy().into_owned())
             .unwrap_or_default(),
+        AvatarKind::Inochi2d => key_for(path, &crate::modules::inochi2d::inochi2d_roots()),
     }
 }
 
-/// Gives an avatar (`kind` = `vrm` or `live2d`) an own name; an empty name restores the original.
+/// Gives an avatar (`kind` = `vrm`, `live2d` or `inochi2d`) an own name; an empty name restores the original.
 #[tauri::command]
 pub fn rename_avatar(kind: String, path: String, name: String) -> Result<(), String> {
     let kind = crate::modules::avatar_library::AvatarKind::parse(&kind)?;

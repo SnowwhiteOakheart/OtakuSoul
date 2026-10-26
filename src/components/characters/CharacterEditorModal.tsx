@@ -1,6 +1,7 @@
 import { startTransition, useActionState, useId, useState } from 'react';
 import { CharacterProfile, CharacterCardV2 } from '../../types';
-import { api } from '../../services/api';
+import { api } from '../../services/api';
+
 import { CARD_VOICE_KEY, cardVoiceDescription } from '../../services/characterVoice';
 import { useStoreFields } from '../../store/useAppStore';
 import { X, Save, Image, Plus, Trash2, Sparkles, User, FileText, Settings2, BookOpen, Globe } from 'lucide-react';
@@ -33,8 +34,8 @@ export const CharacterEditorModal = ({
 }: CharacterEditorModalProps) => {
   const { t, tOptional } = useTranslation();
   const fieldId = useId();
-  const { refreshCharacters, allLorebooks, scannedVrms, scannedLive2ds } = useStoreFields(
-    'refreshCharacters', 'allLorebooks', 'scannedVrms', 'scannedLive2ds',
+  const { refreshCharacters, allLorebooks, scannedVrms, scannedLive2ds, scannedInochi2ds } = useStoreFields(
+    'refreshCharacters', 'allLorebooks', 'scannedVrms', 'scannedLive2ds', 'scannedInochi2ds',
   );
 
   const [activeTab, setActiveTab] = useState<'basics' | 'expressions' | 'prompts' | 'greetings' | 'lorebooks' | 'i18n' | 'raw'>('basics');
@@ -51,6 +52,7 @@ export const CharacterEditorModal = ({
     (character?.card.data.extensions?.sow_live2d as string) ||
     ''
   );
+  const [inochi2dModel, setInochi2dModel] = useState<string>((character?.card.data.extensions?.custom_inochi2d as string) || '');
   const [name, setName] = useState(character?.card.data.name || '');
   const [title, setTitle] = useState(
     (character?.card.data.extensions?.custom_title as string) ||
@@ -185,6 +187,7 @@ export const CharacterEditorModal = ({
             custom_title: title.trim() || undefined,
             custom_vrm: vrmPath || undefined,
             custom_live2d: live2dModel || undefined,
+            custom_inochi2d: inochi2dModel || undefined,
             expressions: Object.keys(cleanedExpressionImages).length > 0
               ? cleanedExpressionImages
               : undefined,
@@ -426,6 +429,23 @@ export const CharacterEditorModal = ({
                     {scannedLive2ds.map((l2d) => (
                       <option key={l2d.id} value={l2d.id}>
                         {l2d.name} ({l2d.id})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="w-full mt-2 space-y-1.5 px-2">
+                  <label className="text-xs font-semibold text-slate-400" htmlFor={`${fieldId}-inochi2d`}>{t('editor.inochi2d')}</label>
+                  <select
+                    id={`${fieldId}-inochi2d`}
+                    value={inochi2dModel}
+                    onChange={(e) => setInochi2dModel(e.target.value)}
+                    className="w-full bg-app border border-slate-700/80 rounded-lg px-2 py-1.5 text-xs text-slate-100 focus:outline-hidden focus:border-accent-500 transition-colors"
+                  >
+                    <option value="">{t('editor.noInochi2d')}</option>
+                    {scannedInochi2ds.map((m) => (
+                      <option key={m.model_path} value={m.id}>
+                        {m.name} ({m.id})
                       </option>
                     ))}
                   </select>
@@ -859,6 +879,7 @@ export const CharacterEditorModal = ({
                         custom_title: title || undefined,
                         custom_vrm: vrmPath || undefined,
                         custom_live2d: live2dModel || undefined,
+                        custom_inochi2d: inochi2dModel || undefined,
                         expressions: Object.keys(expressionImages).length > 0
                           ? expressionImages
                           : undefined,

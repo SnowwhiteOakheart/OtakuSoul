@@ -1,4 +1,4 @@
-import type { CharacterProfile, EmotionResult, ScannedLive2d, ScannedVrm } from '../../types';
+import type { CharacterProfile, EmotionResult, ScannedInochi2d, ScannedLive2d, ScannedVrm } from '../../types';
 
 const normalize = (path: string) => path.replace(/\\/g, '/').toLowerCase();
 
@@ -35,6 +35,30 @@ export const resolveLive2dPath = (
     ? scanned.find((m) => usesLive2d(character!, m))
     : scanned.find((m) => m.model_path === activeLive2dPath) || scanned[0];
   return matched?.model_path || activeLive2dPath || '';
+};
+
+/** The Inochi2D puppet a character card names (file name or path; empty = the default). */
+export const characterInochi2d = (character: CharacterProfile): string =>
+  (character.card.data.extensions?.custom_inochi2d as string) || '';
+
+/** The card may hold the file name ("Aka.inx") or a path ending in it. */
+export const usesInochi2d = (character: CharacterProfile, model: Pick<ScannedInochi2d, 'id' | 'model_path'>): boolean => {
+  const own = normalize(characterInochi2d(character));
+  return !!own && (model.id.toLowerCase() === own || normalize(model.model_path).endsWith(own));
+};
+
+/**
+ * The Inochi2D puppet shown for a character: its own (while it is still there), else the chosen
+ * default, else the first one; empty = none to show.
+ */
+export const resolveInochi2dPath = (
+  character: CharacterProfile | null,
+  scanned: Pick<ScannedInochi2d, 'id' | 'model_path'>[],
+  activeInochi2dPath: string | null,
+): string => {
+  const own = character && characterInochi2d(character) ? scanned.find((m) => usesInochi2d(character, m)) : undefined;
+  const fallback = scanned.find((m) => m.model_path === activeInochi2dPath) ?? scanned[0];
+  return own?.model_path || fallback?.model_path || '';
 };
 
 /**

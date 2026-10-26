@@ -8,11 +8,12 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Component, Path, PathBuf};
 
-/// `vrm` (3D: VRM, glTF, MMD) or `live2d`.
+/// `vrm` (3D: VRM, glTF, MMD), `live2d` or `inochi2d`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AvatarKind {
     Vrm,
     Live2d,
+    Inochi2d,
 }
 
 impl AvatarKind {
@@ -20,6 +21,7 @@ impl AvatarKind {
         match kind {
             "vrm" => Ok(Self::Vrm),
             "live2d" => Ok(Self::Live2d),
+            "inochi2d" => Ok(Self::Inochi2d),
             _ => Err(crate::err!("backend.avatar.unknownKind", kind = kind)),
         }
     }
@@ -29,6 +31,7 @@ impl AvatarKind {
         data_dir.join(match self {
             Self::Vrm => "avatars",
             Self::Live2d => "live2d",
+            Self::Inochi2d => "inochi2d",
         })
     }
 }
@@ -39,6 +42,8 @@ struct Names {
     vrm: BTreeMap<String, String>,
     #[serde(default)]
     live2d: BTreeMap<String, String>,
+    #[serde(default)]
+    inochi2d: BTreeMap<String, String>,
 }
 
 impl Names {
@@ -46,6 +51,7 @@ impl Names {
         match kind {
             AvatarKind::Vrm => &mut self.vrm,
             AvatarKind::Live2d => &mut self.live2d,
+            AvatarKind::Inochi2d => &mut self.inochi2d,
         }
     }
 }
@@ -79,6 +85,7 @@ impl AvatarKind {
         match self {
             Self::Vrm => "vrm",
             Self::Live2d => "live2d",
+            Self::Inochi2d => "inochi2d",
         }
     }
 }

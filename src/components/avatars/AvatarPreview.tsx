@@ -5,8 +5,10 @@ import { loadCubismCore } from '../../services/live2dRuntime';
 import { useStoreFields } from '../../store/useAppStore';
 import { useTranslation } from '../../i18n';
 import { AvatarSkeleton } from '../ui';
+import type { AvatarKind } from '../../types';
 
 const MmdViewer = lazy(() => import('../avatar/MmdViewer'));
+const Inochi2dViewer = lazy(() => import('../avatar/Inochi2dViewer'));
 const GltfViewer = lazy(() => import('../avatar/GltfViewer'));
 const Live2DViewer = lazy(() =>
   loadCubismCore()
@@ -14,12 +16,12 @@ const Live2DViewer = lazy(() =>
     .then((module) => ({ default: module.Live2DViewer })),
 );
 
-/** Feelings to try on a Live2D model (3D viewers bring their own menu). */
+/** Feelings to try on a Live2D model or Inochi2D puppet (3D viewers bring their own menu). */
 const LIVE2D_EMOTIONS = ['neutral', 'joy', 'anger', 'sadness', 'surprise', 'relief'] as const;
 
 interface AvatarPreviewProps {
-  kind: 'vrm' | 'live2d';
-  /** Model file (3D) or model JSON (Live2D). */
+  kind: AvatarKind;
+  /** Model file (3D, Inochi2D) or model JSON (Live2D). */
   path: string;
   /** Set to a function that takes a picture of the current view (null while there is none). */
   captureRef?: MutableRefObject<(() => string | null) | null>;
@@ -71,13 +73,19 @@ export function AvatarPreview({ kind, path, captureRef, onAutoSnapshot }: Avatar
   const [expression, setExpression] = useState('neutral');
   const [emotion, setEmotion] = useState<string>('neutral');
 
-  if (kind === 'live2d') {
+  if (kind === 'live2d' || kind === 'inochi2d') {
     return (
-      <div className="flex h-full flex-col" data-avatar-preview="live2d">
+      <div className="flex h-full flex-col" data-avatar-preview={kind}>
         <div ref={containerRef} className="min-h-0 flex-1">
-          <Suspense fallback={<AvatarSkeleton label={t('avatar.live2dLoading')} />}>
-            <Live2DViewer key={path} modelPath={path} emotion={emotion} />
-          </Suspense>
+          {kind === 'live2d' ? (
+            <Suspense fallback={<AvatarSkeleton label={t('avatar.live2dLoading')} />}>
+              <Live2DViewer key={path} modelPath={path} emotion={emotion} />
+            </Suspense>
+          ) : (
+            <Suspense fallback={<AvatarSkeleton label={t('avatar.inochi2dLoading')} />}>
+              <Inochi2dViewer key={path} modelPath={path} emotion={emotion} />
+            </Suspense>
+          )}
         </div>
         <div className="flex flex-wrap justify-center gap-1.5 border-t border-slate-800 p-2" role="group" aria-label={t('avatars.tryEmotion')}>
           {LIVE2D_EMOTIONS.map((name) => (

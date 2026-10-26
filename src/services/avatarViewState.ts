@@ -13,20 +13,21 @@ export interface VrmViewState {
 
 interface AvatarViewStateStore {
   live2d: Record<string, Live2DViewState>;
+  /** Inochi2D puppets keep the same 2D view (position and zoom) as Live2D. */
+  inochi2d: Record<string, Live2DViewState>;
   vrm: Record<string, VrmViewState>;
 }
 
-const EMPTY_STORE: AvatarViewStateStore = { live2d: {}, vrm: {} };
+const EMPTY_STORE: AvatarViewStateStore = { live2d: {}, inochi2d: {}, vrm: {} };
+const record = <T,>(value: unknown): Record<string, T> =>
+  value && typeof value === 'object' ? (value as Record<string, T>) : {};
 
 function readStore(): AvatarViewStateStore {
   try {
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}') as Partial<AvatarViewStateStore>;
-    return {
-      live2d: parsed.live2d && typeof parsed.live2d === 'object' ? parsed.live2d : {},
-      vrm: parsed.vrm && typeof parsed.vrm === 'object' ? parsed.vrm : {},
-    };
+    return { live2d: record(parsed.live2d), inochi2d: record(parsed.inochi2d), vrm: record(parsed.vrm) };
   } catch {
-    return { ...EMPTY_STORE, live2d: {}, vrm: {} };
+    return { ...EMPTY_STORE, live2d: {}, inochi2d: {}, vrm: {} };
   }
 }
 
@@ -46,8 +47,9 @@ function isFiniteTuple(value: unknown): value is [number, number, number] {
   );
 }
 
-export function loadLive2DViewState(modelPath: string): Live2DViewState | null {
-  const state = readStore().live2d[modelPath];
+/** 2D view of a Live2D model or (with `kind` = `inochi2d`) an Inochi2D puppet. */
+export function loadLive2DViewState(modelPath: string, kind: 'live2d' | 'inochi2d' = 'live2d'): Live2DViewState | null {
+  const state = readStore()[kind][modelPath];
   if (
     !state ||
     !Number.isFinite(state.xRatio) ||
@@ -63,10 +65,10 @@ export function loadLive2DViewState(modelPath: string): Live2DViewState | null {
   return state;
 }
 
-export function saveLive2DViewState(modelPath: string, state: Live2DViewState) {
+export function saveLive2DViewState(modelPath: string, state: Live2DViewState, kind: 'live2d' | 'inochi2d' = 'live2d') {
   if (!modelPath) return;
   const store = readStore();
-  store.live2d[modelPath] = state;
+  store[kind][modelPath] = state;
   writeStore(store);
 }
 

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { convertFileSrc } from '@tauri-apps/api/core';
-import { Box, Camera, Check, Search, Sparkles, Star, Upload, UserRound, Wand2 } from 'lucide-react';
+import { Box, Camera, Check, Download, Feather, Loader2, Search, Sparkles, Star, Upload, UserRound, Wand2 } from 'lucide-react';
 import { api } from '../../services/api';
 import { translate, useTranslation, type TranslationKey } from '../../i18n';
 import { useStoreFields } from '../../store/useAppStore';
@@ -11,24 +11,33 @@ import { radioGroupKeyDown, radioTabIndex } from '../../utils/radioGroup';
 import { AvatarActions } from '../settings/AvatarActions';
 import { toast } from '../ui/feedback';
 import { AvatarPreview } from './AvatarPreview';
-import { importLive2dFromDialog, importVrmFromDialog } from './avatarImport';
-import { usesLive2d, usesVrm } from './avatarMatch';
-import type { CharacterProfile } from '../../types';
+import { importInochi2dFromDialog, importLive2dFromDialog, importVrmFromDialog } from './avatarImport';
+import { usesInochi2d, usesLive2d, usesVrm } from './avatarMatch';
+import type { AvatarKind, AvatarMode, CharacterProfile, Inochi2dCatalogItem } from '../../types';
 
-type Filter = 'all' | 'vrm' | 'live2d';
-const FILTERS: readonly Filter[] = ['all', 'vrm', 'live2d'];
-const FILTER_LABELS: Record<Filter, TranslationKey> = { all: 'avatars.filterAll', vrm: 'avatars.filter3d', live2d: 'avatars.filterLive2d' };
+type Filter = 'all' | AvatarKind;
+const FILTERS: readonly Filter[] = ['all', 'vrm', 'live2d', 'inochi2d'];
+const FILTER_LABELS: Record<Filter, TranslationKey> = {
+  all: 'avatars.filterAll', vrm: 'avatars.filter3d', live2d: 'avatars.filterLive2d', inochi2d: 'avatars.filterInochi2d',
+};
+/** The chat's avatar mode that shows a model of each kind. */
+const MODE_FOR: Record<AvatarKind, AvatarMode> = { vrm: '3d', live2d: 'live2d', inochi2d: 'inochi2d' };
+const MODE_HINTS: Record<AvatarKind, [TranslationKey, TranslationKey]> = {
+  vrm: ['avatars.modeHint3d', 'avatars.switchTo3d'],
+  live2d: ['avatars.modeHintLive2d', 'avatars.switchToLive2d'],
+  inochi2d: ['avatars.modeHintInochi2d', 'avatars.switchToInochi2d'],
+};
 
 /** One model of either kind, as the manager lists it. */
 interface ManagedAvatar {
-  kind: 'vrm' | 'live2d';
-  /** Model file (3D) or model JSON (Live2D); also the list key. */
+  kind: AvatarKind;
+  /** Model file (3D, Inochi2D) or model JSON (Live2D); also the list key. */
   path: string;
   name: string;
   /** Format and size, shown under the name. */
   detail: string;
   removable: boolean;
-  /** What a character card stores for this model: the path (3D) or the folder id (Live2D). */
+  /** What a character card stores: the path (3D), the folder id (Live2D) or the file name (Inochi2D). */
   cardValue: string;
   /** The model's own preview picture (Live2D) or one taken here. */
   previewImage: string | null;
@@ -58,7 +67,7 @@ function Thumbnail({ avatar, fresh }: { avatar: ManagedAvatar; fresh?: string })
   }, [avatar.previewImage, fresh]);
   const shown = fresh ?? src;
   if (shown) return <img src={shown} alt="" className="h-full w-full object-cover object-top" data-avatar-thumbnail />;
-  const Icon = avatar.kind === 'vrm' ? Box : Sparkles;
+  const Icon = avatar.kind === 'vrm' ? Box : avatar.kind === 'inochi2d' ? Feather : Sparkles;
   return <Icon className="h-10 w-10 text-accent-300/70" aria-hidden />;
 }
 
@@ -82,12 +91,14 @@ export function AvatarManagerView() {
   const {
     scannedVrms, scannedLive2ds, activeVrmPath, setActiveVrmPath, activeLive2dPath, setActiveLive2dPath,
     refreshVrmModels, refreshLive2dModels, availableCharacters, assignCharacterAvatar, avatarMode, setAvatarMode,
-    openSettingsSection,
+    openSettingsSection, scannedInochi2ds, activeInochi2dPath, setActiveInochi2dPath, refreshInochi2dModels,
   } = useStoreFields(
     'scannedVrms', 'scannedLive2ds', 'activeVrmPath', 'setActiveVrmPath', 'activeLive2dPath', 'setActiveLive2dPath',
     'refreshVrmModels', 'refreshLive2dModels', 'availableCharacters', 'assignCharacterAvatar', 'avatarMode', 'setAvatarMode',
-    'openSettingsSection',
+    'openSettingsSection', 'scannedInochi2ds', 'activeInochi2dPath', 'setActiveInochi2dPath', 'refreshInochi2dModels',
   );
+  const [catalog, setCatalog] = useState<Inochi2dCatalogItem[]>([]);
+  const [downloading, setDownloading] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
   const [query, setQuery] = useState('');
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
@@ -104,7 +115,9 @@ export function AvatarManagerView() {
   useEffect(() => {
     void refreshVrmModels();
     void refreshLive2dModels();
-  }, [refreshVrmModels, refreshLive2dModels]);
+    void refreshInochi2dModels();
+    api.getInochi2dCatalog().then(setCatalog).catch((e) => console.warn('Inochi2D-Katalog nicht lesbar:', e));
+  }, [refreshVrmModels, refreshLive2dModels, refreshInochi2dModels]);
 
   const avatars = useMemo<ManagedAvatar[]>(() => [
     ...scannedVrms.map((vrm) => ({
@@ -129,19 +142,38 @@ export function AvatarManagerView() {
       ownPicture: !model.preview_image,
       uses: (c: CharacterProfile) => usesLive2d(c, model),
     })),
-  ], [scannedVrms, scannedLive2ds]);
+    ...scannedInochi2ds.map((model) => ({
+      kind: 'inochi2d' as const,
+      path: model.model_path,
+      name: model.name,
+      detail: `Inochi2D · ${model.size_mb.toFixed(0)} MB${model.artist ? ` · ${model.artist}` : ''}`,
+      removable: model.removable,
+      cardValue: model.id,
+      previewImage: model.preview_image ?? model.thumbnail ?? null,
+      ownPicture: !model.preview_image,
+      uses: (c: CharacterProfile) => usesInochi2d(c, model),
+    })),
+  ], [scannedVrms, scannedLive2ds, scannedInochi2ds]);
 
   const needle = query.trim().toLowerCase();
   const shown = avatars.filter(
     (a) => !hidden.includes(a.path) && (filter === 'all' || a.kind === filter) && (!needle || a.name.toLowerCase().includes(needle)),
   );
   const selected = avatars.find((a) => a.path === selectedPath && !hidden.includes(a.path)) ?? shown[0];
-  const isDefault = (a: ManagedAvatar) => (a.kind === 'vrm' ? activeVrmPath === a.path : activeLive2dPath === a.path);
-  const makeDefault = (a: ManagedAvatar) => (a.kind === 'vrm' ? setActiveVrmPath(a.path) : setActiveLive2dPath(a.path));
+  const defaults: Record<AvatarKind, string | null> = { vrm: activeVrmPath, live2d: activeLive2dPath, inochi2d: activeInochi2dPath };
+  const setDefault: Record<AvatarKind, (path: string | null) => void> = {
+    vrm: setActiveVrmPath, live2d: setActiveLive2dPath, inochi2d: setActiveInochi2dPath,
+  };
+  const refreshKind: Record<AvatarKind, () => Promise<void>> = {
+    vrm: refreshVrmModels, live2d: refreshLive2dModels, inochi2d: refreshInochi2dModels,
+  };
+  const isDefault = (a: ManagedAvatar) => defaults[a.kind] === a.path;
+  const makeDefault = (a: ManagedAvatar) => setDefault[a.kind](a.path);
   const charName = (c: CharacterProfile) => localizeCard(c.card.data, currentLanguage).name;
 
-  const importModel = async (kind: 'vrm' | 'live2d') => {
-    const path = kind === 'vrm' ? await importVrmFromDialog() : await importLive2dFromDialog();
+  const importModel = async (kind: AvatarKind) => {
+    const path =
+      kind === 'vrm' ? await importVrmFromDialog() : kind === 'live2d' ? await importLive2dFromDialog() : await importInochi2dFromDialog();
     if (!path) return;
     setFilter((f) => (f === 'all' || f === kind ? f : kind));
     setQuery('');
@@ -155,8 +187,7 @@ export function AvatarManagerView() {
     // The default goes to another model of the same kind; undo brings it back.
     if (isDefault(a)) {
       const next = avatars.find((o) => o.kind === a.kind && o.path !== a.path && !hidden.includes(o.path));
-      if (a.kind === 'vrm') setActiveVrmPath(next?.path ?? null);
-      else setActiveLive2dPath(next?.path ?? null);
+      setDefault[a.kind](next?.path ?? null);
     }
   };
   const unhide = (a: ManagedAvatar) => {
@@ -198,7 +229,26 @@ export function AvatarManagerView() {
   const otherModel = (a: ManagedAvatar, character: CharacterProfile) =>
     avatars.find((o) => o.kind === a.kind && o.path !== a.path && o.uses(character));
 
-  const modeFor = selected?.kind === 'vrm' ? '3d' : 'live2d';
+  const modeFor = MODE_FOR[selected?.kind ?? 'vrm'];
+  const [modeHint, modeSwitch] = MODE_HINTS[selected?.kind ?? 'vrm'];
+
+  /** Loads an official Inochi2D example puppet from its source and selects it. */
+  const downloadExample = async (item: Inochi2dCatalogItem) => {
+    setDownloading(item.id);
+    try {
+      const model = await api.downloadInochi2dModel(item.id);
+      await refreshInochi2dModels();
+      setCatalog(await api.getInochi2dCatalog());
+      setFilter((f) => (f === 'all' || f === 'inochi2d' ? f : 'inochi2d'));
+      setSelectedPath(model.model_path);
+      toast.success(translate('avatars.inochi2dDownloaded', { name: model.name }));
+    } catch (e) {
+      toast.error(translate('avatars.inochi2dDownloadFailed', { error: errorMessage(e) }));
+    } finally {
+      setDownloading(null);
+    }
+  };
+  const missingExamples = catalog.filter((c) => !c.is_installed);
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto p-4 md:p-6" data-avatar-manager>
@@ -226,8 +276,39 @@ export function AvatarManagerView() {
             <Upload className="h-4 w-4" />
             {t('avatars.importLive2d')}
           </button>
+          <button
+            type="button"
+            onClick={() => void importModel('inochi2d')}
+            className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/60 px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800"
+            title={t('avatars.importInochi2dHint')}
+            data-avatar-import="inochi2d"
+          >
+            <Upload className="h-4 w-4" />
+            {t('avatars.importInochi2d')}
+          </button>
         </div>
       </header>
+
+      {(filter === 'all' || filter === 'inochi2d') && missingExamples.length > 0 && (
+        <section className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-800 bg-slate-900/40 p-3" data-inochi2d-catalog aria-label={t('avatars.inochi2dExamples')}>
+          <Feather className="h-4 w-4 text-accent-300" aria-hidden />
+          <p className="mr-auto text-xs text-slate-400">{t('avatars.inochi2dExamplesHint')}</p>
+          {missingExamples.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              disabled={downloading !== null}
+              onClick={() => void downloadExample(item)}
+              title={`${item.description} · ${item.author} · ${item.license}`}
+              className="flex items-center gap-1.5 rounded-lg border border-slate-700 px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-800 disabled:opacity-50"
+              data-inochi2d-download={item.id}
+            >
+              {downloading === item.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+              {t('avatars.inochi2dDownload', { name: item.name, size: item.size_mb.toFixed(0) })}
+            </button>
+          ))}
+        </section>
+      )}
 
       <div className="flex flex-wrap items-center gap-3">
         <div
@@ -340,7 +421,7 @@ export function AvatarManagerView() {
                   kind={selected.kind}
                   entry={selected}
                   startEditing={justImported === selected.path}
-                  refresh={selected.kind === 'vrm' ? refreshVrmModels : refreshLive2dModels}
+                  refresh={refreshKind[selected.kind]}
                   hide={() => hide(selected)}
                   unhide={() => unhide(selected)}
                 />
@@ -366,9 +447,9 @@ export function AvatarManagerView() {
                 <p className="text-xs text-slate-400">{t('avatars.defaultHint')}</p>
                 {avatarMode !== modeFor && (
                   <p className="text-xs text-slate-400">
-                    {t(modeFor === '3d' ? 'avatars.modeHint3d' : 'avatars.modeHintLive2d')}{' '}
+                    {t(modeHint)}{' '}
                     <button type="button" onClick={() => setAvatarMode(modeFor)} className="text-accent-300 underline hover:text-accent-200">
-                      {t(modeFor === '3d' ? 'avatars.switchTo3d' : 'avatars.switchToLive2d')}
+                      {t(modeSwitch)}
                     </button>
                   </p>
                 )}

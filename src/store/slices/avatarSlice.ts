@@ -4,12 +4,14 @@ import type {
   ScannedVrm,
   AvatarMotion,
   ScannedLive2d,
+  ScannedInochi2d,
   EmotionResult,
+  AvatarMode,
 } from '../../types';
 import type { SliceCreator } from '../storeTypes';
 import type { GestureRequest, MotionRole } from '../../utils/avatarGestures';
 
-/** 3D/Live2D avatar models, avatar mode and the current emotion. */
+/** 3D/Live2D/Inochi2D avatar models, avatar mode and the current emotion. */
 /** A calm face: the start and what a character shows before their first reply. */
 export const NEUTRAL_EMOTION: EmotionResult = {
   emotion: 'neutral',
@@ -28,8 +30,13 @@ export interface AvatarSlice {
   activeLive2dPath: string | null;
   setActiveLive2dPath: (path: string | null) => void;
   refreshLive2dModels: () => Promise<void>;
-  avatarMode: '3d' | 'live2d' | '2d';
-  setAvatarMode: (mode: '3d' | 'live2d' | '2d') => void;
+  /** Inochi2D puppets (.inp/.inx) and the default one. */
+  scannedInochi2ds: ScannedInochi2d[];
+  activeInochi2dPath: string | null;
+  setActiveInochi2dPath: (path: string | null) => void;
+  refreshInochi2dModels: () => Promise<void>;
+  avatarMode: AvatarMode;
+  setAvatarMode: (mode: AvatarMode) => void;
   /** 2D portraits breathe, sway and move with the voice (per device). */
   portraitMotion: boolean;
   setPortraitMotion: (on: boolean) => void;
@@ -99,6 +106,26 @@ export const createAvatarSlice: SliceCreator<AvatarSlice> = (set, get) => ({
       }
     } catch (e) {
       console.error('Failed to scan Live2D models:', e);
+    }
+  },
+
+  scannedInochi2ds: [],
+
+  activeInochi2dPath: null,
+
+  setActiveInochi2dPath: (activeInochi2dPath) => {
+    set({ activeInochi2dPath });
+    get().saveCurrentSettings();
+  },
+
+  refreshInochi2dModels: async () => {
+    try {
+      const models = await api.scanInochi2dModels();
+      set({ scannedInochi2ds: models });
+      const first = models[0];
+      if (!get().activeInochi2dPath && first) set({ activeInochi2dPath: first.model_path });
+    } catch (e) {
+      console.error('Failed to scan Inochi2D models:', e);
     }
   },
 

@@ -87,7 +87,7 @@ export const CommandPalette = ({ open, onOpen, onClose }: CommandPaletteProps) =
       ['setting-quick-replies', 'quickReplies.title', Settings2, 'quick reply schnellantwort knopf button sillytavern быстрый ответ'],
       ['setting-proactive', 'proactive.title', Settings2, 'proactive nachricht melden benachrichtigung notification ruhezeit сообщение уведомление'],
       ['setting-nsfw', 'nsfw.title', Settings2, 'nsfw 18+ adult erwachsene erotik freigabe взрослые'],
-      ['setting-avatars', 'settings.avatarDefaults', Users, 'avatar vrm live2d аватар'],
+      ['setting-avatars', 'settings.avatarDefaults', Users, 'avatar vrm live2d inochi2d аватар'],
       ['setting-avatar-motions', 'motions.title', Users, 'motion bewegung animation vrma geste gesture движение анимация'],
       ['setting-system', 'settings.systemTitle', Terminal, 'logs version update daten data логи'],
     ] as const).map(([anchor, label, icon, keywords]) => ({

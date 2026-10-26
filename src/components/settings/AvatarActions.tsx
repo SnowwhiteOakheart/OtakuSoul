@@ -5,6 +5,7 @@ import { translate, useTranslation } from '../../i18n';
 import { api } from '../../services/api';
 import { toast } from '../ui/feedback';
 import { errorMessage } from '../../utils/errors';
+import type { AvatarKind } from '../../types';
 
 /** How long a removed avatar can be brought back before it goes to the trash. */
 export const AVATAR_UNDO_MS = 8000;
@@ -16,7 +17,7 @@ export interface AvatarEntry {
 }
 
 interface AvatarActionsProps {
-  kind: 'vrm' | 'live2d';
+  kind: AvatarKind;
   /** The avatar chosen in the list above. */
   entry: AvatarEntry | undefined;
   /** Reloads the list after a rename or removal. */

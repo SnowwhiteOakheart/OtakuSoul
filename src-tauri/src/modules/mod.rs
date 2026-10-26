@@ -22,6 +22,7 @@ pub mod hub_installed;
 pub mod image_generator;
 pub mod image_loras;
 pub mod inference;
+pub mod inochi2d;
 pub mod kokoro;
 pub mod live2d;
 pub mod llama_manager;

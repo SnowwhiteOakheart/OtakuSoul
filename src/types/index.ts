@@ -86,6 +86,8 @@ import type { KokoroDownloadProgress } from './generated/KokoroDownloadProgress'
 import type { KokoroInstallResult } from './generated/KokoroInstallResult';
 import type { LayerRecommendation } from './generated/LayerRecommendation';
 import type { Live2dCatalogItem } from './generated/Live2dCatalogItem';
+import type { Inochi2dCatalogItem } from './generated/Inochi2dCatalogItem';
+import type { ScannedInochi2d } from './generated/ScannedInochi2d';
 import type { LlmProviderType } from './generated/LlmProviderType';
 import type { LogEntry } from './generated/LogEntry';
 import type { MemoryBackupInfo } from './generated/MemoryBackupInfo';
@@ -219,6 +221,8 @@ export type {
   KokoroInstallResult,
   LayerRecommendation,
   Live2dCatalogItem,
+  Inochi2dCatalogItem,
+  ScannedInochi2d,
   LlmProviderType,
   LogEntry,
   MemoryBackupInfo,
@@ -332,6 +336,8 @@ export interface CharacterData {
     custom_title?: string;
     custom_avatar?: string;
     custom_live2d?: string;
+    /** Inochi2D puppet: file name (or path) of the `.inp`/`.inx`. */
+    custom_inochi2d?: string;
     custom_vrm?: string;
     custom_expressions?: Record<string, string>;
     custom_i18n?: {
@@ -875,9 +881,10 @@ export interface AppSettings {
   active_persona_id: string | null;
   active_vrm_path: string | null;
   active_live2d_path?: string | null;
+  active_inochi2d_path?: string | null;
   global_lorebooks?: string[];
   scene_tension_enabled?: boolean;
-  avatar_mode?: '3d' | 'live2d' | '2d';
+  avatar_mode?: AvatarMode;
   app_language?: string;
   theme?: 'obsidian' | 'cyberpunk' | 'sakura' | 'midnight' | 'emerald' | string;
   color_mode?: 'system' | 'light' | 'dark';
@@ -905,6 +912,12 @@ export interface AppSettings {
   /** Server and sampler settings per local model, by file name. */
   model_profiles?: Record<string, ModelProfile>;
 }
+
+/** How the avatar is shown: 3D model, Live2D, Inochi2D puppet or picture. */
+export type AvatarMode = '3d' | 'live2d' | 'inochi2d' | '2d';
+
+/** Kinds of avatar models in the library: 3D (VRM, glTF, MMD), Live2D, Inochi2D. */
+export type AvatarKind = 'vrm' | 'live2d' | 'inochi2d';
 
 // Phase 14: Live2D & Emotion Classification
 export interface ScannedLive2d {

@@ -687,6 +687,21 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Mundformen aa/ih/ou/ee/oh aus Formanten (`services/lipSync.ts`, `audioPlayer.onAudioFrame(amplitude, visemes)`).
   E2E: `e2e/tools/make-vrma.mjs` und `make-fbx.mjs` (ASCII-FBX im Mixamo-Format) bauen Test-Animationen; der Viewer zeigt `data-motions`/`data-gesture`,
   das Mock antwortet mit `stats.chatReply`.
+- Inochi2D (`avatar_mode` `inochi2d`, Plan lokal in `roadmap_inox2d.md`): eigene TypeScript-Laufzeit in `services/inochi2d/`
+  (Portierung von Inox2D, BSD-2, Lizenz `LICENSE-inox2d.txt` + `about.credits.inochi2d` – Hinweis muss bleiben), kein WASM, keine CSP-Änderung.
+  `inp.ts` (Format, TGA-Decoder; Namen haben oft `\0` am Ende → `cleanText`), `puppet.ts` (Knoten, Parameter bilinear,
+  Bindungen t/r/s/zSort/opacity/deform, `MeshGroup` per Dreiecks-Abbildung, `Mask`-Knoten = Mesh ohne Textur, nur Stencil,
+  Pendel-/Feder-Physik RK4; getriebene Parameter erst nach den Transformationen), `renderer.ts` (WebGL2, Stencil-Masken,
+  Composites über Offscreen-Puffer, 7 Blend-Modi). Stolperfallen: Texturen sind schon vormultipliert (nicht nochmal!;
+  PNG dekodiert `decodePng` selbst, weil WebKitGTK ein `ImageBitmap` beim Hochladen ent-multipliziert → heller Rand),
+  Knoten-z darf nicht clippen (`ortho` setzt z auf 0), UVs außerhalb 0…1 bleiben leer (kein CLAMP_TO_BORDER in WebGL).
+  `controls.ts` findet Parameter am Namen (Inochi2D „Head:: Yaw-Pitch“/„Mouth:: Shape“, Eigenbau „Head::Turn“/„Eye::L::Open“,
+  Live2D „ParamAngleX“) und treibt Lippen (`audioPlayer.onAudioFrame`), Blinzeln, Atmen, Blick, Emotions-Posen (`EMOTION_POSES`).
+  Viewer `avatar/Inochi2dViewer.tsx` (lazy, Ansicht in `avatarViewState` unter `inochi2d`, `data-inochi2d-viewer`).
+  Backend `inochi2d.rs`: Einzeldateien in `<Daten>/inochi2d/` und `assets/inochi2d/` (+1 Unterordnerebene), Kopf-Metadaten,
+  eingebettetes PNG-Vorschaubild, Import `.inp/.inx/.zip`, Katalog Aka/Midori (CC BY 4.0, SHA-256, nur Download),
+  `AvatarKind::Inochi2d` (Namen/Papierkorb/Vorschaubilder wie die anderen). Karte: `custom_inochi2d` = Dateiname.
+  Prüfen ohne App: Headless-Chromium mit SwiftShader; der Browser-Bereich hat kein WebGL. E2E `avatar-inochi2d.mjs` (`tools/make-inp.mjs`).
 
 ### 7. Audio, Lokale TTS, Stimmklonen & Effekte
 

@@ -1,7 +1,7 @@
 import { api } from '../services/api';
 import { soundFx } from '../services/soundFx';
 import { waitWithAbort } from '../utils/cancellation';
-import { resolveLive2dPath } from '../components/avatars/avatarMatch';
+import { resolveInochi2dPath, resolveLive2dPath } from '../components/avatars/avatarMatch';
 import type { AssembledPrompt, CharacterProfile, ChatMessage, CognitiveOverview, GroupMember, LorebookEntry, LlmProviderType, SamplingParams } from '../types';
 import type { AppStoreState } from './storeTypes';
 
@@ -187,7 +187,7 @@ export function recentMemoryQuery(messages: ChatMessage[]): string {
 }
 
 /**
- * Whether the avatar on screen shows the six moods itself (3D, or Live2D with a model): then the
+ * Whether the avatar on screen shows the six moods itself (3D, or Live2D/Inochi2D with a model): then the
  * expression tag offers them even without portrait pictures. "Show everyone" in a group chat
  * shows portraits instead.
  */
@@ -201,6 +201,9 @@ export function avatarShowsMoods(state: AppStoreState, character: CharacterProfi
   }
   if (everyone) return false;
   if (state.avatarMode === '3d') return true;
+  if (state.avatarMode === 'inochi2d') {
+    return !!resolveInochi2dPath(character, state.scannedInochi2ds, state.activeInochi2dPath);
+  }
   return state.avatarMode === 'live2d' && !!resolveLive2dPath(character, state.scannedLive2ds, state.activeLive2dPath);
 }
 

@@ -174,6 +174,9 @@ pub struct AppSettings {
     pub active_vrm_path: Option<String>,
     #[serde(default)]
     pub active_live2d_path: Option<String>,
+    /// Default Inochi2D puppet (file path).
+    #[serde(default)]
+    pub active_inochi2d_path: Option<String>,
     #[serde(default)]
     pub global_lorebooks: Vec<String>,
     #[serde(default = "default_true")]
@@ -256,7 +259,7 @@ fn default_true() -> bool {
     true
 }
 
-/// New profiles show the character's picture; 3D and Live2D are a choice (every card has a
+/// New profiles show the character's picture; 3D, Live2D and Inochi2D are a choice (every card has a
 /// portrait, few have their own model).
 fn default_avatar_mode() -> String {
     "2d".to_string()
@@ -312,6 +315,9 @@ impl Default for AppSettings {
             active_persona_id: None,
             active_vrm_path: default_vrm_path,
             active_live2d_path: default_live2d_path,
+            active_inochi2d_path: crate::modules::inochi2d::scan_inochi2d_models()
+                .first()
+                .map(|p| p.model_path.clone()),
             global_lorebooks: Vec::new(),
             scene_tension_enabled: true,
             hidden_character_ids: Vec::new(),
