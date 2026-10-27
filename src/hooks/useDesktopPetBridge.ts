@@ -4,7 +4,7 @@ import { useAppStore } from '../store/useAppStore';
 import { audioPlayer } from '../services/audioPlayer';
 import { streamingTts } from '../services/streamingTts';
 import { api } from '../services/api';
-import { manualEmotion, resolveVrmPath } from '../components/avatars/avatarMatch';
+import { manualEmotion, resolveInochi2dPath, resolveVrmPath } from '../components/avatars/avatarMatch';
 import { APP_DEFAULT_COMPANION_NAME } from '../constants/branding';
 import {
   PET_AUDIO_EVENT,
@@ -47,7 +47,10 @@ function lastReplyKey(s: StoreState): string | null {
 function petState(s: StoreState): PetState {
   return {
     characterName: s.activeCharacter?.card.data.name || APP_DEFAULT_COMPANION_NAME,
-    modelPath: resolveVrmPath(s.activeCharacter, s.scannedVrms, s.activeVrmPath),
+    // The chat shows an Inochi2D puppet: the pet shows it too; otherwise the 3D model.
+    modelPath:
+      (s.avatarMode === 'inochi2d' && resolveInochi2dPath(s.activeCharacter, s.scannedInochi2ds, s.activeInochi2dPath)) ||
+      resolveVrmPath(s.activeCharacter, s.scannedVrms, s.activeVrmPath),
     emotion: s.currentEmotion.emotion,
     expression: s.currentEmotion.vrm_expression,
     motions: s.avatarMotions,

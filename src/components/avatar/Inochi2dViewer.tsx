@@ -15,6 +15,7 @@ import { translate, useTranslation } from '../../i18n';
 import { errorMessage } from '../../utils/errors';
 import type { GestureRequest } from '../../utils/avatarGestures';
 import { DropdownMenu } from '../ui/DropdownMenu';
+import type { PetFigure } from './avatarStage';
 
 interface Inochi2dViewerProps {
   /** Absolute path of the `.inp`/`.inx` file. */
@@ -26,7 +27,15 @@ interface Inochi2dViewerProps {
   gesture?: GestureRequest | null;
   /** Reports what the puppet offers, for the settings editor in the avatar library. */
   onPuppet?: (info: PuppetInfo) => void;
+  /**
+   * Desktop pet: whole figure at the bottom of a transparent window, no controls or remembered
+   * view; hands the pet its figure (gaze from the global pointer, hit test for click-through).
+   */
+  pet?: { onStage: (figure: PetFigure | null) => void };
 }
+
+/** Alpha above which a pixel counts as part of the puppet (soft edges stay click-through). */
+const PROBE_ALPHA = 24;
 
 /** Emotions the settings editor lets one give an own animation (the most common ones). */
 export const MAPPABLE_EMOTIONS = [
@@ -49,7 +58,7 @@ interface View {
  * Inochi2D puppet in the chat and the avatar library: WebGL2 canvas, drag to move, wheel to zoom,
  * lips follow the voice, face follows the emotion, eyes and head follow the pointer.
  */
-export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emotion = 'neutral', isSpeaking: _isSpeaking = false, gesture = null, onPuppet }) => {
+export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emotion = 'neutral', isSpeaking: _isSpeaking = false, gesture = null, onPuppet, pet }) => {
   const { t, tEmotion } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -62,9 +71,12 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
   const defaultViewRef = useRef<View>({ xRatio: 0.5, yRatio: 0.5, zoom: 1 });
   const emotionRef = useRef(emotion);
   const onPuppetRef = useRef(onPuppet);
+  const petRef = useRef(pet);
   useEffect(() => {
     onPuppetRef.current = onPuppet;
+    petRef.current = pet;
   });
+  const isPet = !!pet;
   // Puppet and animations of the loaded model, so saved settings can be applied without reloading.
   const loadedRef = useRef<{ puppet: Puppet; animations: ReturnType<typeof readAnimations> } | null>(null);
   const mappingRevision = useAppStore((s) => s.inochi2dMappingRevision);
@@ -83,6 +95,14 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
     if (!container || !canvas || !modelPath) return;
     let disposed = false;
     let frame = 0;
+    const petMode = !!petRef.current;
+    // Desktop pet: its gaze target (-1…1, y up), a pending hit test and a pause flag.
+    const mouse = { x: 0, y: 0 };
+    let pendingProbe: { x: number; y: number; onResult: (hit: boolean) => void } | null = null;
+    let paused = false;
+    // A 2D puppet cannot turn round: a turn (walking) becomes looking that way.
+    let turn = 0;
+    const probePixel = new Uint8Array(4);
     let renderer: PuppetRenderer | null = null;
     let stopSnapshots: (() => void) | null = null;
     let saveTimer: number | null = null;
@@ -99,7 +119,7 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
     });
 
     const saveView = () => {
-      if (viewRef.current) saveLive2DViewState(modelPath, viewRef.current, 'inochi2d');
+      if (viewRef.current && !petMode) saveLive2DViewState(modelPath, viewRef.current, 'inochi2d');
     };
     const scheduleSave = () => {
       if (saveTimer !== null) window.clearTimeout(saveTimer);
@@ -158,7 +178,12 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
       const dt = last ? Math.min((now - last) / 1000, 0.1) : 0;
       last = now;
       const animator = animatorRef.current;
+      if (paused) {
+        frame = requestAnimationFrame(loop);
+        return;
+      }
       if (animator && puppet) {
+        if (petMode) animator.pointer = [Math.max(-1, Math.min(1, mouse.x + turn * 0.8)), -mouse.y];
         if (now - lastAudio > AUDIO_TIMEOUT_MS) {
           animator.level = 0;
           animator.visemes = null;
@@ -171,6 +196,20 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
           setPlaying(clip);
         }
         draw();
+        // Answered right after drawing, while the frame is still in the drawing buffer.
+        if (pendingProbe && gl) {
+          const ratio = canvas.width / Math.max(container.clientWidth, 1);
+          const px = Math.round(pendingProbe.x * ratio);
+          const py = canvas.height - 1 - Math.round(pendingProbe.y * ratio);
+          let hit = false;
+          if (px >= 0 && py >= 0 && px < canvas.width && py < canvas.height) {
+            gl.readPixels(px, py, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, probePixel);
+            hit = probePixel[3]! > PROBE_ALPHA;
+          }
+          const { onResult } = pendingProbe;
+          pendingProbe = null;
+          onResult(hit);
+        }
       }
       frame = requestAnimationFrame(loop);
     };
@@ -207,6 +246,31 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
         bounds = puppet.bounds() ?? bounds;
         resize();
         const [x0, y0, x1, y1] = bounds;
+        if (petMode) {
+          // Whole figure standing at the bottom; the top fifth stays free for speech bubbles.
+          const fit = fitScale();
+          const zoom = Math.min((canvas.height * 0.8) / Math.max(y1 - y0, 1), (canvas.width * 0.95) / Math.max(x1 - x0, 1)) / fit;
+          const shown = (y1 - y0) * fit * zoom;
+          defaultViewRef.current = { xRatio: 0.5, yRatio: (canvas.height * 0.985 - shown / 2) / canvas.height, zoom };
+          viewRef.current = { ...defaultViewRef.current };
+          stopSnapshots = answerSnapshots(canvas, draw);
+          setLoading(false);
+          frame = requestAnimationFrame(loop);
+          petRef.current?.onStage({
+            mouse,
+            probe: (x, y, onResult) => {
+              // A newer pointer position replaces one not yet answered.
+              pendingProbe = { x, y, onResult };
+            },
+            setPaused: (next) => {
+              paused = next;
+            },
+            setTurn: (yaw) => {
+              turn = yaw;
+            },
+          });
+          return;
+        }
         const tall = (y1 - y0) / Math.max(x1 - x0, 1) > 1.4 && canvas.height / Math.max(canvas.width, 1) < 2.2;
         const zoom = tall ? UPPER_BODY_ZOOM : 1;
         const shown = (y1 - y0) * fitScale() * zoom;
@@ -265,16 +329,20 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
       viewRef.current = { ...view, zoom };
       scheduleSave();
     };
-    container.addEventListener('pointerdown', onPointerDown);
-    container.addEventListener('pointermove', onPointerMove);
-    container.addEventListener('pointerup', onPointerUp);
-    container.addEventListener('pointercancel', onPointerUp);
-    container.addEventListener('pointerleave', onPointerLeave);
-    container.addEventListener('wheel', onWheel, { passive: false });
+    // The pet window handles the pointer itself (dragging the window, patting, click-through).
+    if (!petMode) {
+      container.addEventListener('pointerdown', onPointerDown);
+      container.addEventListener('pointermove', onPointerMove);
+      container.addEventListener('pointerup', onPointerUp);
+      container.addEventListener('pointercancel', onPointerUp);
+      container.addEventListener('pointerleave', onPointerLeave);
+      container.addEventListener('wheel', onWheel, { passive: false });
+    }
 
     return () => {
       disposed = true;
       abort.abort();
+      if (petMode) petRef.current?.onStage(null);
       cancelAnimationFrame(frame);
       if (saveTimer !== null) window.clearTimeout(saveTimer);
       saveView();
@@ -332,16 +400,16 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
 
   return (
     <div
-      className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden bg-app/60 select-none"
+      className={`relative w-full h-full flex flex-col items-center justify-center overflow-hidden select-none ${isPet ? '' : 'bg-app/60'}`}
       data-inochi2d-viewer={loading ? 'loading' : error ? 'error' : 'ready'}
       data-inochi2d-clips={clips.length}
       data-inochi2d-playing={playing ?? undefined}
     >
-      <div ref={containerRef} className="w-full h-full cursor-grab active:cursor-grabbing touch-none">
+      <div ref={containerRef} className={`w-full h-full touch-none ${isPet ? '' : 'cursor-grab active:cursor-grabbing'}`}>
         <canvas ref={canvasRef} className="block w-full h-full" />
       </div>
 
-      {loading && (
+      {loading && !isPet && (
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-app/70 backdrop-blur-sm gap-2 text-accent-400">
           <Loader2 className="w-8 h-8 animate-spin" />
           <span className="text-xs font-medium text-slate-300">{t('avatar.inochi2dLoading')}</span>
@@ -355,6 +423,7 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
         </div>
       )}
 
+      {!isPet && (
       <div className="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 bg-slate-900/80 p-1 rounded-xl border border-slate-700/60 backdrop-blur shadow-lg text-slate-300">
         {clips.length > 0 && (
           <DropdownMenu
@@ -391,7 +460,9 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
         </button>
       </div>
 
-      {emotion && emotion !== 'neutral' && (
+      )}
+
+      {!isPet && emotion && emotion !== 'neutral' && (
         <div className="absolute top-3 left-3 z-20 px-2.5 py-1 bg-accent-950/60 border border-accent-500/30 rounded-lg backdrop-blur text-xs text-accent-300 font-mono shadow-md flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-accent-400" />
           <span>{tEmotion(emotion)}</span>

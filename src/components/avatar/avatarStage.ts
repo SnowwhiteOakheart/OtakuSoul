@@ -56,6 +56,9 @@ export interface AvatarStage {
   dispose: () => void;
 }
 
+/** What the desktop pet needs of any figure (3D stage or Inochi2D puppet). */
+export type PetFigure = Pick<AvatarStage, 'mouse' | 'probe' | 'setPaused' | 'setTurn'>;
+
 export interface AvatarStageOptions {
   /**
    * Desktop pet: whole figure, no camera controls and no remembered view; the pet window

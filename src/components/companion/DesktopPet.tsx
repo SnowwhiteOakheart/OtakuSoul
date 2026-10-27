@@ -12,7 +12,7 @@ import {
 import { Menu } from '@tauri-apps/api/menu';
 import { Brain, Camera, Clipboard, Flame, Heart, MessageCircle, Moon, Send, Smile, X, Zap } from 'lucide-react';
 import { VrmViewer } from '../avatar/VrmViewer';
-import type { AvatarStage } from '../avatar/avatarStage';
+import type { PetFigure } from '../avatar/avatarStage';
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { useTranslation } from '../../i18n';
 import { api } from '../../services/api';
@@ -58,6 +58,13 @@ const isMmdModel = (path: string) => /\.(pmx|pmd)$/i.test(path);
  */
 const SIT_DROP = 0.2;
 const isGltfModel = (path: string) => /\.(glb|gltf)$/i.test(path);
+// Inochi2D puppets bring their own runtime; only loaded for them.
+const Inochi2dViewer = lazy(() => import('../avatar/Inochi2dViewer'));
+const isInochi2dModel = (path: string) => /\.(inp|inx)$/i.test(path);
+/** The pet's faces are VRM expressions; an Inochi2D puppet takes the feeling behind them. */
+const EXPRESSION_EMOTIONS: Record<string, string> = {
+  happy: 'joy', angry: 'anger', sad: 'sadness', surprised: 'surprise', relaxed: 'relief', blush: 'embarrassment', neutral: 'neutral',
+};
 
 /** How long a speech bubble stays. */
 const BUBBLE_MS = 5000;
@@ -154,7 +161,7 @@ export const DesktopPet: React.FC = () => {
   const [screen, setScreen] = useState<PetScreen>({ fullscreen: false, locked: false });
   const away = screen.locked || (screen.fullscreen && prefs.hideInFullscreen);
   const awayRef = useRef(away);
-  const stageRef = useRef<AvatarStage | null>(null);
+  const stageRef = useRef<PetFigure | null>(null);
   const ignoreRef = useRef<boolean | null>(null);
   /** Pressed on the pet: click-through stays off until released. */
   const holdRef = useRef(false);
@@ -166,6 +173,8 @@ export const DesktopPet: React.FC = () => {
     if (ignore && holdRef.current) return;
     if (ignoreRef.current === ignore) return;
     ignoreRef.current = ignore;
+    // Visible to tests: whether clicks go through to the desktop right now.
+    document.documentElement.dataset.petClickThrough = String(ignore);
     void getCurrentWindow().setIgnoreCursorEvents(ignore).catch(() => {});
   }, []);
 
@@ -616,7 +625,7 @@ export const DesktopPet: React.FC = () => {
     if (press && !press.dragging) void pat(e.clientY / window.innerHeight < HEAD_ZONE_END ? 'head' : 'body');
   };
 
-  const onStage = useCallback((stage: AvatarStage | null) => {
+  const onStage = useCallback((stage: PetFigure | null) => {
     stageRef.current = stage;
     stage?.setPaused(awayRef.current);
   }, []);
@@ -675,7 +684,18 @@ export const DesktopPet: React.FC = () => {
       >
         {pet && modelPath ? (
           <Suspense fallback={null}>
-            {isMmdModel(modelPath) ? (
+            {isInochi2dModel(modelPath) ? (
+              <Inochi2dViewer
+                key={modelPath}
+                modelPath={modelPath}
+                emotion={
+                  (faceOverride ?? sentenceFace ? EXPRESSION_EMOTIONS[(faceOverride ?? sentenceFace)!] : undefined) ?? pet.emotion ?? 'neutral'
+                }
+                isSpeaking={isSpeaking}
+                gesture={gesture}
+                pet={petLink}
+              />
+            ) : isMmdModel(modelPath) ? (
               <MmdViewer key={modelPath} {...viewerProps} />
             ) : isGltfModel(modelPath) ? (
               <GltfViewer key={modelPath} {...viewerProps} />
