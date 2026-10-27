@@ -98,7 +98,7 @@
   nacheinander sprechen (eigene Fenster, gemeinsame Physik).
 
 ### Darstellung
-- [ ] **Live2D-, Inochi2D- und Porträt-Pet:** Für Nutzer ohne 3D-Modell das Live2D-Modell, die Inochi2D-Puppe bzw. das atmende Porträt als Pet
+- [ ] **Live2D- und Porträt-Pet:** Für Nutzer ohne 3D-Modell das Live2D-Modell bzw. das atmende Porträt als Pet (Inochi2D läuft seit 27.10.2026)
   (Treffertest und Zonen über `hitTest` bzw. Bildmaske).
 - [ ] **Weicher Schatten unter den Füßen** auf Boden und Titelleisten, damit die Figur „steht“ statt schwebt.
 - [ ] **Sprechblase mit Zeiger zum Kopf**, automatisch links/rechts, wenn die Figur am Bildschirmrand steht, und
@@ -113,13 +113,12 @@
 
 ## 3a. Inochi2D-Puppen – Folgepunkte
 
-> Grundintegration, eigene Animationen, Mundformen, Hand-Einstellungen je Puppe, Kubik-Bindungen und Worker-Dekodierung
-> fertig (26.10.2026, Details in `roadmap_abgeschlossen.md` Abschnitt 26 und `AI.md` Abschnitt 6).
+> Grundintegration, Animationen, Mundformen, Einstellungen je Puppe, Desktop-Pet und Hub-Registry fertig (26./27.10.2026,
+> Details in `roadmap_abgeschlossen.md` Abschnitt 26 und `AI.md` Abschnitt 6).
 
 - [ ] **Fehlende Inochi2D-Funktionen:** Emission/Bump-Licht, BC7-Texturen, `translate_children` und verschachtelte
-  Mesh-Gruppen.
-- [ ] **Inochi2D im Gruppen-Chat („Alle zeigen“) und im Desktop-Pet** (siehe Abschnitt 3).
-- [ ] **Puppen aus dem Hub:** Inochi2D-Puppen als Hub-Inhalt (`otakusoul-data`) samt Zuordnung zu Karten.
+  Mesh-Gruppen – erst mit einem Modell, das sie nutzt (Aka, Midori und Nagatoro brauchen sie nicht).
+- [ ] **Sitzen und Gehen im Pet:** Puppen-Animationen mit Rolle „sit“/„walk“ (wie `onLoops` bei 3D) als Pet-Schleifen.
 
 ## 4. Kognitives Gedächtnis (Memory 2.0 – Ausblick & Folgepunkte)
 
