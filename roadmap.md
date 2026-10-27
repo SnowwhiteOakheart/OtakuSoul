@@ -118,7 +118,6 @@
 
 - [ ] **Fehlende Inochi2D-Funktionen:** Emission/Bump-Licht, BC7-Texturen, `translate_children` und verschachtelte
   Mesh-Gruppen – erst mit einem Modell, das sie nutzt (Aka, Midori und Nagatoro brauchen sie nicht).
-- [ ] **Sitzen und Gehen im Pet:** Puppen-Animationen mit Rolle „sit“/„walk“ (wie `onLoops` bei 3D) als Pet-Schleifen.
 
 ## 4. Kognitives Gedächtnis (Memory 2.0 – Ausblick & Folgepunkte)
 
