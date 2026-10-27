@@ -2,8 +2,12 @@
 import type { Inochi2dChannel } from "./Inochi2dChannel";
 
 /**
- * Hand-made settings of a puppet: channels (`mouthOpen`, `blinkLeft`, …) and which of its own
- * animations shows an emotion. Missing entries are found automatically; `null` / `""` means
- * "none".
+ * Hand-made settings of a puppet: channels (`mouthOpen`, `blinkLeft`, …), which of its own
+ * animations shows an emotion and which one the desktop pet plays for walking and sitting.
+ * Missing entries are found automatically; `null` / `""` means "none".
  */
-export type Inochi2dMapping = { channels: { [key in string]: Inochi2dChannel | null }, emotions: { [key in string]: string }, };
+export type Inochi2dMapping = { channels: { [key in string]: Inochi2dChannel | null }, emotions: { [key in string]: string }, 
+/**
+ * `walk` / `sit` → own animation for that state of the desktop pet.
+ */
+loops: { [key in string]: string }, };

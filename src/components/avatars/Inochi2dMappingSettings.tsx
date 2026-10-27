@@ -8,6 +8,7 @@ import { errorMessage } from '../../utils/errors';
 import { toast } from '../ui/feedback';
 import { MAPPABLE_EMOTIONS } from '../avatar/Inochi2dViewer';
 import type { Inochi2dMapping } from '../../types';
+import type { LoopRole } from '../../utils/avatarGestures';
 
 interface Props {
   /** Path of the puppet file. */
@@ -16,7 +17,8 @@ interface Props {
   info: PuppetInfo | null;
 }
 
-const EMPTY: Inochi2dMapping = { channels: {}, emotions: {} };
+const EMPTY: Inochi2dMapping = { channels: {}, emotions: {}, loops: {} };
+const LOOP_ROLES: LoopRole[] = ['walk', 'sit'];
 /** Select value of a parameter axis. */
 const SEP = '\u0001';
 const encode = (param: string, axis: number) => `${param}${SEP}${axis}`;
@@ -37,7 +39,7 @@ export function Inochi2dMappingSettings({ path, info }: Props) {
       .getInochi2dMapping(path)
       .then((m) => {
         if (cancelled) return;
-        const loaded = { channels: m.channels ?? {}, emotions: m.emotions ?? {} };
+        const loaded: Inochi2dMapping = { channels: m.channels ?? {}, emotions: m.emotions ?? {}, loops: m.loops ?? {} };
         setMapping(loaded);
         setSaved(loaded);
       })
@@ -85,6 +87,13 @@ export function Inochi2dMappingSettings({ path, info }: Props) {
     const chosen = mapping.channels?.[key];
     if (!chosen) return;
     setMapping({ ...mapping, channels: { ...mapping.channels, [key]: { ...chosen, inverted } } });
+  };
+
+  const setLoop = (role: LoopRole, value: string) => {
+    const loops = { ...mapping.loops };
+    if (value === 'auto') delete loops[role];
+    else loops[role] = value === 'none' ? '' : value;
+    setMapping({ ...mapping, loops });
   };
 
   const setEmotion = (emotion: string, value: string) => {
@@ -171,6 +180,31 @@ export function Inochi2dMappingSettings({ path, info }: Props) {
               })}
           </fieldset>
 
+          {info.animations.length > 0 && (
+            <fieldset className="min-w-0 space-y-1.5" data-inochi2d-loops>
+              <legend className="mb-1 text-xs font-semibold text-slate-300">{t('avatars.inochi2dLoops')}</legend>
+              <p className="text-[11px] text-slate-500">{t('avatars.inochi2dLoopsHint')}</p>
+              {LOOP_ROLES.map((role) => {
+                const chosen = mapping.loops?.[role];
+                const value = chosen === undefined ? 'auto' : chosen === '' ? 'none' : chosen;
+                const auto = info.loopClips[role];
+                const label = t(`avatars.inochi2dLoop.${role}`);
+                return (
+                  <div key={role} className="flex items-center gap-2" data-inochi2d-loop={role}>
+                    <span className="w-32 shrink-0 truncate text-xs text-slate-400">{label}</span>
+                    <select aria-label={label} value={value} onChange={(e) => setLoop(role, e.target.value)} className={selectClass}>
+                      <option value="auto">{auto ? t('avatars.inochi2dAuto', { name: auto }) : t('avatars.inochi2dAutoNone')}</option>
+                      <option value="none">{t('avatars.inochi2dNone')}</option>
+                      {info.animations.map((name) => (
+                        <option key={name} value={name}>{name.replace(/_/g, ' ')}</option>
+                      ))}
+                    </select>
+                  </div>
+                );
+              })}
+            </fieldset>
+          )}
+
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
@@ -184,7 +218,7 @@ export function Inochi2dMappingSettings({ path, info }: Props) {
             </button>
             <button
               type="button"
-              disabled={busy || (Object.keys(saved.channels ?? {}).length === 0 && Object.keys(saved.emotions ?? {}).length === 0)}
+              disabled={busy || (Object.keys(saved.channels ?? {}).length === 0 && Object.keys(saved.emotions ?? {}).length === 0 && Object.keys(saved.loops ?? {}).length === 0)}
               onClick={() => void store(EMPTY, 'avatars.inochi2dResetDone')}
               className="flex items-center gap-1.5 rounded-lg border border-slate-700 px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-800 disabled:opacity-50"
             >

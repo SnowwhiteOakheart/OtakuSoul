@@ -445,8 +445,13 @@ pub fn import_inochi2d_model(source_path: &str) -> Result<ScannedInochi2d, Strin
         .to_lowercase();
     let target = match ext.as_str() {
         "inp" | "inx" => {
-            let bytes =
-                fs::read(&src).map_err(|e| crate::err!("backend.common.fileRead", error = e))?;
+            let bytes = fs::read(&src).map_err(|e| {
+                crate::err!(
+                    "backend.common.fileReadPath",
+                    path = src.display(),
+                    error = e
+                )
+            })?;
             let name = src
                 .file_name()
                 .map(|n| n.to_string_lossy().into_owned())
@@ -576,9 +581,9 @@ pub struct Inochi2dChannel {
     pub inverted: bool,
 }
 
-/// Hand-made settings of a puppet: channels (`mouthOpen`, `blinkLeft`, …) and which of its own
-/// animations shows an emotion. Missing entries are found automatically; `null` / `""` means
-/// "none".
+/// Hand-made settings of a puppet: channels (`mouthOpen`, `blinkLeft`, …), which of its own
+/// animations shows an emotion and which one the desktop pet plays for walking and sitting.
+/// Missing entries are found automatically; `null` / `""` means "none".
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct Inochi2dMapping {
@@ -586,6 +591,9 @@ pub struct Inochi2dMapping {
     pub channels: std::collections::BTreeMap<String, Option<Inochi2dChannel>>,
     #[serde(default)]
     pub emotions: std::collections::BTreeMap<String, String>,
+    /// `walk` / `sit` → own animation for that state of the desktop pet.
+    #[serde(default)]
+    pub loops: std::collections::BTreeMap<String, String>,
 }
 
 const MAPPINGS_FILE: &str = "inochi2d_mappings.json";
@@ -634,6 +642,9 @@ pub fn set_mapping(data_dir: &Path, key: &str, mut mapping: Inochi2dMapping) -> 
     mapping
         .emotions
         .retain(|k, v| k.len() <= 40 && v.chars().count() <= 200);
+    mapping
+        .loops
+        .retain(|k, v| matches!(k.as_str(), "walk" | "sit") && v.chars().count() <= 200);
     let mut all = load_mappings(data_dir);
     if mapping == Inochi2dMapping::default() {
         all.remove(key);
@@ -755,11 +766,15 @@ mod tests {
         mapping.channels.insert("blinkLeft".into(), None);
         mapping.channels.insert("unknown".into(), None);
         mapping.emotions.insert("joy".into(), "Laugh".into());
+        mapping.loops.insert("sit".into(), "Pose_Sitz".into());
+        mapping.loops.insert("jump".into(), "Hop".into());
         set_mapping(&dir, "nagatoro.inp", mapping).unwrap();
         let read = mapping_for(&dir, "nagatoro.inp");
         assert_eq!(read.channels.len(), 2, "unknown channel dropped");
         assert_eq!(read.channels["blinkLeft"], None, "explicit none kept");
         assert_eq!(read.emotions["joy"], "Laugh");
+        assert_eq!(read.loops["sit"], "Pose_Sitz");
+        assert!(!read.loops.contains_key("jump"));
         assert_eq!(mapping_for(&dir, "other.inp"), Inochi2dMapping::default());
         set_mapping(&dir, "nagatoro.inp", Inochi2dMapping::default()).unwrap();
         assert_eq!(

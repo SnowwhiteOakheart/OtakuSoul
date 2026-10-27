@@ -694,6 +694,7 @@ export const DesktopPet: React.FC = () => {
                 isSpeaking={isSpeaking}
                 gesture={gesture}
                 pet={petLink}
+                loop={loop}
               />
             ) : isMmdModel(modelPath) ? (
               <MmdViewer key={modelPath} {...viewerProps} />

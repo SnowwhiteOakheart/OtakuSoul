@@ -4,6 +4,7 @@
  * match an emotion ("Expr_Verlegen", "Laugh") and gestures ("Wink_L", "Nod").
  */
 import type { Param, Puppet } from './puppet';
+import type { LoopRole } from '../../utils/avatarGestures';
 
 type Json = Record<string, unknown>;
 
@@ -211,8 +212,23 @@ function pick(animations: PuppetAnimation[], wanted: string[] | undefined): Pupp
   return undefined;
 }
 
-/** The puppet's loop to stand in (named "Idle", "Ruhe" …). */
-export const findIdle = (animations: PuppetAnimation[]) => animations.find((a) => /idle|ruhe/.test(words(a.name)));
+/** Name words of the desktop pet's state loops ("Walk_Loop", "Gehen", "Sit_Idle", "Sitzen" …). */
+const LOOP_WORDS: Record<LoopRole, RegExp> = {
+  walk: /\b(walk|walking|geh|gehen|lauf|laufen|run|running|stroll)\b/,
+  sit: /\b(sit|sits|sitting|sitzen|sitzt|seated)\b/,
+};
+/** Name words split at everything but letters and digits, so "Idle_Sit" reads "idle sit" ("position" stays one word). */
+const nameWords = (name: string) => words(name).replace(/[^a-z0-9]+/g, ' ');
+const loopRoleOf = (a: PuppetAnimation) => (Object.keys(LOOP_WORDS) as LoopRole[]).find((role) => LOOP_WORDS[role].test(nameWords(a.name)));
+
+/** The puppet's loop to stand in (named "Idle", "Ruhe" …); a sitting or walking idle is not it. */
+export const findIdle = (animations: PuppetAnimation[]) => {
+  const idles = animations.filter((a) => /idle|ruhe/.test(words(a.name)));
+  return idles.find((a) => !loopRoleOf(a)) ?? (idles.length === animations.length ? idles[0] : undefined);
+};
+
+/** The puppet's own loop for walking or sitting (desktop pet), found by name. */
+export const findLoopClip = (animations: PuppetAnimation[], role: LoopRole) => animations.find((a) => loopRoleOf(a) === role);
 
 /** The puppet's own clip for an emotion, if it has one. */
 export const findEmotionClip = (animations: PuppetAnimation[], emotion: string) => pick(animations, EMOTION_WORDS[emotion]);

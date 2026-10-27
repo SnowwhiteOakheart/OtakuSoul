@@ -13,7 +13,7 @@ import { Puppet } from '../../services/inochi2d/puppet';
 import { decodeTextures, PuppetRenderer } from '../../services/inochi2d/renderer';
 import { translate, useTranslation } from '../../i18n';
 import { errorMessage } from '../../utils/errors';
-import type { GestureRequest } from '../../utils/avatarGestures';
+import type { GestureRequest, LoopRole } from '../../utils/avatarGestures';
 import { DropdownMenu } from '../ui/DropdownMenu';
 import type { PetFigure } from './avatarStage';
 
@@ -31,7 +31,13 @@ interface Inochi2dViewerProps {
    * Desktop pet: whole figure at the bottom of a transparent window, no controls or remembered
    * view; hands the pet its figure (gaze from the global pointer, hit test for click-through).
    */
-  pet?: { onStage: (figure: PetFigure | null) => void };
+  pet?: {
+    onStage: (figure: PetFigure | null) => void;
+    /** Which state loops (walking, sitting) the puppet has of its own. */
+    onLoops?: (available: Record<LoopRole, boolean>) => void;
+  };
+  /** Desktop pet: walking or sitting, played with the puppet's own loop for it. */
+  loop?: LoopRole | null;
 }
 
 /** Alpha above which a pixel counts as part of the puppet (soft edges stay click-through). */
@@ -58,7 +64,7 @@ interface View {
  * Inochi2D puppet in the chat and the avatar library: WebGL2 canvas, drag to move, wheel to zoom,
  * lips follow the voice, face follows the emotion, eyes and head follow the pointer.
  */
-export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emotion = 'neutral', isSpeaking: _isSpeaking = false, gesture = null, onPuppet, pet }) => {
+export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emotion = 'neutral', isSpeaking: _isSpeaking = false, gesture = null, onPuppet, pet, loop: petLoop = null }) => {
   const { t, tEmotion } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -88,6 +94,18 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
     emotionRef.current = emotion;
     if (animatorRef.current) animatorRef.current.emotion = emotion;
   }, [emotion]);
+  const loopRef = useRef(petLoop);
+  useLayoutEffect(() => {
+    loopRef.current = petLoop;
+    if (animatorRef.current) animatorRef.current.loop = petLoop;
+  }, [petLoop]);
+  /** A new driver takes over the current state and tells the pet which loops it has. */
+  const adopt = (animator: PuppetAnimator) => {
+    animator.emotion = emotionRef.current;
+    animator.loop = loopRef.current;
+    animatorRef.current = animator;
+    petRef.current?.onLoops?.({ walk: animator.hasLoop('walk'), sit: animator.hasLoop('sit') });
+  };
 
   useEffect(() => {
     const container = containerRef.current;
@@ -237,8 +255,7 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
         const animator = new PuppetAnimator(puppet, animations, mapping);
         onPuppetRef.current?.(puppetInfo(puppet, animations, MAPPABLE_EMOTIONS));
         setClips(playableAnimations(animations).map((a) => a.name));
-        animator.emotion = emotionRef.current;
-        animatorRef.current = animator;
+        adopt(animator);
         const textures = await decodeTextures(file, abort.signal);
         if (disposed) return;
         renderer = new PuppetRenderer(gl, puppet, textures);
@@ -376,9 +393,8 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
         const old = animatorRef.current;
         if (cancelled || !loaded || !old) return;
         const animator = new PuppetAnimator(loaded.puppet, loaded.animations, mapping);
-        animator.emotion = emotionRef.current;
         animator.pointer = old.pointer;
-        animatorRef.current = animator;
+        adopt(animator);
       });
     return () => {
       cancelled = true;

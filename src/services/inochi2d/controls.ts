@@ -5,7 +5,8 @@
  * Inochi2D has no expression files: emotions become a small pose (smile, open mouth, narrowed
  * eyes, head tilt) that is blended in smoothly.
  */
-import { applyAnimation, findEmotionClip, findGestureClip, findIdle, type PuppetAnimation } from './animation';
+import { applyAnimation, findEmotionClip, findGestureClip, findIdle, findLoopClip, type PuppetAnimation } from './animation';
+import type { LoopRole } from '../../utils/avatarGestures';
 import type { Param, Puppet } from './puppet';
 import type { Visemes } from '../lipSync';
 import type { Inochi2dMapping } from '../../types/generated/Inochi2dMapping';
@@ -77,7 +78,11 @@ export interface PuppetInfo {
   detected: Record<ChannelKey, string | null>;
   /** Automatically chosen own clip per emotion (null = pose only). */
   emotionClips: Record<string, string | null>;
+  /** Automatically chosen loop for walking and sitting in the desktop pet (null = none). */
+  loopClips: Record<LoopRole, string | null>;
 }
+
+const LOOP_ROLES: LoopRole[] = ['walk', 'sit'];
 
 const describeAxis = (a: Axis | undefined) => (a ? `${a.param.name}${a.param.isVec2 ? (a.axis ? ' (y)' : ' (x)') : ''}` : null);
 
@@ -94,6 +99,7 @@ export function puppetInfo(puppet: Puppet, animations: PuppetAnimation[], emotio
     animations: animations.map((a) => a.name),
     detected,
     emotionClips: Object.fromEntries(emotions.map((e) => [e, findEmotionClip(animations, e)?.name ?? null])),
+    loopClips: { walk: findLoopClip(animations, 'walk')?.name ?? null, sit: findLoopClip(animations, 'sit')?.name ?? null },
   };
 }
 
@@ -261,6 +267,18 @@ interface ClipState {
   fadingOut: boolean;
 }
 
+/** A state loop of the desktop pet (walking, sitting) blending in or out over the idle loop. */
+interface LoopLayer {
+  animation: PuppetAnimation;
+  axes: Set<string>;
+  time: number;
+  weight: number;
+  fadingOut: boolean;
+}
+
+const axisKey = (param: Param, axis: 0 | 1) => `${param.uuid}:${axis}`;
+const lanesOf = (animation: PuppetAnimation | undefined) => new Set((animation?.lanes ?? []).map((l) => axisKey(l.param, l.axis)));
+
 /** Seconds to blend clips in and out. */
 const FADE_IN = 0.2;
 const FADE_OUT = 0.35;
@@ -276,7 +294,7 @@ export class PuppetAnimator {
   private readonly puppet: Puppet;
   private readonly idle: PuppetAnimation | undefined;
   /** Axes the idle loop moves for breath and sway: the procedural ones leave them to it. */
-  private readonly idleAxes = new Set<string>();
+  private readonly idleAxes: Set<string>;
   private time = 0;
   private nextBlink = 2 + Math.random() * 3;
   private blinkPhase = -1;
@@ -299,6 +317,11 @@ export class PuppetAnimator {
 
   /** Emotion → own animation chosen by hand ("" = none, missing = found by name). */
   private readonly emotionClips: Record<string, string>;
+  /** The puppet's loops for walking and sitting (by hand or by name). */
+  private readonly loopClips: Partial<Record<LoopRole, PuppetAnimation>> = {};
+  private loopLayers: LoopLayer[] = [];
+  /** Desktop pet state: walking or sitting plays the puppet's loop for it instead of the idle loop. */
+  loop: LoopRole | null = null;
 
   constructor(puppet: Puppet, animations: PuppetAnimation[] = [], mapping?: Inochi2dMapping | null) {
     this.puppet = puppet;
@@ -306,7 +329,22 @@ export class PuppetAnimator {
     this.emotionClips = mapping?.emotions ?? {};
     this.animations = animations;
     this.idle = findIdle(animations);
-    for (const lane of this.idle?.lanes ?? []) this.idleAxes.add(`${lane.param.uuid}:${lane.axis}`);
+    this.idleAxes = lanesOf(this.idle);
+    for (const role of LOOP_ROLES) {
+      const chosen = mapping?.loops?.[role];
+      const clip = chosen !== undefined ? animations.find((a) => a.name === chosen) : findLoopClip(animations, role);
+      if (clip && clip !== this.idle) this.loopClips[role] = clip;
+    }
+  }
+
+  /** Whether the puppet has its own loop for walking or sitting. */
+  hasLoop(role: LoopRole): boolean {
+    return !!this.loopClips[role];
+  }
+
+  /** Name of the state loop shown now (for tests and the viewer), if any. */
+  get looping(): string | null {
+    return this.loopLayers.find((l) => !l.fadingOut)?.animation.name ?? null;
   }
 
   /** Whether the puppet has a mouth the voice can move. */
@@ -344,7 +382,9 @@ export class PuppetAnimator {
   }
 
   private covered(a: Axis | undefined) {
-    return !!a && this.idleAxes.has(`${a.param.uuid}:${a.axis}`);
+    if (!a) return false;
+    const key = axisKey(a.param, a.axis);
+    return this.idleAxes.has(key) || this.loopLayers.some((l) => l.weight > 0.5 && l.axes.has(key));
   }
 
   update(dt: number) {
@@ -357,6 +397,19 @@ export class PuppetAnimator {
       const frame = (this.time / this.idle.timestep) % this.idle.length;
       applyAnimation(this.idle, frame, 1, values);
     }
+    // The pet's walking or sitting loop over it, blended in and out.
+    const wanted = this.loop ? this.loopClips[this.loop] : undefined;
+    if (wanted !== this.loopLayers.find((l) => !l.fadingOut)?.animation) {
+      for (const l of this.loopLayers) l.fadingOut = true;
+      if (wanted) this.loopLayers.push({ animation: wanted, axes: lanesOf(wanted), time: 0, weight: 0, fadingOut: false });
+    }
+    for (const layer of this.loopLayers) {
+      layer.time += dt;
+      layer.weight = Math.min(1, Math.max(0, layer.weight + (layer.fadingOut ? -dt / FADE_OUT : dt / FADE_IN)));
+      const { animation } = layer;
+      applyAnimation(animation, (layer.time / animation.timestep) % animation.length, layer.weight, values);
+    }
+    this.loopLayers = this.loopLayers.filter((l) => l.weight > 0 || !l.fadingOut);
 
     // An own clip for the mood replaces the generic pose's part it covers.
     if (this.emotion !== this.clipEmotion) {

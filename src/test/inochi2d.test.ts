@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { cleanText, decodePng, decodeTga, InpError, isInpFile, parseInp } from '../services/inochi2d/inp';
 import { axisRange, Puppet } from '../services/inochi2d/puppet';
 import { findChannels, poseFor, puppetInfo, PuppetAnimator } from '../services/inochi2d/controls';
-import { findEmotionClip, findGestureClip, findIdle, readAnimations, sampleLane, type AnimationLane } from '../services/inochi2d/animation';
+import { findEmotionClip, findGestureClip, findIdle, findLoopClip, readAnimations, sampleLane, type AnimationLane } from '../services/inochi2d/animation';
 import { resolveInochi2dPath, usesInochi2d } from '../components/avatars/avatarMatch';
 import type { CharacterProfile } from '../types';
 
@@ -255,18 +255,20 @@ describe('Inochi2D character match', () => {
   });
 });
 
+const animLane = (uuid: number, keys: [number, number][], interpolation = 'Linear', target = 0) => ({
+  uuid, target, interpolation, merge_mode: 'Forced', keyframes: keys.map(([frame, value]) => ({ frame, value, tension: 0.5 })),
+});
+
 describe('Inochi2D animations', () => {
   /** A puppet with a mouth, eyes, breath and own animations (as Inochi Creator writes them). */
-  function animated() {
+  function animated(extra: Record<string, unknown> = {}) {
     const params = [
       ['Mouth::Open', [0, 0], [1, 1], [0, 0]],
       ['Eye::L::Open', [0, 0], [1, 1], [1, 0]],
       ['Body::Breath', [0, 0], [1, 1], [0, 0]],
       ['Expression', [0, 0], [5, 1], [0, 1]],
     ] as const;
-    const lane = (uuid: number, keys: [number, number][], interpolation = 'Linear', target = 0) => ({
-      uuid, target, interpolation, merge_mode: 'Forced', keyframes: keys.map(([frame, value]) => ({ frame, value, tension: 0.5 })),
-    });
+    const lane = animLane;
     const json = {
       meta: {}, physics: {}, nodes: node(1, 'Node'),
       param: params.map(([name, min, max, defaults], i) => ({
@@ -277,6 +279,7 @@ describe('Inochi2D animations', () => {
         Expr_Verlegen: { timestep: 0.1, length: 30, lanes: [lane(203, [[0, 3], [29, 0]], 'Stepped'), lane(201, [[0, 1], [3, 0.5], [26, 0.5], [29, 1]])] },
         Wink_L: { timestep: 0.1, length: 10, lanes: [lane(201, [[0, 1], [5, 0], [9, 1]])] },
         Blink: { timestep: 0.1, length: 5, lanes: [lane(201, [[0, 1], [2, 0], [4, 1]])] },
+        ...extra,
       },
     };
     const file = parseInp(inp(json));
@@ -334,6 +337,7 @@ describe('Inochi2D animations', () => {
     const animator = new PuppetAnimator(puppet, animations, {
       channels: { mouthOpen: null },
       emotions: { embarrassment: '', joy: 'Wink_L' },
+      loops: {},
     });
     animator.poke();
     animator.update(0.1);
@@ -351,6 +355,57 @@ describe('Inochi2D animations', () => {
     animator.emotion = 'joy';
     animator.update(0.1);
     expect(animator.playing).toBe('Wink_L');
+  });
+
+  /** Own loops for the desktop pet: walking moves the expression axis, sitting holds the breath low. */
+  const withLoops = () =>
+    animated({
+      Walk_Loop: { timestep: 0.1, length: 10, lanes: [animLane(203, [[0, 1], [5, 4], [9, 1]])] },
+      Idle_Sit: { timestep: 0.1, length: 10, lanes: [animLane(202, [[0, 0.2], [9, 0.2]])] },
+      Position_Check: { timestep: 0.1, length: 4, lanes: [animLane(203, [[0, 5], [3, 5]])] },
+    });
+
+  it('finds walking and sitting loops by name, never as idle, gesture or emotion', () => {
+    const { puppet, animations } = withLoops();
+    expect(findIdle(animations)?.name).toBe('Idle');
+    expect(findLoopClip(animations, 'walk')?.name).toBe('Walk_Loop');
+    expect(findLoopClip(animations, 'sit')?.name).toBe('Idle_Sit');
+    // "Position" holds "sit" only inside a word.
+    expect(findLoopClip(animated({ Position_Check: { timestep: 0.1, length: 4, lanes: [animLane(203, [[0, 5]])] } }).animations, 'sit')).toBeUndefined();
+    expect(puppetInfo(puppet, animations, []).loopClips).toEqual({ walk: 'Walk_Loop', sit: 'Idle_Sit' });
+    const animator = new PuppetAnimator(puppet, animations);
+    expect([animator.hasLoop('walk'), animator.hasLoop('sit')]).toEqual([true, true]);
+    expect(new PuppetAnimator(...(Object.values(animated()) as [Puppet, never])).hasLoop('sit')).toBe(false);
+  });
+
+  it('plays the pet loop over the idle loop and blends back out', () => {
+    const { puppet, animations } = withLoops();
+    const animator = new PuppetAnimator(puppet, animations);
+    animator.loop = 'sit';
+    for (let i = 0; i < 10; i += 1) animator.update(0.1);
+    expect(animator.looping).toBe('Idle_Sit');
+    // Sitting holds the breath axis low; the procedural breath and the idle loop give way.
+    expect(puppet.getParam('Body::Breath')![0]).toBeCloseTo(0.2, 2);
+
+    animator.loop = 'walk';
+    // Frame 3 of the walk loop: well into its stride.
+    for (let i = 0; i < 13; i += 1) animator.update(0.1);
+    expect(animator.looping).toBe('Walk_Loop');
+    expect(puppet.getParam('Expression')![0]).toBeGreaterThan(1);
+
+    animator.loop = null;
+    for (let i = 0; i < 10; i += 1) animator.update(0.1);
+    expect(animator.looping).toBeNull();
+    expect(puppet.getParam('Expression')![0]).toBe(0);
+  });
+
+  it('follows hand-picked loops and "none"', () => {
+    const { puppet, animations } = withLoops();
+    const animator = new PuppetAnimator(puppet, animations, { channels: {}, emotions: {}, loops: { walk: '', sit: 'Position_Check' } });
+    expect(animator.hasLoop('walk')).toBe(false);
+    animator.loop = 'sit';
+    animator.update(0.1);
+    expect(animator.looping).toBe('Position_Check');
   });
 });
 
