@@ -1509,7 +1509,9 @@ export const api = {
   // Inochi2D puppets (.inp/.inx), rendered by `services/inochi2d`.
   scanInochi2dModels: async (): Promise<ScannedInochi2d[]> => await invoke<ScannedInochi2d[]>('scan_inochi2d_models'),
 
-  getInochi2dCatalog: async (): Promise<Inochi2dCatalogItem[]> => await invoke<Inochi2dCatalogItem[]>('get_inochi2d_catalog'),
+  /** Puppets to download (registry from the data repository), descriptions in `lang`. */
+  getInochi2dCatalog: async (lang?: string): Promise<Inochi2dCatalogItem[]> =>
+    await invoke<Inochi2dCatalogItem[]>('get_inochi2d_catalog', { lang }),
 
   /** Downloads an official example puppet (SHA-256 checked). */
   downloadInochi2dModel: async (modelId: string): Promise<ScannedInochi2d> =>

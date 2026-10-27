@@ -34,8 +34,10 @@ pub fn scan_inochi2d_models() -> Vec<crate::modules::inochi2d::ScannedInochi2d> 
 }
 
 #[tauri::command]
-pub fn get_inochi2d_catalog() -> Vec<crate::modules::inochi2d::Inochi2dCatalogItem> {
-    crate::modules::inochi2d::catalog()
+pub fn get_inochi2d_catalog(
+    lang: Option<String>,
+) -> Vec<crate::modules::inochi2d::Inochi2dCatalogItem> {
+    crate::modules::inochi2d::catalog(lang.as_deref().unwrap_or("en"))
 }
 
 #[tauri::command]

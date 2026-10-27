@@ -873,6 +873,7 @@
   "avatar.inochi2dLoadFailed": "Inochi2D-Puppe konnte nicht geladen werden.",
   "avatar.inochi2dNoWebgl": "WebGL2 ist nicht verfügbar – ohne Grafikbeschleunigung kann die Puppe nicht gezeichnet werden.",
   "avatar.inochi2dAnimations": "Animationen der Puppe",
+  "avatar.inochi2dMissing": "Diese Figur bringt die Puppe „{{name}}“ mit, sie ist aber noch nicht geladen. Bis dahin zeigt der Chat die Standard-Puppe.",
   "avatar.quickEmotions": "Schnell-Emotionen",
   "avatar.quickNeutral": "Neutral",
   "avatar.quickHappy": "Fröhlich",

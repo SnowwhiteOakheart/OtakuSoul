@@ -120,8 +120,8 @@ export function AvatarManagerView() {
     void refreshVrmModels();
     void refreshLive2dModels();
     void refreshInochi2dModels();
-    api.getInochi2dCatalog().then(setCatalog).catch((e) => console.warn('Inochi2D-Katalog nicht lesbar:', e));
-  }, [refreshVrmModels, refreshLive2dModels, refreshInochi2dModels]);
+    api.getInochi2dCatalog(currentLanguage).then(setCatalog).catch((e) => console.warn('Inochi2D-Katalog nicht lesbar:', e));
+  }, [refreshVrmModels, refreshLive2dModels, refreshInochi2dModels, currentLanguage]);
 
   const avatars = useMemo<ManagedAvatar[]>(() => [
     ...scannedVrms.map((vrm) => ({
@@ -242,7 +242,7 @@ export function AvatarManagerView() {
     try {
       const model = await api.downloadInochi2dModel(item.id);
       await refreshInochi2dModels();
-      setCatalog(await api.getInochi2dCatalog());
+      setCatalog(await api.getInochi2dCatalog(currentLanguage));
       setFilter((f) => (f === 'all' || f === 'inochi2d' ? f : 'inochi2d'));
       setSelectedPath(model.model_path);
       toast.success(translate('avatars.inochi2dDownloaded', { name: model.name }));

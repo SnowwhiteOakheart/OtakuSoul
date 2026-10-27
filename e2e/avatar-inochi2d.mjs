@@ -2,12 +2,22 @@
 // the avatar library lists it with a preview picture, it can be given to a character, renamed and
 // removed into the trash, its own animations play and its controls can be set by hand. The catalog lists the official example models (not downloaded here).
 import assert from 'node:assert/strict';
-import { existsSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { launch, screenshotDir } from './harness.mjs';
 import { makeInp } from './tools/make-inp.mjs';
 
-const { browser, home, close } = await launch({ avatar_mode: '2d' });
+// The data repository lists one more puppet than the shipped registry (only listed, not loaded here).
+const registry = JSON.parse(readFileSync(new URL('../presets/inochi2d_registry.json', import.meta.url), 'utf8'));
+registry.version += 1;
+registry.puppets.push({
+  id: 'Hubpuppe.inp', name: 'Hubpuppe', author: 'OtakuSoul', license: 'CC0', url: 'https://example.org/Hubpuppe.inp',
+  sha256: 'a'.repeat(64), size_bytes: 2_097_152, nsfw: false, description: { de: 'Aus dem Hub', en: 'From the hub' },
+});
+registry.puppets.push({
+  id: 'Nachts.inp', name: 'Nachts', url: 'https://example.org/Nachts.inp', sha256: 'b'.repeat(64), size_bytes: 1, nsfw: true,
+});
+const { browser, home, close } = await launch({ avatar_mode: '2d' }, { hubFiles: { 'inochi2d_registry.json': registry } });
 // oxlint-disable-next-line no-underscore-dangle -- Tauri IPC in a disposable profile
 const invoke = (command, args = {}) => browser.execute((cmd, payload) => window.__TAURI_INTERNALS__.invoke(cmd, payload), command, args);
 
@@ -47,8 +57,14 @@ try {
     path.join(home, 'config', 'settings.json'),
   );
   assert.ok(refused?.includes('backend.inochi2d.unsupportedFormat'), `Andere Dateien nicht abgelehnt: ${refused}`);
-  const catalog = await invoke('get_inochi2d_catalog');
-  assert.deepEqual(catalog.map((c) => c.name), ['Aka', 'Midori']);
+  // Registry from the data repository (newer than the shipped one); adult entries stay hidden.
+  let catalog = [];
+  await browser.waitUntil(async () => {
+    catalog = await invoke('get_inochi2d_catalog', { lang: 'de' });
+    return catalog.length === 3;
+  }, { timeout: 15_000, timeoutMsg: `Registry aus dem Hub fehlt: ${JSON.stringify(catalog.map((c) => c.name))}` });
+  assert.deepEqual(catalog.map((c) => c.name), ['Aka', 'Midori', 'Hubpuppe']);
+  assert.equal(catalog[2].description, 'Aus dem Hub');
   assert.ok(catalog.every((c) => !c.is_installed && c.sha256.length === 64));
 
   // Chat: switch the avatar to Inochi2D (the list is read again at the switch's first use).
@@ -69,6 +85,22 @@ try {
   await browser.$('button[aria-label="Animationen der Puppe"]').click();
   await browser.$('[role="menu"]').$('button*=Wink L').click();
   await browser.waitUntil(async () => (await viewer.getAttribute('data-inochi2d-playing')) === 'Wink_L', { timeout: 3000, timeoutMsg: 'Animation startet nicht' });
+  // A card naming a puppet that is not here yet offers to load it from the registry.
+  const activeId = (await invoke('load_settings')).active_character_id;
+  const ownCard = (await invoke('scan_characters')).find((c) => c.id === activeId);
+  assert.ok(ownCard, 'Aktive Figur fehlt');
+  {
+    ownCard.card.data.extensions = { ...ownCard.card.data.extensions, custom_inochi2d: 'Hubpuppe.inp' };
+    await invoke('save_character_card', { profile: ownCard });
+    await browser.execute(() => window.location.reload());
+    await browser.pause(1000);
+    await browser.$('[data-missing-puppet="Hubpuppe.inp"]').waitForDisplayed({ timeout: 30_000, timeoutMsg: 'Hinweis auf fehlende Puppe fehlt' });
+    assert.match(await browser.$('[data-missing-puppet]').getText(), /Hubpuppe/);
+    // Meanwhile the default puppet shows.
+    await browser.$('[data-inochi2d-viewer="ready"]').waitForExist({ timeout: 30_000 });
+    ownCard.card.data.extensions = { ...ownCard.card.data.extensions, custom_inochi2d: undefined };
+    await invoke('save_character_card', { profile: ownCard });
+  }
   const settings = await invoke('load_settings');
   assert.equal(settings.avatar_mode, 'inochi2d');
   // Without an own choice the first puppet is the default (kept as a choice once picked).

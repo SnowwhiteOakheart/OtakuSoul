@@ -7,7 +7,8 @@ import { PORTRAIT_MOODS, assetAsBlobUrl, getPortraitExpressions, loadDisplayable
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { translate, useTranslation, type TranslationKey } from '../../i18n';
 import { DropdownMenu } from '../ui/DropdownMenu';
-import { manualEmotion, resolveInochi2dPath, resolveLive2dPath, resolveVrmPath } from '../avatars/avatarMatch';
+import { characterInochi2d, manualEmotion, resolveInochi2dPath, resolveLive2dPath, resolveVrmPath, usesInochi2d } from '../avatars/avatarMatch';
+import { MissingPuppetHint } from '../avatars/MissingPuppetHint';
 import { AvatarSkeleton, ScrollText } from '../ui';
 import { languageCode, localizeCard } from '../../utils/cardI18n';
 import { audioPlayer } from '../../services/audioPlayer';
@@ -247,6 +248,9 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
 
   // 2b. Inochi2D puppet (Character override or global setting)
   const inochi2dPath = resolveInochi2dPath(character, scannedInochi2ds, activeInochi2dPath);
+  // The card names a puppet that is not here: it may be loadable from the registry.
+  const ownPuppet = character ? characterInochi2d(character) : '';
+  const missingPuppet = ownPuppet && !scannedInochi2ds.some((m) => usesInochi2d(character!, m)) ? ownPuppet : '';
 
   // 3. Resolve granular/canonical emotion portrait, then fall back to neutral/base avatar.
   const emotionImage = selectCharacterPortrait(
@@ -439,7 +443,9 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
           </div>
         )
       ) : avatarMode === 'inochi2d' ? (
-        inochi2dPath ? (
+        <>
+        {missingPuppet && <MissingPuppetHint puppet={missingPuppet} />}
+        {inochi2dPath ? (
           <Suspense fallback={<AvatarSkeleton label={t('avatar.inochi2dLoading')} />}>
             <Inochi2dViewer
               key={inochi2dPath}
@@ -455,7 +461,8 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
             <p className="text-sm font-semibold text-slate-200">{t('avatar.noInochi2dTitle')}</p>
             <p className="text-xs text-slate-400 mt-1 max-w-xs">{t('avatar.noInochi2dText')}</p>
           </div>
-        )
+        )}
+        </>
       ) : (
         /* 2D Portrait / Expression Sprite Mode */
         <div className="relative w-full h-full flex flex-col items-center justify-center p-6 bg-linear-to-b from-slate-900/60 via-accent-950/30 to-app">

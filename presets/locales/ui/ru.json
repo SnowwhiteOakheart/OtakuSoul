@@ -873,6 +873,7 @@
   "avatar.inochi2dLoadFailed": "Не удалось загрузить куклу Inochi2D.",
   "avatar.inochi2dNoWebgl": "WebGL2 недоступен — без графического ускорения кукла не отображается.",
   "avatar.inochi2dAnimations": "Анимации куклы",
+  "avatar.inochi2dMissing": "У этого персонажа есть кукла «{{name}}», но она ещё не загружена. До тех пор чат показывает куклу по умолчанию.",
   "avatar.quickEmotions": "Быстрые эмоции",
   "avatar.quickNeutral": "Нейтрально",
   "avatar.quickHappy": "Радость",

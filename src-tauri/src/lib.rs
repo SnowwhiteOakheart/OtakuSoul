@@ -125,6 +125,8 @@ pub fn run() {
             tauri::async_runtime::spawn(modules::ui_locales::refresh_hub(app.handle().clone()));
             // Starter models: the data repository may recommend newer ones than this release.
             tauri::async_runtime::spawn(modules::model_catalog::refresh());
+            // Inochi2D puppets to download: the data repository may list more than this release.
+            tauri::async_runtime::spawn(modules::inochi2d::refresh_registry());
             allow_app_asset_dirs(app);
             create_main_window(app)?;
             #[cfg(desktop)]

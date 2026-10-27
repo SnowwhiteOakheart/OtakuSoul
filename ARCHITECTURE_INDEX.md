@@ -102,6 +102,7 @@ Einige Inhalte in `OtakuSoul` sind gebündelte Standard-Kopien (Bundles) aus dem
 | `presets/locales/{de,ru,ja}.json` (Spieltexte; jede Datei = Sprache) | `locales/<kürzel>.json` | `content_lang::refresh_locales` lädt bei App-Start nach `<Daten>/locales/` |
 | `presets/locales/ui/*.json` (Oberflächensprachen) | `locales/ui/*.json` + `locales/ui_registry.json` | `ui_locales::refresh_hub` lädt beim Start nach `<Daten>/locales/ui-hub/` (mitgelieferte Sprachen nur bei höherer `version`) |
 | `presets/recommended_models.json` | `recommended_models.json` | `model_catalog::refresh` lädt bei App-Start neuere Versionen nach |
+| `presets/inochi2d_registry.json` | `inochi2d_registry.json` | `inochi2d::refresh_registry` lädt bei App-Start neuere Versionen nach (Puppen nur per Quelle + SHA-256) |
 | `presets/characters/*` | – (nur in der App: Einsteigerfiguren Shiori Amane, Sota Minase, Lirwen, Faelion) | Frühere Presets liegen nur noch im Hub: Ayu Ikue und Cosmos (`presets/sakura-succubus-3/`), Emilia (`presets/re-zero/`), jeweils über `soul_registry.json` / `cards_gateway/` |
 | `presets/stories/scenes/*` | `stages_gateway/*.json` | Werden im Hub über `stages_registry.json` bezogen |
 | NSFW-Karten, Stages & Lorebooks | `otakusoul-data-nsfw` (`cards_gateway/`, `stages_gateway/`) | Werden nur bei aktiver 18+-Freigabe über `hub::nsfw_registry_items` eingebunden |

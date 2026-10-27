@@ -874,6 +874,7 @@
   "avatar.inochi2dLoadFailed": "Inochi2Dパペットを読み込めませんでした。",
   "avatar.inochi2dNoWebgl": "WebGL2が利用できません。グラフィックアクセラレーションなしではパペットを描画できません。",
   "avatar.inochi2dAnimations": "パペットのアニメーション",
+  "avatar.inochi2dMissing": "このキャラクターにはパペット「{{name}}」がありますが、まだ読み込まれていません。それまでは既定のパペットを表示します。",
   "avatar.quickEmotions": "クイック感情切替",
   "avatar.quickNeutral": "ニュートラル",
   "avatar.quickHappy": "笑顔",

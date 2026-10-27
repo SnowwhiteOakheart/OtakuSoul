@@ -713,7 +713,16 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Backend `inochi2d.rs`: Einzeldateien in `<Daten>/inochi2d/` und `assets/inochi2d/` (+1 Unterordnerebene), Kopf-Metadaten,
   eingebettetes PNG-Vorschaubild, Import `.inp/.inx/.zip`, Katalog Aka/Midori (CC BY 4.0, SHA-256, nur Download),
   `AvatarKind::Inochi2d` (Namen/Papierkorb/Vorschaubilder wie die anderen). Karte: `custom_inochi2d` = Dateiname.
-  Prüfen ohne App: Headless-Chromium mit SwiftShader; der Browser-Bereich hat kein WebGL. E2E `avatar-inochi2d.mjs` (`tools/make-inp.mjs`).
+  Katalog = `presets/inochi2d_registry.json`, beim Start aus `otakusoul-data` nach `<Daten>/` (`refresh_registry`, höhere
+  `version` gewinnt, ungültige Einträge – Pfad im Namen, kein https, falsche SHA-256 – fallen raus, `nsfw` nur mit 18+).
+  Karte nennt eine fehlende, aber gelistete Puppe → `avatars/MissingPuppetHint.tsx` im Chat (bis dahin Standard-Puppe).
+  Desktop-Pet: `useDesktopPetBridge` schickt bei Modus `inochi2d` die Puppe; `Inochi2dViewer` mit `pet` = ganze Figur unten,
+  keine Bedienelemente, `PetFigure` (`avatarStage.ts`: `mouse`, `probe` per `readPixels` direkt nach dem Zeichnen,
+  `setPaused`, `setTurn` → Blick zur Seite); VRM-Ausdrücke des Pets werden zu GoEmotions (`EXPRESSION_EMOTIONS`).
+  Kein Sitzen/Gehen-Clip (keine `onLoops`). Gruppen-Chat „Alle zeigen“ bleibt bewusst bei Porträts (wie 3D/Live2D).
+  Prüfen ohne App: Headless-Chromium mit SwiftShader; der Browser-Bereich hat kein WebGL. E2E `avatar-inochi2d.mjs`
+  (`tools/make-inp.mjs`, Mock-Registry über `hubFiles`) und `pet-inochi2d.mjs` (Pet-Oberfläche per `?pet=true`, Ereignisse
+  über `plugin:event|emit`, Klick-Durchlass als `html[data-pet-click-through]`).
 
 ### 7. Audio, Lokale TTS, Stimmklonen & Effekte
 

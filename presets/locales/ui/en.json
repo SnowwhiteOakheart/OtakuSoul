@@ -873,6 +873,7 @@
   "avatar.inochi2dLoadFailed": "The Inochi2D puppet could not be loaded.",
   "avatar.inochi2dNoWebgl": "WebGL2 is not available – the puppet cannot be drawn without graphics acceleration.",
   "avatar.inochi2dAnimations": "Puppet animations",
+  "avatar.inochi2dMissing": "This character comes with the puppet “{{name}}”, but it is not loaded yet. Until then the chat shows the default puppet.",
   "avatar.quickEmotions": "Quick emotions",
   "avatar.quickNeutral": "Neutral",
   "avatar.quickHappy": "Happy",

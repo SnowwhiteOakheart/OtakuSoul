@@ -55,41 +55,104 @@ pub struct Inochi2dCatalogItem {
     pub is_installed: bool,
 }
 
-struct CatalogEntry {
-    id: &'static str,
-    name: &'static str,
-    description: &'static str,
-    author: &'static str,
-    license: &'static str,
-    url: &'static str,
-    sha256: &'static str,
-    bytes: u64,
+/// One puppet of the registry (`inochi2d_registry.json`, shipped and in the data repository).
+#[derive(Debug, Clone, Deserialize)]
+struct RegistryPuppet {
+    /// File name it is stored under (`.inp`/`.inx`), also what character cards name.
+    id: String,
+    name: String,
+    #[serde(default)]
+    author: String,
+    #[serde(default)]
+    license: String,
+    url: String,
+    sha256: String,
+    size_bytes: u64,
+    /// Shown only while adult content is on.
+    #[serde(default)]
+    nsfw: bool,
+    /// Short description per language code.
+    #[serde(default)]
+    description: std::collections::HashMap<String, String>,
 }
 
-/// Official Inochi2D example models (CC BY 4.0, design and rigging by seagetch), loaded from
-/// the source and checked against their SHA-256.
-const CATALOG: &[CatalogEntry] = &[
-    CatalogEntry {
-        id: "Aka.inx",
-        name: "Aka",
-        description: "Fox girl, shrine maiden outfit, tail and hair physics",
-        author: "seagetch",
-        license: "CC BY 4.0",
-        url: "https://media.githubusercontent.com/media/Inochi2D/example-models/main/Aka.inx",
-        sha256: "dbf82ffb86d1c761bca883ad37ec1c47487a447f8104290b459ce60aaee81e0f",
-        bytes: 17_731_911,
-    },
-    CatalogEntry {
-        id: "Midori.inx",
-        name: "Midori",
-        description: "Raccoon girl, green dress, mesh-group deformation",
-        author: "seagetch",
-        license: "CC BY 4.0",
-        url: "https://media.githubusercontent.com/media/Inochi2D/example-models/main/Midori.inx",
-        sha256: "bfa33997dad3b7b94bca3a0dc61241fd5f2464ed9e3d28381bafc8ad5fcc870a",
-        bytes: 20_585_829,
-    },
-];
+#[derive(Debug, Clone, Deserialize)]
+struct Registry {
+    version: u32,
+    puppets: Vec<RegistryPuppet>,
+}
+
+/// Official Inochi2D example models (CC BY 4.0, design and rigging by seagetch) and whatever the
+/// data repository adds later; never bundled, loaded from their source and checked (SHA-256).
+const BUNDLED_REGISTRY: &str = include_str!("../../../presets/inochi2d_registry.json");
+const REGISTRY_FILE: &str = "inochi2d_registry.json";
+
+/// Whether an entry is safe to offer: a plain puppet file name, an https source and a checksum.
+fn valid_entry(p: &RegistryPuppet) -> bool {
+    let name_ok =
+        !p.id.contains(['/', '\\']) && !p.id.starts_with('.') && is_puppet_name(Path::new(&p.id));
+    name_ok
+        && p.url.starts_with("https://")
+        && p.sha256.len() == 64
+        && p.sha256
+            .chars()
+            .all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase())
+        && p.size_bytes > 0
+        && !p.name.trim().is_empty()
+}
+
+/// Parses a registry and drops invalid entries; `None` if nothing usable is left.
+fn parse_registry(text: &str) -> Option<Registry> {
+    let mut registry: Registry = serde_json::from_str(text).ok()?;
+    registry.puppets.retain(valid_entry);
+    (!registry.puppets.is_empty()).then_some(registry)
+}
+
+/// The registry in use: the downloaded copy if it is newer than the shipped one.
+fn registry(data_dir: &Path) -> Registry {
+    let bundled = parse_registry(BUNDLED_REGISTRY).expect("shipped Inochi2D registry is valid");
+    fs::read_to_string(data_dir.join(REGISTRY_FILE))
+        .ok()
+        .and_then(|text| parse_registry(&text))
+        .filter(|downloaded| downloaded.version > bundled.version)
+        .unwrap_or(bundled)
+}
+
+/// Fetches the registry from the data repository at start (kept for the next catalog request).
+pub async fn refresh_registry() {
+    let fetch = async {
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(20))
+            .build()
+            .map_err(|e| e.to_string())?;
+        let text = client
+            .get(crate::modules::hub::hub_url(REGISTRY_FILE))
+            .send()
+            .await
+            .and_then(reqwest::Response::error_for_status)
+            .map_err(|e| e.to_string())?
+            .text()
+            .await
+            .map_err(|e| e.to_string())?;
+        parse_registry(&text).ok_or("keine gültige Registry")?;
+        let data_dir = PathBuf::from(resolve_app_paths().data_dir);
+        fs::create_dir_all(&data_dir).map_err(|e| e.to_string())?;
+        fs::write(data_dir.join(REGISTRY_FILE), text).map_err(|e| e.to_string())
+    };
+    if let Err(e) = fetch.await {
+        tracing::debug!("Inochi2D-Registry nicht geladen: {e}");
+    }
+}
+
+/// Description in `lang`, else English, else German, else any.
+fn describe_in(p: &RegistryPuppet, lang: &str) -> String {
+    [lang, "en", "de"]
+        .iter()
+        .find_map(|l| p.description.get(*l))
+        .or_else(|| p.description.values().next())
+        .cloned()
+        .unwrap_or_default()
+}
 
 /// Header facts of a puppet.
 #[derive(Debug, Default, PartialEq)]
@@ -306,21 +369,26 @@ pub fn scan_inochi2d_models() -> Vec<ScannedInochi2d> {
     found
 }
 
-/// The official example puppets, marked when they are already there.
-pub fn catalog() -> Vec<Inochi2dCatalogItem> {
-    let installed = user_dir(&PathBuf::from(resolve_app_paths().data_dir));
-    CATALOG
-        .iter()
-        .map(|c| Inochi2dCatalogItem {
-            id: c.id.to_string(),
-            name: c.name.to_string(),
-            description: c.description.to_string(),
-            author: c.author.to_string(),
-            license: c.license.to_string(),
-            url: c.url.to_string(),
-            sha256: c.sha256.to_string(),
-            size_mb: (c.bytes as f64 / 1_048_576.0 * 10.0).round() / 10.0,
-            is_installed: installed.join(c.id).is_file(),
+/// The puppets of the registry (adult ones only while adult content is on), marked when they are
+/// already there; descriptions in `lang`.
+pub fn catalog(lang: &str) -> Vec<Inochi2dCatalogItem> {
+    let data_dir = PathBuf::from(resolve_app_paths().data_dir);
+    let installed = user_dir(&data_dir);
+    let adult = crate::modules::nsfw::allowed();
+    registry(&data_dir)
+        .puppets
+        .into_iter()
+        .filter(|p| adult || !p.nsfw)
+        .map(|p| Inochi2dCatalogItem {
+            description: describe_in(&p, lang),
+            size_mb: (p.size_bytes as f64 / 1_048_576.0 * 10.0).round() / 10.0,
+            is_installed: installed.join(&p.id).is_file(),
+            id: p.id,
+            name: p.name,
+            author: p.author,
+            license: p.license,
+            url: p.url,
+            sha256: p.sha256,
         })
         .collect()
 }
@@ -436,14 +504,16 @@ pub async fn download_inochi2d_model(model_id: &str) -> Result<ScannedInochi2d, 
     use sha2::{Digest, Sha256};
     use std::io::Write;
 
-    let entry = CATALOG
-        .iter()
-        .find(|c| c.id == model_id)
-        .ok_or_else(|| crate::err!("backend.inochi2d.unknownModel", name = model_id))?;
     let data_dir = PathBuf::from(resolve_app_paths().data_dir);
+    let adult = crate::modules::nsfw::allowed();
+    let entry = registry(&data_dir)
+        .puppets
+        .into_iter()
+        .find(|p| p.id == model_id && (adult || !p.nsfw))
+        .ok_or_else(|| crate::err!("backend.inochi2d.unknownModel", name = model_id))?;
     let dir = user_dir(&data_dir);
     fs::create_dir_all(&dir).map_err(|e| crate::err!("backend.common.dirCreate", error = e))?;
-    let target = dir.join(entry.id);
+    let target = dir.join(&entry.id);
     if !target.is_file() {
         info!(
             "Lade Inochi2D-Modell herunter: {} von {}",
@@ -455,7 +525,7 @@ pub async fn download_inochi2d_model(model_id: &str) -> Result<ScannedInochi2d, 
             .build()
             .map_err(|e| crate::err!("backend.common.httpClient", error = e))?;
         let resp = client
-            .get(entry.url)
+            .get(&entry.url)
             .send()
             .await
             .map_err(|e| crate::err!("backend.common.downloadFailed", error = e))?;
@@ -705,11 +775,55 @@ mod tests {
     }
 
     #[test]
-    fn catalog_has_checksums() {
-        assert!(
-            CATALOG
-                .iter()
-                .all(|c| c.sha256.len() == 64 && c.url.starts_with("https://"))
+    fn shipped_registry_is_valid() {
+        let registry = parse_registry(BUNDLED_REGISTRY).unwrap();
+        assert!(registry.puppets.iter().any(|p| p.id == "Aka.inx"));
+        assert_eq!(
+            describe_in(&registry.puppets[0], "ja"),
+            registry.puppets[0].description["ja"]
         );
+        assert_eq!(
+            describe_in(&registry.puppets[0], "pl"),
+            registry.puppets[0].description["en"]
+        );
+    }
+
+    #[test]
+    fn registry_entries_are_checked_and_newer_downloads_win() {
+        let entry = |id: &str, url: &str, sha: &str| serde_json::json!({ "id": id, "name": "X", "url": url, "sha256": sha, "size_bytes": 10 });
+        let sha = "a".repeat(64);
+        let text = serde_json::json!({ "version": 99, "puppets": [
+            entry("Good.inp", "https://example.org/Good.inp", &sha),
+            entry("../evil.inp", "https://example.org/e.inp", &sha),
+            entry("Plain.inp", "http://example.org/p.inp", &sha),
+            entry("Short.inp", "https://example.org/s.inp", "abc"),
+            entry("Picture.png", "https://example.org/p.png", &sha),
+        ]})
+        .to_string();
+        let parsed = parse_registry(&text).unwrap();
+        assert_eq!(
+            parsed
+                .puppets
+                .iter()
+                .map(|p| p.id.as_str())
+                .collect::<Vec<_>>(),
+            ["Good.inp"]
+        );
+
+        let dir = temp("registry");
+        fs::write(dir.join(REGISTRY_FILE), &text).unwrap();
+        assert_eq!(registry(&dir).version, 99, "newer download wins");
+        let older = serde_json::json!({ "version": 0, "puppets": [entry("Old.inp", "https://e.org/o.inp", &sha)] });
+        fs::write(dir.join(REGISTRY_FILE), older.to_string()).unwrap();
+        assert!(
+            registry(&dir).puppets.iter().any(|p| p.id == "Aka.inx"),
+            "older download loses"
+        );
+        fs::write(dir.join(REGISTRY_FILE), "kaputt").unwrap();
+        assert!(
+            registry(&dir).puppets.iter().any(|p| p.id == "Aka.inx"),
+            "broken download ignored"
+        );
+        let _ = fs::remove_dir_all(dir);
     }
 }

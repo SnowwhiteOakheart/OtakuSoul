@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "puppets": [
+    {
+      "id": "Aka.inx",
+      "name": "Aka",
+      "author": "seagetch",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "url": "https://media.githubusercontent.com/media/Inochi2D/example-models/main/Aka.inx",
+      "sha256": "dbf82ffb86d1c761bca883ad37ec1c47487a447f8104290b459ce60aaee81e0f",
+      "size_bytes": 17731911,
+      "nsfw": false,
+      "description": {
+        "de": "Fuchsmädchen im Schreinmädchen-Outfit, Schweif- und Haarphysik",
+        "en": "Fox girl in a shrine maiden outfit, tail and hair physics",
+        "ru": "Девушка-лиса в наряде жрицы, физика хвоста и волос",
+        "ja": "巫女装束の狐娘、尻尾と髪の物理演算"
+      }
+    },
+    {
+      "id": "Midori.inx",
+      "name": "Midori",
+      "author": "seagetch",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "url": "https://media.githubusercontent.com/media/Inochi2D/example-models/main/Midori.inx",
+      "sha256": "bfa33997dad3b7b94bca3a0dc61241fd5f2464ed9e3d28381bafc8ad5fcc870a",
+      "size_bytes": 20585829,
+      "nsfw": false,
+      "description": {
+        "de": "Tanuki-Mädchen im grünen Kleid, Mesh-Gruppen-Verformung",
+        "en": "Raccoon girl in a green dress, mesh-group deformation",
+        "ru": "Девушка-енот в зелёном платье, деформация групп сеток",
+        "ja": "緑のドレスの狸娘、メッシュグループ変形"
+      }
+    }
+  ]
+}
