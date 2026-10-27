@@ -59,7 +59,11 @@ export interface PetSay {
 
 export interface PetState {
   characterName: string;
+  /** The model the chat shows (Inochi2D puppet in that view, otherwise the 3D model). */
   modelPath: string;
+  /** The figure's 3D model and Inochi2D puppet ("" if none), for the pet's own choice. */
+  vrmPath: string;
+  inochi2dPath: string;
   /** GoEmotions name (shown in the status panel). */
   emotion: string;
   /** VRM expression behind it (drives the face). */
@@ -160,6 +164,18 @@ export interface PetPrefs {
   rideWindows: boolean;
   /** Step back while a game, video or presentation fills the screen. */
   hideInFullscreen: boolean;
+  /** Which of the figure's models the pet shows: as in the chat, or always 3D / Inochi2D. */
+  figure: PetFigureChoice;
+}
+
+export type PetFigureChoice = 'chat' | '3d' | 'inochi2d';
+const FIGURE_CHOICES: PetFigureChoice[] = ['chat', '3d', 'inochi2d'];
+
+/** The model the pet shows for its choice; one the figure lacks falls back to the chat's. */
+export function petModelPath(state: Pick<PetState, 'modelPath' | 'vrmPath' | 'inochi2dPath'>, figure: PetFigureChoice): string {
+  if (figure === '3d' && state.vrmPath) return state.vrmPath;
+  if (figure === 'inochi2d' && state.inochi2dPath) return state.inochi2dPath;
+  return state.modelPath;
 }
 
 const PREFS_KEY = 'otakusoul.desktopPetPrefs';
@@ -169,6 +185,7 @@ const DEFAULT_PREFS: PetPrefs = {
   physics: true,
   rideWindows: false,
   hideInFullscreen: true,
+  figure: 'chat',
 };
 
 export function loadPetPrefs(): PetPrefs {
@@ -181,6 +198,7 @@ export function loadPetPrefs(): PetPrefs {
       rideWindows: typeof stored?.rideWindows === 'boolean' ? stored.rideWindows : DEFAULT_PREFS.rideWindows,
       hideInFullscreen:
         typeof stored?.hideInFullscreen === 'boolean' ? stored.hideInFullscreen : DEFAULT_PREFS.hideInFullscreen,
+      figure: FIGURE_CHOICES.includes(stored?.figure as PetFigureChoice) ? stored!.figure! : DEFAULT_PREFS.figure,
     };
   } catch {
     return { ...DEFAULT_PREFS };

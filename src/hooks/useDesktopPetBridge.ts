@@ -45,12 +45,15 @@ function lastReplyKey(s: StoreState): string | null {
 }
 
 function petState(s: StoreState): PetState {
+  const vrmPath = resolveVrmPath(s.activeCharacter, s.scannedVrms, s.activeVrmPath);
+  const inochi2dPath = resolveInochi2dPath(s.activeCharacter, s.scannedInochi2ds, s.activeInochi2dPath);
   return {
     characterName: s.activeCharacter?.card.data.name || APP_DEFAULT_COMPANION_NAME,
-    // The chat shows an Inochi2D puppet: the pet shows it too; otherwise the 3D model.
-    modelPath:
-      (s.avatarMode === 'inochi2d' && resolveInochi2dPath(s.activeCharacter, s.scannedInochi2ds, s.activeInochi2dPath)) ||
-      resolveVrmPath(s.activeCharacter, s.scannedVrms, s.activeVrmPath),
+    // The chat shows an Inochi2D puppet: the pet shows it too; otherwise the 3D model (unless
+    // the pet's menu asks for one of them).
+    modelPath: (s.avatarMode === 'inochi2d' && inochi2dPath) || vrmPath,
+    vrmPath,
+    inochi2dPath,
     emotion: s.currentEmotion.emotion,
     expression: s.currentEmotion.vrm_expression,
     motions: s.avatarMotions,
@@ -118,6 +121,10 @@ export function useDesktopPetBridge(enabled = true) {
         s.activeCharacter !== prev.activeCharacter ||
         s.scannedVrms !== prev.scannedVrms ||
         s.activeVrmPath !== prev.activeVrmPath ||
+        // Switching the chat's view (3D ↔ Inochi2D) or its puppet changes the pet's figure.
+        s.avatarMode !== prev.avatarMode ||
+        s.scannedInochi2ds !== prev.scannedInochi2ds ||
+        s.activeInochi2dPath !== prev.activeInochi2dPath ||
         s.currentEmotion !== prev.currentEmotion ||
         s.avatarMotions !== prev.avatarMotions ||
         s.avatarGesture !== prev.avatarGesture ||

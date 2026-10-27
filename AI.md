@@ -725,7 +725,9 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Katalog = `presets/inochi2d_registry.json`, beim Start aus `otakusoul-data` nach `<Daten>/` (`refresh_registry`, höhere
   `version` gewinnt, ungültige Einträge – Pfad im Namen, kein https, falsche SHA-256 – fallen raus, `nsfw` nur mit 18+).
   Karte nennt eine fehlende, aber gelistete Puppe → `avatars/MissingPuppetHint.tsx` im Chat (bis dahin Standard-Puppe).
-  Desktop-Pet: `useDesktopPetBridge` schickt bei Modus `inochi2d` die Puppe; `Inochi2dViewer` mit `pet` = ganze Figur unten,
+  Desktop-Pet: `useDesktopPetBridge` schickt `modelPath` (bei Modus `inochi2d` die Puppe) plus `vrmPath`/`inochi2dPath`;
+  das Pet wählt per Menü „Figur“ (`PetPrefs.figure`: wie im Chat / 3D / Inochi2D, `petModelPath`, fehlt die Art → wie im
+  Chat); ein Wechsel von `avatarMode` oder der Puppe im Chat wird sofort weitergeschickt; `Inochi2dViewer` mit `pet` = ganze Figur unten,
   keine Bedienelemente, `PetFigure` (`avatarStage.ts`: `mouse`, `probe` per `readPixels` direkt nach dem Zeichnen,
   `setPaused`, `setTurn` → Blick zur Seite); VRM-Ausdrücke des Pets werden zu GoEmotions (`EXPRESSION_EMOTIONS`).
   Gehen/Sitzen: eigene Schleifen per Namenswort (`LOOP_WORDS`: walk/geh/lauf/run, sit/sitz – ganze Wörter, „Position“

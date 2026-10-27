@@ -39,6 +39,7 @@ import {
   PET_STATE_EVENT,
   savePetPlacement,
   savePetPrefs,
+  petModelPath,
   type PetAudioFrame,
   type PetCursor,
   type PetPrefs,
@@ -555,6 +556,24 @@ export const DesktopPet: React.FC = () => {
           })),
         },
         {
+          text: t('pet.figure'),
+          items: [
+            { text: t('pet.figureChat'), checked: prefs.figure === 'chat', action: () => setPrefs((p) => ({ ...p, figure: 'chat' })) },
+            {
+              text: t('pet.figure3d'),
+              checked: prefs.figure === '3d',
+              enabled: !!pet?.vrmPath,
+              action: () => setPrefs((p) => ({ ...p, figure: '3d' })),
+            },
+            {
+              text: t('pet.figureInochi2d'),
+              checked: prefs.figure === 'inochi2d',
+              enabled: !!pet?.inochi2dPath,
+              action: () => setPrefs((p) => ({ ...p, figure: 'inochi2d' })),
+            },
+          ],
+        },
+        {
           text: t('pet.size'),
           items: sizes.map(({ key, label }) => ({ text: label, checked: size === key, action: () => void resize(key) })),
         },
@@ -646,7 +665,7 @@ export const DesktopPet: React.FC = () => {
   );
   const petLink = useMemo(() => ({ onStage, onLoops }), [onStage, onLoops]);
 
-  const modelPath = pet?.modelPath ?? '';
+  const modelPath = pet ? petModelPath(pet, prefs.figure) : '';
   const viewerProps = {
     modelPath,
     // Only VRM models have a blush; glTF and MMD show their relaxed face instead.
