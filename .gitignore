@@ -52,6 +52,7 @@ assets/test-avatars/
 assets/vrm/*.vrm
 !assets/vrm/Anime Girl.vrm
 !assets/vrm/Anime Man.vrm
+!assets/vrm/Seed-san.vrm
 assets/inochi2d/*
 !assets/inochi2d/Aka.inx
 !assets/inochi2d/lizenzen.txt

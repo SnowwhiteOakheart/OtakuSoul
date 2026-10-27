@@ -1,0 +1,10 @@
+CG-CA Gene 3D Avatar (PMX / MMD)
+
+Creator: Nagoya Institute of Technology (NITech)
+Project: Moonshot R&D Goal 1 "Avatar Symbiotic Society"
+Repository: https://github.com/mmdagent-ex/gene
+License: Creative Commons Attribution 4.0 International (CC BY 4.0)
+https://creativecommons.org/licenses/by/4.0/
+
+Attribution Notice / Credits:
+CG-CA Gene © 2023–2024 Nagoya Institute of Technology, Moonshot R&D Goal 1 Avatar Symbiotic Society

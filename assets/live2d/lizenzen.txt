@@ -1,0 +1,48 @@
+# Live2D-Modelle & Lizenzen / Live2D Models & Licenses
+
+## Mitgelieferte Standardmodelle (im Repository versioniert)
+
+1. **Hiyori Momose (桃瀬ひより - `assets/live2d/Hiyori/`)**
+   - Urheber: Live2D Inc. (https://www.live2d.com/)
+   - Format: Live2D Cubism 4 (.moc3 / .model3.json)
+   - Quelle: https://www.live2d.com/en/download/sample/ (hiyori_free_t08)
+   - Lizenz: Live2D Free Material License Agreement (一般向け無償提供モデル提供規約)
+     https://www.live2d.com/eula/live2d-free-material-license-agreement_en.html
+   - Bedingungen: Kostenlose Nutzung für Einzelpersonen, Bildung und kleine Unternehmen (Jahresumsatz unter 10 Mio. JPY / ca. 60.000 €).
+   - Urheberrecht: © Live2D Inc.
+
+2. **Haru & Haru Greeter (`assets/live2d/haru/`, `assets/live2d/haru_greeter/`)**
+   - Urheber: Live2D Inc. (https://www.live2d.com/)
+   - Format: Live2D Cubism 3/4 (.moc3 / .model3.json)
+   - Quelle: https://www.live2d.com/en/download/sample/
+   - Lizenz: Live2D Free Material License Agreement (一般向け無償提供モデル提供規約)
+   - Urheberrecht: © Live2D Inc.
+
+3. **Rice Glassfield (`assets/live2d/rice/`)**
+   - Urheber: Live2D Inc. (https://www.live2d.com/)
+   - Format: Live2D Cubism 3/4 (.moc3 / .model3.json)
+   - Quelle: https://www.live2d.com/en/download/sample/
+   - Lizenz: Live2D Free Material License Agreement (一般向け無償提供モデル提供規約)
+   - Urheberrecht: © Live2D Inc.
+
+4. **Tsumiki Harugasa (`assets/live2d/tsumiki/`)**
+   - Urheber: Live2D Inc. (https://www.live2d.com/)
+   - Format: Live2D Cubism 3/4 (.moc3 / .model3.json)
+   - Quelle: https://www.live2d.com/en/download/sample/
+   - Lizenz: Live2D Free Material License Agreement (一般向け無償提供モデル提供規約)
+   - Urheberrecht: © Live2D Inc.
+
+5. **Unity-chan (大鳥こはく - `assets/live2d/unitychan/`)**
+   - Urheber: Unity Technologies Japan / Live2D Inc.
+   - Format: Live2D Cubism 3/4 (.moc3 / .model3.json)
+   - Quelle: https://cubism.live2d.com/sample-data/bin/unitychan/unitychan_ja.zip
+   - Lizenz: Unity-Chan License (UCL 2.0) & Live2D Free Material License
+     https://unity-chan.com/contents/guideline_en/
+   - Bedingungen: Namensnennung und Einhaltung der Unity-Chan-Richtlinien (keine R-18/NSFW-Nutzung, kein KI-Training).
+   - Urheberrecht: © Unity Technologies Japan / UCL
+
+6. **Senko (`assets/live2d/senko/`)**
+   - Urheber / Rigging: Community-Modell (Eikanya / Live2d-model)
+   - Format: Live2D Cubism 3/4 (.moc3 / .model3.json)
+   - Quelle: https://github.com/Eikanya/Live2d-model
+   - Lizenz: Non-commercial Fan-Art / Open-Source-Viewer Nutzung.

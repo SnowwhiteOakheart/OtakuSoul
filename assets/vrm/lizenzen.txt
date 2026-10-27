@@ -1,6 +1,6 @@
-# VRM-Modelle & Lizenzen / VRM Models & Licenses
+# 3D-Avatare (VRM & MMD) & Lizenzen / 3D Avatars & Licenses
 
-## Mitgelieferte Standardmodelle (im Repository versioniert)
+## Mitgelieferte VRM-Modelle (im Repository versioniert)
 
 1. **Anime Girl.vrm** (AvatarSample_Y_VRM10)
    - Urheber: pixiv VRoid Project (Modellierer: yomox9)
@@ -11,6 +11,24 @@
    - Urheber: pixiv VRoid Project (Modellierer: yomox9)
    - Lizenz: VRoid Sample Model License (https://vroid.pixiv.help/hc/ja/articles/4402394424089-AvatarSample-A-Z)
    - Bedingungen: Weitergabe und Modifikation erlaubt (allowRedistribution: true, modification: allowModificationRedistribution).
+
+3. **Seed-san.vrm** (シードさん)
+   - Urheber: VRM Consortium / pixiv Inc.
+   - Quelle: https://github.com/vrm-c/vrm-specification/tree/master/samples/Seed-san
+   - Lizenz: Creative Commons Zero v1.0 Universal (CC0 1.0 - Public Domain Dedication)
+     https://creativecommons.org/publicdomain/zero/1.0/
+   - Bedingungen: Vollständig frei nutzbar, veränderbar und weiterverbreitbar ohne Einschränkungen.
+
+## Mitgelieferte MMD-Modelle (PMX, im Repository versioniert)
+
+1. **Gene** (`assets/vrm/Gene/Gene.pmx`)
+   - Urheber: Nagoya Institute of Technology (NITech) / Moonshot R&D Goal 1 "Avatar Symbiotic Society" Project
+   - Quelle: https://github.com/mmdagent-ex/gene
+   - Lizenz: Creative Commons Attribution 4.0 International (CC BY 4.0)
+     https://creativecommons.org/licenses/by/4.0/
+   - Namensnennung / Credits:
+     "CG-CA Gene © 2023–2024 Nagoya Institute of Technology, Moonshot R&D Goal 1 Avatar Symbiotic Society"
+   - Bedingungen: Freie Nutzung, Weitergabe und Modifikation unter Beibehaltung der Urheberangabe.
 
 ## Optionale Community-Modelle (separates Avatar-Paket)
 
@@ -25,4 +43,3 @@ können separat über das Avatar-Paket bezogen werden (VRoid Hub Quellen):
 - 2B: https://hub.vroid.com/en/characters/7668160067984824906/models/2242061262413958110
 - Mikku: https://hub.vroid.com/en/characters/7032412562763742257/models/4025778039146486049
 - Hoshika: https://hub.vroid.com/en/characters/3990471198787218878/models/3661778864028306547
-
