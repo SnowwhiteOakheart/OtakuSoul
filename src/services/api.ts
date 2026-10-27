@@ -854,6 +854,11 @@ export const api = {
     await invoke('show_main_window');
   },
 
+  /** Notification whose click opens the chat (Windows); false: not shown, use the plugin. */
+  notifyChat: async (title: string, body: string, charId: string, chatId: string): Promise<boolean> => {
+    return await invoke<boolean>('notify_chat', { title, body, charId, chatId });
+  },
+
   evaluateCompanionProactive: async (): Promise<[string, string] | null> => {
     return await invoke<[string, string] | null>('evaluate_companion_proactive');
   },

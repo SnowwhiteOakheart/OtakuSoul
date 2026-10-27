@@ -4162,6 +4162,7 @@ dependencies = [
  "tauri-plugin-single-instance",
  "tauri-plugin-updater",
  "tauri-plugin-window-state",
+ "tauri-winrt-notification",
  "tokio",
  "tokio-tungstenite 0.30.0",
  "tracing",

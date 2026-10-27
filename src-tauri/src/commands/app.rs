@@ -158,6 +158,67 @@ pub fn hide_main_window(window: tauri::WebviewWindow) -> Result<(), String> {
         .map_err(|e| crate::err!("backend.app.hideWindow", error = e))
 }
 
+/// Event for the main window when a chat notification was clicked: `{ charId, chatId }`.
+pub const NOTIFICATION_OPEN_CHAT_EVENT: &str = "notification-open-chat";
+
+/// Shows a desktop notification for a message in a chat; a click on it brings the main window
+/// back (also from the tray) and opens that chat. Only Windows reports the click: elsewhere, and
+/// when the toast cannot be shown, `false` lets the webview fall back to the notification plugin.
+#[tauri::command]
+pub fn notify_chat(
+    app: tauri::AppHandle,
+    title: String,
+    body: String,
+    char_id: String,
+    chat_id: String,
+) -> bool {
+    #[cfg(windows)]
+    {
+        use tauri::{Emitter, Manager};
+        use tauri_winrt_notification::Toast;
+        let target = serde_json::json!({ "charId": char_id, "chatId": chat_id });
+        let handle = app.clone();
+        let shown = Toast::new(&notification_app_id(&app))
+            .title(&title)
+            .text1(&body)
+            .on_activated(move |_| {
+                if let Some(window) = handle.get_webview_window("main") {
+                    let _ = window.unminimize();
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+                let _ = handle.emit_to("main", NOTIFICATION_OPEN_CHAT_EVENT, target.clone());
+                Ok(())
+            })
+            .show();
+        if let Err(e) = &shown {
+            tracing::warn!("Benachrichtigung nicht angezeigt: {e}");
+        }
+        shown.is_ok()
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = (app, title, body, char_id, chat_id);
+        false
+    }
+}
+
+/// App ID of the toasts: the installed app's own (its Start menu entry carries it), while
+/// running from `target/debug|release` the PowerShell one – as `tauri-plugin-notification` does,
+/// since Windows drops toasts of an ID without a Start menu entry.
+#[cfg(windows)]
+fn notification_app_id(app: &tauri::AppHandle) -> String {
+    let dev = std::env::current_exe().ok().and_then(|exe| {
+        let dir = exe.parent()?.to_path_buf();
+        Some(dir.ends_with("target/debug") || dir.ends_with("target/release"))
+    });
+    if dev.unwrap_or(false) {
+        tauri_winrt_notification::Toast::POWERSHELL_APP_ID.to_string()
+    } else {
+        app.config().identifier.clone()
+    }
+}
+
 /// Quits the app from the close dialog ("Beenden" instead of keeping it in the tray).
 #[tauri::command]
 pub fn quit_app(app: tauri::AppHandle) {

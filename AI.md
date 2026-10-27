@@ -451,6 +451,11 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `real`-Vorhaben je einmal ab 10 min Pause, sonst nach `idle_minutes`). `chatSlice.writeOnOwn` = `writeReply` mit
   `instruction` statt Nudge; Fehler nur geloggt. Lokale KI wird dafür nicht gestartet. Benachrichtigung über
   `tauri-plugin-notification` (`services/notifications.ts`) nur bei verdecktem Fenster, sonst Toast außerhalb des Chats.
+  Windows: `notify(title, body, { charId, chatId })` geht über `notify_chat` (`commands/app.rs`, `tauri-winrt-notification`
+  direkt, weil das Plugin keinen Klick-Rückruf hat); Klick → Hauptfenster aus dem Tray holen + Event
+  `notification-open-chat` → `openChat` in `useProactiveMessages`. App-ID wie im Plugin: installiert die eigene
+  (`identifier`), aus `target/debug|release` die von PowerShell (sonst verwirft Windows den Toast). Der Klick kommt nur an,
+  solange die App läuft (kein COM-Aktivator); andere Systeme: `false` → Plugin ohne Klick-Aktion.
   Der Mock reicht die Anweisung nicht als `system`-Rolle durch: E2E `chat-proactive.mjs` sucht rollenunabhängig.
   Träume (`proactive.dreams`, Standard an): `kind: 'dream'` nur beim ersten Check, der bis zur Entscheidung kommt (mit lokaler
   KI ggf. erst, wenn ihr Server läuft), ab 8 h Pause, nach fälligen Vorhaben; `get_dream_memories` liefert zufällige aktive

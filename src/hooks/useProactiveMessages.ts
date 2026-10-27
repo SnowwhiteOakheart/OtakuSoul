@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { api } from '../services/api';
-import { notify } from '../services/notifications';
+import { notify, onNotificationClick } from '../services/notifications';
 import { translate } from '../i18n';
 import { useAppStore } from '../store/useAppStore';
 import { toast } from '../components/ui/feedback';
@@ -50,9 +50,14 @@ export function useProactiveMessages(enabled = true) {
     };
     const first = window.setTimeout(() => void check(), FIRST_CHECK_MS);
     const timer = window.setInterval(() => void check(), CHECK_INTERVAL_MS);
+    // A click on the notification (Windows) opens the chat it is about.
+    const unlisten = onNotificationClick(({ charId, chatId }) => {
+      void openChat(charId, chatId).catch((e) => console.warn('Opening the chat failed:', e));
+    }).catch(() => null);
     return () => {
       window.clearTimeout(first);
       window.clearInterval(timer);
+      void unlisten.then((stop) => stop?.());
     };
   }, [enabled]);
 }
@@ -118,7 +123,7 @@ async function writeElsewhereIfDue(): Promise<boolean> {
     const name = character ? presentedAs(character, state.replyLanguage).name : '';
     const after = useAppStore.getState();
     if (document.hidden || !document.hasFocus()) {
-      if (after.proactive.notify) await notify(name, stored.content);
+      if (after.proactive.notify) await notify(name, stored.content, { charId: session.character_id, chatId: session.id });
     } else if (after.activeChatId !== session.id || after.activeTab !== 'chat') {
       toast.info(translate('proactive.wroteToYou', { name }), {
         label: translate('proactive.openChat'),
@@ -196,7 +201,7 @@ async function writeIfDue(startup: boolean, decided: () => void): Promise<boolea
   const name = presentedAs(activeCharacter, state.replyLanguage).name;
   const after = useAppStore.getState();
   if (document.hidden || !document.hasFocus()) {
-    if (after.proactive.notify) await notify(name, stored.content);
+    if (after.proactive.notify) await notify(name, stored.content, { charId: activeCharacter.id, chatId: stored.chat_id });
   } else if (after.activeTab !== 'chat') {
     toast.info(translate('proactive.wroteToYou', { name }), {
       label: translate('proactive.openChat'),

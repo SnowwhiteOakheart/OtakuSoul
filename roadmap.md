@@ -138,8 +138,9 @@
   Entscheidung des Nutzers.
 
 ### Die Figur meldet sich von selbst
-- [ ] **Klick auf die Benachrichtigung öffnet den Chat:** Desktop-Benachrichtigungen von `tauri-plugin-notification` bieten
-  keine Klick-Aktion; bis dahin zeigt die App außerhalb des Chats einen Toast mit „Zum Chat“.
+- [ ] **Klick auf die Benachrichtigung öffnet den Chat – macOS/Linux:** Unter Windows erledigt (27.10.2026, `notify_chat`);
+  `tauri-plugin-notification` bietet dort weiter keine Klick-Aktion (macOS: `UNUserNotificationCenter`-Delegate,
+  Linux: `notify-rust` mit `wait_for_action`).
 
 ### Mobil
 - [ ] **Zugriff von unterwegs:** Web-Client außerhalb des WLANs über eine verschlüsselte Relay-Verbindung ohne Portfreigabe,

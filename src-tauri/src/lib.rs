@@ -380,6 +380,7 @@ pub fn run() {
             commands::companion::evaluate_companion_proactive,
             commands::app::get_app_paths,
             commands::app::hide_main_window,
+            commands::app::notify_chat,
             commands::app::quit_app,
             commands::app::log_frontend,
             commands::app::open_avatar_folder,
