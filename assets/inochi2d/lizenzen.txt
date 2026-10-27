@@ -1,0 +1,17 @@
+# Inochi2D-Puppen & Lizenzen / Inochi2D Puppets & Licenses
+
+## Mitgelieferte Beispielpuppe (im Repository versioniert)
+
+1. **Aka.inx** (Inochi2D-Beispielmodell „Aka“)
+   - Design und Rigging: seagetch (https://twitter.com/seagetch)
+   - Quelle: https://github.com/Inochi2D/example-models (Aka.inx)
+   - Lizenz: Creative Commons Namensnennung 4.0 International (CC BY 4.0)
+     https://creativecommons.org/licenses/by/4.0/
+   - Unverändert übernommen (SHA-256 dbf82ffb86d1c761bca883ad37ec1c47487a447f8104290b459ce60aaee81e0f).
+   - Design and rigging by seagetch, licensed under CC BY 4.0; included unmodified.
+
+## Weitere Puppen (nicht im Repository)
+
+Weitere Puppen wie „Midori“ (ebenfalls seagetch, CC BY 4.0) stehen im Puppen-Katalog der App.
+Sie kommen aus der Registry im Daten-Repository (`otakusoul-data/inochi2d_registry.json`) und
+werden auf Wunsch von der Quelle geladen und per SHA-256 geprüft.

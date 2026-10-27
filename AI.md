@@ -17,7 +17,10 @@ Nutzer mit „Du“ ansprechen. Antworten, Commits und Doku auf Deutsch.
 - Der Nutzer arbeitet parallel im Repo: fremde uncommittete Änderungen nie mitcommitten.
 - `roadmap.md` (offene Punkte) im selben Commit abhaken, Erledigtes nach `roadmap_abgeschlossen.md` verschieben (nur lokal, in `.gitignore`, nie committen); `README.md`/`AI.md` bei neuen Modulen/Features anpassen.
 - Pfade nur über `paths::base_dirs()` (ProjectDirs bzw. `$OTAKUSOUL_HOME/config|data`); OS-Code mit `#[cfg]`.
-- Modelle nie mitliefern, nur von der Quelle laden (SHA-256); nicht-kommerzielle Stimmmodelle (TTS) gesperrt, bis freigeschaltet;
+- Modelle grundsätzlich von der Quelle laden (SHA-256). Ausnahme: Avatare/Puppen dürfen zu 1–2 je Art mitgeliefert
+  werden, wenn Lizenz (Weitergabe erlaubt) und Größe es zulassen – mit `lizenzen.txt` im Asset-Ordner und Hinweis in
+  den READMEs (Beispiele: `assets/vrm/`, `assets/inochi2d/Aka.inx`); alle weiteren gehören als Registry-Eintrag ins
+  Daten-Repo (`otakusoul-data`). Gewichte von LLM-, TTS- und Bildmodellen nie mitliefern. Nicht-kommerzielle Stimmmodelle (TTS) gesperrt, bis freigeschaltet;
   Chat-Modelle (LLM) nur ohne Login an der Quelle, eingeschränkte oder fehlende Lizenzen nur gekennzeichnet (`license_kind`,
   automatische Empfehlung nur frei lizenziert); Bildmodelle und LoRAs nur gekennzeichnet (Bilder bleiben privat in der App,
   Entscheidung des Nutzers).
@@ -711,7 +714,8 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Viewer `avatar/Inochi2dViewer.tsx` (lazy, Ansicht in `avatarViewState` unter `inochi2d`, `data-inochi2d-viewer`,
   `data-inochi2d-clips`, `data-inochi2d-playing`, Animationsmenü).
   Backend `inochi2d.rs`: Einzeldateien in `<Daten>/inochi2d/` und `assets/inochi2d/` (+1 Unterordnerebene), Kopf-Metadaten,
-  eingebettetes PNG-Vorschaubild, Import `.inp/.inx/.zip`, Katalog Aka/Midori (CC BY 4.0, SHA-256, nur Download),
+  eingebettetes PNG-Vorschaubild, Import `.inp/.inx/.zip`, Katalog Aka/Midori (CC BY 4.0, SHA-256); Aka liegt zusätzlich
+  mitgeliefert in `assets/inochi2d/` (+ `lizenzen.txt`, Ressource in `tauri.conf.json`, gilt im Katalog als vorhanden),
   `AvatarKind::Inochi2d` (Namen/Papierkorb/Vorschaubilder wie die anderen). Karte: `custom_inochi2d` = Dateiname.
   Katalog = `presets/inochi2d_registry.json`, beim Start aus `otakusoul-data` nach `<Daten>/` (`refresh_registry`, höhere
   `version` gewinnt, ungültige Einträge – Pfad im Namen, kein https, falsche SHA-256 – fallen raus, `nsfw` nur mit 18+).
@@ -719,7 +723,9 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Desktop-Pet: `useDesktopPetBridge` schickt bei Modus `inochi2d` die Puppe; `Inochi2dViewer` mit `pet` = ganze Figur unten,
   keine Bedienelemente, `PetFigure` (`avatarStage.ts`: `mouse`, `probe` per `readPixels` direkt nach dem Zeichnen,
   `setPaused`, `setTurn` → Blick zur Seite); VRM-Ausdrücke des Pets werden zu GoEmotions (`EXPRESSION_EMOTIONS`).
-  Kein Sitzen/Gehen-Clip (keine `onLoops`). Gruppen-Chat „Alle zeigen“ bleibt bewusst bei Porträts (wie 3D/Live2D).
+  Gehen/Sitzen: eigene Schleifen per Namenswort (`LOOP_WORDS`: walk/geh/lauf/run, sit/sitz – ganze Wörter, „Position“
+  zählt nicht) oder von Hand (`loops` im Mapping, `""` = keine); `PuppetAnimator.loop` blendet sie über die Idle-Schleife,
+  ihre Achsen nimmt die Prozedur (Atmen/Wiegen) aus; `pet.onLoops` meldet sie, ohne Sitz-Schleife setzt sich das Pet nicht. Gruppen-Chat „Alle zeigen“ bleibt bewusst bei Porträts (wie 3D/Live2D).
   Prüfen ohne App: Headless-Chromium mit SwiftShader; der Browser-Bereich hat kein WebGL. E2E `avatar-inochi2d.mjs`
   (`tools/make-inp.mjs`, Mock-Registry über `hubFiles`) und `pet-inochi2d.mjs` (Pet-Oberfläche per `?pet=true`, Ereignisse
   über `plugin:event|emit`, Klick-Durchlass als `html[data-pet-click-through]`).

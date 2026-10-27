@@ -52,6 +52,9 @@ assets/test-avatars/
 assets/vrm/*.vrm
 !assets/vrm/Anime Girl.vrm
 !assets/vrm/Anime Man.vrm
+assets/inochi2d/*
+!assets/inochi2d/Aka.inx
+!assets/inochi2d/lizenzen.txt
 
 # Updater-Signaturschlüssel: niemals committen (privater Schlüssel + Passwort)
 /.tauri-signing/

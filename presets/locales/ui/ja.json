@@ -2259,7 +2259,7 @@
   "about.credits.licenseNotice": "両プロジェクトはGNU General Public License v3.0（GPLv3）の下でライセンスされています。この告知は原作者に敬意を表し、フリーソフトウェアの透明性と自由を守るためのものです。",
   "about.credits.srd": "Soul Stageの5e互換ルール（クラス、モンスター、呪文、戦闘ルール）はSRD 5.1に基づいています。アドベンチャー、キャラクター、マップはオリジナルコンテンツです。",
   "about.credits.live2d": "Live2Dおよびアバター帰属表記: Live2Dモデル Unity-chan © Unity Technologies Japan/UCL (UCL 2.0)。Live2D Cubism Core © Live2D Inc.（GNU GPLv3 第7条に基づきリンク許可）。同梱VRMデフォルトモデル © pixiv VRoid Project (yomox9)。",
-  "about.credits.inochi2d": "Inochi2D: Inox2Dに基づくランタイム © Speykious および Inochi2D Project、シェーダー © Luna Nielsen（BSD 2-Clause）。サンプルモデルAkaとMidori © seagetch（CC BY 4.0）、要求時のみ配布元から読み込みます。",
+  "about.credits.inochi2d": "Inochi2D: Inox2Dに基づくランタイム © Speykious および Inochi2D Project、シェーダー © Luna Nielsen（BSD 2-Clause）。サンプルパペットAka（デザイン・リギング：seagetch、CC BY 4.0）を無改変で同梱。Midori © seagetch（CC BY 4.0）は要求時のみ配布元から読み込みます。",
   "about.credits.visitSow": "オリジナルプロジェクト: Soul-of-Waifu (GitHub)",
   "about.credits.visitRepo": "{{appName}} ソースコード (GitHub)",
   "about.license": "オープンソース · GNU GPLv3",

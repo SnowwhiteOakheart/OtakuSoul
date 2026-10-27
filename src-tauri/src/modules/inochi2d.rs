@@ -374,6 +374,8 @@ pub fn scan_inochi2d_models() -> Vec<ScannedInochi2d> {
 pub fn catalog(lang: &str) -> Vec<Inochi2dCatalogItem> {
     let data_dir = PathBuf::from(resolve_app_paths().data_dir);
     let installed = user_dir(&data_dir);
+    // Puppets shipped with the app (Aka) count as there, too.
+    let shipped: Vec<PathBuf> = inochi2d_roots().into_iter().skip(1).collect();
     let adult = crate::modules::nsfw::allowed();
     registry(&data_dir)
         .puppets
@@ -382,7 +384,8 @@ pub fn catalog(lang: &str) -> Vec<Inochi2dCatalogItem> {
         .map(|p| Inochi2dCatalogItem {
             description: describe_in(&p, lang),
             size_mb: (p.size_bytes as f64 / 1_048_576.0 * 10.0).round() / 10.0,
-            is_installed: installed.join(&p.id).is_file(),
+            is_installed: installed.join(&p.id).is_file()
+                || shipped.iter().any(|root| root.join(&p.id).is_file()),
             id: p.id,
             name: p.name,
             author: p.author,
@@ -800,6 +803,29 @@ mod tests {
         assert_eq!(
             describe_in(&registry.puppets[0], "pl"),
             registry.puppets[0].description["en"]
+        );
+    }
+
+    /// The bundled Aka is the unmodified file of the registry (CC BY 4.0) and names its author.
+    #[test]
+    fn shipped_puppet_matches_the_registry() {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../assets/inochi2d/Aka.inx");
+        let entry = parse_registry(BUNDLED_REGISTRY)
+            .unwrap()
+            .puppets
+            .into_iter()
+            .find(|p| p.id == "Aka.inx")
+            .unwrap();
+        assert_eq!(
+            crate::modules::hub_installed::file_sha256(&path).as_deref(),
+            Some(entry.sha256.as_str())
+        );
+        let info = puppet_info(&path).unwrap();
+        assert_eq!(info.artist.as_deref(), Some("seagetch"));
+        assert!(
+            fs::read_to_string(path.with_file_name("lizenzen.txt"))
+                .unwrap()
+                .contains("CC BY 4.0")
         );
     }
 
