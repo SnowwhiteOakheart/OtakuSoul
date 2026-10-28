@@ -3951,6 +3951,8 @@
   "pet.physics": "Schwerkraft und Laufen",
   "pet.rideWindows": "Auf Fenstern mitfahren",
   "pet.hideInFullscreen": "Bei Vollbild ausblenden",
+  "pet.settingsTitle": "Einstellungen (wie im Rechtsklick-Menü)",
+  "pet.preview": "Vorschau",
   "tray.pet": "Desktop-Pet ein/aus",
   "pet.hintShortcut": "Strg+Alt+Umschalt+P oder das Tray-Symbol blendet das Pet ein und aus. War es zuletzt offen, kommt es beim nächsten Start wieder.",
   "pet.compose": "Etwas sagen …",

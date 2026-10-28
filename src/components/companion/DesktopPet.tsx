@@ -30,7 +30,9 @@ import {
   PET_MOODS,
   PET_PICK_EMOTION_EVENT,
   PET_PLATFORMS_EVENT,
+  PET_PREFS_EVENT,
   PET_READY_EVENT,
+  PET_RESIZE_EVENT,
   PET_SAY_EVENT,
   PET_SCREEN_EVENT,
   PET_SEND_EVENT,
@@ -260,6 +262,8 @@ export const DesktopPet: React.FC = () => {
     behavior.setPhysics(prefs.physics);
     if (prefs.physics) void syncWindow().catch(() => {});
     savePetPrefs(prefs);
+    // The Desktop-Pet tab shows the same switches.
+    void emitTo('main', PET_PREFS_EVENT, prefs).catch(() => {});
   }, [behavior, prefs, syncWindow]);
 
   // Desktop physics: falling to the floor above the taskbar, walking, turning at the walls.
@@ -420,6 +424,12 @@ export const DesktopPet: React.FC = () => {
       listen<PetScreen>(PET_SCREEN_EVENT, ({ payload }) => {
         setScreen(payload);
       }),
+      listen<PetPrefs>(PET_PREFS_EVENT, ({ payload }) => {
+        setPrefs((current) => (JSON.stringify(current) === JSON.stringify(payload) ? current : payload));
+      }),
+      listen<PetSize>(PET_RESIZE_EVENT, ({ payload }) => {
+        if (payload in PET_SIZES) void resizeRef.current(payload).catch(() => {});
+      }),
       listen<PetCursor>(PET_CURSOR_EVENT, ({ payload: { x, y, inside, button, gx, gy, t: polledAt } }) => {
         const dragging = drag.current;
         if (dragging && !dragging.ending) {
@@ -532,6 +542,11 @@ export const DesktopPet: React.FC = () => {
     savePetPlacement({ size, x, y });
     await syncWindow();
   };
+  // The tab's size buttons reach the latest `resize` without re-subscribing.
+  const resizeRef = useRef(resize);
+  useEffect(() => {
+    resizeRef.current = resize;
+  });
 
   const openMenu = async () => {
     const size = loadPetPlacement().size;

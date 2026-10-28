@@ -57,6 +57,11 @@ export interface PetSay {
   text: string;
 }
 
+/** Both ways: the pet's switches changed (its menu or the Desktop-Pet tab); payload `PetPrefs`. */
+export const PET_PREFS_EVENT = 'pet:prefs';
+/** Main → pet: the Desktop-Pet tab picked a size; payload `PetSize`. */
+export const PET_RESIZE_EVENT = 'pet:resize';
+
 export interface PetState {
   characterName: string;
   /** The model the chat shows (Inochi2D puppet in that view, otherwise the 3D model). */

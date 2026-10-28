@@ -44,16 +44,21 @@ function lastReplyKey(s: StoreState): string | null {
   return last && last.role === 'assistant' ? `${last.id}:${last.swipe_index}` : null;
 }
 
-function petState(s: StoreState): PetState {
+/** The figure's models the pet chooses from (also the Desktop-Pet tab's preview). */
+export function petModels(
+  s: Pick<StoreState, 'activeCharacter' | 'scannedVrms' | 'activeVrmPath' | 'scannedInochi2ds' | 'activeInochi2dPath' | 'avatarMode'>,
+): Pick<PetState, 'modelPath' | 'vrmPath' | 'inochi2dPath'> {
   const vrmPath = resolveVrmPath(s.activeCharacter, s.scannedVrms, s.activeVrmPath);
   const inochi2dPath = resolveInochi2dPath(s.activeCharacter, s.scannedInochi2ds, s.activeInochi2dPath);
+  // The chat shows an Inochi2D puppet: the pet shows it too; otherwise the 3D model (unless
+  // the pet's menu asks for one of them).
+  return { modelPath: (s.avatarMode === 'inochi2d' && inochi2dPath) || vrmPath, vrmPath, inochi2dPath };
+}
+
+function petState(s: StoreState): PetState {
   return {
     characterName: s.activeCharacter?.card.data.name || APP_DEFAULT_COMPANION_NAME,
-    // The chat shows an Inochi2D puppet: the pet shows it too; otherwise the 3D model (unless
-    // the pet's menu asks for one of them).
-    modelPath: (s.avatarMode === 'inochi2d' && inochi2dPath) || vrmPath,
-    vrmPath,
-    inochi2dPath,
+    ...petModels(s),
     emotion: s.currentEmotion.emotion,
     expression: s.currentEmotion.vrm_expression,
     motions: s.avatarMotions,

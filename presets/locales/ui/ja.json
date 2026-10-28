@@ -3952,6 +3952,8 @@
   "pet.physics": "重力と歩行",
   "pet.rideWindows": "ウィンドウと一緒に移動",
   "pet.hideInFullscreen": "全画面表示中は隠す",
+  "pet.settingsTitle": "設定（右クリックメニューと同じ）",
+  "pet.preview": "プレビュー",
   "tray.pet": "デスクトップペット オン/オフ",
   "pet.hintShortcut": "Ctrl+Alt+Shift+P またはトレイアイコンでペットを表示・非表示にできます。最後に開いていた場合は次回起動時にまた現れます。",
   "pet.compose": "話しかける …",

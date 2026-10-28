@@ -3951,6 +3951,8 @@
   "pet.physics": "Gravity and walking",
   "pet.rideWindows": "Ride along on windows",
   "pet.hideInFullscreen": "Hide during fullscreen",
+  "pet.settingsTitle": "Settings (same as the right-click menu)",
+  "pet.preview": "Preview",
   "tray.pet": "Desktop pet on/off",
   "pet.hintShortcut": "Ctrl+Alt+Shift+P or the tray icon shows and hides the pet. If it was open last, it comes back at the next start.",
   "pet.compose": "Say something …",
