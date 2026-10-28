@@ -75,7 +75,6 @@
 ### Bedienung & Einstellungen
 - [ ] **Tastenkürzel frei belegen:** Strg+Alt+Umschalt+P ist fest; Aufnahme eines eigenen Kürzels im Tab, Hinweis bei
   Belegung durch ein anderes Programm (bisher nur Log-Warnung).
-- [ ] **Größe stufenlos:** Strg+Mausrad über der Figur statt nur Klein/Mittel/Groß; Größe pro Modell merken.
 - [ ] **Ausschnitt pro Modell:** Modelle mit ungewöhnlichen Proportionen (Chibi, sehr große Haare, MMD mit Zubehör)
   geraten mit dem festen Ganzkörper-Ausschnitt zu klein oder abgeschnitten; Feinjustierung im Avatar-Manager.
 
