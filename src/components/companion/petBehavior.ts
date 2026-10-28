@@ -431,5 +431,19 @@ export function bubbleText(content: string): string {
   return `${(space > BUBBLE_CHARS * 0.6 ? cut.slice(0, space) : cut).replace(/[,;:.!?-]+$/, '')}…`;
 }
 
+/** Where the speech bubble leans: towards the screen's middle when the figure stands near an edge. */
+export type BubbleSide = 'left' | 'center' | 'right';
+/** Outer share of the monitor's width on each side in which the bubble leans inwards. */
+const BUBBLE_EDGE_SHARE = 0.3;
+
+/** The bubble's side for a figure whose middle is at `x` on a monitor area starting at `left`. */
+export function bubbleSide(x: number, left: number, width: number): BubbleSide {
+  if (width <= 0) return 'center';
+  const share = (x - left) / width;
+  if (share < BUBBLE_EDGE_SHARE) return 'right';
+  if (share > 1 - BUBBLE_EDGE_SHARE) return 'left';
+  return 'center';
+}
+
 /** How long a reply stays in the bubble: long enough to read, 4–12 s. */
 export const bubbleMs = (text: string) => Math.min(12_000, Math.max(4000, 800 + text.length * 55));

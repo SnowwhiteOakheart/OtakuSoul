@@ -18,13 +18,16 @@ import { useTranslation } from '../../i18n';
 import { api } from '../../services/api';
 import { audioPlayer } from '../../services/audioPlayer';
 import { SILENT_VISEMES } from '../../services/lipSync';
+import { PetBubble } from './PetBubble';
 import {
   bubbleMs,
+  bubbleSide,
   eyeLine,
   headZoneEnd,
   HOLD_HAND_MS,
   PetBehavior,
   touchZoneAt,
+  type BubbleSide,
   type Gaze,
   type PetMode,
   type TouchZone,
@@ -148,6 +151,10 @@ export const DesktopPet: React.FC = () => {
   const [composeOpen, setComposeOpen] = useState(false);
   const [draft, setDraft] = useState('');
   const [bubble, setBubble] = useState<string | null>(null);
+  /** How long the current bubble shows (a long sentence scrolls through in that time). */
+  const bubbleShowMs = useRef(0);
+  /** Where the bubble leans (towards the screen's middle near an edge). */
+  const [bubbleSideNow, setBubbleSideNow] = useState<BubbleSide>('center');
   const [prefs, setPrefs] = useState<PetPrefs>(loadPetPrefs);
   const [behavior] = useState(() => new PetBehavior(performance.now()));
   const [mode, setMode] = useState<PetMode>('idle');
@@ -233,6 +240,7 @@ export const DesktopPet: React.FC = () => {
   }, []);
 
   const say = useCallback((text: string, ms = BUBBLE_MS) => {
+    bubbleShowMs.current = ms;
     setBubble(text);
     if (bubbleTimer.current !== null) window.clearTimeout(bubbleTimer.current);
     bubbleTimer.current = window.setTimeout(() => setBubble(null), ms);
@@ -647,6 +655,24 @@ export const DesktopPet: React.FC = () => {
     };
   }, [setIgnore, behavior, say, finishDrag, comeHere, resizeTo, headEnd]);
 
+  // A new bubble leans away from the nearer screen edge (where the figure stands right now).
+  useEffect(() => {
+    if (!bubble) return undefined;
+    let live = true;
+    // Without physics the position is not followed all the time: read it once.
+    void (body.current && area.current ? Promise.resolve() : syncWindow())
+      .catch(() => {})
+      .then(() => {
+        const current = body.current;
+        const monitor = area.current;
+        if (!live || !current || !monitor) return;
+        setBubbleSideNow(bubbleSide(current.x + windowSize.current.width / 2, monitor.x, monitor.width));
+      });
+    return () => {
+      live = false;
+    };
+  }, [bubble, syncWindow]);
+
   // While a reply is written in the main window, the bubble shows typing dots; the reply replaces them.
   const thinking = !!pet?.thinking;
   const shownBubble = thinking && prefs.chatBubbles ? '…' : bubble;
@@ -956,16 +982,13 @@ export const DesktopPet: React.FC = () => {
       </div>
 
       {shownBubble && !statusOpen && !composeOpen && (
-        <button
-          type="button"
-          data-pet-solid
-          aria-live="polite"
+        <PetBubble
+          text={shownBubble}
+          ms={shownBubble === bubble ? bubbleShowMs.current : 0}
+          side={bubbleSideNow}
           title={t('pet.compose')}
-          className="absolute top-2 inset-x-3 rounded-2xl bg-app/90 border border-accent-500/40 px-3 py-2 text-left text-xs text-slate-100 shadow-lg"
           onClick={openCompose}
-        >
-          {shownBubble}
-        </button>
+        />
       )}
 
       {composeOpen && (

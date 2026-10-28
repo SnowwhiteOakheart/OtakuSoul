@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   bubbleMs,
+  bubbleSide,
   bubbleText,
   DOZE_AFTER_MS,
   eyeLine,
@@ -255,6 +256,21 @@ describe('hands', () => {
     expect(pet.tick(300).frame.mode).toBe('dragged');
     pet.dragEnd(400);
     expect(pet.tick(2000).frame.mode).toBe('idle');
+  });
+});
+
+describe('bubbleSide', () => {
+  it('leans towards the screen’s middle near an edge', () => {
+    expect(bubbleSide(100, 0, 1920)).toBe('right');
+    expect(bubbleSide(1800, 0, 1920)).toBe('left');
+    expect(bubbleSide(960, 0, 1920)).toBe('center');
+  });
+
+  it('counts on the monitor the figure stands on', () => {
+    // Second monitor to the right of the first.
+    expect(bubbleSide(2000, 1920, 2560)).toBe('right');
+    expect(bubbleSide(4400, 1920, 2560)).toBe('left');
+    expect(bubbleSide(500, 0, 0)).toBe('center');
   });
 });
 
