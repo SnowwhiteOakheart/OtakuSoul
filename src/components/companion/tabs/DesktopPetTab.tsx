@@ -8,13 +8,17 @@ import { Toggle } from '../../ui/Toggle';
 import { AvatarPreview } from '../../avatars/AvatarPreview';
 import { petModels } from '../../../hooks/useDesktopPetBridge';
 import {
+  clampPetHeight,
   loadPetPlacement,
   loadPetPrefs,
+  PET_HEIGHT_MAX,
+  PET_HEIGHT_MIN,
   PET_LABEL,
   PET_PREFS_EVENT,
+  PET_PRESETS,
   PET_RESIZE_EVENT,
-  PET_SIZES,
   petModelPath,
+  petWindowSize,
   savePetPlacement,
   savePetPrefs,
   type PetFigureChoice,
@@ -46,12 +50,15 @@ export const DesktopPetTab: React.FC = () => {
   const { toggleDesktopPet, companionState } = store;
   const open = !!companionState?.overlay_active;
   const [prefs, setPrefs] = useState<PetPrefs>(loadPetPrefs);
-  const [size, setSize] = useState<PetSize>(() => loadPetPlacement().size);
+  const [height, setHeight] = useState(() => loadPetPlacement().height);
 
-  // Changes in the pet's own menu show up here.
+  // Changes in the pet's own menu (and its size by Ctrl+wheel) show up here.
   useEffect(() => {
-    const stop = listen<PetPrefs>(PET_PREFS_EVENT, ({ payload }) => setPrefs(payload));
-    return () => void stop.then((unlisten) => unlisten());
+    const stops = [
+      listen<PetPrefs>(PET_PREFS_EVENT, ({ payload }) => setPrefs(payload)),
+      listen<number>(PET_RESIZE_EVENT, ({ payload }) => setHeight(payload)),
+    ];
+    return () => stops.forEach((stop) => void stop.then((unlisten) => unlisten()));
   }, []);
 
   const update = (change: Partial<PetPrefs>) => {
@@ -61,11 +68,12 @@ export const DesktopPetTab: React.FC = () => {
     void emitTo(PET_LABEL, PET_PREFS_EVENT, next).catch(() => {});
   };
 
-  const pickSize = (next: PetSize) => {
-    setSize(next);
-    // An open pet resizes itself (feet stay where they stood) and saves the size.
+  const pickHeight = (wanted: number) => {
+    const next = clampPetHeight(wanted);
+    setHeight(next);
+    // An open pet resizes itself (feet stay where they stood) and saves the size, also for its model.
     if (open) void emitTo(PET_LABEL, PET_RESIZE_EVENT, next).catch(() => {});
-    else savePetPlacement({ size: next });
+    else savePetPlacement({ height: next });
   };
 
   const models = petModels(store);
@@ -135,13 +143,35 @@ export const DesktopPetTab: React.FC = () => {
 
           <div className="space-y-1.5">
             <p className="text-xs font-semibold text-slate-300">{t('pet.size')}</p>
-            <div className="flex flex-wrap gap-1.5" role="group" aria-label={t('pet.size')}>
+            <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={t('pet.size')}>
               {SIZES.map((key) => (
-                <button key={key} type="button" aria-pressed={size === key} onClick={() => pickSize(key)} className={chip(size === key)}>
+                <button
+                  key={key}
+                  type="button"
+                  aria-pressed={height === PET_PRESETS[key]}
+                  onClick={() => pickHeight(PET_PRESETS[key])}
+                  className={chip(height === PET_PRESETS[key])}
+                >
                   {t(SIZE_LABELS[key])}
                 </button>
               ))}
             </div>
+            <input
+              id="pet-size"
+              type="range"
+              min={PET_HEIGHT_MIN}
+              max={PET_HEIGHT_MAX}
+              step={10}
+              value={height}
+              // Sent on release: each step would resize the open pet's window.
+              onChange={(e) => setHeight(Number(e.target.value))}
+              onPointerUp={(e) => pickHeight(Number(e.currentTarget.value))}
+              onKeyUp={(e) => pickHeight(Number(e.currentTarget.value))}
+              aria-label={t('pet.size')}
+              aria-valuetext={t('pet.sizePixels', { height })}
+              className="w-full accent-accent-500"
+            />
+            <p className="text-xs text-slate-500">{t('pet.sizeHint')}</p>
           </div>
 
           <div className="rounded-xl border border-slate-800 bg-app p-1">
@@ -167,7 +197,7 @@ export const DesktopPetTab: React.FC = () => {
         <figure className="space-y-1.5">
           <figcaption className="text-xs font-semibold text-slate-300">{t('pet.preview')}</figcaption>
           {/* The pet window's proportions (all sizes share them), at its small size. */}
-          <div className="rounded-xl border border-slate-800 bg-app overflow-hidden" style={PET_SIZES.small} data-pet-preview>
+          <div className="rounded-xl border border-slate-800 bg-app overflow-hidden" style={petWindowSize(PET_PRESETS.small)} data-pet-preview>
 
             {previewPath ? (
               <AvatarPreview key={previewPath} kind={/\.(inp|inx)$/i.test(previewPath) ? 'inochi2d' : 'vrm'} path={previewPath} />

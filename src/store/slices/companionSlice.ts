@@ -12,7 +12,7 @@ import type {
 } from '../../types';
 import type { SliceCreator } from '../storeTypes';
 import { reportFailure } from '../reportFailure';
-import { loadPetPlacement, PET_SIZES, savePetOpen } from '../../services/desktopPet';
+import { loadPetPlacement, petWindowSize, savePetOpen } from '../../services/desktopPet';
 
 /** Desktop companion: hormones, tools, goals, MCP servers, plugins and the desktop pet. */
 export interface CompanionSlice {
@@ -231,7 +231,7 @@ export const createCompanionSlice: SliceCreator<CompanionSlice> = (set, get) => 
   toggleDesktopPet: async (enable) => {
     try {
       const placement = loadPetPlacement();
-      const res = await api.toggleDesktopPet(enable, { x: placement.x, y: placement.y, ...PET_SIZES[placement.size] });
+      const res = await api.toggleDesktopPet(enable, { x: placement.x, y: placement.y, ...petWindowSize(placement.height) });
       savePetOpen(enable);
       await get().fetchCompanionState();
       return res;

@@ -3938,6 +3938,8 @@
   "pet.sizeSmall": "Small",
   "pet.sizeMedium": "Medium",
   "pet.sizeLarge": "Large",
+  "pet.sizePixels": "{{height}} pixels tall",
+  "pet.sizeHint": "Any size: Ctrl+mouse wheel over the figure. The size is remembered per model.",
   "pet.lookAtScreen": "Look at the screen",
   "pet.readClipboard": "Read the clipboard",
   "pet.confirmInApp": "Please confirm this in the OtakuSoul window.",

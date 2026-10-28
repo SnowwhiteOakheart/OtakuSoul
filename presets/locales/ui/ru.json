@@ -3938,6 +3938,8 @@
   "pet.sizeSmall": "Маленький",
   "pet.sizeMedium": "Средний",
   "pet.sizeLarge": "Большой",
+  "pet.sizePixels": "Высота {{height}} пикселей",
+  "pet.sizeHint": "Плавно: Ctrl+колёсико мыши над фигурой. Размер запоминается для каждой модели.",
   "pet.lookAtScreen": "Посмотреть на экран",
   "pet.readClipboard": "Прочитать буфер обмена",
   "pet.confirmInApp": "Подтверди это в окне OtakuSoul.",

@@ -3938,6 +3938,8 @@
   "pet.sizeSmall": "Klein",
   "pet.sizeMedium": "Mittel",
   "pet.sizeLarge": "Groß",
+  "pet.sizePixels": "{{height}} Pixel hoch",
+  "pet.sizeHint": "Stufenlos: Strg+Mausrad über der Figur. Die Größe wird pro Modell gemerkt.",
   "pet.lookAtScreen": "Bildschirm ansehen",
   "pet.readClipboard": "Zwischenablage lesen",
   "pet.confirmInApp": "Bitte bestätige das im OtakuSoul-Fenster.",

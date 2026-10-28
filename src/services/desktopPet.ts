@@ -61,7 +61,10 @@ export interface PetSay {
 
 /** Both ways: the pet's switches changed (its menu or the Desktop-Pet tab); payload `PetPrefs`. */
 export const PET_PREFS_EVENT = 'pet:prefs';
-/** Main → pet: the Desktop-Pet tab picked a size; payload `PetSize`. */
+/**
+ * Main → pet: the Desktop-Pet tab picked a size; pet → main: the pet's size changed. Payload
+ * the window height (logical px).
+ */
 export const PET_RESIZE_EVENT = 'pet:resize';
 
 export interface PetState {
@@ -102,33 +105,83 @@ export interface PetCursor {
   t: number;
 }
 
+/** Quick picks of the pet's size (menu); in between, Ctrl+wheel and the tab's slider. */
 export type PetSize = 'small' | 'medium' | 'large';
 
-/** Logical window sizes; tall, since the pet shows the whole figure. */
-export const PET_SIZES: Record<PetSize, { width: number; height: number }> = {
-  small: { width: 220, height: 320 },
-  medium: { width: 300, height: 440 },
-  large: { width: 400, height: 580 },
+/**
+ * The pet's size is its window height (logical px); the width follows, tall since the pet
+ * shows the whole figure.
+ */
+export const PET_PRESETS: Record<PetSize, number> = { small: 320, medium: 440, large: 580 };
+export const PET_HEIGHT_MIN = 220;
+export const PET_HEIGHT_MAX = 900;
+const PET_ASPECT = 300 / 440;
+
+export const clampPetHeight = (height: number) =>
+  Math.round(Math.min(PET_HEIGHT_MAX, Math.max(PET_HEIGHT_MIN, height)));
+
+/** Logical window size for a pet height. */
+export const petWindowSize = (height: number) => {
+  const clamped = clampPetHeight(height);
+  return { width: Math.round(clamped * PET_ASPECT), height: clamped };
 };
 
-/** Where the pet stood (physical screen pixels) and how large it is, shared by both windows. */
+/** Where the pet stood (physical screen pixels) and how tall it is, shared by both windows. */
 export interface PetPlacement {
   x?: number;
   y?: number;
-  size: PetSize;
+  height: number;
 }
 
 const PLACEMENT_KEY = 'otakusoul.desktopPet';
 
 export function loadPetPlacement(): PetPlacement {
   try {
-    const stored = JSON.parse(localStorage.getItem(PLACEMENT_KEY) ?? 'null') as Partial<PetPlacement> | null;
-    const size = stored?.size && stored.size in PET_SIZES ? stored.size : 'medium';
+    const stored = JSON.parse(localStorage.getItem(PLACEMENT_KEY) ?? 'null') as
+      | (Partial<PetPlacement> & { size?: string })
+      | null;
+    // Before the free size: one of three steps.
+    const legacy = stored?.size && stored.size in PET_PRESETS ? PET_PRESETS[stored.size as PetSize] : undefined;
+    const height = typeof stored?.height === 'number' ? clampPetHeight(stored.height) : (legacy ?? PET_PRESETS.medium);
     const x = typeof stored?.x === 'number' ? stored.x : undefined;
     const y = typeof stored?.y === 'number' ? stored.y : undefined;
-    return { x, y, size };
+    return { x, y, height };
   } catch {
-    return { size: 'medium' };
+    return { height: PET_PRESETS.medium };
+  }
+}
+
+const MODEL_HEIGHTS_KEY = 'otakusoul.desktopPetModelHeights';
+/** Remembered heights per model; the oldest go beyond this many. */
+const MODEL_HEIGHTS_MAX = 100;
+
+function loadModelHeights(): Record<string, number> {
+  try {
+    const stored = JSON.parse(localStorage.getItem(MODEL_HEIGHTS_KEY) ?? 'null') as unknown;
+    return stored && typeof stored === 'object' ? (stored as Record<string, number>) : {};
+  } catch {
+    return {};
+  }
+}
+
+/** The height the pet last had with this model, if any. */
+export function loadPetModelHeight(modelPath: string): number | undefined {
+  const height = loadModelHeights()[modelPath];
+  return typeof height === 'number' ? clampPetHeight(height) : undefined;
+}
+
+export function savePetModelHeight(modelPath: string, height: number) {
+  if (!modelPath) return;
+  try {
+    const heights = loadModelHeights();
+    delete heights[modelPath];
+    heights[modelPath] = clampPetHeight(height);
+    // Insertion order: the first keys are the longest unused.
+    const keys = Object.keys(heights);
+    for (const key of keys.slice(0, Math.max(0, keys.length - MODEL_HEIGHTS_MAX))) delete heights[key];
+    localStorage.setItem(MODEL_HEIGHTS_KEY, JSON.stringify(heights));
+  } catch {
+    // Only a convenience: the pet then keeps its current size for this model.
   }
 }
 

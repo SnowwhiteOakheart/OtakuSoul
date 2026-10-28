@@ -3939,6 +3939,8 @@
   "pet.sizeSmall": "小",
   "pet.sizeMedium": "中",
   "pet.sizeLarge": "大",
+  "pet.sizePixels": "高さ {{height}} ピクセル",
+  "pet.sizeHint": "キャラクターの上で Ctrl+マウスホイールで自由に調整できます。サイズはモデルごとに記憶されます。",
   "pet.lookAtScreen": "画面を見る",
   "pet.readClipboard": "クリップボードを読む",
   "pet.confirmInApp": "OtakuSoulのウィンドウで確認してね。",

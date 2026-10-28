@@ -22,6 +22,8 @@ import { bubbleMs, HEAD_ZONE_END, PetBehavior, type Gaze, type PetMode, type Tou
 import { stepBody, throwVelocity, walkArea, type Body, type Platform, type Rect } from './petPhysics';
 import type { GestureRequest, LoopRole } from '../../utils/avatarGestures';
 import {
+  clampPetHeight,
+  loadPetModelHeight,
   loadPetPlacement,
   loadPetPrefs,
   PET_AUDIO_EVENT,
@@ -38,11 +40,13 @@ import {
   PET_SCREEN_EVENT,
   PET_SEND_EVENT,
   PET_SENTENCE_EVENT,
-  PET_SIZES,
+  PET_PRESETS,
   PET_STATE_EVENT,
+  savePetModelHeight,
   savePetPlacement,
   savePetPrefs,
   petModelPath,
+  petWindowSize,
   type PetAudioFrame,
   type PetCursor,
   type PetPrefs,
@@ -94,6 +98,8 @@ const PHYSICS_TICK_MS = 33;
 const AREA_REFRESH_MS = 3000;
 /** The remembered position is written at most this often while the pet moves itself. */
 const PLACEMENT_SAVE_MS = 500;
+/** One wheel notch with Ctrl over the figure makes it this much larger or smaller. */
+const WHEEL_STEP = 1.06;
 /** "Komm her" counts as arrived this close to the pointer (logical px from the figure's middle). */
 const COME_NEAR_PX = 40;
 
@@ -152,6 +158,12 @@ export const DesktopPet: React.FC = () => {
   const placementSavedAt = useRef(0);
   /** Last global pointer position (physical px), for "Komm her". */
   const lastCursor = useRef<{ x: number; y: number } | null>(null);
+  /** Window height (logical px) and the resize running now with the next wish waiting. */
+  const heightRef = useRef(loadPetPlacement().height);
+  const resizing = useRef<{ busy: boolean; next: number | null }>({ busy: false, next: null });
+  /** The shown model, whose size a resize remembers. */
+  const modelRef = useRef('');
+  const figureRef = useRef<HTMLDivElement>(null);
   /** Where "Komm her" walks to (physical x of the pointer) and which way, null when not called. */
   const comeTarget = useRef<{ x: number; direction: -1 | 1 } | null>(null);
   /** Where the pointer would have the figure look; the behaviour may look elsewhere. */
@@ -282,7 +294,17 @@ export const DesktopPet: React.FC = () => {
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
       const current = body.current;
-      if (!prefsRef.current.physics || awayRef.current || drag.current || !current || !area.current || moving) return;
+      if (
+        !prefsRef.current.physics ||
+        awayRef.current ||
+        drag.current ||
+        resizing.current.busy ||
+        !current ||
+        !area.current ||
+        moving
+      ) {
+        return;
+      }
       const result = stepBody(
         current,
         windowSize.current,
@@ -372,6 +394,47 @@ export const DesktopPet: React.FC = () => {
     await syncWindow().catch(() => {});
     behavior.arrived(performance.now());
   }, [behavior, syncWindow]);
+
+  /**
+   * Resizes the pet to `wanted` (logical window height) with its feet where they stood. Runs one
+   * resize at a time; wishes meanwhile (wheel notches) collect and the last one wins. The size
+   * is remembered for the shown model too.
+   */
+  const resizeTo = useCallback(
+    async (wanted: number) => {
+      const queue = resizing.current;
+      queue.next = clampPetHeight(wanted);
+      if (queue.busy) return;
+      queue.busy = true;
+      try {
+        while (queue.next !== null) {
+          const height = queue.next;
+          queue.next = null;
+          if (height === heightRef.current) continue;
+          const win = getCurrentWindow();
+          const size = petWindowSize(height);
+          const [scale, position, current] = await within(
+            Promise.all([win.scaleFactor(), win.outerPosition(), win.innerSize()]),
+          );
+          const x = Math.round(position.x + (current.width - size.width * scale) / 2);
+          const y = Math.round(position.y + current.height - size.height * scale);
+          await within(win.setSize(new LogicalSize(size.width, size.height)));
+          await within(win.setPosition(new PhysicalPosition(x, y)));
+          heightRef.current = height;
+          savePetPlacement({ height, x, y });
+          if (modelRef.current) savePetModelHeight(modelRef.current, height);
+        }
+      } catch {
+        queue.next = null;
+      } finally {
+        queue.busy = false;
+      }
+      // The Desktop-Pet tab's slider follows (also after Ctrl+wheel or a model's own size).
+      void emitTo('main', PET_RESIZE_EVENT, heightRef.current).catch(() => {});
+      await syncWindow().catch(() => {});
+    },
+    [syncWindow],
+  );
 
   // The cue texts follow the language without restarting the behaviour timer.
   const cueTexts = useRef({ doze: '', wake: '' });
@@ -480,8 +543,8 @@ export const DesktopPet: React.FC = () => {
       listen<PetPrefs>(PET_PREFS_EVENT, ({ payload }) => {
         setPrefs((current) => (JSON.stringify(current) === JSON.stringify(payload) ? current : payload));
       }),
-      listen<PetSize>(PET_RESIZE_EVENT, ({ payload }) => {
-        if (payload in PET_SIZES) void resizeRef.current(payload).catch(() => {});
+      listen<number>(PET_RESIZE_EVENT, ({ payload }) => {
+        if (typeof payload === 'number') void resizeTo(payload);
       }),
       listen(PET_COME_EVENT, () => {
         void comeHere();
@@ -542,7 +605,7 @@ export const DesktopPet: React.FC = () => {
       if (bubbleTimer.current !== null) window.clearTimeout(bubbleTimer.current);
       if (sentenceTimer.current !== null) window.clearTimeout(sentenceTimer.current);
     };
-  }, [setIgnore, behavior, say, finishDrag, comeHere]);
+  }, [setIgnore, behavior, say, finishDrag, comeHere, resizeTo]);
 
   // While a reply is written in the main window, the bubble shows typing dots; the reply replaces them.
   const thinking = !!pet?.thinking;
@@ -587,26 +650,7 @@ export const DesktopPet: React.FC = () => {
     }
   };
 
-  const resize = async (size: PetSize) => {
-    const win = getCurrentWindow();
-    const { width, height } = PET_SIZES[size];
-    const [scale, position, current] = await Promise.all([win.scaleFactor(), win.outerPosition(), win.innerSize()]);
-    // The feet stay where they stood.
-    const x = Math.round(position.x + (current.width - width * scale) / 2);
-    const y = Math.round(position.y + current.height - height * scale);
-    await win.setSize(new LogicalSize(width, height));
-    await win.setPosition(new PhysicalPosition(x, y));
-    savePetPlacement({ size, x, y });
-    await syncWindow();
-  };
-  // The tab's size buttons reach the latest `resize` without re-subscribing.
-  const resizeRef = useRef(resize);
-  useEffect(() => {
-    resizeRef.current = resize;
-  });
-
   const openMenu = async () => {
-    const size = loadPetPlacement().size;
     const sizes: { key: PetSize; label: string }[] = [
       { key: 'small', label: t('pet.sizeSmall') },
       { key: 'medium', label: t('pet.sizeMedium') },
@@ -647,7 +691,11 @@ export const DesktopPet: React.FC = () => {
         },
         {
           text: t('pet.size'),
-          items: sizes.map(({ key, label }) => ({ text: label, checked: size === key, action: () => void resize(key) })),
+          items: sizes.map(({ key, label }) => ({
+            text: label,
+            checked: heightRef.current === PET_PRESETS[key],
+            action: () => void resizeTo(PET_PRESETS[key]),
+          })),
         },
         {
           text: t('pet.idleActions'),
@@ -738,6 +786,27 @@ export const DesktopPet: React.FC = () => {
   const petLink = useMemo(() => ({ onStage, onLoops }), [onStage, onLoops]);
 
   const modelPath = pet ? petModelPath(pet, prefs.figure) : '';
+  // Each model comes back in the size it last had.
+  useEffect(() => {
+    modelRef.current = modelPath;
+    const remembered = modelPath ? loadPetModelHeight(modelPath) : undefined;
+    if (remembered !== undefined) void resizeTo(remembered);
+  }, [modelPath, resizeTo]);
+
+  // Ctrl+wheel over the figure: size in small steps (the pointer is over it, so it gets the wheel).
+  useEffect(() => {
+    const figure = figureRef.current;
+    if (!figure) return undefined;
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey || !e.deltaY) return;
+      e.preventDefault();
+      const notches = Math.max(-3, Math.min(3, -e.deltaY / 100)) || -Math.sign(e.deltaY);
+      const from = resizing.current.next ?? heightRef.current;
+      void resizeTo(from * WHEEL_STEP ** notches);
+    };
+    figure.addEventListener('wheel', onWheel, { passive: false });
+    return () => figure.removeEventListener('wheel', onWheel);
+  }, [resizeTo]);
   const viewerProps = {
     modelPath,
     // Only VRM models have a blush; glTF and MMD show their relaxed face instead.
@@ -776,6 +845,7 @@ export const DesktopPet: React.FC = () => {
         />
       )}
       <div
+        ref={figureRef}
         className={`absolute inset-0 ${hop ? 'pet-hop' : walking ? 'pet-walk' : ''}`}
         style={loop === 'sit' ? { transform: `translateY(${SIT_DROP * 100}%)` } : undefined}
         onPointerDown={onPointerDown}
