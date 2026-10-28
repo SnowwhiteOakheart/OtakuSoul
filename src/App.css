@@ -312,9 +312,45 @@
     50% { transform: translateY(0) rotate(0deg); }
     75% { transform: translateY(-1.2%) rotate(1deg); }
   }
+  /*
+   * Soft shadow under the pet's feet on the floor or a title bar. The full-body framing
+   * (frameFullBody) puts the feet about 1.6 % above the window's bottom edge.
+   */
+  .pet-shadow {
+    position: absolute;
+    left: 50%;
+    bottom: 1.6%;
+    width: 46%;
+    height: 3.2%;
+    transform: translate(-50%, 50%);
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgb(0 0 0 / 0.38), rgb(0 0 0 / 0.16) 60%, transparent);
+    pointer-events: none;
+    transition: opacity 0.25s ease-out, width 0.25s ease-out;
+  }
+  /* Sitting on an edge: only the hips rest there, the legs hang over it. */
+  .pet-shadow-sit {
+    width: 34%;
+    bottom: 0;
+  }
+  /* Lifted (dragged, falling): the ground is far away. */
+  .pet-shadow-off {
+    opacity: 0;
+  }
+  /* In step with .pet-hop: the shadow shrinks and fades while the figure is in the air. */
+  .pet-shadow-hop {
+    animation: pet-shadow-hop 0.6s ease-out;
+  }
+  @keyframes pet-shadow-hop {
+    0%, 100% { transform: translate(-50%, 50%) scale(1); opacity: 1; }
+    35% { transform: translate(-50%, 50%) scale(0.75); opacity: 0.6; }
+    60% { transform: translate(-50%, 50%) scale(1); opacity: 1; }
+    75% { transform: translate(-50%, 50%) scale(0.92); opacity: 0.9; }
+  }
   @media (prefers-reduced-motion: reduce) {
     .pet-hop,
-    .pet-walk {
+    .pet-walk,
+    .pet-shadow-hop {
       animation: none;
     }
   }

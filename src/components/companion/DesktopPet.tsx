@@ -709,6 +709,15 @@ export const DesktopPet: React.FC = () => {
         void openMenu();
       }}
     >
+      {pet && modelPath && (
+        <div
+          aria-hidden
+          data-pet-shadow
+          className={`pet-shadow ${loop === 'sit' ? 'pet-shadow-sit' : ''} ${
+            mode === 'dragged' || mode === 'falling' ? 'pet-shadow-off' : hop ? 'pet-shadow-hop' : ''
+          }`}
+        />
+      )}
       <div
         className={`absolute inset-0 ${hop ? 'pet-hop' : walking ? 'pet-walk' : ''}`}
         style={loop === 'sit' ? { transform: `translateY(${SIT_DROP * 100}%)` } : undefined}
