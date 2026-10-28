@@ -73,8 +73,6 @@
   über `_NET_CLIENT_LIST_STACKING` lesen, unter Wayland bewusst nur Boden und Ränder.
 
 ### Bedienung & Einstellungen
-- [ ] **Pet-Einstellungen im Desktop-Pet-Tab:** Alle Menü-Schalter (Bewegungen, Sprechblasen, Schwerkraft, Mitfahren,
-  Vollbild) auch dort, plus Vorschau – das Rechtsklick-Menü bleibt die schnelle Variante.
 - [ ] **Tastenkürzel frei belegen:** Strg+Alt+Umschalt+P ist fest; Aufnahme eines eigenen Kürzels im Tab, Hinweis bei
   Belegung durch ein anderes Programm (bisher nur Log-Warnung).
 - [ ] **Größe stufenlos:** Strg+Mausrad über der Figur statt nur Klein/Mittel/Groß; Größe pro Modell merken.
