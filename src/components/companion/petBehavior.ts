@@ -61,6 +61,9 @@ export const touchZoneAt = (yShare: number, headEnd: number): TouchZone => (ySha
 /** Height of the eyes (share of the window from the top), where the gaze to the pointer starts. */
 export const eyeLine = (headEnd: number) => headEnd * EYES_IN_HEAD;
 
+/** How long a press on a hand lasts before it counts as holding it (shorter is a high five). */
+export const HOLD_HAND_MS = 450;
+
 /** One-time things to do this tick. */
 export type PetCue = { kind: 'gesture'; role: MotionRole } | { kind: 'bubble'; text: 'doze' | 'wake' };
 
@@ -179,6 +182,31 @@ export class PetBehavior {
       this.react(now, 'surprised', 900);
       this.hopUntil = now + HOP_MS;
     }
+  }
+
+  /** A quick click on a hand: a high five – delight, a little jump and a wave. */
+  highFive(now: number) {
+    this.lastPointer = now;
+    this.react(now, 'happy', 1500, { x: 0, y: 0.1 });
+    this.hopUntil = now + HOP_MS;
+    this.cues.push({ kind: 'gesture', role: 'greeting' });
+  }
+
+  /** A hand is held (pressed without dragging): it blushes and looks at it until let go. */
+  holdHand(now: number) {
+    this.lastPointer = now;
+    this.mode = 'reacting';
+    // Until `releaseHand` (or a drag) ends it; idle actions wait as after any reaction.
+    this.modeUntil = Number.POSITIVE_INFINITY;
+    this.reactExpression = 'blush';
+    this.reactGaze = { x: 0, y: -0.45 };
+    this.action = null;
+  }
+
+  /** The held hand is let go: a happy moment, then back to normal. */
+  releaseHand(now: number) {
+    this.lastPointer = now;
+    if (this.mode === 'reacting' && this.modeUntil === Number.POSITIVE_INFINITY) this.react(now, 'happy', 1200);
   }
 
   /** A chat reply is shown for `ms`; the figure attends to it meanwhile. */

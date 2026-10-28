@@ -22,6 +22,7 @@ import {
   bubbleMs,
   eyeLine,
   headZoneEnd,
+  HOLD_HAND_MS,
   PetBehavior,
   touchZoneAt,
   type Gaze,
@@ -203,7 +204,16 @@ export const DesktopPet: React.FC = () => {
   const ignoreRef = useRef<boolean | null>(null);
   /** Pressed on the pet: click-through stays off until released. */
   const holdRef = useRef(false);
-  const pressRef = useRef<{ x: number; y: number; dragging: boolean } | null>(null);
+  const pressRef = useRef<{
+    x: number;
+    y: number;
+    dragging: boolean;
+    /** Pressed on one of the figure's hands. */
+    hand: boolean;
+    /** Held long enough on the hand: the figure holds hands. */
+    holding: boolean;
+    holdTimer?: number;
+  } | null>(null);
   const bubbleTimer = useRef<number | null>(null);
   const localGestureId = useRef(0);
 
@@ -764,16 +774,38 @@ export const DesktopPet: React.FC = () => {
     await menu.popup();
   };
 
+  /** A quick click on a hand. */
+  const highFive = async () => {
+    behavior.highFive(performance.now());
+    say(Math.random() < 0.5 ? t('pet.highFiveReply1') : t('pet.highFiveReply2'));
+    await applyHormoneInteraction('high_five');
+  };
+
   const onPointerDown = (e: React.PointerEvent) => {
     if (e.button !== 0) return;
     holdRef.current = true;
-    pressRef.current = { x: e.screenX, y: e.screenY, dragging: false };
+    // Sitting draws the figure lower than the window: ask where it really is.
+    const y = sittingRef.current ? e.clientY - window.innerHeight * SIT_DROP : e.clientY;
+    const hand = !!stageRef.current?.handAt(e.clientX, y);
+    const press: NonNullable<typeof pressRef.current> = { x: e.screenX, y: e.screenY, dragging: false, hand, holding: false };
+    // Pressed on a hand and kept there: the figure holds hands until it is let go.
+    if (hand) {
+      press.holdTimer = window.setTimeout(() => {
+        if (pressRef.current !== press || press.dragging) return;
+        press.holding = true;
+        behavior.holdHand(performance.now());
+        say(Math.random() < 0.5 ? t('pet.holdHandReply1') : t('pet.holdHandReply2'));
+        void applyHormoneInteraction('hold_hand');
+      }, HOLD_HAND_MS);
+    }
+    pressRef.current = press;
   };
   const onPointerMove = (e: React.PointerEvent) => {
     const press = pressRef.current;
     if (!press || press.dragging) return;
     if (Math.hypot(e.screenX - press.x, e.screenY - press.y) < DRAG_THRESHOLD) return;
     press.dragging = true;
+    if (press.holdTimer !== undefined) window.clearTimeout(press.holdTimer);
     const now = performance.now();
     drag.current = { startedAt: now, movedAt: now, samples: [] };
     behavior.dragStart(now);
@@ -791,7 +823,11 @@ export const DesktopPet: React.FC = () => {
     const press = pressRef.current;
     pressRef.current = null;
     holdRef.current = false;
-    if (press && !press.dragging) void pat(touchZoneAt(e.clientY / window.innerHeight, headEnd()));
+    if (!press || press.dragging) return;
+    if (press.holdTimer !== undefined) window.clearTimeout(press.holdTimer);
+    if (press.holding) behavior.releaseHand(performance.now());
+    else if (press.hand) void highFive();
+    else void pat(touchZoneAt(e.clientY / window.innerHeight, headEnd()));
   };
 
   const onStage = useCallback((stage: PetFigure | null) => {

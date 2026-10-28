@@ -3973,6 +3973,11 @@
   "pet.headpatReply2": "Хи-хи, продолжай~",
   "pet.pokeReply1": "Эй! Щекотно!",
   "pet.pokeReply2": "Ой! Что такое?",
+  "pet.highFiveReply1": "Дай пять!",
+  "pet.highFiveReply2": "Ура, пятюня!",
+  "pet.holdHandReply1": "Ой… у тебя тёплая рука.",
+  "pet.holdHandReply2": "Не отпускай пока…",
+  "pet.hintHands": "Короткий щелчок по руке — «дай пять», если удерживать — держаться за руки (3D-модели).",
   "motions.role.walk": "Ходьба (цикл, питомец)",
   "motions.role.sit": "Сидение (цикл, питомец)"
 }

@@ -62,11 +62,18 @@ export interface AvatarStage {
    * above it counts as head), from the model as framed and turned now. Null until it is framed.
    */
   headLine: () => number | null;
+  /** The model's hand bones (wrists), for touching the hands; set by the viewer once loaded. */
+  setHands: (hands: THREE.Object3D[]) => void;
+  /** Desktop pet: is this point (px in the viewer) on one of the hands as posed right now? */
+  handAt: (x: number, y: number) => boolean;
   dispose: () => void;
 }
 
 /** What the desktop pet needs of any figure (3D stage or Inochi2D puppet). */
-export type PetFigure = Pick<AvatarStage, 'mouse' | 'probe' | 'setPaused' | 'setTurn' | 'setFraming' | 'headLine'>;
+export type PetFigure = Pick<AvatarStage, 'mouse' | 'probe' | 'setPaused' | 'setTurn' | 'setFraming' | 'headLine' | 'handAt'>;
+
+/** Reach around a wrist bone that counts as the hand (metres; the hand itself is about this long). */
+const HAND_REACH = 0.11;
 
 export interface AvatarStageOptions {
   /**
@@ -187,6 +194,10 @@ export function createAvatarStage(container: HTMLElement, modelPath: string, opt
   /** Height of the head bone (the head's lower end, about the chin) in the rest pose. */
   let modelHead: number | null = null;
   const headPoint = new THREE.Vector3();
+  /** Wrist bones (hands) as the viewer found them; they follow every pose and motion. */
+  let hands: THREE.Object3D[] = [];
+  const handPoint = new THREE.Vector3();
+  const handEdge = new THREE.Vector3();
   let petFraming: PetFraming = DEFAULT_PET_FRAMING;
 
   const ambient = new THREE.AmbientLight(0xffffff, 0.85);
@@ -259,6 +270,27 @@ export function createAvatarStage(container: HTMLElement, modelPath: string, opt
         ? frameFullBody(topY, camera.fov, camera.aspect, petFraming)
         : frameUpperBody(headY, topY, camera.fov, camera.aspect);
       if (!savedView) applyView(defaultView);
+    },
+    setHands: (nodes) => {
+      hands = nodes;
+    },
+    handAt: (x, y) => {
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      if (!hands.length || !width || !height) return false;
+      camera.updateMatrixWorld();
+      return hands.some((hand) => {
+        hand.getWorldPosition(handPoint);
+        // The reach on screen: a point that far above the wrist, projected the same way.
+        handEdge.copy(handPoint);
+        handEdge.y += HAND_REACH;
+        handPoint.project(camera);
+        handEdge.project(camera);
+        const hx = ((handPoint.x + 1) / 2) * width;
+        const hy = ((1 - handPoint.y) / 2) * height;
+        const reach = (Math.abs(handEdge.y - handPoint.y) / 2) * height;
+        return Math.hypot(x - hx, y - hy) <= reach;
+      });
     },
     headLine: () => {
       if (modelHead === null) return null;

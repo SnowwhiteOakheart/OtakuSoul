@@ -257,6 +257,7 @@ export const GltfViewer = ({
         chooseFace();
         const box = restPoseBounds(scene);
         stage.frameModel(head ? head.getWorldPosition(new THREE.Vector3()).y : box.max.y - 0.15, box.max.y);
+        stage.setHands([bones.leftHand, bones.rightHand].filter((hand): hand is THREE.Object3D => !!hand));
         const rest = captureRest(scene);
         // Clips of another skeleton (common in game rips) would stretch the figure: left out.
         const fitting = gltf.animations.filter((clip) => clipFitsRig(clip, scene, bones));

@@ -3974,6 +3974,11 @@
   "pet.headpatReply2": "えへへ、もっと~",
   "pet.pokeReply1": "ちょっと！くすぐったい！",
   "pet.pokeReply2": "わっ！どうしたの？",
+  "pet.highFiveReply1": "ハイタッチ！",
+  "pet.highFiveReply2": "いえーい！",
+  "pet.holdHandReply1": "あ……手、あったかいね。",
+  "pet.holdHandReply2": "まだ離さないで……",
+  "pet.hintHands": "手を軽くクリックするとハイタッチ、押したままにすると手をつなぎます（3Dモデル）。",
   "motions.role.walk": "歩く（ループ、デスクトップペット）",
   "motions.role.sit": "座る（ループ、デスクトップペット）"
 }

@@ -152,6 +152,18 @@ impl Neurohormones {
                 self.cortisol = (self.cortisol + 2.0).clamp(0.0, 100.0);
                 self.oxytocin = (self.oxytocin + 2.0).clamp(0.0, 100.0);
             }
+            // Desktop pet: a hand held – the closest touch, very calming.
+            "hold_hand" => {
+                self.oxytocin = (self.oxytocin + 15.0).clamp(0.0, 100.0);
+                self.cortisol = (self.cortisol - 10.0).clamp(0.0, 100.0);
+                self.dopamine = (self.dopamine + 2.0).clamp(0.0, 100.0);
+            }
+            // Desktop pet: a high five – joy, a little closeness.
+            "high_five" => {
+                self.dopamine = (self.dopamine + 8.0).clamp(0.0, 100.0);
+                self.oxytocin = (self.oxytocin + 4.0).clamp(0.0, 100.0);
+                self.cortisol = (self.cortisol - 2.0).clamp(0.0, 100.0);
+            }
             "challenge" | "quest" => {
                 self.dopamine = (self.dopamine + 10.0).clamp(0.0, 100.0);
                 self.cortisol = (self.cortisol + 5.0).clamp(0.0, 100.0);
@@ -1296,6 +1308,19 @@ mod tests {
         assert!(patted.oxytocin > poked.oxytocin);
         assert!(patted.cortisol < poked.cortisol);
         assert!(poked.dopamine > patted.dopamine);
+    }
+
+    #[test]
+    fn holding_hands_is_the_closest_touch_and_a_high_five_the_most_joyful() {
+        let mut held = Neurohormones::default();
+        let mut patted = Neurohormones::default();
+        let mut high_five = Neurohormones::default();
+        held.apply_interaction("hold_hand");
+        patted.apply_interaction("headpat");
+        high_five.apply_interaction("high_five");
+        assert!(held.oxytocin > patted.oxytocin);
+        assert!(held.cortisol < patted.cortisol);
+        assert!(high_five.dopamine > held.dopamine);
     }
 
     #[test]

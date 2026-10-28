@@ -3973,6 +3973,11 @@
   "pet.headpatReply2": "Hehe, keep going~",
   "pet.pokeReply1": "Hey! That tickles!",
   "pet.pokeReply2": "Oh! What is it?",
+  "pet.highFiveReply1": "High five!",
+  "pet.highFiveReply2": "Yay, up top!",
+  "pet.holdHandReply1": "Oh … your hand is warm.",
+  "pet.holdHandReply2": "Don't let go just yet …",
+  "pet.hintHands": "A quick click on a hand gives a high five; press and hold to hold hands (3D models).",
   "motions.role.walk": "Walking (loop, desktop pet)",
   "motions.role.sit": "Sitting (loop, desktop pet)"
 }

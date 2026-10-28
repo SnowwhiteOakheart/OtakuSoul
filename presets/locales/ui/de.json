@@ -3973,6 +3973,11 @@
   "pet.headpatReply2": "Hehe, mach ruhig weiter~",
   "pet.pokeReply1": "Hey! Das kitzelt!",
   "pet.pokeReply2": "Huch! Was gibt's?",
+  "pet.highFiveReply1": "High five!",
+  "pet.highFiveReply2": "Yay, abgeklatscht!",
+  "pet.holdHandReply1": "Oh … deine Hand ist warm.",
+  "pet.holdHandReply2": "Lass ruhig noch nicht los …",
+  "pet.hintHands": "Kurzer Klick auf eine Hand klatscht ab, gedrückt halten hält Händchen (3D-Modelle).",
   "motions.role.walk": "Gehen (Schleife, Desktop-Pet)",
   "motions.role.sit": "Sitzen (Schleife, Desktop-Pet)"
 }

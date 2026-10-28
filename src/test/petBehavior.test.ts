@@ -226,6 +226,38 @@ describe('PetBehavior on the desktop floor', () => {
   });
 });
 
+describe('hands', () => {
+  it('a high five delights with a hop and a wave', () => {
+    const pet = new PetBehavior(0, fixed(0.5));
+    pet.highFive(100);
+    const { frame, cues } = pet.tick(200);
+    expect(frame).toMatchObject({ mode: 'reacting', expression: 'happy', hop: true });
+    expect(cues).toContainEqual({ kind: 'gesture', role: 'greeting' });
+    expect(pet.tick(1700).frame.mode).toBe('idle');
+  });
+
+  it('holds hands blushing until let go, then goes back to normal', () => {
+    const pet = new PetBehavior(0, fixed(0.5));
+    pet.holdHand(100);
+    // Still holding long after any other reaction would have ended.
+    expect(pet.tick(60_000).frame).toMatchObject({ mode: 'reacting', expression: 'blush', gaze: { x: 0, y: -0.45 } });
+    pet.releaseHand(60_100);
+    expect(pet.tick(60_200).frame).toMatchObject({ mode: 'reacting', expression: 'happy' });
+    expect(pet.tick(61_400).frame.mode).toBe('idle');
+    // Idle actions come back afterwards.
+    expect(run(pet, 61_400, 90_000).frame.mode).not.toBe('reacting');
+  });
+
+  it('a drag ends holding hands', () => {
+    const pet = new PetBehavior(0, fixed(0.5));
+    pet.holdHand(100);
+    pet.dragStart(200);
+    expect(pet.tick(300).frame.mode).toBe('dragged');
+    pet.dragEnd(400);
+    expect(pet.tick(2000).frame.mode).toBe('idle');
+  });
+});
+
 describe('head zone', () => {
   it('uses the default framing until the figure reports its head', () => {
     expect(headZoneEnd(null)).toBe(HEAD_ZONE_END);

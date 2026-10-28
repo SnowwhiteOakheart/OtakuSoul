@@ -141,6 +141,7 @@ export const MmdViewer = ({
           .applyMatrix4(model.mesh.matrixWorld);
         const headY = head ? head.getWorldPosition(new THREE.Vector3()).y : box.max.y - 0.15;
         stage.frameModel(headY, box.max.y);
+        stage.setHands([bone('左手首'), bone('右手首')].filter((hand): hand is THREE.Bone => !!hand));
         mmd = model;
         motionPlayerRef.current = new AvatarMotionPlayer(model.mesh, () => setPlayingGesture(''));
         setLoaded(model);

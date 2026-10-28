@@ -203,6 +203,11 @@ export const VrmViewer = ({
         if (head) {
           stage.frameModel(head.getWorldPosition(new THREE.Vector3()).y, new THREE.Box3().setFromObject(loaded.scene).max.y);
         }
+        stage.setHands(
+          [loaded.humanoid.getRawBoneNode('leftHand'), loaded.humanoid.getRawBoneNode('rightHand')].filter(
+            (hand): hand is THREE.Object3D => !!hand,
+          ),
+        );
         lap('setup');
         stage.timeNextFrame(modelPath);
         setLoading(false);

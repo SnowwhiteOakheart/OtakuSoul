@@ -3,7 +3,7 @@ import type React from 'react';
 import { emitTo, listen } from '@tauri-apps/api/event';
 import { useStoreFields } from '../../../store/useAppStore';
 import { useTranslation } from '../../../i18n';
-import { Eye, EyeOff, Footprints, Keyboard, MousePointerClick, Move, Menu, Settings2, Tv } from 'lucide-react';
+import { Eye, EyeOff, Footprints, Hand, Keyboard, MousePointerClick, Move, Menu, Settings2, Tv } from 'lucide-react';
 import { Toggle } from '../../ui/Toggle';
 import { PetFramePreview } from '../PetFramePreview';
 import { petModels } from '../../../hooks/useDesktopPetBridge';
@@ -85,6 +85,7 @@ export const DesktopPetTab: React.FC = () => {
   const hints = [
     { icon: Move, text: t('pet.hintDrag') },
     { icon: MousePointerClick, text: t('pet.hintClick') },
+    { icon: Hand, text: t('pet.hintHands') },
     { icon: Menu, text: t('pet.hintMenu') },
     { icon: Eye, text: t('pet.hintClickThrough') },
     { icon: Keyboard, text: t('pet.hintShortcut') },

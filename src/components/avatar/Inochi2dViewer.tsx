@@ -312,6 +312,8 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
               const top = canvas.height * view.yRatio - shown / 2;
               return canvas.height > 0 ? (top + shown * PUPPET_HEAD_SHARE) / canvas.height : null;
             },
+            // No hand bones in a puppet: patting and poking only.
+            handAt: () => false,
           });
           return;
         }
