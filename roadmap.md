@@ -77,8 +77,6 @@
   Belegung durch ein anderes Programm (bisher nur Log-Warnung).
 
 ### Verhalten & Persönlichkeit
-- [ ] **Hände als Berührungszone:** Hand halten / abklatschen – Hand-Knochen auf den Bildschirm projizieren wie schon
-  die Kopflinie (`PetFigure.headLine`), eigene Reaktion und Hormon-Wirkung.
 - [ ] **Hormone und Tageszeit steuern das Verhalten:** Erschöpfung → öfter gähnen und dösen, Dopamin → mehr hüpfen und
   laufen, Cortisol → unruhiges Umschauen; nachts schläft die Figur früher ein und wird leiser.
 - [ ] **Springen und Klettern:** Von Titelleiste zu nahe gelegener Titelleiste springen bzw. auf ein Fenster klettern,
