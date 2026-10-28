@@ -91,8 +91,6 @@
 ### Darstellung
 - [ ] **Live2D- und Porträt-Pet:** Für Nutzer ohne 3D-Modell das Live2D-Modell bzw. das atmende Porträt als Pet (Inochi2D läuft seit 27.10.2026)
   (Treffertest und Zonen über `hitTest` bzw. Bildmaske).
-- [ ] **Sprechblase mit Zeiger zum Kopf**, automatisch links/rechts, wenn die Figur am Bildschirmrand steht, und
-  Scrollen für lange Sätze.
 
 ### Leistung & Qualität
 - [ ] **E2E-Test fürs Pet-Fenster:** tauri-driver mit zweitem Fenster (Öffnen, Zustand vom Hauptfenster, Ausblenden,
