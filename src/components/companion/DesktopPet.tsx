@@ -25,6 +25,7 @@ import {
   loadPetPlacement,
   loadPetPrefs,
   PET_AUDIO_EVENT,
+  PET_COME_EVENT,
   PET_CURSOR_EVENT,
   PET_HELLO_EVENT,
   PET_MOODS,
@@ -93,6 +94,8 @@ const PHYSICS_TICK_MS = 33;
 const AREA_REFRESH_MS = 3000;
 /** The remembered position is written at most this often while the pet moves itself. */
 const PLACEMENT_SAVE_MS = 500;
+/** "Komm her" counts as arrived this close to the pointer (logical px from the figure's middle). */
+const COME_NEAR_PX = 40;
 
 const clamp = (value: number) => Math.max(-1, Math.min(1, value));
 
@@ -147,6 +150,10 @@ export const DesktopPet: React.FC = () => {
   /** Top edges of the other windows to stand on (empty outside Windows). */
   const platforms = useRef<Platform[]>([]);
   const placementSavedAt = useRef(0);
+  /** Last global pointer position (physical px), for "Komm her". */
+  const lastCursor = useRef<{ x: number; y: number } | null>(null);
+  /** Where "Komm her" walks to (physical x of the pointer) and which way, null when not called. */
+  const comeTarget = useRef<{ x: number; direction: -1 | 1 } | null>(null);
   /** Where the pointer would have the figure look; the behaviour may look elsewhere. */
   const pointerGaze = useRef<Gaze>({ x: 0, y: 0 });
   const gazeOverride = useRef<Gaze | null>(null);
@@ -288,9 +295,19 @@ export const DesktopPet: React.FC = () => {
       );
       behavior.setGrounded(result.grounded, now);
       behavior.setOnWindow(result.body.support !== null);
-      if (result.wall) behavior.bumped(result.wall);
+      if (result.wall) behavior.bumped(result.wall, now);
       const [x, y] = [Math.round(result.body.x), Math.round(result.body.y)];
       body.current = result.body;
+      // "Komm her": stops below the pointer (or once it has walked past it).
+      const target = comeTarget.current;
+      if (target !== null) {
+        const dx = target.x - (result.body.x + windowSize.current.width / 2);
+        if (!behavior.coming) comeTarget.current = null;
+        else if (Math.abs(dx) < COME_NEAR_PX * monitorScale.current || Math.sign(dx) !== target.direction) {
+          comeTarget.current = null;
+          behavior.arrived(now);
+        }
+      }
       if (x === Math.round(current.x) && y === Math.round(current.y)) return;
       // One move at a time; the next step waits for it.
       moving = true;
@@ -318,6 +335,42 @@ export const DesktopPet: React.FC = () => {
       window.clearInterval(step);
       window.clearInterval(refresh);
     };
+  }, [behavior, syncWindow]);
+
+  /**
+   * "Komm her" (tray menu, double click on the tray icon): with physics the figure walks along
+   * its floor below the pointer; without, or when it cannot walk now, it jumps there with its
+   * feet at the pointer, inside the monitor's work area.
+   */
+  const comeHere = useCallback(async () => {
+    const cursor = lastCursor.current;
+    if (!cursor || awayRef.current || drag.current) return;
+    const now = performance.now();
+    if (prefsRef.current.physics && body.current) {
+      const dx = cursor.x - (body.current.x + windowSize.current.width / 2);
+      if (Math.abs(dx) < COME_NEAR_PX * monitorScale.current) {
+        behavior.arrived(now);
+        return;
+      }
+      const direction = dx < 0 ? -1 : 1;
+      if (behavior.come(now, direction)) {
+        comeTarget.current = { x: cursor.x, direction };
+        return;
+      }
+    }
+    await syncWindow().catch(() => {});
+    const { width, height } = windowSize.current;
+    const under = monitors.current.find(
+      (m) => cursor.x >= m.x && cursor.x < m.x + m.width && cursor.y >= m.y && cursor.y < m.y + m.height,
+    ) ?? area.current;
+    if (!under || !width) return;
+    const x = Math.round(Math.min(Math.max(cursor.x - width / 2, under.x), under.x + under.width - width));
+    const y = Math.round(Math.min(Math.max(cursor.y - height, under.y), under.y + under.height - height));
+    await within(getCurrentWindow().setPosition(new PhysicalPosition(x, y))).catch(() => {});
+    savePetPlacement({ x, y });
+    // The physics (if on) goes on from the new place.
+    await syncWindow().catch(() => {});
+    behavior.arrived(performance.now());
   }, [behavior, syncWindow]);
 
   // The cue texts follow the language without restarting the behaviour timer.
@@ -430,7 +483,11 @@ export const DesktopPet: React.FC = () => {
       listen<PetSize>(PET_RESIZE_EVENT, ({ payload }) => {
         if (payload in PET_SIZES) void resizeRef.current(payload).catch(() => {});
       }),
+      listen(PET_COME_EVENT, () => {
+        void comeHere();
+      }),
       listen<PetCursor>(PET_CURSOR_EVENT, ({ payload: { x, y, inside, button, gx, gy, t: polledAt } }) => {
+        lastCursor.current = { x: gx, y: gy };
         const dragging = drag.current;
         if (dragging && !dragging.ending) {
           dragging.samples.push({ t: polledAt, x: gx, y: gy });
@@ -485,7 +542,7 @@ export const DesktopPet: React.FC = () => {
       if (bubbleTimer.current !== null) window.clearTimeout(bubbleTimer.current);
       if (sentenceTimer.current !== null) window.clearTimeout(sentenceTimer.current);
     };
-  }, [setIgnore, behavior, say, finishDrag]);
+  }, [setIgnore, behavior, say, finishDrag, comeHere]);
 
   // While a reply is written in the main window, the bubble shows typing dots; the reply replaces them.
   const thinking = !!pet?.thinking;

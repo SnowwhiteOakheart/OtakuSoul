@@ -185,11 +185,14 @@ pub fn run() {
                     };
                     let show_label = label("tray.show", "Anzeigen");
                     let pet_label = label("tray.pet", "Desktop-Pet ein/aus");
+                    let come_label = label("tray.come", "Komm her");
                     let quit_label = label("tray.quit", "Beenden");
                     let show_i = MenuItem::with_id(app, "show", &show_label, true, None::<&str>)?;
                     let pet_i = MenuItem::with_id(app, "pet", &pet_label, true, None::<&str>)?;
+                    let come_i =
+                        MenuItem::with_id(app, "pet_come", &come_label, true, None::<&str>)?;
                     let quit_i = MenuItem::with_id(app, "quit", &quit_label, true, None::<&str>)?;
-                    let menu = Menu::with_items(app, &[&show_i, &pet_i, &quit_i])?;
+                    let menu = Menu::with_items(app, &[&show_i, &pet_i, &come_i, &quit_i])?;
 
                     let _tray = TrayIconBuilder::new()
                         .menu(&menu)
@@ -206,21 +209,21 @@ pub fn run() {
                                 }
                             }
                             "pet" => commands::desktop_pet::request_toggle(app),
+                            "pet_come" => commands::desktop_pet::request_come(app),
                             _ => {}
                         })
-                        .on_tray_icon_event(|tray, event| {
-                            if let TrayIconEvent::Click {
+                        .on_tray_icon_event(|tray, event| match event {
+                            TrayIconEvent::Click {
                                 button: MouseButton::Left,
                                 button_state: MouseButtonState::Up,
                                 ..
-                            } = event
-                            {
-                                let app = tray.app_handle();
-                                if let Some(window) = app.get_webview_window("main") {
-                                    let _ = window.show();
-                                    let _ = window.set_focus();
-                                }
-                            }
+                            } => commands::desktop_pet::tray_click(tray.app_handle()),
+                            // Double click (Windows): the open pet comes to the pointer.
+                            TrayIconEvent::DoubleClick {
+                                button: MouseButton::Left,
+                                ..
+                            } => commands::desktop_pet::tray_double_click(tray.app_handle()),
+                            _ => {}
                         })
                         .build(app)?;
                 }

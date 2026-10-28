@@ -236,6 +236,63 @@ pub fn request_toggle(app: &AppHandle) {
     let _ = app.emit_to("main", "pet:toggle", ());
 }
 
+/// Is the pet window open and shown?
+fn pet_shown(app: &AppHandle) -> bool {
+    app.get_webview_window(PET_LABEL)
+        .and_then(|window| window.is_visible().ok())
+        .unwrap_or(false)
+}
+
+/// "Komm her" from the tray (menu or double click): the open pet comes to the pointer.
+pub fn request_come(app: &AppHandle) {
+    if pet_shown(app) {
+        let _ = app.emit_to(PET_LABEL, "pet:come", ());
+    }
+}
+
+/// Windows' default double-click time; a single tray click waits this long while the pet is open.
+const DOUBLE_CLICK: std::time::Duration = std::time::Duration::from_millis(500);
+/// Counts tray clicks: a waiting single click only acts if no other click came meanwhile.
+static TRAY_CLICKS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+static LAST_DOUBLE_CLICK: std::sync::Mutex<Option<std::time::Instant>> =
+    std::sync::Mutex::new(None);
+
+/// Left click on the tray icon (released): brings the main window back. While the pet is open
+/// it waits for a possible double click first, so calling the pet does not also pop up the app.
+pub fn tray_click(app: &AppHandle) {
+    use std::sync::atomic::Ordering;
+    let click = TRAY_CLICKS.fetch_add(1, Ordering::SeqCst) + 1;
+    // The release that belongs to a double click.
+    let after_double = LAST_DOUBLE_CLICK
+        .lock()
+        .ok()
+        .and_then(|last| *last)
+        .is_some_and(|at| at.elapsed() < DOUBLE_CLICK);
+    if after_double {
+        return;
+    }
+    if !pet_shown(app) {
+        show_main_window(app.clone());
+        return;
+    }
+    let app = app.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(DOUBLE_CLICK);
+        if TRAY_CLICKS.load(Ordering::SeqCst) == click {
+            show_main_window(app);
+        }
+    });
+}
+
+/// Double click on the tray icon (Windows): the open pet comes to the pointer.
+pub fn tray_double_click(app: &AppHandle) {
+    TRAY_CLICKS.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+    if let Ok(mut last) = LAST_DOUBLE_CLICK.lock() {
+        *last = Some(std::time::Instant::now());
+    }
+    request_come(app);
+}
+
 /// A shortcut another program holds already is no reason to fail the start.
 #[cfg(desktop)]
 pub fn register_shortcut(app: &AppHandle) {

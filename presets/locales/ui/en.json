@@ -3954,6 +3954,8 @@
   "pet.settingsTitle": "Settings (same as the right-click menu)",
   "pet.preview": "Preview",
   "tray.pet": "Desktop pet on/off",
+  "tray.come": "Come here",
+  "pet.hintCome": "Double-click the tray icon or pick “Come here” in the tray menu to call the figure to the mouse pointer: with gravity it walks over, otherwise it jumps.",
   "pet.hintShortcut": "Ctrl+Alt+Shift+P or the tray icon shows and hides the pet. If it was open last, it comes back at the next start.",
   "pet.compose": "Say something …",
   "pet.composePlaceholder": "Write something to {{name}} …",

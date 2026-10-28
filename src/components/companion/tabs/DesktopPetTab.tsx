@@ -3,7 +3,7 @@ import type React from 'react';
 import { emitTo, listen } from '@tauri-apps/api/event';
 import { useStoreFields } from '../../../store/useAppStore';
 import { useTranslation } from '../../../i18n';
-import { Eye, EyeOff, Keyboard, MousePointerClick, Move, Menu, Settings2, Tv } from 'lucide-react';
+import { Eye, EyeOff, Footprints, Keyboard, MousePointerClick, Move, Menu, Settings2, Tv } from 'lucide-react';
 import { Toggle } from '../../ui/Toggle';
 import { AvatarPreview } from '../../avatars/AvatarPreview';
 import { petModels } from '../../../hooks/useDesktopPetBridge';
@@ -78,6 +78,7 @@ export const DesktopPetTab: React.FC = () => {
     { icon: Menu, text: t('pet.hintMenu') },
     { icon: Eye, text: t('pet.hintClickThrough') },
     { icon: Keyboard, text: t('pet.hintShortcut') },
+    { icon: Footprints, text: t('pet.hintCome') },
   ];
 
   const chip = (active: boolean) =>

@@ -3954,6 +3954,8 @@
   "pet.settingsTitle": "Einstellungen (wie im Rechtsklick-Menü)",
   "pet.preview": "Vorschau",
   "tray.pet": "Desktop-Pet ein/aus",
+  "tray.come": "Komm her",
+  "pet.hintCome": "Doppelklick aufs Tray-Symbol oder „Komm her“ im Tray-Menü ruft die Figur zum Mauszeiger: Mit Schwerkraft läuft sie hin, sonst springt sie.",
   "pet.hintShortcut": "Strg+Alt+Umschalt+P oder das Tray-Symbol blendet das Pet ein und aus. War es zuletzt offen, kommt es beim nächsten Start wieder.",
   "pet.compose": "Etwas sagen …",
   "pet.composePlaceholder": "Schreib {{name}} etwas …",

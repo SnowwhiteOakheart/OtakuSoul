@@ -167,6 +167,45 @@ describe('PetBehavior on the desktop floor', () => {
     expect(pet.tick(1700).frame.mode).toBe('idle');
   });
 
+  it('walks to the pointer when called and greets on arrival', () => {
+    const pet = new PetBehavior(0, fixed(0.5));
+    expect(pet.come(100, -1)).toBe(true);
+    expect(pet.coming).toBe(true);
+    expect(pet.tick(200).frame).toMatchObject({ mode: 'walking', walk: -1, loop: 'walk' });
+    // Idle actions do not replace the walk, even long after the usual walking time.
+    expect(pet.tick(15_000).frame.walk).toBe(-1);
+    pet.arrived(15_100);
+    expect(pet.coming).toBe(false);
+    const { frame, cues } = pet.tick(15_200);
+    expect(frame).toMatchObject({ walk: 0, hop: true });
+    expect(cues).toContainEqual({ kind: 'gesture', role: 'greeting' });
+  });
+
+  it('stops at a wall instead of turning around when called', () => {
+    const pet = new PetBehavior(0, fixed(0.5));
+    pet.come(0, 1);
+    pet.bumped(1, 500);
+    expect(pet.coming).toBe(false);
+    expect(pet.tick(600).frame.walk).toBe(0);
+  });
+
+  it('cannot walk over when called without physics or in the air', () => {
+    const still = new PetBehavior(0, fixed(0.5));
+    still.setPhysics(false);
+    expect(still.come(100, 1)).toBe(false);
+    const falling = new PetBehavior(0, fixed(0.5));
+    falling.setGrounded(false, 50);
+    expect(falling.come(100, 1)).toBe(false);
+  });
+
+  it('wakes up when called while dozing', () => {
+    const pet = new PetBehavior(0, fixed(0.5));
+    pet.setIdleActions(false);
+    expect(pet.tick(DOZE_AFTER_MS + 100).frame.mode).toBe('dozing');
+    expect(pet.come(DOZE_AFTER_MS + 200, 1)).toBe(true);
+    expect(pet.tick(DOZE_AFTER_MS + 300).frame.mode).toBe('walking');
+  });
+
   it('stays dragged while held in the air and falls after release', () => {
     const pet = new PetBehavior(0, fixed(0.5));
     pet.dragStart(100);

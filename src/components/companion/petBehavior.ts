@@ -63,6 +63,8 @@ const WALK_MS: [number, number] = [3000, 7000];
 const SIT_MS: [number, number] = [12_000, 30_000];
 /** How far the figure turns into its walking direction (about 50°, the face stays visible). */
 export const WALK_TURN = 0.9;
+/** "Komm her" gives up after this long (target out of reach, e.g. on another floor). */
+const COME_MS = 30_000;
 
 const DURATION: Record<PetAction, number> = {
   lookAround: 3600,
@@ -83,6 +85,8 @@ interface RunningAction {
   gazes?: Gaze[];
   /** Direction of `walk`. */
   direction?: -1 | 1;
+  /** A walk to the pointer ("Komm her"), ended by `arrived`. */
+  come?: boolean;
 }
 
 export class PetBehavior {
@@ -215,9 +219,40 @@ export class PetBehavior {
   }
 
   /** The figure ran into a side wall (-1 left, 1 right): a walk that way turns around. */
-  bumped(wall: -1 | 1) {
+  bumped(wall: -1 | 1, now = 0) {
     const action = this.action;
-    if (action?.kind === 'walk' && action.direction === wall) action.direction = wall === 1 ? -1 : 1;
+    if (action?.kind !== 'walk' || action.direction !== wall) return;
+    // Called over but blocked: it stops at the wall and greets from there.
+    if (action.come) this.arrived(now);
+    else action.direction = wall === 1 ? -1 : 1;
+  }
+
+  /**
+   * "Komm her": walks that way until `arrived` (with physics, standing). Returns false when it
+   * cannot walk now (dragged, falling, physics off); the caller then moves it otherwise.
+   */
+  come(now: number, direction: -1 | 1): boolean {
+    this.lastPointer = now;
+    if (!this.physics || !this.grounded || this.mode === 'dragged' || this.mode === 'falling') return false;
+    this.mode = 'idle';
+    this.talkUntil = 0;
+    this.action = { kind: 'walk', start: now, end: now + COME_MS, direction, come: true };
+    return true;
+  }
+
+  /** Walking to the pointer right now. */
+  get coming(): boolean {
+    return !!this.action?.come;
+  }
+
+  /** At the pointer (or there by a jump): ends the walk with a hop and a wave. */
+  arrived(now: number) {
+    this.lastPointer = now;
+    if (this.action?.come) this.action = null;
+    if (this.mode === 'dozing') this.mode = 'idle';
+    this.nextActionAt = now + this.gap();
+    this.hopUntil = now + HOP_MS;
+    this.cues.push({ kind: 'gesture', role: 'greeting' });
   }
 
   private startAction(now: number) {

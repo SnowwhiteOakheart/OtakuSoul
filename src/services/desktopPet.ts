@@ -25,6 +25,8 @@ export const PET_VISIBILITY_EVENT = 'pet:visibility';
 export const PET_CURSOR_EVENT = 'pet:cursor';
 /** Backend → main: tray menu or global shortcut asks to show or hide the pet. */
 export const PET_TOGGLE_EVENT = 'pet:toggle';
+/** Backend → pet: "Komm her" from the tray (menu or double click); the figure comes to the pointer. */
+export const PET_COME_EVENT = 'pet:come';
 
 /** Backend → pet: a fullscreen window or the lock screen is in front (Windows only). */
 export const PET_SCREEN_EVENT = 'pet:screen';
