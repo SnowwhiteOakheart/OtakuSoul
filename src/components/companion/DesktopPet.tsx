@@ -21,14 +21,17 @@ import { SILENT_VISEMES } from '../../services/lipSync';
 import { bubbleMs, HEAD_ZONE_END, PetBehavior, type Gaze, type PetMode, type TouchZone } from './petBehavior';
 import { stepBody, throwVelocity, walkArea, type Body, type Platform, type Rect } from './petPhysics';
 import type { GestureRequest, LoopRole } from '../../utils/avatarGestures';
+import { DEFAULT_PET_FRAMING, PET_FEET_SHARE, type PetFraming } from '../../services/avatarViewState';
 import {
   clampPetHeight,
+  loadPetFraming,
   loadPetModelHeight,
   loadPetPlacement,
   loadPetPrefs,
   PET_AUDIO_EVENT,
   PET_COME_EVENT,
   PET_CURSOR_EVENT,
+  PET_FRAMING_EVENT,
   PET_HELLO_EVENT,
   PET_MOODS,
   PET_PICK_EMOTION_EVENT,
@@ -49,6 +52,7 @@ import {
   petWindowSize,
   type PetAudioFrame,
   type PetCursor,
+  type PetFramingChange,
   type PetPrefs,
   type PetSay,
   type PetScreen,
@@ -163,6 +167,9 @@ export const DesktopPet: React.FC = () => {
   const resizing = useRef<{ busy: boolean; next: number | null }>({ busy: false, next: null });
   /** The shown model, whose size a resize remembers. */
   const modelRef = useRef('');
+  /** The shown model's framing (avatar manager); its lift also moves the shadow. */
+  const framingRef = useRef<PetFraming>(DEFAULT_PET_FRAMING);
+  const [lift, setLift] = useState(0);
   const figureRef = useRef<HTMLDivElement>(null);
   /** Where "Komm her" walks to (physical x of the pointer) and which way, null when not called. */
   const comeTarget = useRef<{ x: number; direction: -1 | 1 } | null>(null);
@@ -543,6 +550,13 @@ export const DesktopPet: React.FC = () => {
       listen<PetPrefs>(PET_PREFS_EVENT, ({ payload }) => {
         setPrefs((current) => (JSON.stringify(current) === JSON.stringify(payload) ? current : payload));
       }),
+      // Adjusted in the avatar manager: the shown model takes it at once.
+      listen<PetFramingChange>(PET_FRAMING_EVENT, ({ payload }) => {
+        if (payload.modelPath !== modelRef.current) return;
+        framingRef.current = payload.framing;
+        setLift(payload.framing.lift);
+        stageRef.current?.setFraming(payload.framing);
+      }),
       listen<number>(PET_RESIZE_EVENT, ({ payload }) => {
         if (typeof payload === 'number') void resizeTo(payload);
       }),
@@ -767,6 +781,7 @@ export const DesktopPet: React.FC = () => {
   const onStage = useCallback((stage: PetFigure | null) => {
     stageRef.current = stage;
     stage?.setPaused(awayRef.current);
+    stage?.setFraming(framingRef.current);
   }, []);
 
   useEffect(() => {
@@ -786,9 +801,13 @@ export const DesktopPet: React.FC = () => {
   const petLink = useMemo(() => ({ onStage, onLoops }), [onStage, onLoops]);
 
   const modelPath = pet ? petModelPath(pet, prefs.figure) : '';
-  // Each model comes back in the size it last had.
+  // Each model comes back in the size it last had, with its own framing.
   useEffect(() => {
     modelRef.current = modelPath;
+    const framing = modelPath ? loadPetFraming(modelPath) : DEFAULT_PET_FRAMING;
+    framingRef.current = framing;
+    setLift(framing.lift);
+    stageRef.current?.setFraming(framing);
     const remembered = modelPath ? loadPetModelHeight(modelPath) : undefined;
     if (remembered !== undefined) void resizeTo(remembered);
   }, [modelPath, resizeTo]);
@@ -839,6 +858,8 @@ export const DesktopPet: React.FC = () => {
         <div
           aria-hidden
           data-pet-shadow
+          // A lifted model stands higher; sitting rests on the window's edge regardless.
+          style={lift && loop !== 'sit' ? { bottom: `${(PET_FEET_SHARE + lift) * 100}%` } : undefined}
           className={`pet-shadow ${loop === 'sit' ? 'pet-shadow-sit' : ''} ${
             mode === 'dragged' || mode === 'falling' ? 'pet-shadow-off' : hop ? 'pet-shadow-hop' : ''
           }`}

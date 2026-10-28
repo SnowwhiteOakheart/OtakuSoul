@@ -12,6 +12,7 @@ import { AvatarActions } from '../settings/AvatarActions';
 import { toast } from '../ui/feedback';
 import { AvatarPreview } from './AvatarPreview';
 import { Inochi2dMappingSettings } from './Inochi2dMappingSettings';
+import { PetFramingSettings } from './PetFramingSettings';
 import type { PuppetInfo } from '../../services/inochi2d/controls';
 import { importInochi2dFromDialog, importLive2dFromDialog, importVrmFromDialog } from './avatarImport';
 import { usesInochi2d, usesLive2d, usesVrm } from './avatarMatch';
@@ -515,6 +516,9 @@ export function AvatarManagerView() {
                   info={puppetInfo?.path === selected.path ? puppetInfo.info : null}
                 />
               )}
+
+              {/* Desktop pet: 3D models and Inochi2D puppets (Live2D is no pet figure). */}
+              {selected.kind !== 'live2d' && <PetFramingSettings key={selected.path} path={selected.path} />}
 
               {selected.kind === 'vrm' && (
                 <button

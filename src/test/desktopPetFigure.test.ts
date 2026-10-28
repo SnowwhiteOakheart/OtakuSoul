@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
+  loadPetFraming,
   loadPetModelHeight,
   loadPetPlacement,
   loadPetPrefs,
@@ -9,6 +10,7 @@ import {
   PET_PRESETS,
   petModelPath,
   petWindowSize,
+  savePetFraming,
   savePetModelHeight,
   savePetPlacement,
   savePetPrefs,
@@ -61,6 +63,16 @@ describe('desktop pet size', () => {
     savePetModelHeight('C:/m/Aka.inx', 300);
     expect(loadPetModelHeight('C:/m/Girl.vrm')).toBe(600);
     expect(loadPetModelHeight('C:/m/Aka.inx')).toBe(300);
+  });
+
+  it('remembers a model’s framing, clamps it and drops the default', () => {
+    expect(loadPetFraming('C:/m/Chibi.vrm')).toEqual({ zoom: 1, lift: 0 });
+    savePetFraming('C:/m/Chibi.vrm', { zoom: 1.4, lift: 0.05 });
+    expect(loadPetFraming('C:/m/Chibi.vrm')).toEqual({ zoom: 1.4, lift: 0.05 });
+    localStorage.setItem('otakusoul.desktopPetFraming', JSON.stringify({ 'C:/m/Chibi.vrm': { zoom: 9, lift: 'x' } }));
+    expect(loadPetFraming('C:/m/Chibi.vrm')).toEqual({ zoom: 2, lift: 0 });
+    savePetFraming('C:/m/Chibi.vrm', { zoom: 1, lift: 0 });
+    expect(localStorage.getItem('otakusoul.desktopPetFraming')).toBe('{}');
   });
 
   it('forgets the longest unused models first', () => {

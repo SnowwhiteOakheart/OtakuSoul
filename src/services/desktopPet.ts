@@ -1,4 +1,5 @@
 import type { AvatarMotion } from '../types';
+import { DEFAULT_PET_FRAMING, PET_LIFT_RANGE, PET_ZOOM_RANGE, type PetFraming } from './avatarViewState';
 import type { GestureRequest } from '../utils/avatarGestures';
 import type { Visemes } from './lipSync';
 import type { ColorModePreference } from './theme';
@@ -61,6 +62,13 @@ export interface PetSay {
 
 /** Both ways: the pet's switches changed (its menu or the Desktop-Pet tab); payload `PetPrefs`. */
 export const PET_PREFS_EVENT = 'pet:prefs';
+/** Main → pet: a model's framing changed in the avatar manager; payload `PetFramingChange`. */
+export const PET_FRAMING_EVENT = 'pet:framing';
+
+export interface PetFramingChange {
+  modelPath: string;
+  framing: PetFraming;
+}
 /**
  * Main → pet: the Desktop-Pet tab picked a size; pet → main: the pet's size changed. Payload
  * the window height (logical px).
@@ -270,6 +278,42 @@ export function savePetPrefs(prefs: PetPrefs) {
     localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
   } catch {
     // Only a convenience: the defaults apply next time.
+  }
+}
+
+const FRAMING_KEY = 'otakusoul.desktopPetFraming';
+
+function loadFramings(): Record<string, PetFraming> {
+  try {
+    const stored = JSON.parse(localStorage.getItem(FRAMING_KEY) ?? 'null') as unknown;
+    return stored && typeof stored === 'object' ? (stored as Record<string, PetFraming>) : {};
+  } catch {
+    return {};
+  }
+}
+
+const clampTo = ([min, max]: [number, number], value: unknown, fallback: number) =>
+  typeof value === 'number' && Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback;
+
+/** The pet's framing of this model (avatar manager), or the default one. */
+export function loadPetFraming(modelPath: string): PetFraming {
+  const stored = loadFramings()[modelPath];
+  return {
+    zoom: clampTo(PET_ZOOM_RANGE, stored?.zoom, DEFAULT_PET_FRAMING.zoom),
+    lift: clampTo(PET_LIFT_RANGE, stored?.lift, DEFAULT_PET_FRAMING.lift),
+  };
+}
+
+/** Saves a model's framing; the default one is not kept. */
+export function savePetFraming(modelPath: string, framing: PetFraming) {
+  if (!modelPath) return;
+  try {
+    const framings = loadFramings();
+    if (framing.zoom === DEFAULT_PET_FRAMING.zoom && framing.lift === DEFAULT_PET_FRAMING.lift) delete framings[modelPath];
+    else framings[modelPath] = framing;
+    localStorage.setItem(FRAMING_KEY, JSON.stringify(framings));
+  } catch {
+    // Only a convenience: the pet then shows the model with the default framing.
   }
 }
 

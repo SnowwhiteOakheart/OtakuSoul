@@ -5,10 +5,12 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import {
   clearVrmViewState,
+  DEFAULT_PET_FRAMING,
   frameFullBody,
   frameUpperBody,
   loadVrmViewState,
   saveVrmViewState,
+  type PetFraming,
   type VrmViewState,
 } from '../../services/avatarViewState';
 
@@ -53,11 +55,13 @@ export interface AvatarStage {
   setTurn: (yaw: number) => void;
   /** Stops drawing (desktop pet behind a fullscreen window or the lock screen). */
   setPaused: (paused: boolean) => void;
+  /** Desktop pet: the model's own framing (zoom around the feet, lift); applies at once. */
+  setFraming: (framing: PetFraming) => void;
   dispose: () => void;
 }
 
 /** What the desktop pet needs of any figure (3D stage or Inochi2D puppet). */
-export type PetFigure = Pick<AvatarStage, 'mouse' | 'probe' | 'setPaused' | 'setTurn'>;
+export type PetFigure = Pick<AvatarStage, 'mouse' | 'probe' | 'setPaused' | 'setTurn' | 'setFraming'>;
 
 export interface AvatarStageOptions {
   /**
@@ -173,6 +177,9 @@ export function createAvatarStage(container: HTMLElement, modelPath: string, opt
 
   // Framing of the loaded model; the fixed values only until it is there.
   let defaultView: VrmViewState = { camera: DEFAULT_CAMERA_POSITION, target: DEFAULT_CAMERA_TARGET };
+  // Desktop pet: the model's top (once framed) and its own framing from the avatar manager.
+  let modelTop: number | null = null;
+  let petFraming: PetFraming = DEFAULT_PET_FRAMING;
 
   const ambient = new THREE.AmbientLight(0xffffff, 0.85);
   scene.add(ambient);
@@ -238,8 +245,24 @@ export function createAvatarStage(container: HTMLElement, modelPath: string, opt
     camera,
     mouse,
     frameModel: (headY, topY) => {
-      defaultView = pet ? frameFullBody(topY, camera.fov, camera.aspect) : frameUpperBody(headY, topY, camera.fov, camera.aspect);
+      modelTop = topY;
+      defaultView = pet
+        ? frameFullBody(topY, camera.fov, camera.aspect, petFraming)
+        : frameUpperBody(headY, topY, camera.fov, camera.aspect);
       if (!savedView) applyView(defaultView);
+    },
+    setFraming: (framing) => {
+      petFraming = framing;
+      if (!pet || modelTop === null) return;
+      const keptTurn = turn;
+      defaultView = frameFullBody(modelTop, camera.fov, camera.aspect, framing);
+      applyView(defaultView);
+      // Turned while walking: stays turned in the new framing.
+      turn = keptTurn;
+      turnedOffset.copy(baseOffset).applyAxisAngle(upAxis, -turn);
+      camera.position.copy(controls.target).add(turnedOffset);
+      camera.lookAt(controls.target);
+      markActive();
     },
     resetView: () => {
       if (saveTimer !== null) window.clearTimeout(saveTimer);

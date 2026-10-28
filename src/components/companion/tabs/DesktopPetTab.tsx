@@ -1,14 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type React from 'react';
 import { emitTo, listen } from '@tauri-apps/api/event';
 import { useStoreFields } from '../../../store/useAppStore';
 import { useTranslation } from '../../../i18n';
 import { Eye, EyeOff, Footprints, Keyboard, MousePointerClick, Move, Menu, Settings2, Tv } from 'lucide-react';
 import { Toggle } from '../../ui/Toggle';
-import { AvatarPreview } from '../../avatars/AvatarPreview';
+import { PetFramePreview } from '../PetFramePreview';
 import { petModels } from '../../../hooks/useDesktopPetBridge';
 import {
   clampPetHeight,
+  loadPetFraming,
   loadPetPlacement,
   loadPetPrefs,
   PET_HEIGHT_MAX,
@@ -78,6 +79,7 @@ export const DesktopPetTab: React.FC = () => {
 
   const models = petModels(store);
   const previewPath = petModelPath(models, prefs.figure);
+  const previewFraming = useMemo(() => loadPetFraming(previewPath), [previewPath]);
   const figureAvailable: Record<PetFigureChoice, boolean> = { chat: true, '3d': !!models.vrmPath, inochi2d: !!models.inochi2dPath };
 
   const hints = [
@@ -196,15 +198,13 @@ export const DesktopPetTab: React.FC = () => {
 
         <figure className="space-y-1.5">
           <figcaption className="text-xs font-semibold text-slate-300">{t('pet.preview')}</figcaption>
-          {/* The pet window's proportions (all sizes share them), at its small size. */}
-          <div className="rounded-xl border border-slate-800 bg-app overflow-hidden" style={petWindowSize(PET_PRESETS.small)} data-pet-preview>
-
-            {previewPath ? (
-              <AvatarPreview key={previewPath} kind={/\.(inp|inx)$/i.test(previewPath) ? 'inochi2d' : 'vrm'} path={previewPath} />
-            ) : (
+          {previewPath ? (
+            <PetFramePreview modelPath={previewPath} framing={previewFraming} />
+          ) : (
+            <div className="rounded-xl border border-slate-800 bg-app" style={petWindowSize(PET_PRESETS.small)} data-pet-preview>
               <p className="p-3 text-center text-xs text-slate-400">{t('pet.noModel')}</p>
-            )}
-          </div>
+            </div>
+          )}
         </figure>
       </section>
 

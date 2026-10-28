@@ -114,16 +114,39 @@ export function frameUpperBody(headY: number, topY: number, fovDegrees: number, 
 }
 
 /**
+ * The desktop pet's framing of one model, set in the avatar manager for figures with unusual
+ * proportions (chibi, very tall hair, MMD props): `zoom` > 1 shows it larger (the top may be
+ * cut), `lift` moves the feet up by that share of the window height (props under the feet).
+ */
+export interface PetFraming {
+  zoom: number;
+  lift: number;
+}
+
+export const DEFAULT_PET_FRAMING: PetFraming = { zoom: 1, lift: 0 };
+export const PET_ZOOM_RANGE: [number, number] = [0.5, 2];
+export const PET_LIFT_RANGE: [number, number] = [-0.3, 0.3];
+/** Where the feet stand in the pet window without a lift (share of its height, from the bottom). */
+export const PET_FEET_SHARE = 0.02 / 1.275;
+
+/**
  * Whole figure from the feet (y = 0) to the top, for the desktop pet: the figure fills the
  * lower part of the window, the top fifth stays free for speech bubbles and the status panel.
+ * A model's own framing zooms around the feet, which stay where they stand (plus its lift).
  */
-export function frameFullBody(topY: number, fovDegrees: number, aspect: number): VrmViewState {
+export function frameFullBody(
+  topY: number,
+  fovDegrees: number,
+  aspect: number,
+  framing: PetFraming = DEFAULT_PET_FRAMING,
+): VrmViewState {
   const tan = Math.tan((fovDegrees * Math.PI) / 360);
   const height = Math.max(0.5, topY);
-  const bottom = -height * 0.02;
-  const halfHeight = (height - bottom) / 0.8 / 2;
+  // The whole figure (2 % below the feet) fills the lower 80 % of the window at zoom 1.
+  const halfHeight = (height * 1.02) / 0.8 / 2 / framing.zoom;
+  const bottom = -(PET_FEET_SHARE + framing.lift) * 2 * halfHeight;
   const centerY = bottom + halfHeight;
-  const halfWidth = height * 0.24;
+  const halfWidth = (height * 0.24) / framing.zoom;
   const distance = Math.max(halfHeight / tan, halfWidth / (tan * Math.max(aspect, 0.1)));
   return { camera: [0, centerY, distance], target: [0, centerY, 0] };
 }

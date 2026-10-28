@@ -3,7 +3,13 @@ import { Film, Loader2, RefreshCw, Sparkles } from 'lucide-react';
 import { api } from '../../services/api';
 import { audioPlayer } from '../../services/audioPlayer';
 import { answerSnapshots } from '../../services/avatarSnapshot';
-import { loadLive2DViewState, saveLive2DViewState } from '../../services/avatarViewState';
+import {
+  DEFAULT_PET_FRAMING,
+  loadLive2DViewState,
+  PET_FEET_SHARE,
+  saveLive2DViewState,
+  type PetFraming,
+} from '../../services/avatarViewState';
 import { playableAnimations, readAnimations } from '../../services/inochi2d/animation';
 import { PuppetAnimator, puppetInfo, type PuppetInfo } from '../../services/inochi2d/controls';
 import { useAppStore } from '../../store/useAppStore';
@@ -121,6 +127,7 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
     // A 2D puppet cannot turn round: a turn (walking) becomes looking that way.
     let turn = 0;
     const probePixel = new Uint8Array(4);
+    let petFraming: PetFraming = DEFAULT_PET_FRAMING;
     let renderer: PuppetRenderer | null = null;
     let stopSnapshots: (() => void) | null = null;
     let saveTimer: number | null = null;
@@ -265,11 +272,18 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
         const [x0, y0, x1, y1] = bounds;
         if (petMode) {
           // Whole figure standing at the bottom; the top fifth stays free for speech bubbles.
-          const fit = fitScale();
-          const zoom = Math.min((canvas.height * 0.8) / Math.max(y1 - y0, 1), (canvas.width * 0.95) / Math.max(x1 - x0, 1)) / fit;
-          const shown = (y1 - y0) * fit * zoom;
-          defaultViewRef.current = { xRatio: 0.5, yRatio: (canvas.height * 0.985 - shown / 2) / canvas.height, zoom };
-          viewRef.current = { ...defaultViewRef.current };
+          // The model's own framing zooms around the feet and lifts them.
+          const framePet = (framing: PetFraming) => {
+            const fit = fitScale();
+            const zoom =
+              (Math.min((canvas.height * 0.8) / Math.max(y1 - y0, 1), (canvas.width * 0.95) / Math.max(x1 - x0, 1)) / fit) *
+              framing.zoom;
+            const shown = (y1 - y0) * fit * zoom;
+            const feet = canvas.height * (1 - PET_FEET_SHARE - framing.lift);
+            defaultViewRef.current = { xRatio: 0.5, yRatio: (feet - shown / 2) / canvas.height, zoom };
+            viewRef.current = { ...defaultViewRef.current };
+          };
+          framePet(petFraming);
           stopSnapshots = answerSnapshots(canvas, draw);
           setLoading(false);
           frame = requestAnimationFrame(loop);
@@ -284,6 +298,10 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
             },
             setTurn: (yaw) => {
               turn = yaw;
+            },
+            setFraming: (framing) => {
+              petFraming = framing;
+              framePet(framing);
             },
           });
           return;
