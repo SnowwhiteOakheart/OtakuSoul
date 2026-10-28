@@ -41,10 +41,25 @@ export interface PetFrame {
 export type TouchZone = 'head' | 'body';
 
 /**
- * Upper end of the head in the pet window (share of its height, from the top). The pet's
- * framing is fixed (`frameFullBody`: top fifth free, figure below), so the head lies there.
+ * Lower end of the head in the pet window (share of its height, from the top) with the default
+ * framing (`frameFullBody`: top fifth free, figure below); used until the figure reports its own.
  */
 export const HEAD_ZONE_END = 0.34;
+/** The eyes lie this share of the head line's height (counted from the window top). */
+const EYES_IN_HEAD = 0.8;
+
+/**
+ * Where the head ends in the pet window: the figure's own head line (projected from the model,
+ * so zoom, lift, turning and chibi heads count), else the default; `drop` when it is drawn lower
+ * (sitting).
+ */
+export const headZoneEnd = (headLine: number | null, drop = 0) => (headLine ?? HEAD_ZONE_END) + drop;
+
+/** A touch at this height (share of the window, from the top) strokes the head or pokes the body. */
+export const touchZoneAt = (yShare: number, headEnd: number): TouchZone => (yShare < headEnd ? 'head' : 'body');
+
+/** Height of the eyes (share of the window from the top), where the gaze to the pointer starts. */
+export const eyeLine = (headEnd: number) => headEnd * EYES_IN_HEAD;
 
 /** One-time things to do this tick. */
 export type PetCue = { kind: 'gesture'; role: MotionRole } | { kind: 'bubble'; text: 'doze' | 'wake' };

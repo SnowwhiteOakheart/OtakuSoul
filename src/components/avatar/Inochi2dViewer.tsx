@@ -46,6 +46,8 @@ interface Inochi2dViewerProps {
   loop?: LoopRole | null;
 }
 
+/** Desktop pet: the puppet's upper share that counts as head when patted. */
+const PUPPET_HEAD_SHARE = 0.32;
 /** Alpha above which a pixel counts as part of the puppet (soft edges stay click-through). */
 const PROBE_ALPHA = 24;
 
@@ -302,6 +304,13 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
             setFraming: (framing) => {
               petFraming = framing;
               framePet(framing);
+            },
+            headLine: () => {
+              // No head bone: the upper part of the puppet as framed (2D figures have large heads).
+              const view = viewRef.current ?? defaultViewRef.current;
+              const shown = (y1 - y0) * fitScale() * view.zoom;
+              const top = canvas.height * view.yRatio - shown / 2;
+              return canvas.height > 0 ? (top + shown * PUPPET_HEAD_SHARE) / canvas.height : null;
             },
           });
           return;

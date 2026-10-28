@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { bubbleMs, bubbleText, DOZE_AFTER_MS, PetBehavior } from '../components/companion/petBehavior';
+import {
+  bubbleMs,
+  bubbleText,
+  DOZE_AFTER_MS,
+  eyeLine,
+  HEAD_ZONE_END,
+  headZoneEnd,
+  PetBehavior,
+  touchZoneAt,
+} from '../components/companion/petBehavior';
 
 /** Repeats the given values as "random" numbers. */
 const fixed = (...values: number[]) => {
@@ -214,6 +223,30 @@ describe('PetBehavior on the desktop floor', () => {
     pet.dragEnd(400);
     pet.setGrounded(false, 450);
     expect(pet.tick(500).frame.mode).toBe('falling');
+  });
+});
+
+describe('head zone', () => {
+  it('uses the default framing until the figure reports its head', () => {
+    expect(headZoneEnd(null)).toBe(HEAD_ZONE_END);
+    expect(touchZoneAt(0.3, headZoneEnd(null))).toBe('head');
+    expect(touchZoneAt(0.4, headZoneEnd(null))).toBe('body');
+  });
+
+  it('follows the figure’s own head line (a chibi head reaches further down)', () => {
+    const chibi = headZoneEnd(0.55);
+    expect(touchZoneAt(0.5, chibi)).toBe('head');
+    expect(touchZoneAt(0.6, chibi)).toBe('body');
+  });
+
+  it('moves down while the figure sits lower in the window', () => {
+    expect(headZoneEnd(0.34, 0.2)).toBeCloseTo(0.54);
+    expect(touchZoneAt(0.45, headZoneEnd(0.34, 0.2))).toBe('head');
+  });
+
+  it('puts the eyes a little above the head line', () => {
+    expect(eyeLine(HEAD_ZONE_END)).toBeCloseTo(0.272);
+    expect(eyeLine(0.5)).toBeLessThan(0.5);
   });
 });
 

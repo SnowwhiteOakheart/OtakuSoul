@@ -57,11 +57,16 @@ export interface AvatarStage {
   setPaused: (paused: boolean) => void;
   /** Desktop pet: the model's own framing (zoom around the feet, lift); applies at once. */
   setFraming: (framing: PetFraming) => void;
+  /**
+   * Desktop pet: where the head ends on screen (share of the viewer's height from the top;
+   * above it counts as head), from the model as framed and turned now. Null until it is framed.
+   */
+  headLine: () => number | null;
   dispose: () => void;
 }
 
 /** What the desktop pet needs of any figure (3D stage or Inochi2D puppet). */
-export type PetFigure = Pick<AvatarStage, 'mouse' | 'probe' | 'setPaused' | 'setTurn' | 'setFraming'>;
+export type PetFigure = Pick<AvatarStage, 'mouse' | 'probe' | 'setPaused' | 'setTurn' | 'setFraming' | 'headLine'>;
 
 export interface AvatarStageOptions {
   /**
@@ -179,6 +184,9 @@ export function createAvatarStage(container: HTMLElement, modelPath: string, opt
   let defaultView: VrmViewState = { camera: DEFAULT_CAMERA_POSITION, target: DEFAULT_CAMERA_TARGET };
   // Desktop pet: the model's top (once framed) and its own framing from the avatar manager.
   let modelTop: number | null = null;
+  /** Height of the head bone (the head's lower end, about the chin) in the rest pose. */
+  let modelHead: number | null = null;
+  const headPoint = new THREE.Vector3();
   let petFraming: PetFraming = DEFAULT_PET_FRAMING;
 
   const ambient = new THREE.AmbientLight(0xffffff, 0.85);
@@ -246,10 +254,17 @@ export function createAvatarStage(container: HTMLElement, modelPath: string, opt
     mouse,
     frameModel: (headY, topY) => {
       modelTop = topY;
+      modelHead = headY;
       defaultView = pet
         ? frameFullBody(topY, camera.fov, camera.aspect, petFraming)
         : frameUpperBody(headY, topY, camera.fov, camera.aspect);
       if (!savedView) applyView(defaultView);
+    },
+    headLine: () => {
+      if (modelHead === null) return null;
+      camera.updateMatrixWorld();
+      headPoint.set(0, modelHead, 0).project(camera);
+      return (1 - headPoint.y) / 2;
     },
     setFraming: (framing) => {
       petFraming = framing;

@@ -46,6 +46,16 @@ describe('frameFullBody (desktop pet)', () => {
     expect(half(view)).toBeCloseTo(half(frameFullBody(1.6, FOV, ASPECT)) / 1.5);
   });
 
+  it('puts the head line where the head bone shows, also zoomed', () => {
+    // As the stage projects it: share of the window from the top.
+    const line = (view: ReturnType<typeof frameFullBody>, y: number) => 1 - (y - (view.target[1] - half(view))) / (2 * half(view));
+    const normal = line(frameFullBody(1.6, FOV, ASPECT), 1.4);
+    expect(normal).toBeGreaterThan(0.2);
+    expect(normal).toBeLessThan(0.4);
+    // Zoomed in around the feet, the figure grows and its head moves up the window.
+    expect(line(frameFullBody(1.6, FOV, ASPECT, { zoom: 1.3, lift: 0 }), 1.4)).toBeLessThan(normal);
+  });
+
   it('lifts the feet by a share of the window', () => {
     const view = frameFullBody(1.6, FOV, ASPECT, { zoom: 1, lift: 0.1 });
     expect(feetShare(view)).toBeCloseTo(PET_FEET_SHARE + 0.1);

@@ -18,7 +18,16 @@ import { useTranslation } from '../../i18n';
 import { api } from '../../services/api';
 import { audioPlayer } from '../../services/audioPlayer';
 import { SILENT_VISEMES } from '../../services/lipSync';
-import { bubbleMs, HEAD_ZONE_END, PetBehavior, type Gaze, type PetMode, type TouchZone } from './petBehavior';
+import {
+  bubbleMs,
+  eyeLine,
+  headZoneEnd,
+  PetBehavior,
+  touchZoneAt,
+  type Gaze,
+  type PetMode,
+  type TouchZone,
+} from './petBehavior';
 import { stepBody, throwVelocity, walkArea, type Body, type Platform, type Rect } from './petPhysics';
 import type { GestureRequest, LoopRole } from '../../utils/avatarGestures';
 import { DEFAULT_PET_FRAMING, PET_FEET_SHARE, type PetFraming } from '../../services/avatarViewState';
@@ -197,6 +206,12 @@ export const DesktopPet: React.FC = () => {
   const pressRef = useRef<{ x: number; y: number; dragging: boolean } | null>(null);
   const bubbleTimer = useRef<number | null>(null);
   const localGestureId = useRef(0);
+
+  /** Where the head ends in the window now: from the figure, lower while it sits. */
+  const headEnd = useCallback(
+    () => headZoneEnd(stageRef.current?.headLine() ?? null, sittingRef.current ? SIT_DROP : 0),
+    [],
+  );
 
   const setIgnore = useCallback((ignore: boolean) => {
     if (ignore && holdRef.current) return;
@@ -576,7 +591,8 @@ export const DesktopPet: React.FC = () => {
         const { innerWidth: w, innerHeight: h } = window;
         behavior.pointer(performance.now());
         // The figure looks after the pointer, also elsewhere on the desktop.
-        pointerGaze.current = { x: clamp((x - w / 2) / (w / 2)), y: clamp(-(y - h * 0.27) / (h / 2)) };
+        const eyes = eyeLine(headEnd()) * h;
+        pointerGaze.current = { x: clamp((x - w / 2) / (w / 2)), y: clamp(-(y - eyes) / (h / 2)) };
         if (stage && !gazeOverride.current) {
           stage.mouse.x = pointerGaze.current.x;
           stage.mouse.y = pointerGaze.current.y;
@@ -619,7 +635,7 @@ export const DesktopPet: React.FC = () => {
       if (bubbleTimer.current !== null) window.clearTimeout(bubbleTimer.current);
       if (sentenceTimer.current !== null) window.clearTimeout(sentenceTimer.current);
     };
-  }, [setIgnore, behavior, say, finishDrag, comeHere, resizeTo]);
+  }, [setIgnore, behavior, say, finishDrag, comeHere, resizeTo, headEnd]);
 
   // While a reply is written in the main window, the bubble shows typing dots; the reply replaces them.
   const thinking = !!pet?.thinking;
@@ -775,7 +791,7 @@ export const DesktopPet: React.FC = () => {
     const press = pressRef.current;
     pressRef.current = null;
     holdRef.current = false;
-    if (press && !press.dragging) void pat(e.clientY / window.innerHeight < HEAD_ZONE_END ? 'head' : 'body');
+    if (press && !press.dragging) void pat(touchZoneAt(e.clientY / window.innerHeight, headEnd()));
   };
 
   const onStage = useCallback((stage: PetFigure | null) => {
