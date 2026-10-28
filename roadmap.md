@@ -78,8 +78,6 @@
 - [ ] **Größe stufenlos:** Strg+Mausrad über der Figur statt nur Klein/Mittel/Groß; Größe pro Modell merken.
 - [ ] **Ausschnitt pro Modell:** Modelle mit ungewöhnlichen Proportionen (Chibi, sehr große Haare, MMD mit Zubehör)
   geraten mit dem festen Ganzkörper-Ausschnitt zu klein oder abgeschnitten; Feinjustierung im Avatar-Manager.
-- [ ] **„Komm her“:** Menüpunkt und Doppelklick aufs Tray-Symbol, damit die Figur zum Mauszeiger läuft (oder hinspringt,
-  wenn Schwerkraft aus ist).
 
 ### Verhalten & Persönlichkeit
 - [ ] **Kopfzone aus dem Modell:** Kopf-Knochen auf den Bildschirm projizieren statt fester 34 % der Fensterhöhe – stimmt
