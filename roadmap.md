@@ -77,8 +77,8 @@
   Belegung durch ein anderes Programm (bisher nur Log-Warnung).
 
 ### Verhalten & Persönlichkeit
-- [ ] **Hormone und Tageszeit steuern das Verhalten:** Erschöpfung → öfter gähnen und dösen, Dopamin → mehr hüpfen und
-  laufen, Cortisol → unruhiges Umschauen; nachts schläft die Figur früher ein und wird leiser.
+- [ ] **Nachts leiser:** Die Figur spricht und reagiert nachts mit geringerer Lautstärke (Verhalten nach Hormonen und
+  Tageszeit ist seit 29.10.2026 erledigt).
 - [ ] **Springen und Klettern:** Von Titelleiste zu nahe gelegener Titelleiste springen bzw. auf ein Fenster klettern,
   statt nur dort zu landen, wo man sie absetzt.
 - [ ] **Reaktion auf den Desktop:** auf Fensterwechsel, Musik-Wiedergabe (Kopfnicken im Takt) oder lange Untätigkeit

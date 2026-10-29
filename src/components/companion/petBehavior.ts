@@ -67,8 +67,29 @@ export const HOLD_HAND_MS = 450;
 /** One-time things to do this tick. */
 export type PetCue = { kind: 'gesture'; role: MotionRole } | { kind: 'bubble'; text: 'doze' | 'wake' };
 
-/** Without pointer movement this long, the figure dozes off. */
+/** Without pointer movement this long, the figure dozes off (shorter when tired or at night). */
 export const DOZE_AFTER_MS = 3 * 60_000;
+
+/**
+ * What the inner state does to the idle behaviour: hormones (0…100, 50 = neutral, so without
+ * the companion's hormones nothing changes) and the time of day.
+ */
+export interface PetDrive {
+  fatigue: number;
+  dopamine: number;
+  cortisol: number;
+  night: boolean;
+}
+
+export const NEUTRAL_DRIVE: PetDrive = { fatigue: 50, dopamine: 50, cortisol: 50, night: false };
+
+/** Night hours (local time) in which the figure is sleepier and calmer. */
+export const isNightHour = (hour: number) => hour >= 23 || hour < 6;
+
+/** 0 at neutral or below, 1 at the top of the scale. */
+const above = (value: number) => Math.min(1, Math.max(0, (value - 50) / 50));
+/** 0.2 at the bottom of the scale, 1 at neutral, 1.8 at the top. */
+const lift = (value: number) => Math.min(1.8, Math.max(0.2, 1 + ((value - 50) / 50) * 0.8));
 /** Without pointer movement this long, the figure looks around on its own. */
 const LOOK_AROUND_AFTER_MS = 4000;
 /** Pause between two actions. */
@@ -125,6 +146,7 @@ export class PetBehavior {
   /** Standing on another window's edge (sitting is only done there, legs over the edge). */
   private onWindow = false;
   private sitMotion = false;
+  private drive: PetDrive = NEUTRAL_DRIVE;
 
   constructor(
     now: number,
@@ -219,6 +241,17 @@ export class PetBehavior {
     this.speaking = speaking;
   }
 
+  /** Hormones and time of day: tired figures yawn and doze sooner, lively ones hop and walk more. */
+  setDrive(drive: PetDrive) {
+    this.drive = drive;
+  }
+
+  /** Pointer-free time after which it dozes off. */
+  private dozeAfter() {
+    const { fatigue, night } = this.drive;
+    return DOZE_AFTER_MS * (1 - 0.6 * above(fatigue)) * (night ? 0.5 : 1);
+  }
+
   /** Random actions on or off (pet menu). */
   setIdleActions(on: boolean) {
     this.idleActions = on;
@@ -301,14 +334,18 @@ export class PetBehavior {
   private startAction(now: number) {
     const pointerIdle = now - this.lastPointer > LOOK_AROUND_AFTER_MS;
     // Looking around only when the pointer rests; otherwise the figure looks after it.
+    // Tiredness yawns more, dopamine hops and walks more, cortisol looks around restlessly; at
+    // night the figure yawns more and stays calm (few hops, waves and walks).
+    const { fatigue, dopamine, cortisol, night } = this.drive;
+    const lively = lift(dopamine) * (night ? 0.4 : 1);
     const weights: [PetAction, number][] = [
-      ['lookAround', pointerIdle ? 35 : 0],
-      ['yawn', now - this.lastPointer > 60_000 ? 25 : 10],
-      ['hop', 15],
-      ['wave', 10],
+      ['lookAround', pointerIdle ? 35 * (1 + above(cortisol) * 1.5) : 0],
+      ['yawn', (now - this.lastPointer > 60_000 ? 25 : 10) * (1 + above(fatigue) * 2 + (night ? 1 : 0))],
+      ['hop', 15 * lively],
+      ['wave', 10 * (night ? 0.4 : 1)],
       ['think', 15],
       ['nod', 10],
-      ['walk', this.physics && this.grounded ? 30 : 0],
+      ['walk', this.physics && this.grounded ? 30 * lively : 0],
       ['sit', this.physics && this.onWindow && this.sitMotion ? 25 : 0],
     ];
     const total = weights.reduce((sum, [, w]) => sum + w, 0);
@@ -358,7 +395,7 @@ export class PetBehavior {
     if (this.mode === 'reacting' && now >= this.modeUntil) this.mode = 'idle';
     const talking = this.speaking || now < this.talkUntil;
     if (this.mode === 'idle' || this.mode === 'talking') this.mode = talking ? 'talking' : 'idle';
-    if (this.mode === 'idle' && now - this.lastPointer > DOZE_AFTER_MS) {
+    if (this.mode === 'idle' && now - this.lastPointer > this.dozeAfter()) {
       this.mode = 'dozing';
       this.action = null;
       this.cues.push({ kind: 'bubble', text: 'doze' });

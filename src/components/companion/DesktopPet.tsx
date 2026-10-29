@@ -25,10 +25,13 @@ import {
   eyeLine,
   headZoneEnd,
   HOLD_HAND_MS,
+  isNightHour,
+  NEUTRAL_DRIVE,
   PetBehavior,
   touchZoneAt,
   type BubbleSide,
   type Gaze,
+  type PetDrive,
   type PetMode,
   type TouchZone,
 } from './petBehavior';
@@ -482,6 +485,15 @@ export const DesktopPet: React.FC = () => {
     cueTexts.current = { doze: t('pet.doze'), wake: t('pet.wake') };
   });
 
+  // Hormones steer the idle behaviour only while the companion simulates them.
+  const driveRef = useRef<PetDrive>(NEUTRAL_DRIVE);
+  const driveHormones = companionState?.settings.enable_neurohormones ? companionState.hormones : null;
+  useEffect(() => {
+    driveRef.current = driveHormones
+      ? { ...NEUTRAL_DRIVE, fatigue: driveHormones.fatigue, dopamine: driveHormones.dopamine, cortisol: driveHormones.cortisol }
+      : NEUTRAL_DRIVE;
+  }, [driveHormones]);
+
   // Behaviour: time-driven state machine (petBehavior.ts) turned into gaze, face, mouth and hops.
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -498,6 +510,7 @@ export const DesktopPet: React.FC = () => {
         finishDrag(false);
       }
       if (awayRef.current) return;
+      behavior.setDrive({ ...driveRef.current, night: isNightHour(new Date().getHours()) });
       const { frame, cues } = behavior.tick(now);
       setMode(frame.mode);
       setFaceOverride(frame.expression);

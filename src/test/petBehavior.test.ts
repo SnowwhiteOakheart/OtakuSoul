@@ -7,8 +7,11 @@ import {
   eyeLine,
   HEAD_ZONE_END,
   headZoneEnd,
+  isNightHour,
+  NEUTRAL_DRIVE,
   PetBehavior,
   touchZoneAt,
+  type PetDrive,
 } from '../components/companion/petBehavior';
 
 /** Repeats the given values as "random" numbers. */
@@ -77,6 +80,43 @@ describe('PetBehavior', () => {
     expect(woke.frame).toMatchObject({ mode: 'reacting', expression: 'surprised', hop: true });
     expect(woke.cues).toContainEqual({ kind: 'bubble', text: 'wake' });
     expect(run(pet, DOZE_AFTER_MS + 400, DOZE_AFTER_MS + 3000).frame.mode).toBe('idle');
+  });
+
+  it('dozes off sooner when tired or at night', () => {
+    const dozeTime = (drive: Partial<PetDrive>) => {
+      const pet = new PetBehavior(0, fixed(0.5));
+      pet.setIdleActions(false);
+      pet.setDrive({ ...NEUTRAL_DRIVE, ...drive });
+      for (let now = 0; now <= DOZE_AFTER_MS; now += 100) if (pet.tick(now).frame.mode === 'dozing') return now;
+      return Infinity;
+    };
+    expect(dozeTime({})).toBe(Infinity);
+    expect(dozeTime({ fatigue: 100 })).toBeLessThan(DOZE_AFTER_MS * 0.5);
+    expect(dozeTime({ night: true })).toBeLessThanOrEqual(DOZE_AFTER_MS * 0.5 + 100);
+  });
+
+  it('yawns instead of hopping when tired, hops instead of yawning when lively', () => {
+    // The pointer moves, so the weights are: lookAround 0, yawn 10, hop 15, wave 10, ...
+    const firstAction = (drive: Partial<PetDrive>, roll: number) => {
+      const pet = new PetBehavior(0, fixed(0, roll));
+      pet.setDrive({ ...NEUTRAL_DRIVE, ...drive });
+      for (let now = 0; now <= 9000; now += 100) {
+        pet.pointer(now);
+        const { frame } = pet.tick(now);
+        if (frame.expression === 'relaxed') return 'yawn';
+        if (frame.hop) return 'hop';
+      }
+      return 'none';
+    };
+    expect(firstAction({ fatigue: 100 }, 0.1)).toBe('yawn');
+    expect(firstAction({}, 0.1)).toBe('yawn');
+    // Roll 0.2 lies behind yawn (10 of 90) in the hop range; tiredness widens yawn (30 of 110) over it.
+    expect(firstAction({}, 0.2)).toBe('hop');
+    expect(firstAction({ fatigue: 100 }, 0.2)).toBe('yawn');
+  });
+
+  it('counts 23:00 to 06:00 as night', () => {
+    expect([22, 23, 0, 5, 6, 12].map(isNightHour)).toEqual([false, true, true, true, false, false]);
   });
 
   it('looks surprised while dragged and calms down after release', () => {
