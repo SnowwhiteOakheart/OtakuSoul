@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   bounds,
   MAX_THROW,
+  planJump,
   stepBody,
   throwVelocity,
   usablePlatforms,
@@ -178,5 +179,47 @@ describe('petPhysics on other windows', () => {
     const maximised: Platform = { id: 'max', left: 0, right: 1920, y: 0 };
     const narrow: Platform = { id: 'narrow', left: 700, right: 740, y: 700 };
     expect(usablePlatforms([maximised, narrow, editor], size, area)).toEqual([editor]);
+  });
+});
+
+describe('planJump', () => {
+  const edge = (id: string, left: number, right: number, y: number): Platform => ({ id, left, right, y });
+  /** Flies the planned jump with the pet's own physics and returns where it ends. */
+  function fly(body: Body, platforms: Platform[]) {
+    const plan = planJump(body, size, area, 1, platforms)!;
+    let current: Body = { ...body, vx: plan.vx, vy: plan.vy, support: null, edge: null };
+    for (let t = 0; t < 4; t += 0.033) {
+      const step = stepBody(current, size, area, 0.033, 0, 1, platforms);
+      current = step.body;
+      if (step.landed) break;
+    }
+    return { plan, current };
+  }
+
+  it('climbs straight up onto a window edge above', () => {
+    const { plan, current } = fly(at(650, floor), [edge('w', 700, 1100, 900)]);
+    expect(plan).toMatchObject({ target: 'w', vx: 0 });
+    expect(plan.vy).toBeLessThan(0);
+    expect(current.support).toBe('w');
+  });
+
+  it('jumps sideways onto an edge in reach and lands on it', () => {
+    const { plan, current } = fly(at(650, floor), [edge('w', 1100, 1500, 900)]);
+    expect(plan.vx).toBeGreaterThan(0);
+    expect(current.support).toBe('w');
+  });
+
+  it('jumps down from one window to a lower one', () => {
+    const platforms = [edge('high', 600, 1000, 600), edge('low', 1100, 1500, 850)];
+    const { plan, current } = fly(at(650, 600 - size.height, 'high'), platforms);
+    expect(plan.target).toBe('low');
+    expect(current.support).toBe('low');
+  });
+
+  it('gives up when the edge is too high or too far, or in the air', () => {
+    expect(planJump(at(650, floor), size, area, 1, [edge('high', 600, 1000, 500)])).toBeNull();
+    expect(planJump(at(100, floor), size, area, 1, [edge('far', 1500, 1900, 900)])).toBeNull();
+    expect(planJump(at(650, 100), size, area, 1, [edge('w', 700, 1100, 900)])).toBeNull();
+    expect(planJump(at(650, floor), size, area, 1, [])).toBeNull();
   });
 });

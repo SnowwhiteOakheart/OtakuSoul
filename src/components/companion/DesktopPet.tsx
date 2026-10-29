@@ -35,7 +35,7 @@ import {
   type PetMode,
   type TouchZone,
 } from './petBehavior';
-import { stepBody, throwVelocity, walkArea, type Body, type Platform, type Rect } from './petPhysics';
+import { planJump, stepBody, throwVelocity, walkArea, type Body, type Platform, type Rect } from './petPhysics';
 import type { GestureRequest, LoopRole } from '../../utils/avatarGestures';
 import { DEFAULT_PET_FRAMING, PET_FEET_SHARE, type PetFraming } from '../../services/avatarViewState';
 import {
@@ -117,6 +117,8 @@ const BUBBLE_AFTER_VOICE_MS = 2500;
 const PHYSICS_TICK_MS = 33;
 /** The monitor's work area is read again this often (taskbar moved, resolution changed). */
 const AREA_REFRESH_MS = 3000;
+/** Physics ticks between two looks for a window to jump to (~1 s). */
+const JUMP_CHECK_TICKS = 30;
 /** The remembered position is written at most this often while the pet moves itself. */
 const PLACEMENT_SAVE_MS = 500;
 /** One wheel notch with Ctrl over the figure makes it this much larger or smaller. */
@@ -256,6 +258,26 @@ export const DesktopPet: React.FC = () => {
     setGesture({ role, id: localGestureId.current });
   }, []);
 
+  /** The behaviour wants to jump: launch towards the nearest reachable window edge, if there still is one. */
+  const startJump = useCallback(
+    (now: number) => {
+      const current = body.current;
+      if (!prefsRef.current.physics || !current || !area.current) return;
+      const size = windowSize.current;
+      const plan = planJump(
+        current,
+        size,
+        walkArea(monitors.current, current.x + size.width / 2, area.current),
+        monitorScale.current,
+        platforms.current,
+      );
+      if (!plan) return;
+      body.current = { ...current, vx: plan.vx, vy: plan.vy, support: null, edge: null };
+      behavior.jumped(now);
+    },
+    [behavior],
+  );
+
   /**
    * The drag is over: the physics takes over where the figure was let go. With `fling`, the
    * speed of the last moves goes along (a throw), if the mouse was still moving at release.
@@ -333,6 +355,7 @@ export const DesktopPet: React.FC = () => {
   useEffect(() => {
     let last = performance.now();
     let moving = false;
+    let jumpCheck = 0;
     const step = window.setInterval(() => {
       const now = performance.now();
       const dt = Math.min(0.1, (now - last) / 1000);
@@ -361,6 +384,10 @@ export const DesktopPet: React.FC = () => {
       );
       behavior.setGrounded(result.grounded, now);
       behavior.setOnWindow(result.body.support !== null);
+      // About once a second: is a window's edge within jumping reach?
+      if (++jumpCheck % JUMP_CHECK_TICKS === 0 && result.grounded) {
+        behavior.setCanJump(planJump(result.body, windowSize.current, walkArea(monitors.current, result.body.x + windowSize.current.width / 2, area.current), monitorScale.current, platforms.current) !== null);
+      }
       if (result.wall) behavior.bumped(result.wall, now);
       const [x, y] = [Math.round(result.body.x), Math.round(result.body.y)];
       body.current = result.body;
@@ -391,6 +418,7 @@ export const DesktopPet: React.FC = () => {
             // Keep the falling speed and the window it stands on across the re-read.
             if (kept && body.current) {
               body.current.vy = kept.vy;
+              body.current.vx = kept.vx;
               body.current.support = kept.support;
               body.current.edge = kept.edge;
             }
@@ -545,11 +573,12 @@ export const DesktopPet: React.FC = () => {
       }
       for (const cue of cues) {
         if (cue.kind === 'gesture') playLocalGesture(cue.role);
+        else if (cue.kind === 'jump') startJump(now);
         else say(cueTexts.current[cue.text]);
       }
     }, BEHAVIOR_TICK_MS);
     return () => window.clearInterval(timer);
-  }, [behavior, say, playLocalGesture, syncWindow, finishDrag]);
+  }, [behavior, say, playLocalGesture, startJump, syncWindow, finishDrag]);
 
   // State, voice and pointer from the main window and the backend.
   useEffect(() => {

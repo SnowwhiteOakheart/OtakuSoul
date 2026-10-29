@@ -12,7 +12,7 @@ import { withoutEmotionTag } from '../../utils/replyTags';
  */
 export type PetMode = 'idle' | 'walking' | 'sitting' | 'falling' | 'dozing' | 'reacting' | 'dragged' | 'talking';
 
-export type PetAction = 'lookAround' | 'yawn' | 'hop' | 'wave' | 'think' | 'nod' | 'walk' | 'sit';
+export type PetAction = 'lookAround' | 'yawn' | 'hop' | 'wave' | 'think' | 'nod' | 'walk' | 'sit' | 'jump';
 
 export interface Gaze {
   x: number;
@@ -65,7 +65,11 @@ export const eyeLine = (headEnd: number) => headEnd * EYES_IN_HEAD;
 export const HOLD_HAND_MS = 450;
 
 /** One-time things to do this tick. */
-export type PetCue = { kind: 'gesture'; role: MotionRole } | { kind: 'bubble'; text: 'doze' | 'wake' };
+export type PetCue =
+  | { kind: 'gesture'; role: MotionRole }
+  | { kind: 'bubble'; text: 'doze' | 'wake' }
+  /** Jump to a nearby window's edge; the caller plans it and reports back with `jumped`. */
+  | { kind: 'jump' };
 
 /** Without pointer movement this long, the figure dozes off (shorter when tired or at night). */
 export const DOZE_AFTER_MS = 3 * 60_000;
@@ -114,6 +118,7 @@ const DURATION: Record<PetAction, number> = {
   nod: 1500,
   walk: WALK_MS[0],
   sit: SIT_MS[0],
+  jump: 400,
 };
 
 interface RunningAction {
@@ -147,6 +152,10 @@ export class PetBehavior {
   /** Standing on another window's edge (sitting is only done there, legs over the edge). */
   private onWindow = false;
   private sitMotion = false;
+  /** A window's edge is within jumping reach. */
+  private canJump = false;
+  /** In the air by its own jump (a happy leap, not a startled fall). */
+  private leaping = false;
   private drive: PetDrive = NEUTRAL_DRIVE;
 
   constructor(
@@ -183,6 +192,7 @@ export class PetBehavior {
 
   dragStart(now: number) {
     this.lastPointer = now;
+    this.leaping = false;
     this.mode = 'dragged';
     this.action = null;
   }
@@ -272,6 +282,7 @@ export class PetBehavior {
       this.grounded = true;
       if (this.action?.kind === 'walk') this.action = null;
       if (this.mode === 'falling') this.mode = 'idle';
+      this.leaping = false;
     }
   }
 
@@ -284,8 +295,13 @@ export class PetBehavior {
       this.mode = 'falling';
       this.action = null;
     } else if (grounded && !was && this.mode === 'falling') {
-      this.react(now, 'surprised', 700);
-      this.hopUntil = now + HOP_MS;
+      if (this.leaping) {
+        this.leaping = false;
+        this.react(now, 'happy', 700);
+      } else {
+        this.react(now, 'surprised', 700);
+        this.hopUntil = now + HOP_MS;
+      }
     }
   }
 
@@ -293,6 +309,19 @@ export class PetBehavior {
   setOnWindow(onWindow: boolean) {
     this.onWindow = onWindow;
     if (!onWindow && this.action?.kind === 'sit') this.action = null;
+  }
+
+  /** Whether a window's edge is within jumping reach (from the physics). */
+  setCanJump(canJump: boolean) {
+    this.canJump = canJump;
+  }
+
+  /** The caller started the planned jump: a hop to take off, then a happy leap until it lands. */
+  jumped(now: number) {
+    this.lastPointer = now;
+    this.leaping = true;
+    this.hopUntil = now + HOP_MS;
+    this.nextActionAt = now + this.gap();
   }
 
   /** Whether the avatar has a sitting motion; without one it never sits. */
@@ -354,6 +383,7 @@ export class PetBehavior {
       ['nod', 10],
       ['walk', this.physics && this.grounded ? 30 * lively : 0],
       ['sit', this.physics && this.onWindow && this.sitMotion ? 25 : 0],
+      ['jump', this.physics && this.grounded && this.canJump ? 18 : 0],
     ];
     const total = weights.reduce((sum, [, w]) => sum + w, 0);
     let pick = this.random() * total;
@@ -373,6 +403,7 @@ export class PetBehavior {
       ];
     }
     if (kind === 'hop' || kind === 'wave') this.hopUntil = now + HOP_MS;
+    if (kind === 'jump') this.cues.push({ kind: 'jump' });
     const gesture: Partial<Record<PetAction, MotionRole>> = { wave: 'greeting', think: 'thinking', nod: 'nod' };
     if (gesture[kind]) this.cues.push({ kind: 'gesture', role: gesture[kind] });
     this.action = action;
@@ -428,7 +459,9 @@ export class PetBehavior {
         frame = { ...still, mode: 'dragged', expression: 'surprised', gaze: { x: 0, y: -0.6 } };
         break;
       case 'falling':
-        frame = { ...still, mode: 'falling', expression: 'surprised', gaze: { x: 0, y: -0.7 } };
+        frame = this.leaping
+          ? { ...still, mode: 'falling', expression: 'happy', gaze: null }
+          : { ...still, mode: 'falling', expression: 'surprised', gaze: { x: 0, y: -0.7 } };
         break;
       case 'reacting':
         frame = { ...still, mode: 'reacting', expression: this.reactExpression, gaze: this.reactGaze };

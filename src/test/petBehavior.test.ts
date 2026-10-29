@@ -124,6 +124,24 @@ describe('PetBehavior', () => {
     expect(run(pet, 30_100, DOZE_AFTER_MS + 200).frame.mode).toBe('dozing');
   });
 
+  it('asks for a jump only when an edge is in reach, and leaps happily until it lands', () => {
+    const pet = new PetBehavior(0, fixed(0, 0.99));
+    // Nothing in reach: no jump cue however long it idles (last pick is the walk, weight 30).
+    expect(run(pet, 0, 9000).cues).not.toContainEqual({ kind: 'jump' });
+
+    const ready = new PetBehavior(0, fixed(0, 0.99));
+    ready.setCanJump(true);
+    // 0.99 of the total lands on the last weighted entry: the jump.
+    const asked = run(ready, 0, 9000);
+    expect(asked.cues).toContainEqual({ kind: 'jump' });
+
+    ready.jumped(9000);
+    ready.setGrounded(false, 9100);
+    expect(ready.tick(9100).frame).toMatchObject({ mode: 'falling', expression: 'happy' });
+    ready.setGrounded(true, 9900);
+    expect(ready.tick(9900).frame).toMatchObject({ mode: 'reacting', expression: 'happy', hop: false });
+  });
+
   it('counts 23:00 to 06:00 as night', () => {
     expect([22, 23, 0, 5, 6, 12].map(isNightHour)).toEqual([false, true, true, true, false, false]);
   });

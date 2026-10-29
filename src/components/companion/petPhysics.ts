@@ -159,6 +159,78 @@ function movedEdge(
     .find(({ platform, dx }) => feetX + dx >= platform.left && feetX + dx <= platform.right);
 }
 
+/** A jump that ends on a window's edge: launch speeds (physical px/s; up is negative `vy`). */
+export interface JumpPlan {
+  vx: number;
+  vy: number;
+  /** The window it lands on. */
+  target: string;
+}
+
+/** Highest edge the figure jumps up to, lowest it jumps down to, widest gap it jumps over (logical px). */
+export const JUMP_MAX_RISE = 240;
+export const JUMP_MAX_DROP = 320;
+export const JUMP_MAX_GAP = 320;
+/** The jump clears the target edge by this much at its peak (logical px). */
+const JUMP_CLEARANCE = 40;
+/** Aims this far inside the target's ends (logical px, at most a quarter of its width). */
+const JUMP_INSET = 40;
+/** Step of the trial flight; the pet's physics runs at about this rate. */
+const JUMP_SIM_DT = 0.033;
+/** Air drag eats some of the sideways speed: try launching faster by these factors. */
+const JUMP_BOOSTS = [1, 1.12, 1.25, 1.4, 1.6];
+const JUMP_MAX_CANDIDATES = 3;
+
+/**
+ * A jump from where the figure stands to the edge of a nearby window – up (climbing), across or
+ * down – found by flying trial jumps through `stepBody` itself, so what lands here lands there.
+ * Null when it does not stand on something or no edge is in reach.
+ */
+export function planJump(
+  body: Body,
+  size: Size,
+  area: Rect,
+  scale: number,
+  platforms: Platform[],
+): JumpPlan | null {
+  const { floor } = bounds(size, area);
+  if (body.support === null && body.y < floor - 0.5) return null;
+  const feetX = body.x + size.width / 2;
+  const feetY = body.y + size.height;
+  const gravity = GRAVITY * scale;
+  const candidates = usablePlatforms(platforms, size, area)
+    .filter((p) => p.id !== body.support)
+    .map((p) => {
+      const gap = feetX < p.left ? p.left - feetX : feetX > p.right ? feetX - p.right : 0;
+      return { p, gap, rise: feetY - p.y };
+    })
+    .filter(({ gap, rise }) => gap <= JUMP_MAX_GAP * scale && rise <= JUMP_MAX_RISE * scale && rise >= -JUMP_MAX_DROP * scale)
+    .sort((a, b) => a.gap + Math.abs(a.rise) * 0.5 - (b.gap + Math.abs(b.rise) * 0.5))
+    .slice(0, JUMP_MAX_CANDIDATES);
+
+  for (const { p, rise } of candidates) {
+    const inset = Math.min(JUMP_INSET * scale, (p.right - p.left) / 4);
+    const aim = Math.min(p.right - inset, Math.max(p.left + inset, feetX));
+    const dx = aim - feetX;
+    const peak = Math.max(rise, 0) + JUMP_CLEARANCE * scale;
+    const vy = Math.sqrt(2 * gravity * peak);
+    const flight = vy / gravity + Math.sqrt((2 * (peak - rise)) / gravity);
+    for (const boost of dx === 0 ? [0] : JUMP_BOOSTS) {
+      const vx = (dx / flight) * boost;
+      let trial: Body = { ...body, vy: -vy, vx, support: null, edge: null };
+      for (let t = 0; t < 4; t += JUMP_SIM_DT) {
+        const result = stepBody(trial, size, area, JUMP_SIM_DT, 0, scale, platforms);
+        trial = result.body;
+        if (result.landed) {
+          if (trial.support === p.id) return { vx, vy: -vy, target: p.id };
+          break;
+        }
+      }
+    }
+  }
+  return null;
+}
+
 /**
  * Advances the body by `dt` seconds; `walk` is the walking direction (0 = stand). With `ride`
  * the figure moves along with the window it stands on instead of falling off it.

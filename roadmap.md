@@ -79,8 +79,6 @@
 ### Verhalten & Persönlichkeit
 - [ ] **Nachts leiser:** Die Figur spricht und reagiert nachts mit geringerer Lautstärke (Verhalten nach Hormonen und
   Tageszeit ist seit 29.10.2026 erledigt).
-- [ ] **Springen und Klettern:** Von Titelleiste zu nahe gelegener Titelleiste springen bzw. auf ein Fenster klettern,
-  statt nur dort zu landen, wo man sie absetzt.
 - [ ] **Reaktion auf den Desktop:** auf Fensterwechsel, Musik-Wiedergabe (Kopfnicken im Takt) oder lange Untätigkeit
   reagieren – nur aus lokalen Signalen, ohne Bildschirminhalt zu lesen.
 - [ ] **Proaktive Nachrichten über das Pet:** Schreibt die Figur von sich aus (auch für andere Chats), meldet sie sich
