@@ -76,6 +76,9 @@ export const PortraitPet: React.FC<PortraitPetProps> = ({ src, isSpeaking = fals
       setSaver: (saver) => {
         frame.style.animationPlayState = saver ? 'paused' : 'running';
       },
+      // Only CSS animations: nothing drawn per frame, nothing to swing.
+      setFrameRate: () => {},
+      addWindowMove: () => {},
       setTurn: (yaw) => {
         frame.style.rotate = `${yaw * TILT}rad`;
       },

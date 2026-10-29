@@ -8,7 +8,7 @@ import { convertFileSrc } from '@tauri-apps/api/core';
 import { useAppStore } from '../../store/useAppStore';
 import { audioPlayer } from '../../services/audioPlayer';
 import { DEFAULT_PET_FRAMING, loadLive2DViewState, PET_FEET_SHARE, saveLive2DViewState, type PetFraming } from '../../services/avatarViewState';
-import type { PetFigure } from './avatarStage';
+import { DEFAULT_PET_FRAME_RATE, type PetFigure } from './avatarStage';
 import { Loader2, Sparkles, RefreshCw } from 'lucide-react';
 import { translate, useTranslation } from '../../i18n';
 import { errorMessage } from '../../utils/errors';
@@ -310,6 +310,9 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
           // lower edge), the top fifth stays free for speech bubbles; its own framing zooms around
           // the feet and lifts them.
           let framing: PetFraming = DEFAULT_PET_FRAMING;
+          let saver = false;
+          let petFps = DEFAULT_PET_FRAME_RATE;
+          app.ticker.maxFPS = petFps;
           // The window's size changes (size presets, Ctrl+wheel): framed from its size each time.
           const framePet = () => {
             const w = container.clientWidth || containerWidth;
@@ -347,9 +350,16 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
               if (paused) app.ticker.stop();
               else app.ticker.start();
             },
-            setSaver: (saver) => {
-              app.ticker.maxFPS = saver ? 12 : 0;
+            setSaver: (next) => {
+              saver = next;
+              app.ticker.maxFPS = saver ? 12 : petFps;
             },
+            setFrameRate: (fps) => {
+              petFps = fps >= 60 ? 0 : fps;
+              if (!saver) app.ticker.maxFPS = petFps;
+            },
+            // Live2D models swing their hair with their own physics.
+            addWindowMove: () => {},
             // A Live2D model has no turn to the side; it keeps facing the front.
             setTurn: () => {},
             setFraming: (next) => {

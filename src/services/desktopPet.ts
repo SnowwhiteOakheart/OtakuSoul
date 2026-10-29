@@ -257,9 +257,14 @@ export interface PetPrefs {
   quietAtNight: boolean;
   /** Glances at a window switch and nods along to music (local signals only, nothing read). */
   reactToDesktop: boolean;
+  /** Frames per second the figure is drawn with: smoother at 60, lighter on the GPU at 20. */
+  frameRate: PetFrameRate;
   /** Which of the figure's models the pet shows: as in the chat, or always 3D / Inochi2D. */
   figure: PetFigureChoice;
 }
+
+export type PetFrameRate = 20 | 30 | 60;
+export const FRAME_RATES: PetFrameRate[] = [20, 30, 60];
 
 export type PetFigureChoice = 'chat' | '3d' | 'inochi2d' | 'live2d' | 'portrait';
 const FIGURE_CHOICES: PetFigureChoice[] = ['chat', '3d', 'inochi2d', 'live2d', 'portrait'];
@@ -291,6 +296,7 @@ const DEFAULT_PREFS: PetPrefs = {
   batterySaver: true,
   quietAtNight: true,
   reactToDesktop: true,
+  frameRate: 30,
   figure: 'chat',
 };
 
@@ -333,6 +339,7 @@ export function loadPetPrefs(): PetPrefs {
       batterySaver: typeof stored?.batterySaver === 'boolean' ? stored.batterySaver : DEFAULT_PREFS.batterySaver,
       quietAtNight: typeof stored?.quietAtNight === 'boolean' ? stored.quietAtNight : DEFAULT_PREFS.quietAtNight,
       reactToDesktop: typeof stored?.reactToDesktop === 'boolean' ? stored.reactToDesktop : DEFAULT_PREFS.reactToDesktop,
+      frameRate: FRAME_RATES.includes(stored?.frameRate as PetFrameRate) ? stored!.frameRate! : DEFAULT_PREFS.frameRate,
       figure: FIGURE_CHOICES.includes(stored?.figure as PetFigureChoice) ? stored!.figure! : DEFAULT_PREFS.figure,
     };
   } catch {

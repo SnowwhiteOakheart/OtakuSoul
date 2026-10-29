@@ -57,6 +57,15 @@ export interface AvatarStage {
   setPaused: (paused: boolean) => void;
   /** Desktop pet on battery and at rest: draws only ~12 FPS, whatever happens. */
   setSaver: (saver: boolean) => void;
+  /** Desktop pet: frames per second it draws (20, 30 or 60); the battery saver goes below. */
+  setFrameRate: (fps: number) => void;
+  /**
+   * Desktop pet: its window moved by (dx, dy) physical px (walking, falling, dragged), so arms
+   * and hair can swing with it. Collected until the viewer takes it with `takeWindowMove`.
+   */
+  addWindowMove: (dx: number, dy: number) => void;
+  /** The window's movement since the last call, in heights of the viewer (y down). */
+  takeWindowMove: () => { dx: number; dy: number };
   /** Desktop pet: the model's own framing (zoom around the feet, lift); applies at once. */
   setFraming: (framing: PetFraming) => void;
   /**
@@ -72,7 +81,9 @@ export interface AvatarStage {
 }
 
 /** What the desktop pet needs of any figure (3D stage or Inochi2D puppet). */
-export type PetFigure = Pick<AvatarStage, 'mouse' | 'probe' | 'setPaused' | 'setSaver' | 'setTurn' | 'setFraming' | 'headLine' | 'handAt'>;
+export type PetFigure = Pick<
+  AvatarStage,
+  'mouse' | 'probe' | 'setPaused' | 'setSaver' | 'setFrameRate' | 'addWindowMove' | 'setTurn' | 'setFraming' | 'headLine' | 'handAt'>;
 
 /** Reach around a wrist bone that counts as the hand (metres; the hand itself is about this long). */
 const HAND_REACH = 0.11;
@@ -89,13 +100,21 @@ export interface AvatarStageOptions {
 const PROBE_ALPHA = 24;
 /** Frame interval of the pet in power-saving mode (~12 FPS). */
 export const SAVER_FRAME_MS = 83;
+/** Frame rates the pet offers; 30 unless chosen otherwise. */
+export const PET_FRAME_RATES = [20, 30, 60] as const;
+export const DEFAULT_PET_FRAME_RATE = 30;
+/** Interval between frames for a rate (a millisecond less, so a 60 Hz display keeps every second frame). */
+export const frameInterval = (fps: number) => (fps >= 60 ? 0 : 1000 / fps - 1);
 
 export function createAvatarStage(container: HTMLElement, modelPath: string, options: AvatarStageOptions = {}): AvatarStage {
   const pet = !!options.pet;
-  // Idle frame interval: 30 FPS in the app, 20 FPS for the pet (always on screen, beside work).
-  const idleFrameMs = pet ? 49 : 31;
+  // Idle frame interval in the app: 30 FPS (the pet has its own rate, `setFrameRate`).
+  const idleFrameMs = 31;
   let paused = false;
   let saver = false;
+  // The pet moves all the time (breathing, drifting arms): it draws at its own steady rate.
+  let petFrameMs = frameInterval(DEFAULT_PET_FRAME_RATE);
+  let windowMove = { dx: 0, dy: 0 };
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(32, container.clientWidth / container.clientHeight, 0.1, 20.0);
   camera.position.fromArray(DEFAULT_CAMERA_POSITION);
@@ -352,6 +371,20 @@ export function createAvatarStage(container: HTMLElement, modelPath: string, opt
     setSaver: (next) => {
       saver = next;
     },
+    setFrameRate: (fps) => {
+      petFrameMs = frameInterval(fps);
+    },
+    addWindowMove: (dx, dy) => {
+      windowMove.dx += dx;
+      windowMove.dy += dy;
+    },
+    takeWindowMove: () => {
+      // Physical px over the viewer's height in physical px.
+      const height = Math.max(1, container.clientHeight * (window.devicePixelRatio || 1));
+      const moved = { dx: windowMove.dx / height, dy: windowMove.dy / height };
+      windowMove = { dx: 0, dy: 0 };
+      return moved;
+    },
     setTurn: (yaw) => {
       // Called on every behaviour tick; only a new direction is activity worth full frame rate.
       if (yaw === turnTarget) return;
@@ -375,7 +408,8 @@ export function createAvatarStage(container: HTMLElement, modelPath: string, opt
           }
           // Throttle idle breathing/blinking to ~30 FPS after 2s of no pointer/camera interaction
           // so local LLM/SD GPU workloads aren't starved by 60-144 Hz WebGL redraws.
-          if (saver ? now - lastTime < SAVER_FRAME_MS : now - lastActiveTime > 2000 && now - lastTime < idleFrameMs) {
+          const frameMs = saver ? SAVER_FRAME_MS : pet ? petFrameMs : now - lastActiveTime > 2000 ? idleFrameMs : 0;
+          if (now - lastTime < frameMs) {
             return;
           }
         }

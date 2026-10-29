@@ -12,6 +12,7 @@ import {
   acceleratorFromKey,
   clampPetHeight,
   formatAccelerator,
+  FRAME_RATES,
   loadPetFraming,
   loadPetPlacement,
   loadPetPrefs,
@@ -223,6 +224,24 @@ export const DesktopPetTab: React.FC = () => {
               className="w-full accent-accent-500"
             />
             <p className="text-xs text-slate-500">{t('pet.sizeHint')}</p>
+          </div>
+
+          <div className="space-y-1.5">
+            <p className="text-xs font-semibold text-slate-300">{t('pet.frameRate')}</p>
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label={t('pet.frameRate')}>
+              {FRAME_RATES.map((fps) => (
+                <button
+                  key={fps}
+                  type="button"
+                  aria-pressed={prefs.frameRate === fps}
+                  onClick={() => update({ frameRate: fps })}
+                  className={chip(prefs.frameRate === fps)}
+                >
+                  {t('pet.frameRateValue', { fps })}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-slate-500">{t('pet.frameRateHint')}</p>
           </div>
 
           <div className="rounded-xl border border-slate-800 bg-app p-1">

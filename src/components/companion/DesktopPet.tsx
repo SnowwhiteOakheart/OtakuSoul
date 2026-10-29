@@ -76,6 +76,7 @@ import {
   type PetCursor,
   type PetFramingChange,
   type PetPrefs,
+  FRAME_RATES,
   watchOnBattery,
   type PetSay,
   type PetScreen,
@@ -366,6 +367,7 @@ export const DesktopPet: React.FC = () => {
   useEffect(() => {
     prefsRef.current = prefs;
     behavior.setIdleActions(prefs.idleActions);
+    stageRef.current?.setFrameRate(prefs.frameRate);
     behavior.setPhysics(prefs.physics);
     if (prefs.physics) void syncWindow().catch(() => {});
     savePetPrefs(prefs);
@@ -412,6 +414,8 @@ export const DesktopPet: React.FC = () => {
       }
       if (result.wall) behavior.bumped(result.wall, now);
       const [x, y] = [Math.round(result.body.x), Math.round(result.body.y)];
+      // Arms and hair swing with the window's moves.
+      stageRef.current?.addWindowMove(result.body.x - current.x, result.body.y - current.y);
       body.current = result.body;
       // "Komm her": stops below the pointer (or once it has walked past it).
       const target = comeTarget.current;
@@ -697,6 +701,8 @@ export const DesktopPet: React.FC = () => {
         lastCursor.current = { x: gx, y: gy };
         const dragging = drag.current;
         if (dragging && !dragging.ending) {
+          const previous = dragging.samples[dragging.samples.length - 1];
+          if (previous) stageRef.current?.addWindowMove(gx - previous.x, gy - previous.y);
           dragging.samples.push({ t: polledAt, x: gx, y: gy });
           if (dragging.samples.length > 30) dragging.samples.shift();
           // Released: the drag ends now, and a release in motion throws the figure.
@@ -872,6 +878,14 @@ export const DesktopPet: React.FC = () => {
           ],
         },
         {
+          text: t('pet.frameRate'),
+          items: FRAME_RATES.map((fps) => ({
+            text: t('pet.frameRateValue', { fps }),
+            checked: prefs.frameRate === fps,
+            action: () => setPrefs((p) => ({ ...p, frameRate: fps })),
+          })),
+        },
+        {
           text: t('pet.size'),
           items: sizes.map(({ key, label }) => ({
             text: label,
@@ -991,6 +1005,7 @@ export const DesktopPet: React.FC = () => {
     stageRef.current = stage;
     stage?.setPaused(awayRef.current);
     stage?.setFraming(framingRef.current);
+    stage?.setFrameRate(prefsRef.current.frameRate);
   }, []);
 
   useEffect(() => {

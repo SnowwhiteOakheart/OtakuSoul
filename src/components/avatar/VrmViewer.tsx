@@ -14,6 +14,7 @@ import type { GestureRequest, LoopRole } from '../../utils/avatarGestures';
 import { loadMotionClip, AvatarMotionPlayer } from './vrmMotions';
 import { createAvatarStage, createBlinker, type AvatarStage } from './avatarStage';
 import { AvatarViewerChrome } from './AvatarViewerChrome';
+import { bodyPose, BodySway, WALK_CYCLE_HZ, type BodyBone } from './proceduralBody';
 import { useAvatarMotions } from './useAvatarMotions';
 
 export interface AvatarViewerProps {
@@ -115,6 +116,10 @@ export const VrmViewer = ({
   useEffect(() => {
     petRef.current = pet;
   }, [pet]);
+  const loopRef = useRef(loop);
+  useEffect(() => {
+    loopRef.current = loop;
+  }, [loop]);
 
   useEffect(() => {
     emotionRef.current = emotion;
@@ -221,10 +226,18 @@ export const VrmViewer = ({
     void loadModel();
 
     const blink = createBlinker();
+    const sway = new BodySway();
+    let walkPhase = 0;
+    /** Spring settings of hair and cloth as loaded, to add the window's wind to (and restore). */
+    const springRest = new Map<object, { dir: THREE.Vector3; power: number }>();
+    const wind = new THREE.Vector3();
+    let neckX = 0;
+    let neckY = 0;
     let lookX = 0;
     let lookY = 0;
     const poseEuler = new THREE.Euler();
     const poseQuaternion = new THREE.Quaternion();
+    const poseVector = new THREE.Vector3();
 
     stage.start((delta, elapsed) => {
       if (!vrm) return;
@@ -246,20 +259,47 @@ export const VrmViewer = ({
       };
       lookX = THREE.MathUtils.lerp(lookX, stage.mouse.x, 0.05);
       lookY = THREE.MathUtils.lerp(lookY, stage.mouse.y, 0.05);
-      const breath = Math.sin(elapsed * 1.8);
-      pose('spine', breath * 0.012, 0, Math.sin(elapsed * 0.9) * 0.005);
-      pose('chest', Math.sin(elapsed * 1.8 + 0.3) * 0.01, Math.sin(elapsed * 0.9) * 0.008, 0);
+      // The look moves in a chain: eyes at once, the head soon, neck and chest last.
+      neckX = THREE.MathUtils.lerp(neckX, stage.mouse.x, 0.02);
+      neckY = THREE.MathUtils.lerp(neckY, stage.mouse.y, 0.02);
+      // Desktop pet: its window's movement makes arms and hair trail behind.
+      const moved = stage.takeWindowMove();
+      sway.update(moved.dx, moved.dy, delta);
+      // Walking without a walk motion: a stepping cycle (with one, the motion walks).
+      const walking = loopRef.current === 'walk';
+      if (walking) walkPhase += delta * WALK_CYCLE_HZ * Math.PI * 2;
+      const body = bodyPose({
+        t: elapsed,
+        leftArm: leftArmDirection,
+        rightArm: rightArmDirection,
+        walkPhase: walking ? walkPhase : null,
+        sway: sway.offset,
+        look: { x: neckX, y: neckY },
+      });
+      for (const [bone, [x, y, z]] of Object.entries(body)) pose(bone as BodyBone, x, y, z);
       model.humanoid
         .getNormalizedBoneNode('head')
         ?.quaternion.multiply(poseQuaternion.setFromEuler(poseEuler.set(-lookY * 0.12, lookX * 0.2, -lookX * 0.04)));
-      // Resting arms (down from the T-pose), whichever way this model's arm chain points.
-      pose('leftUpperArm', 0.12, -0.05, -leftArmDirection * (1.25 - breath * 0.015));
-      pose('rightUpperArm', 0.12, 0.05, -rightArmDirection * (1.25 - breath * 0.015));
-      // Elbows bent slightly forward towards the waist.
-      pose('leftLowerArm', 0.05, -leftArmDirection * 0.3, 0);
-      pose('rightLowerArm', 0.05, -rightArmDirection * 0.3, 0);
-      pose('leftHand', 0, -leftArmDirection * 0.1, 0);
-      pose('rightHand', 0, -rightArmDirection * 0.1, 0);
+      if (model.lookAt) {
+        // Eyes ahead of the head (degrees).
+        model.lookAt.yaw = THREE.MathUtils.clamp(stage.mouse.x * 18, -18, 18);
+        model.lookAt.pitch = THREE.MathUtils.clamp(stage.mouse.y * 10, -10, 10);
+      }
+      // Hair and cloth: wind against the window's speed (sideways, and up while it drops).
+      const speed = sway.windowSpeed;
+      wind.set(-speed.x * 0.5, speed.y * 0.5, 0);
+      if (wind.lengthSq() > 4) wind.setLength(2);
+      for (const joint of model.springBoneManager?.joints ?? []) {
+        let rest = springRest.get(joint);
+        if (!rest) {
+          rest = { dir: joint.settings.gravityDir.clone(), power: joint.settings.gravityPower };
+          springRest.set(joint, rest);
+        }
+        const pull = poseVector.copy(rest.dir).multiplyScalar(rest.power).add(wind);
+        joint.settings.gravityPower = pull.length();
+        if (joint.settings.gravityPower > 1e-4) joint.settings.gravityDir.copy(pull.normalize());
+        else joint.settings.gravityDir.copy(rest.dir);
+      }
 
       // B. Face: blinking, emotion and mouth shapes from the voice.
       const em = model.expressionManager;
@@ -321,6 +361,11 @@ export const VrmViewer = ({
       stage.dispose();
       motionPlayerRef.current?.dispose();
       motionPlayerRef.current = null;
+      for (const [joint, rest] of springRest) {
+        const settings = (joint as { settings: { gravityDir: THREE.Vector3; gravityPower: number } }).settings;
+        settings.gravityDir.copy(rest.dir);
+        settings.gravityPower = rest.power;
+      }
       // Back to the cache in its loaded pose, for the next viewer of this model.
       if (vrm) releaseAvatar(vrm);
       setLoadedVrm(null);

@@ -21,7 +21,7 @@ import { translate, useTranslation } from '../../i18n';
 import { errorMessage } from '../../utils/errors';
 import type { GestureRequest, LoopRole } from '../../utils/avatarGestures';
 import { DropdownMenu } from '../ui/DropdownMenu';
-import { SAVER_FRAME_MS, type PetFigure } from './avatarStage';
+import { DEFAULT_PET_FRAME_RATE, frameInterval, SAVER_FRAME_MS, type PetFigure } from './avatarStage';
 
 interface Inochi2dViewerProps {
   /** Absolute path of the `.inp`/`.inx` file. */
@@ -127,6 +127,8 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
     let pendingProbe: { x: number; y: number; onResult: (hit: boolean) => void } | null = null;
     let paused = false;
     let saver = false;
+    // Desktop pet: its chosen frame rate (the app view draws every frame).
+    let petFrameMs = 0;
     // A 2D puppet cannot turn round: a turn (walking) becomes looking that way.
     let turn = 0;
     const probePixel = new Uint8Array(4);
@@ -203,7 +205,8 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
     let last = 0;
     const loop = (now: number) => {
       if (disposed) return;
-      if (saver && last && now - last < SAVER_FRAME_MS) {
+      const frameMs = saver ? SAVER_FRAME_MS : petFrameMs;
+      if (frameMs && last && now - last < frameMs) {
         frame = requestAnimationFrame(loop);
         return;
       }
@@ -291,6 +294,7 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
             viewRef.current = { ...defaultViewRef.current };
           };
           framePet(petFraming);
+          petFrameMs = frameInterval(DEFAULT_PET_FRAME_RATE);
           stopSnapshots = answerSnapshots(canvas, draw);
           setLoading(false);
           frame = requestAnimationFrame(loop);
@@ -306,6 +310,11 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
             setSaver: (next) => {
               saver = next;
             },
+            setFrameRate: (fps) => {
+              petFrameMs = frameInterval(fps);
+            },
+            // The puppet's own physics swings its hair; the window's moves do not reach it yet.
+            addWindowMove: () => {},
             setTurn: (yaw) => {
               turn = yaw;
             },
