@@ -195,7 +195,9 @@ fn assign_roles(pack: &RegistryPack, dir: &Path) -> Result<(), String> {
 
 /// Downloads the files of a pack into the animations folder (each checked against its
 /// SHA-256; present files are kept) and gives them their uses.
-pub async fn download_motion_pack(pack_id: &str) -> Result<Vec<avatar_motions::AvatarMotion>, String> {
+pub async fn download_motion_pack(
+    pack_id: &str,
+) -> Result<Vec<avatar_motions::AvatarMotion>, String> {
     let data_dir = PathBuf::from(resolve_app_paths().data_dir);
     let pack = registry(&data_dir)
         .packs
@@ -234,8 +236,10 @@ pub async fn download_motion_pack(pack_id: &str) -> Result<Vec<avatar_motions::A
             return Err(crate::err!("backend.motionPack.checksum", name = file.file));
         }
         let partial = dir.join(format!("{}.part", file.file));
-        fs::write(&partial, &bytes).map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
-        fs::rename(&partial, &target).map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
+        fs::write(&partial, &bytes)
+            .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
+        fs::rename(&partial, &target)
+            .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
     }
     assign_roles(&pack, &dir)?;
     Ok(avatar_motions::scan_avatar_motions())
@@ -270,7 +274,8 @@ mod tests {
 
     #[test]
     fn installed_needs_every_file_and_roles_keep_the_users_choice() {
-        let dir = std::env::temp_dir().join(format!("otakusoul-motion-packs-{}", std::process::id()));
+        let dir =
+            std::env::temp_dir().join(format!("otakusoul-motion-packs-{}", std::process::id()));
         let _ = fs::remove_dir_all(&dir);
         fs::create_dir_all(&dir).unwrap();
         let registry = parse_registry(BUNDLED_REGISTRY).unwrap();

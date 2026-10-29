@@ -341,7 +341,9 @@ pub fn tray_double_click(app: &AppHandle) {
 /// File in the config folder with the shortcut the user chose (absent = `PET_SHORTCUT`).
 #[cfg(desktop)]
 fn shortcut_file() -> std::path::PathBuf {
-    crate::modules::paths::base_dirs().0.join("pet_shortcut.txt")
+    crate::modules::paths::base_dirs()
+        .0
+        .join("pet_shortcut.txt")
 }
 
 /// The shortcut in use: the chosen one, else the default.

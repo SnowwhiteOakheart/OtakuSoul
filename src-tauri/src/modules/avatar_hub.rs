@@ -104,7 +104,10 @@ fn valid_avatar(a: &RegistryAvatar) -> bool {
             .chars()
             .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-');
     let files_ok = a.files.iter().all(|f| {
-        safe_relative(&f.path) && f.url.starts_with("https://") && valid_sha(&f.sha256) && f.size_bytes > 0
+        safe_relative(&f.path)
+            && f.url.starts_with("https://")
+            && valid_sha(&f.sha256)
+            && f.size_bytes > 0
     });
     let loadable = !a.files.is_empty() && a.files.iter().any(|f| f.path == a.entry);
     let linked = a.files.is_empty() && a.page_url.starts_with("https://");
@@ -161,7 +164,8 @@ pub async fn refresh_registry() {
 /// `dir` joined with a registry path (`mao_pro/mao_pro.moc3`) part by part, so the result uses the
 /// platform's separators like the paths the model scanners report.
 fn join_relative(dir: &Path, path: &str) -> PathBuf {
-    path.split('/').fold(dir.to_path_buf(), |acc, part| acc.join(part))
+    path.split('/')
+        .fold(dir.to_path_buf(), |acc, part| acc.join(part))
 }
 
 /// The user's folder for models of this kind (where imports go as well).
@@ -194,7 +198,10 @@ fn describe(a: &RegistryAvatar, lang: &str, data_dir: &Path) -> HubAvatar {
         description,
         size_bytes: a.files.iter().map(|f| f.size_bytes).sum(),
         downloadable,
-        installed: downloadable && a.files.iter().all(|f| join_relative(&dir, &f.path).is_file()),
+        installed: downloadable
+            && a.files
+                .iter()
+                .all(|f| join_relative(&dir, &f.path).is_file()),
         nsfw: a.nsfw,
     }
 }
@@ -211,7 +218,12 @@ fn catalog_in(registry: &Registry, lang: &str, data_dir: &Path, adult: bool) -> 
 /// The avatars the hub offers (18+ entries only with the adult setting).
 pub fn catalog(lang: &str) -> Vec<HubAvatar> {
     let data_dir = PathBuf::from(resolve_app_paths().data_dir);
-    catalog_in(&registry(&data_dir), lang, &data_dir, crate::modules::nsfw::allowed())
+    catalog_in(
+        &registry(&data_dir),
+        lang,
+        &data_dir,
+        crate::modules::nsfw::allowed(),
+    )
 }
 
 fn sha256_hex(bytes: &[u8]) -> String {
@@ -275,12 +287,16 @@ pub async fn download_hub_avatar(avatar_id: &str) -> Result<HubAvatarInstalled, 
                 .map_err(|e| crate::err!("backend.common.dirCreate", error = e))?;
         }
         let partial = target.with_extension("part");
-        fs::write(&partial, &bytes).map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
-        fs::rename(&partial, &target).map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
+        fs::write(&partial, &bytes)
+            .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
+        fs::rename(&partial, &target)
+            .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
     }
     Ok(HubAvatarInstalled {
         kind: avatar.kind.clone(),
-        path: join_relative(&dir, &avatar.entry).to_string_lossy().into_owned(),
+        path: join_relative(&dir, &avatar.entry)
+            .to_string_lossy()
+            .into_owned(),
     })
 }
 
@@ -291,15 +307,35 @@ mod tests {
     #[test]
     fn registry_paths_use_the_platform_separator() {
         let joined = join_relative(Path::new("base"), "mao_pro/mao_pro.model3.json");
-        assert_eq!(joined, Path::new("base").join("mao_pro").join("mao_pro.model3.json"));
+        assert_eq!(
+            joined,
+            Path::new("base")
+                .join("mao_pro")
+                .join("mao_pro.model3.json")
+        );
     }
 
     #[test]
     fn the_shipped_registry_is_valid() {
         let registry = parse_registry(BUNDLED_REGISTRY).unwrap();
-        assert!(registry.avatars.iter().any(|a| a.kind == "live2d" && !a.files.is_empty()));
-        assert!(registry.avatars.iter().any(|a| a.kind == "vrm" && !a.files.is_empty()));
-        assert!(registry.avatars.iter().any(|a| a.files.is_empty() && !a.page_url.is_empty()));
+        assert!(
+            registry
+                .avatars
+                .iter()
+                .any(|a| a.kind == "live2d" && !a.files.is_empty())
+        );
+        assert!(
+            registry
+                .avatars
+                .iter()
+                .any(|a| a.kind == "vrm" && !a.files.is_empty())
+        );
+        assert!(
+            registry
+                .avatars
+                .iter()
+                .any(|a| a.files.is_empty() && !a.page_url.is_empty())
+        );
     }
 
     #[test]
@@ -316,7 +352,14 @@ mod tests {
               "files":[{{"path":"d/d.model3.json","url":"https://x/d","sha256":"{sha}","size_bytes":2}}]}}]}}"#
         );
         let registry = parse_registry(&text).unwrap();
-        assert_eq!(registry.avatars.iter().map(|a| a.id.as_str()).collect::<Vec<_>>(), ["ok"]);
+        assert_eq!(
+            registry
+                .avatars
+                .iter()
+                .map(|a| a.id.as_str())
+                .collect::<Vec<_>>(),
+            ["ok"]
+        );
     }
 
     #[test]
@@ -324,7 +367,12 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("otakusoul-avatar-hub-{}", std::process::id()));
         let _ = fs::remove_dir_all(&dir);
         let mut registry = parse_registry(BUNDLED_REGISTRY).unwrap();
-        let live2d = registry.avatars.iter().find(|a| a.kind == "live2d").unwrap().clone();
+        let live2d = registry
+            .avatars
+            .iter()
+            .find(|a| a.kind == "live2d")
+            .unwrap()
+            .clone();
         assert!(!describe(&live2d, "de", &dir).installed);
         for f in &live2d.files {
             let target = join_relative(&kind_dir(&dir, "live2d"), &f.path);
@@ -334,8 +382,16 @@ mod tests {
         assert!(describe(&live2d, "de", &dir).installed);
         registry.avatars[0].nsfw = true;
         let hidden = registry.avatars[0].id.clone();
-        assert!(!catalog_in(&registry, "de", &dir, false).iter().any(|a| a.id == hidden));
-        assert!(catalog_in(&registry, "de", &dir, true).iter().any(|a| a.id == hidden));
+        assert!(
+            !catalog_in(&registry, "de", &dir, false)
+                .iter()
+                .any(|a| a.id == hidden)
+        );
+        assert!(
+            catalog_in(&registry, "de", &dir, true)
+                .iter()
+                .any(|a| a.id == hidden)
+        );
         let _ = fs::remove_dir_all(&dir);
     }
 }
