@@ -4,6 +4,9 @@ import type { UiLanguage } from '../types/generated/UiLanguage';
 import type { OpenRouterLogin } from '../types/generated/OpenRouterLogin';
 import type { MotionPackItem } from '../types/generated/MotionPackItem';
 import type { HubAvatar } from '../types/generated/HubAvatar';
+import type { HeadPlacement } from '../types/generated/HeadPlacement';
+import type { TalkingPortraitStatus } from '../types/generated/TalkingPortraitStatus';
+import type { TalkingSet } from '../types/generated/TalkingSet';
 import type { HubAvatarInstalled } from '../types/generated/HubAvatarInstalled';
 import { invoke } from '@tauri-apps/api/core';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
@@ -843,6 +846,35 @@ export const api = {
     args: JsonObject
   ): Promise<string> => {
     return await invoke<string>('execute_companion_plugin', { pluginId, arguments: args });
+  },
+
+  /** Whether the models for speaking portraits (THA3, anime-seg) are there. */
+  talkingPortraitStatus: async (): Promise<TalkingPortraitStatus> => {
+    return await invoke<TalkingPortraitStatus>('talking_portrait_status');
+  },
+
+  /** Loads the models for speaking portraits (progress as `talking-portrait-download`). */
+  downloadTalkingPortraitModels: async (): Promise<TalkingPortraitStatus> => {
+    return await invoke<TalkingPortraitStatus>('download_talking_portrait_models');
+  },
+
+  getTalkingPortraitPlacement: async (characterId: string): Promise<HeadPlacement | null> => {
+    return await invoke<HeadPlacement | null>('get_talking_portrait_placement', { characterId });
+  },
+
+  /** Saves a character's head placement; `null` turns the speaking portrait off. */
+  setTalkingPortraitPlacement: async (characterId: string, placement: HeadPlacement | null): Promise<void> => {
+    await invoke('set_talking_portrait_placement', { characterId, placement });
+  },
+
+  /** A first guess where the head of a picture (base64) is. */
+  guessTalkingPortraitPlacement: async (image: string): Promise<HeadPlacement> => {
+    return await invoke<HeadPlacement>('guess_talking_portrait_placement', { image });
+  },
+
+  /** The mouth-shape frames of a picture (base64); made once, then cached by the backend. */
+  prepareTalkingPortrait: async (image: string, placement: HeadPlacement): Promise<TalkingSet> => {
+    return await invoke<TalkingSet>('prepare_talking_portrait', { image, placement });
   },
 
   /** VRM and Live2D models of the hub (registry from the data repository). */

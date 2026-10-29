@@ -4139,6 +4139,8 @@ dependencies = [
  "keyring",
  "kokoro-en",
  "libc",
+ "ndarray",
+ "ort",
  "parking_lot",
  "pdf-extract",
  "png",

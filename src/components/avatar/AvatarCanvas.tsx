@@ -1,7 +1,9 @@
 import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { TalkingOverlay, useTalkingSet } from './TalkingPortrait';
+import { TalkingPortraitDialog } from './TalkingPortraitDialog';
 import { VrmViewer } from './VrmViewer';
 import { loadCubismCore } from '../../services/live2dRuntime';
-import { Box, Feather, Image, Sparkles, Smile, ChevronDown, Wind } from 'lucide-react';
+import { Box, Feather, Image, MessageCircle, Sparkles, Smile, ChevronDown, Wind } from 'lucide-react';
 import { CharacterProfile } from '../../types';
 import { PORTRAIT_MOODS, assetAsBlobUrl, getPortraitExpressions, loadDisplayableImage, selectCharacterPortrait } from '../../utils/characterPortraits';
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
@@ -53,6 +55,8 @@ type PortraitLayer = { url: string; origin: string } | null;
 
 interface MorphingPortraitProps {
   src: string;
+  /** The character, for its speaking portrait (mouth shapes from THA3, if set up). */
+  characterId?: string;
   fallbackSrc?: string | null;
   alt: string;
   isSpeaking: boolean;
@@ -62,6 +66,7 @@ interface MorphingPortraitProps {
 
 export const MorphingPortrait: React.FC<MorphingPortraitProps> = ({
   src,
+  characterId,
   fallbackSrc,
   alt,
   isSpeaking,
@@ -71,6 +76,8 @@ export const MorphingPortrait: React.FC<MorphingPortraitProps> = ({
   // picture bobs with the voice's level. Written straight to the layers at a low frame rate
   // (`PORTRAIT_FPS`), no re-render per frame.
   const alive = useAppStore((s) => s.portraitMotion);
+  // Speaking portrait: mouth shapes and blinking over the picture (once set up for the character).
+  const talking = useTalkingSet(characterId, src);
   const swayRef = useRef<HTMLDivElement>(null);
   const breathRef = useRef<HTMLDivElement>(null);
   const speechRef = useRef<HTMLDivElement>(null);
@@ -199,6 +206,7 @@ export const MorphingPortrait: React.FC<MorphingPortraitProps> = ({
           } ${isSpeaking && index === visibleLayer ? `brightness-105 ${alive ? '' : 'scale-[1.02]'}` : ''}`}
         />
       ))}
+      {talking && <TalkingOverlay set={talking} isSpeaking={isSpeaking} />}
       </div>
       </div>
       </div>
@@ -238,6 +246,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
     'currentEmotion', 'setCurrentEmotion', 'avatarMotions', 'avatarGesture', 'replyLanguage', 'scannedVrms',
   );
   const { t, tEmotion } = useTranslation();
+  const [talkingOpen, setTalkingOpen] = useState(false);
 
   // 1. Resolve VRM path (Character override or global setting). A character's model that is no
   // longer in the list (removed in the settings) falls back to the default avatar.
@@ -386,6 +395,17 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
             <Wind className="w-3 h-3" />
           </button>
         )}
+        {avatarMode === '2d' && character?.avatar_data_url && (
+          <button
+            id="setting-talking-portrait"
+            onClick={() => setTalkingOpen(true)}
+            aria-label={t('talkingPortrait.open')}
+            title={t('talkingPortrait.openHint')}
+            className="flex items-center gap-1 px-2 py-1 rounded-lg border text-xs backdrop-blur shadow-md transition-colors outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 bg-slate-900/80 border-slate-700/60 text-slate-400 hover:text-slate-200"
+          >
+            <MessageCircle className="w-3 h-3" />
+          </button>
+        )}
       </div>
 
       {/* Main Avatar Viewport */}
@@ -469,6 +489,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
           {emotionImage || character?.avatar_data_url ? (
             <MorphingPortrait
               key={character?.id || 'none'}
+              characterId={character?.id}
               src={emotionImage || character?.avatar_data_url || ''}
               fallbackSrc={character?.avatar_data_url}
               alt={charName}
@@ -491,6 +512,14 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
             </ScrollText>
           </div>
         </div>
+      )}
+      {talkingOpen && character?.avatar_data_url && (
+        <TalkingPortraitDialog
+          characterId={character.id}
+          name={charName}
+          src={character.avatar_data_url}
+          onClose={() => setTalkingOpen(false)}
+        />
       )}
     </div>
   );

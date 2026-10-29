@@ -40,6 +40,71 @@ pub fn get_inochi2d_catalog(
     crate::modules::inochi2d::catalog(lang.as_deref().unwrap_or("en"))
 }
 
+/// Whether the models for speaking portraits are there.
+#[tauri::command]
+pub fn talking_portrait_status() -> crate::modules::talking_portrait::TalkingPortraitStatus {
+    crate::modules::talking_portrait::status()
+}
+
+/// Loads the models for speaking portraits (progress as `talking-portrait-download`).
+#[tauri::command]
+pub async fn download_talking_portrait_models(
+    app: tauri::AppHandle,
+) -> Result<crate::modules::talking_portrait::TalkingPortraitStatus, String> {
+    crate::modules::talking_portrait::download_models(app).await
+}
+
+#[tauri::command]
+pub fn get_talking_portrait_placement(
+    character_id: String,
+) -> Option<crate::modules::talking_portrait::HeadPlacement> {
+    crate::modules::talking_portrait::placement(&character_id)
+}
+
+#[tauri::command]
+pub fn set_talking_portrait_placement(
+    character_id: String,
+    placement: Option<crate::modules::talking_portrait::HeadPlacement>,
+) -> Result<(), String> {
+    crate::modules::talking_portrait::set_placement(&character_id, placement)
+}
+
+/// A first guess where the head of a picture is (base64 picture).
+#[tauri::command]
+pub async fn guess_talking_portrait_placement(
+    image: String,
+) -> Result<crate::modules::talking_portrait::HeadPlacement, String> {
+    let bytes = decode_picture(&image)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::modules::talking_portrait::guess_placement(&bytes)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// The mouth-shape frames of a picture (made once on the CPU, then cached).
+#[tauri::command]
+pub async fn prepare_talking_portrait(
+    image: String,
+    placement: crate::modules::talking_portrait::HeadPlacement,
+) -> Result<crate::modules::talking_portrait::TalkingSet, String> {
+    let bytes = decode_picture(&image)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::modules::talking_portrait::prepare(&bytes, &placement)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// A picture sent as base64, optionally as data URL.
+fn decode_picture(image: &str) -> Result<Vec<u8>, String> {
+    use base64::Engine;
+    let data = image.split_once(";base64,").map_or(image, |(_, rest)| rest);
+    base64::engine::general_purpose::STANDARD
+        .decode(data.trim())
+        .map_err(|e| crate::err!("backend.talkingPortrait.image", error = e))
+}
+
 /// VRM and Live2D models the hub offers (registry from the data repository).
 #[tauri::command]
 pub fn get_hub_avatars(lang: String) -> Vec<crate::modules::avatar_hub::HubAvatar> {
