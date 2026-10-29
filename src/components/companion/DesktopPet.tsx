@@ -16,6 +16,7 @@ import type { PetFigure } from '../avatar/avatarStage';
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { useTranslation } from '../../i18n';
 import { api } from '../../services/api';
+import { NOTIFICATION_OPEN_CHAT_EVENT } from '../../services/notifications';
 import { audioPlayer } from '../../services/audioPlayer';
 import { SILENT_VISEMES } from '../../services/lipSync';
 import { PetBubble } from './PetBubble';
@@ -43,6 +44,8 @@ import {
   loadPetFraming,
   loadPetModelHeight,
   loadPetPlacement,
+  isLive2dPath,
+  isPortraitPath,
   loadPetPrefs,
   PET_AUDIO_EVENT,
   PET_COME_EVENT,
@@ -56,6 +59,8 @@ import {
   PET_READY_EVENT,
   PET_RESIZE_EVENT,
   PET_SAY_EVENT,
+  PET_BEAT_EVENT,
+  PET_MUSIC_EVENT,
   PET_SCREEN_EVENT,
   PET_SEND_EVENT,
   PET_SENTENCE_EVENT,
@@ -89,6 +94,8 @@ const SIT_DROP = 0.2;
 const isGltfModel = (path: string) => /\.(glb|gltf)$/i.test(path);
 // Inochi2D puppets bring their own runtime; only loaded for them.
 const Inochi2dViewer = lazy(() => import('../avatar/Inochi2dViewer'));
+const Live2DViewer = lazy(() => import('../avatar/Live2DViewer').then((module) => ({ default: module.Live2DViewer })));
+const PortraitPet = lazy(() => import('../avatar/PortraitPet'));
 const isInochi2dModel = (path: string) => /\.(inp|inx)$/i.test(path);
 /** The pet's faces are VRM expressions; an Inochi2D puppet takes the feeling behind them. */
 const EXPRESSION_EMOTIONS: Record<string, string> = {
@@ -117,6 +124,8 @@ const BUBBLE_AFTER_VOICE_MS = 2500;
 const PHYSICS_TICK_MS = 33;
 /** The monitor's work area is read again this often (taskbar moved, resolution changed). */
 const AREA_REFRESH_MS = 3000;
+/** A message the character wrote on their own stays in the bubble at least this long. */
+const PROACTIVE_BUBBLE_MS = 12_000;
 /** Physics ticks between two looks for a window to jump to (~1 s). */
 const JUMP_CHECK_TICKS = 30;
 /** The remembered position is written at most this often while the pet moves itself. */
@@ -157,6 +166,8 @@ export const DesktopPet: React.FC = () => {
   const [composeOpen, setComposeOpen] = useState(false);
   const [draft, setDraft] = useState('');
   const [bubble, setBubble] = useState<string | null>(null);
+  /** The chat of a message the character wrote on their own: a click on its bubble opens it. */
+  const [bubbleChat, setBubbleChat] = useState<PetSay['chat'] | null>(null);
   /** How long the current bubble shows (a long sentence scrolls through in that time). */
   const bubbleShowMs = useRef(0);
   /** Where the bubble leans (towards the screen's middle near an edge). */
@@ -210,7 +221,7 @@ export const DesktopPet: React.FC = () => {
   const mouthOpen = useRef(false);
   const prefsRef = useRef(prefs);
   /** Fullscreen window or lock screen in front: the pet steps back (not drawn, no clicks, no moves). */
-  const [screen, setScreen] = useState<PetScreen>({ fullscreen: false, locked: false });
+  const [screen, setScreen] = useState<PetScreen>({ fullscreen: false, locked: false, focus: 0 });
   const away = screen.locked || (screen.fullscreen && prefs.hideInFullscreen);
   const awayRef = useRef(away);
   const stageRef = useRef<PetFigure | null>(null);
@@ -251,6 +262,11 @@ export const DesktopPet: React.FC = () => {
     if (bubbleTimer.current !== null) window.clearTimeout(bubbleTimer.current);
     bubbleTimer.current = window.setTimeout(() => setBubble(null), ms);
   }, []);
+
+  // The bubble of a message of their own is gone: a click on the next one is the quick chat again.
+  useEffect(() => {
+    if (!bubble) setBubbleChat(null);
+  }, [bubble]);
 
   const playLocalGesture = useCallback((role: GestureRequest['role']) => {
     // Negative ids never meet the main window's counter.
@@ -514,6 +530,9 @@ export const DesktopPet: React.FC = () => {
     cueTexts.current = { doze: t('pet.doze'), wake: t('pet.wake') };
   });
 
+  /** Window in front at the last screen report (0: none), to notice a switch. */
+  const focusRef = useRef(0);
+
   // Power-saving on battery: no random actions, and at rest only ~12 FPS.
   const [onBattery, setOnBattery] = useState(false);
   const savingRef = useRef(false);
@@ -620,8 +639,16 @@ export const DesktopPet: React.FC = () => {
       }),
       listen<PetSay>(PET_SAY_EVENT, ({ payload }) => {
         if (!prefsRef.current.chatBubbles || !payload.text) return;
+        const now = performance.now();
+        setBubbleChat(payload.chat ?? null);
+        if (payload.chat) {
+          // A message of their own stays longer, so the click on it can still be made.
+          behavior.announce(now);
+          say(payload.text, Math.max(bubbleMs(payload.text), PROACTIVE_BUBBLE_MS));
+          return;
+        }
         const ms = bubbleMs(payload.text);
-        behavior.say(performance.now(), ms);
+        behavior.say(now, ms);
         say(payload.text, ms);
       }),
       listen<Platform[]>(PET_PLATFORMS_EVENT, ({ payload }) => {
@@ -632,6 +659,16 @@ export const DesktopPet: React.FC = () => {
       }),
       listen<PetScreen>(PET_SCREEN_EVENT, ({ payload }) => {
         setScreen(payload);
+        // Another window in front (not the pet, not the shell): glance after it.
+        const switched = payload.focus !== 0 && focusRef.current !== 0 && payload.focus !== focusRef.current;
+        focusRef.current = payload.focus;
+        if (switched && prefsRef.current.reactToDesktop && !speakingRef.current) behavior.windowSwitched(performance.now());
+      }),
+      listen<boolean>(PET_MUSIC_EVENT, ({ payload }) => {
+        behavior.setMusic(payload && prefsRef.current.reactToDesktop);
+      }),
+      listen(PET_BEAT_EVENT, () => {
+        if (!speakingRef.current) behavior.beat(performance.now());
       }),
       listen<PetPrefs>(PET_PREFS_EVENT, ({ payload }) => {
         setPrefs((current) => (JSON.stringify(current) === JSON.stringify(payload) ? current : payload));
@@ -730,6 +767,13 @@ export const DesktopPet: React.FC = () => {
   const thinking = !!pet?.thinking;
   const shownBubble = thinking && prefs.chatBubbles ? '…' : bubble;
 
+  const openBubbleChat = () => {
+    if (!bubbleChat) return;
+    setBubble(null);
+    void emitTo('main', NOTIFICATION_OPEN_CHAT_EVENT, bubbleChat).catch(() => {});
+    void api.showMainWindow().catch(() => {});
+  };
+
   const openCompose = () => {
     setStatusOpen(false);
     setComposeOpen(true);
@@ -806,6 +850,18 @@ export const DesktopPet: React.FC = () => {
               enabled: !!pet?.inochi2dPath,
               action: () => setPrefs((p) => ({ ...p, figure: 'inochi2d' })),
             },
+            {
+              text: t('pet.figureLive2d'),
+              checked: prefs.figure === 'live2d',
+              enabled: !!pet?.live2dPath,
+              action: () => setPrefs((p) => ({ ...p, figure: 'live2d' })),
+            },
+            {
+              text: t('pet.figurePortrait'),
+              checked: prefs.figure === 'portrait',
+              enabled: !!pet?.portraitPath,
+              action: () => setPrefs((p) => ({ ...p, figure: 'portrait' })),
+            },
           ],
         },
         {
@@ -825,6 +881,16 @@ export const DesktopPet: React.FC = () => {
           text: t('pet.batterySaver'),
           checked: prefs.batterySaver,
           action: () => setPrefs((p) => ({ ...p, batterySaver: !p.batterySaver })),
+        },
+        {
+          text: t('pet.quietAtNight'),
+          checked: prefs.quietAtNight,
+          action: () => setPrefs((p) => ({ ...p, quietAtNight: !p.quietAtNight })),
+        },
+        {
+          text: t('pet.reactToDesktop'),
+          checked: prefs.reactToDesktop,
+          action: () => setPrefs((p) => ({ ...p, reactToDesktop: !p.reactToDesktop })),
         },
         {
           text: t('pet.chatBubbles'),
@@ -1011,7 +1077,25 @@ export const DesktopPet: React.FC = () => {
       >
         {pet && modelPath ? (
           <Suspense fallback={null}>
-            {isInochi2dModel(modelPath) ? (
+            {isPortraitPath(modelPath) ? (
+              <PortraitPet
+                key={modelPath}
+                src={pet.portrait}
+                isSpeaking={isSpeaking}
+                pet={petLink}
+                loop={loop}
+              />
+            ) : isLive2dPath(modelPath) ? (
+              <Live2DViewer
+                key={modelPath}
+                modelPath={modelPath}
+                emotion={
+                  (faceOverride ?? sentenceFace ? EXPRESSION_EMOTIONS[(faceOverride ?? sentenceFace)!] : undefined) ?? pet.emotion ?? 'neutral'
+                }
+                isSpeaking={isSpeaking}
+                pet={petLink}
+              />
+            ) : isInochi2dModel(modelPath) ? (
               <Inochi2dViewer
                 key={modelPath}
                 modelPath={modelPath}
@@ -1045,7 +1129,7 @@ export const DesktopPet: React.FC = () => {
           ms={shownBubble === bubble ? bubbleShowMs.current : 0}
           side={bubbleSideNow}
           title={t('pet.compose')}
-          onClick={openCompose}
+          onClick={bubbleChat ? openBubbleChat : openCompose}
         />
       )}
 

@@ -6,9 +6,12 @@ import { useTranslation } from '../../../i18n';
 import { Eye, EyeOff, Footprints, Hand, Keyboard, MousePointerClick, Move, Menu, Settings2, Tv } from 'lucide-react';
 import { Toggle } from '../../ui/Toggle';
 import { PetFramePreview } from '../PetFramePreview';
+import { api } from '../../../services/api';
 import { petModels } from '../../../hooks/useDesktopPetBridge';
 import {
+  acceleratorFromKey,
   clampPetHeight,
+  formatAccelerator,
   loadPetFraming,
   loadPetPlacement,
   loadPetPrefs,
@@ -24,13 +27,20 @@ import {
   savePetPrefs,
   type PetFigureChoice,
   type PetPrefs,
+  type PetShortcut,
   type PetSize,
 } from '../../../services/desktopPet';
 
 const SIZES: PetSize[] = ['small', 'medium', 'large'];
 const SIZE_LABELS = { small: 'pet.sizeSmall', medium: 'pet.sizeMedium', large: 'pet.sizeLarge' } as const;
-const FIGURES: PetFigureChoice[] = ['chat', '3d', 'inochi2d'];
-const FIGURE_LABELS = { chat: 'pet.figureChat', '3d': 'pet.figure3d', inochi2d: 'pet.figureInochi2d' } as const;
+const FIGURES: PetFigureChoice[] = ['chat', '3d', 'inochi2d', 'live2d', 'portrait'];
+const FIGURE_LABELS = {
+  chat: 'pet.figureChat',
+  '3d': 'pet.figure3d',
+  inochi2d: 'pet.figureInochi2d',
+  live2d: 'pet.figureLive2d',
+  portrait: 'pet.figurePortrait',
+} as const;
 
 /**
  * Opens the desktop pet (the active avatar on the desktop), explains how to handle it and holds
@@ -46,6 +56,8 @@ export const DesktopPetTab: React.FC = () => {
     'activeVrmPath',
     'scannedInochi2ds',
     'activeInochi2dPath',
+    'scannedLive2ds',
+    'activeLive2dPath',
     'avatarMode',
   );
   const { toggleDesktopPet, companionState } = store;
@@ -77,18 +89,53 @@ export const DesktopPetTab: React.FC = () => {
     else savePetPlacement({ height: next });
   };
 
+  // The global shortcut: shown, recorded from the next key press, reset to the default.
+  const [shortcut, setShortcut] = useState<PetShortcut | null>(null);
+  const [recording, setRecording] = useState(false);
+  const [shortcutError, setShortcutError] = useState<string | null>(null);
+  useEffect(() => {
+    void api.getPetShortcut().then(setShortcut).catch(() => {});
+  }, []);
+  const chooseShortcut = (wanted: string) => {
+    setRecording(false);
+    setShortcutError(null);
+    api
+      .setPetShortcut(wanted)
+      .then(setShortcut)
+      .catch((error: unknown) => setShortcutError(String(error)));
+  };
+  useEffect(() => {
+    if (!recording) return;
+    const onKey = (event: KeyboardEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.key === 'Escape') return setRecording(false);
+      const accelerator = acceleratorFromKey(event);
+      if (accelerator) chooseShortcut(accelerator);
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [recording]);
+
   const models = petModels(store);
   const previewPath = petModelPath(models, prefs.figure);
   const previewFraming = useMemo(() => loadPetFraming(previewPath), [previewPath]);
-  const figureAvailable: Record<PetFigureChoice, boolean> = { chat: true, '3d': !!models.vrmPath, inochi2d: !!models.inochi2dPath };
+  const figureAvailable: Record<PetFigureChoice, boolean> = {
+    chat: true,
+    '3d': !!models.vrmPath,
+    inochi2d: !!models.inochi2dPath,
+    live2d: !!models.live2dPath,
+    portrait: !!models.portraitPath,
+  };
 
+  const shownShortcut = shortcut ? formatAccelerator(shortcut.shortcut) : '';
   const hints = [
     { icon: Move, text: t('pet.hintDrag') },
     { icon: MousePointerClick, text: t('pet.hintClick') },
     { icon: Hand, text: t('pet.hintHands') },
     { icon: Menu, text: t('pet.hintMenu') },
     { icon: Eye, text: t('pet.hintClickThrough') },
-    { icon: Keyboard, text: t('pet.hintShortcut') },
+    { icon: Keyboard, text: t('pet.hintShortcut', { shortcut: shownShortcut }) },
     { icon: Footprints, text: t('pet.hintCome') },
   ];
 
@@ -180,6 +227,8 @@ export const DesktopPetTab: React.FC = () => {
           <div className="rounded-xl border border-slate-800 bg-app p-1">
             <Toggle id="pet-idle-actions" label={t('pet.idleActions')} checked={prefs.idleActions} onCheckedChange={(idleActions) => update({ idleActions })} />
             <Toggle id="pet-battery-saver" label={t('pet.batterySaver')} checked={prefs.batterySaver} onCheckedChange={(batterySaver) => update({ batterySaver })} />
+            <Toggle id="pet-quiet-night" label={t('pet.quietAtNight')} checked={prefs.quietAtNight} onCheckedChange={(quietAtNight) => update({ quietAtNight })} />
+            <Toggle id="pet-react-desktop" label={t('pet.reactToDesktop')} checked={prefs.reactToDesktop} onCheckedChange={(reactToDesktop) => update({ reactToDesktop })} />
             <Toggle id="pet-chat-bubbles" label={t('pet.chatBubbles')} checked={prefs.chatBubbles} onCheckedChange={(chatBubbles) => update({ chatBubbles })} />
             <Toggle id="pet-physics" label={t('pet.physics')} checked={prefs.physics} onCheckedChange={(physics) => update({ physics })} />
             <Toggle
@@ -196,12 +245,41 @@ export const DesktopPetTab: React.FC = () => {
               onCheckedChange={(hideInFullscreen) => update({ hideInFullscreen })}
             />
           </div>
+
+          <div className="space-y-1.5">
+            <p className="text-xs font-semibold text-slate-300">{t('pet.shortcut')}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <kbd className="rounded-md border border-slate-700 bg-app px-2 py-1 text-xs text-slate-200">
+                {recording ? t('pet.shortcutPress') : shownShortcut || '–'}
+              </kbd>
+              <button type="button" className={chip(recording)} onClick={() => setRecording((on) => !on)}>
+                {t(recording ? 'pet.shortcutCancel' : 'pet.shortcutChange')}
+              </button>
+              <button
+                type="button"
+                className={chip(false)}
+                disabled={!shortcut || shortcut.shortcut === shortcut.default}
+                onClick={() => chooseShortcut('')}
+              >
+                {t('pet.shortcutReset')}
+              </button>
+            </div>
+            {shortcutError && (
+              <p role="alert" className="text-xs text-red-400">
+                {t('pet.shortcutTaken', { error: shortcutError })}
+              </p>
+            )}
+            {shortcut && !shortcut.registered && !shortcutError && (
+              <p role="status" className="text-xs text-amber-400">{t('pet.shortcutNotRegistered')}</p>
+            )}
+            <p className="text-xs text-slate-500">{t('pet.shortcutHint')}</p>
+          </div>
         </div>
 
         <figure className="space-y-1.5">
           <figcaption className="text-xs font-semibold text-slate-300">{t('pet.preview')}</figcaption>
           {previewPath ? (
-            <PetFramePreview modelPath={previewPath} framing={previewFraming} />
+            <PetFramePreview modelPath={previewPath} framing={previewFraming} portrait={models.portrait} />
           ) : (
             <div className="rounded-xl border border-slate-800 bg-app" style={petWindowSize(PET_PRESETS.small)} data-pet-preview>
               <p className="p-3 text-center text-xs text-slate-400">{t('pet.noModel')}</p>

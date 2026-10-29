@@ -1,13 +1,14 @@
 import { answerSnapshots } from '../../services/avatarSnapshot';
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Application, extensions } from 'pixi.js';
+import { Application, extensions, Rectangle } from 'pixi.js';
 // Lets pixi.js compile shaders without `eval`, so the CSP can forbid 'unsafe-eval'.
 import 'pixi.js/unsafe-eval';
 import { Live2DModel, Live2DPlugin, ModelSettings } from 'untitled-pixi-live2d-engine/cubism';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { useAppStore } from '../../store/useAppStore';
 import { audioPlayer } from '../../services/audioPlayer';
-import { loadLive2DViewState, saveLive2DViewState } from '../../services/avatarViewState';
+import { DEFAULT_PET_FRAMING, loadLive2DViewState, PET_FEET_SHARE, saveLive2DViewState, type PetFraming } from '../../services/avatarViewState';
+import type { PetFigure } from './avatarStage';
 import { Loader2, Sparkles, RefreshCw } from 'lucide-react';
 import { translate, useTranslation } from '../../i18n';
 import { errorMessage } from '../../utils/errors';
@@ -157,12 +158,18 @@ interface Live2DViewerProps {
   modelPath: string; // Absolute path to .model3.json or .model.json
   emotion?: string;  // e.g. "joy", "anger", "sadness", "surprise", etc.
   isSpeaking?: boolean;
+  /**
+   * Desktop pet: whole figure standing at the bottom of a transparent window, looking where the
+   * pet window tells it; no dragging, zooming or tapping. Receives the figure's controls once loaded.
+   */
+  pet?: { onStage: (figure: PetFigure | null) => void };
 }
 
 export const Live2DViewer: React.FC<Live2DViewerProps> = ({
   modelPath,
   emotion = 'neutral',
   isSpeaking: _isSpeaking = false,
+  pet,
 }) => {
   const { t, tEmotion } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -172,6 +179,11 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
   const didDragRef = useRef(false);
   const dragStartRef = useRef({ x: 0, y: 0 });
   const baseScaleRef = useRef(1);
+
+  const petRef = useRef(pet);
+  useLayoutEffect(() => {
+    petRef.current = pet;
+  }, [pet]);
 
   const modelRef = useRef<Live2DModel | null>(null);
   const appRef = useRef<Application | null>(null);
@@ -270,7 +282,7 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
         );
         baseScaleRef.current = baseScale;
 
-        const savedView = loadLive2DViewState(modelPath);
+        const savedView = petRef.current ? null : loadLive2DViewState(modelPath);
 
         model.scale.set(baseScale * (savedView?.zoom ?? 1));
         model.anchor.set(0.5, 0.5);
@@ -278,6 +290,66 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
         model.y = containerHeight * (savedView?.yRatio ?? 0.55);
 
         app.stage.addChild(model);
+
+        const petLink = petRef.current;
+        if (petLink) {
+          // Desktop pet: the whole figure stands on the window's bottom (feet at the model's
+          // lower edge), the top fifth stays free for speech bubbles; its own framing zooms around
+          // the feet and lifts them.
+          const w = containerWidth;
+          const h = containerHeight;
+          const fit = Math.min((h * 0.8) / bounds.height, (w * 0.95) / bounds.width);
+          baseScaleRef.current = fit;
+          let framing: PetFraming = DEFAULT_PET_FRAMING;
+          const framePet = () => {
+            model.anchor.set(0.5, 1);
+            model.scale.set(fit * framing.zoom);
+            model.x = w / 2;
+            model.y = h * (1 - PET_FEET_SHARE - framing.lift);
+          };
+          framePet();
+          const focus = model.internalModel?.focusController as { focus?: (x: number, y: number) => void } | undefined;
+          const figure: PetFigure = {
+            mouse: { x: 0, y: 0 },
+            probe: (x, y, onResult) => {
+              // Opaque pixel under the pointer, so the desktop shows through the rest.
+              let hit = false;
+              try {
+                const { pixels } = app.renderer.extract.pixels({
+                  target: app.stage,
+                  frame: new Rectangle(Math.floor(x), Math.floor(y), 1, 1),
+                  resolution: 1,
+                });
+                hit = (pixels[3] ?? 0) > 24;
+              } catch {
+                const b = model.getBounds();
+                hit = x >= b.x && x <= b.x + b.width && y >= b.y && y <= b.y + b.height;
+              }
+              onResult(hit);
+            },
+            setPaused: (paused) => {
+              if (paused) app.ticker.stop();
+              else app.ticker.start();
+            },
+            setSaver: (saver) => {
+              app.ticker.maxFPS = saver ? 12 : 0;
+            },
+            // A Live2D model has no turn to the side; it keeps facing the front.
+            setTurn: () => {},
+            setFraming: (next) => {
+              framing = next;
+              framePet();
+            },
+            headLine: () => {
+              const b = model.getBounds();
+              return h > 0 ? (b.y + b.height * 0.28) / h : null;
+            },
+            handAt: () => false,
+          };
+          // The head follows the pointer the pet window reports (-1…1, y up).
+          app.ticker.add(() => focus?.focus?.(figure.mouse.x, figure.mouse.y));
+          petLink.onStage(figure);
+        }
 
         // LipSync via Web Audio API amplitude
         cleanupAudio = audioPlayer.onAudioFrame((amplitude) => {
@@ -337,6 +409,9 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
     };
 
     void init();
+
+    // The pet window handles the pointer itself (drag, pats, looking).
+    const petMode = !!petRef.current;
 
     let cachedRect: DOMRect | null = null;
     const invalidateRect = () => {
@@ -426,13 +501,15 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
     };
 
     window.addEventListener('resize', invalidateRect);
-    container.addEventListener('pointerenter', invalidateRect);
-    container.addEventListener('click', handleCanvasClick);
-    container.addEventListener('pointermove', handlePointerMove);
-    container.addEventListener('pointerdown', handlePointerDown);
-    container.addEventListener('pointerup', handlePointerUp);
-    container.addEventListener('pointercancel', handlePointerUp);
-    container.addEventListener('wheel', handleWheel, { passive: false });
+    if (!petMode) {
+      container.addEventListener('pointerenter', invalidateRect);
+      container.addEventListener('click', handleCanvasClick);
+      container.addEventListener('pointermove', handlePointerMove);
+      container.addEventListener('pointerdown', handlePointerDown);
+      container.addEventListener('pointerup', handlePointerUp);
+      container.addEventListener('pointercancel', handlePointerUp);
+      container.addEventListener('wheel', handleWheel, { passive: false });
+    }
 
     return () => {
       isDisposed = true;
@@ -445,6 +522,7 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
         } catch {}
       }
       stopSnapshots?.();
+      if (petMode) petRef.current?.onStage(null);
       window.removeEventListener('resize', invalidateRect);
       container.removeEventListener('pointerenter', invalidateRect);
       container.removeEventListener('click', handleCanvasClick);

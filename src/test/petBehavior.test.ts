@@ -142,6 +142,50 @@ describe('PetBehavior', () => {
     expect(ready.tick(9900).frame).toMatchObject({ mode: 'reacting', expression: 'happy', hop: false });
   });
 
+  it('glances after a window switch, but not too often', () => {
+    const pet = new PetBehavior(0, fixed(0.9));
+    pet.windowSwitched(1000);
+    expect(pet.tick(1100).frame).toMatchObject({ mode: 'reacting', gaze: { x: 0.7, y: 0.05 } });
+    expect(run(pet, 1200, 3000).frame.mode).toBe('idle');
+    pet.windowSwitched(3500);
+    expect(pet.tick(3600).frame.mode).toBe('idle');
+    pet.windowSwitched(9500);
+    expect(pet.tick(9600).frame.mode).toBe('reacting');
+  });
+
+  it('listens to music: relaxed face, head dips on the beat', () => {
+    const pet = new PetBehavior(0, fixed(0.5));
+    pet.setIdleActions(false);
+    pet.setMusic(true);
+    expect(pet.tick(100).frame).toMatchObject({ mode: 'idle', expression: 'relaxed', gaze: null });
+    pet.beat(200);
+    expect(pet.tick(300).frame.gaze).toEqual({ x: 0, y: -0.55 });
+    expect(pet.tick(500).frame.gaze).toBeNull();
+    pet.setMusic(false);
+    expect(pet.tick(600).frame.expression).toBeNull();
+  });
+
+  it('ignores music and glances while saving power', () => {
+    const pet = new PetBehavior(0, fixed(0.5));
+    pet.setIdleActions(false);
+    pet.setSaving(true);
+    pet.setMusic(true);
+    pet.beat(200);
+    expect(pet.tick(300).frame).toMatchObject({ expression: null, gaze: null });
+    pet.windowSwitched(400);
+    expect(pet.tick(500).frame.mode).toBe('idle');
+  });
+
+  it('greets with a wave when the character writes on their own, also out of a doze', () => {
+    const pet = new PetBehavior(0, fixed(0.5));
+    pet.setIdleActions(false);
+    run(pet, 0, DOZE_AFTER_MS + 200);
+    pet.announce(DOZE_AFTER_MS + 300);
+    const woke = pet.tick(DOZE_AFTER_MS + 300);
+    expect(woke.frame).toMatchObject({ mode: 'reacting', expression: 'happy', hop: true });
+    expect(woke.cues).toContainEqual({ kind: 'gesture', role: 'greeting' });
+  });
+
   it('counts 23:00 to 06:00 as night', () => {
     expect([22, 23, 0, 5, 6, 12].map(isNightHour)).toEqual([false, true, true, true, false, false]);
   });

@@ -73,24 +73,10 @@
   über `_NET_CLIENT_LIST_STACKING` lesen, unter Wayland bewusst nur Boden und Ränder.
 
 ### Bedienung & Einstellungen
-- [ ] **Tastenkürzel frei belegen:** Strg+Alt+Umschalt+P ist fest; Aufnahme eines eigenen Kürzels im Tab, Hinweis bei
-  Belegung durch ein anderes Programm (bisher nur Log-Warnung).
-
-### Verhalten & Persönlichkeit
-- [ ] **Nachts leiser:** Die Figur spricht und reagiert nachts mit geringerer Lautstärke (Verhalten nach Hormonen und
-  Tageszeit ist seit 29.10.2026 erledigt).
-- [ ] **Reaktion auf den Desktop:** auf Fensterwechsel, Musik-Wiedergabe (Kopfnicken im Takt) oder lange Untätigkeit
-  reagieren – nur aus lokalen Signalen, ohne Bildschirminhalt zu lesen.
-- [ ] **Proaktive Nachrichten über das Pet:** Schreibt die Figur von sich aus (auch für andere Chats), meldet sie sich
-  per Sprechblase und kurzer Geste statt nur per Benachrichtigung; Klick öffnet den Chat.
 - [ ] **Mehrere Pets:** Bei Gruppenchats auf Wunsch mehrere Figuren gleichzeitig, die sich gegenseitig anschauen und
   nacheinander sprechen (eigene Fenster, gemeinsame Physik).
 
 ### Darstellung
-- [ ] **Live2D- und Porträt-Pet:** Für Nutzer ohne 3D-Modell das Live2D-Modell bzw. das atmende Porträt als Pet (Inochi2D läuft seit 27.10.2026)
-  (Treffertest und Zonen über `hitTest` bzw. Bildmaske).
-
-### Leistung & Qualität
 - [ ] **E2E-Test fürs Pet-Fenster:** tauri-driver mit zweitem Fenster (Öffnen, Zustand vom Hauptfenster, Ausblenden,
   Wiederkehr beim Start); Physik und Verhalten sind bereits per Vitest abgedeckt.
 - [ ] **Speicher des Pet-Webviews messen** (zweiter WebView2-Prozess, Modell doppelt geladen) und ggf. Modelldaten aus

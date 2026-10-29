@@ -158,6 +158,49 @@ fn spawn_platform_watch(app: AppHandle) {
     });
 }
 
+/// Reads the loudness of the default output while the pet is shown and tells it whether music
+/// plays (`pet:music`, bool) and when a beat falls (`pet:beat`).
+#[cfg(windows)]
+fn spawn_music_watch(app: AppHandle) {
+    use crate::modules::desktop_audio::{BeatDetector, Meter};
+    std::thread::spawn(move || {
+        let mut meter: Option<Meter> = None;
+        let mut detector = BeatDetector::default();
+        let mut music = false;
+        loop {
+            let Some(window) = app.get_webview_window(PET_LABEL) else {
+                break;
+            };
+            if !window.is_visible().unwrap_or(false) {
+                meter = None;
+                std::thread::sleep(std::time::Duration::from_millis(500));
+                continue;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(25));
+            if meter.is_none() {
+                meter = Meter::open();
+                if meter.is_none() {
+                    // No output device (or none readable): look again later.
+                    std::thread::sleep(std::time::Duration::from_secs(5));
+                    continue;
+                }
+            }
+            let Some(peak) = meter.as_ref().and_then(Meter::peak) else {
+                meter = None;
+                continue;
+            };
+            let sample = detector.push(peak, std::time::Instant::now());
+            if let Some(playing) = sample.music {
+                music = playing;
+                let _ = window.emit_to(PET_LABEL, "pet:music", playing);
+            }
+            if sample.beat && music {
+                let _ = window.emit_to(PET_LABEL, "pet:beat", ());
+            }
+        }
+    });
+}
+
 #[tauri::command]
 pub async fn toggle_desktop_pet(
     app: AppHandle,
@@ -219,6 +262,8 @@ pub async fn toggle_desktop_pet(
         spawn_cursor_watch(app.clone());
         #[cfg(windows)]
         spawn_platform_watch(app.clone());
+        #[cfg(windows)]
+        spawn_music_watch(app.clone());
     }
     state.companion_engine.set_overlay_active(enable);
     notify_open(&app, enable);
@@ -293,13 +338,109 @@ pub fn tray_double_click(app: &AppHandle) {
     request_come(app);
 }
 
+/// File in the config folder with the shortcut the user chose (absent = `PET_SHORTCUT`).
+#[cfg(desktop)]
+fn shortcut_file() -> std::path::PathBuf {
+    crate::modules::paths::base_dirs().0.join("pet_shortcut.txt")
+}
+
+/// The shortcut in use: the chosen one, else the default.
+#[cfg(desktop)]
+fn chosen_shortcut() -> String {
+    std::fs::read_to_string(shortcut_file())
+        .map(|text| text.trim().to_string())
+        .ok()
+        .filter(|text| !text.is_empty())
+        .unwrap_or_else(|| PET_SHORTCUT.to_string())
+}
+
 /// A shortcut another program holds already is no reason to fail the start.
 #[cfg(desktop)]
 pub fn register_shortcut(app: &AppHandle) {
     use tauri_plugin_global_shortcut::GlobalShortcutExt;
-    if let Err(e) = app.global_shortcut().register(PET_SHORTCUT) {
-        tracing::warn!("Tastenkürzel {PET_SHORTCUT} für das Desktop-Pet nicht belegt: {e}");
+    let shortcut = chosen_shortcut();
+    if let Err(e) = app.global_shortcut().register(shortcut.as_str()) {
+        tracing::warn!("Tastenkürzel {shortcut} für das Desktop-Pet nicht belegt: {e}");
     }
+}
+
+/// The pet's shortcut for the settings tab.
+#[derive(serde::Serialize)]
+pub struct PetShortcut {
+    pub shortcut: String,
+    pub default: String,
+    /// Whether the system accepted it at the start (false: another program holds it).
+    pub registered: bool,
+}
+
+#[cfg(desktop)]
+fn shortcut_info(app: &AppHandle) -> PetShortcut {
+    use tauri_plugin_global_shortcut::GlobalShortcutExt;
+    let shortcut = chosen_shortcut();
+    let registered = shortcut
+        .parse::<tauri_plugin_global_shortcut::Shortcut>()
+        .map(|parsed| app.global_shortcut().is_registered(parsed))
+        .unwrap_or(false);
+    PetShortcut {
+        shortcut,
+        default: PET_SHORTCUT.to_string(),
+        registered,
+    }
+}
+
+#[cfg(not(desktop))]
+fn shortcut_info(_app: &AppHandle) -> PetShortcut {
+    PetShortcut {
+        shortcut: String::new(),
+        default: String::new(),
+        registered: false,
+    }
+}
+
+#[tauri::command]
+pub fn get_pet_shortcut(app: AppHandle) -> PetShortcut {
+    shortcut_info(&app)
+}
+
+/// Chooses a new shortcut (empty = the default). A combination another program holds, or one
+/// that does not parse, is refused and the old one stays.
+#[tauri::command]
+pub fn set_pet_shortcut(app: AppHandle, shortcut: String) -> Result<PetShortcut, String> {
+    #[cfg(desktop)]
+    {
+        use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut};
+        let wanted = match shortcut.trim() {
+            "" => PET_SHORTCUT.to_string(),
+            text => text.to_string(),
+        };
+        let parsed: Shortcut = wanted.parse().map_err(|e| format!("{e}"))?;
+        let old = chosen_shortcut();
+        if old != wanted {
+            let manager = app.global_shortcut();
+            if let Ok(previous) = old.parse::<Shortcut>() {
+                let _ = manager.unregister(previous);
+            }
+            if let Err(e) = manager.register(parsed) {
+                // Back to the old one, which was free a moment ago.
+                if let Ok(previous) = old.parse::<Shortcut>() {
+                    let _ = manager.register(previous);
+                }
+                return Err(format!("{e}"));
+            }
+            let file = shortcut_file();
+            if wanted == PET_SHORTCUT {
+                let _ = std::fs::remove_file(&file);
+            } else {
+                if let Some(dir) = file.parent() {
+                    let _ = std::fs::create_dir_all(dir);
+                }
+                std::fs::write(&file, &wanted).map_err(|e| format!("{e}"))?;
+            }
+        }
+    }
+    #[cfg(not(desktop))]
+    let _ = &shortcut;
+    Ok(shortcut_info(&app))
 }
 
 /// "Back to OtakuSoul" from the pet's menu: also brings the main window back from the tray.

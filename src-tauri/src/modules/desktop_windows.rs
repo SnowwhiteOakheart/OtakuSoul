@@ -79,6 +79,9 @@ pub struct ScreenState {
     pub fullscreen: bool,
     /// The session is locked (lock screen, user switch, UAC prompt).
     pub locked: bool,
+    /// Handle of the window in front (0: none, the pet itself or the shell) - only to notice
+    /// that it changed; nothing of its title or content is read.
+    pub focus: isize,
 }
 
 #[cfg(windows)]
@@ -86,6 +89,7 @@ pub fn screen_state(exclude: isize) -> ScreenState {
     ScreenState {
         fullscreen: win::foreground_fullscreen(exclude),
         locked: win::session_locked(),
+        focus: win::foreground_handle(exclude),
     }
 }
 
@@ -227,6 +231,19 @@ mod win {
 
     /// The foreground window covers its whole monitor (taskbar included); a maximised window
     /// leaves the taskbar free and does not count. The desktop itself never counts.
+    pub fn foreground_handle(exclude: isize) -> isize {
+        use windows::Win32::UI::WindowsAndMessaging::GetForegroundWindow;
+        // SAFETY: plain query without arguments.
+        let hwnd = unsafe { GetForegroundWindow() };
+        if hwnd.is_invalid()
+            || hwnd.0 as isize == exclude
+            || SHELL_CLASSES.contains(&class_name(hwnd).as_str())
+        {
+            return 0;
+        }
+        hwnd.0 as isize
+    }
+
     pub fn foreground_fullscreen(exclude: isize) -> bool {
         use windows::Win32::Graphics::Gdi::{
             GetMonitorInfoW, MONITOR_DEFAULTTONEAREST, MONITORINFO, MonitorFromWindow,

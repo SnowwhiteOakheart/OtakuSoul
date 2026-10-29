@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { api } from '../services/api';
 import { notify, onNotificationClick } from '../services/notifications';
+import { announceOnPet } from '../services/desktopPet';
 import { translate } from '../i18n';
 import { useAppStore } from '../store/useAppStore';
 import { toast } from '../components/ui/feedback';
@@ -122,6 +123,7 @@ async function writeElsewhereIfDue(): Promise<boolean> {
     const character = state.availableCharacters.find((c) => c.id === session.character_id);
     const name = character ? presentedAs(character, state.replyLanguage).name : '';
     const after = useAppStore.getState();
+    void announceOnPet(stored.content, { charId: session.character_id, chatId: session.id });
     if (document.hidden || !document.hasFocus()) {
       if (after.proactive.notify) await notify(name, stored.content, { charId: session.character_id, chatId: session.id });
     } else if (after.activeChatId !== session.id || after.activeTab !== 'chat') {
@@ -200,6 +202,7 @@ async function writeIfDue(startup: boolean, decided: () => void): Promise<boolea
 
   const name = presentedAs(activeCharacter, state.replyLanguage).name;
   const after = useAppStore.getState();
+  void announceOnPet(stored.content, { charId: activeCharacter.id, chatId: stored.chat_id });
   if (document.hidden || !document.hasFocus()) {
     if (after.proactive.notify) await notify(name, stored.content, { charId: activeCharacter.id, chatId: stored.chat_id });
   } else if (after.activeTab !== 'chat') {

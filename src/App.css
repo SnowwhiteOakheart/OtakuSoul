@@ -302,6 +302,23 @@
     60% { transform: translateY(0); }
     75% { transform: translateY(-2%); }
   }
+  /* Portrait pet: slow breathing, a nod while it speaks. */
+  .pet-portrait-breath {
+    animation: pet-portrait-breath 4.5s ease-in-out infinite;
+    transform-origin: 50% 100%;
+  }
+  .pet-portrait-talk {
+    animation: pet-portrait-talk 0.32s ease-in-out infinite;
+    transform-origin: 50% 100%;
+  }
+  @keyframes pet-portrait-breath {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.025); }
+  }
+  @keyframes pet-portrait-talk {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.035) translateY(-1%); }
+  }
   /* Steps while the pet walks along the floor. */
   .pet-walk {
     animation: pet-walk 0.5s ease-in-out infinite;

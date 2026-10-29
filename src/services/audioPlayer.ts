@@ -55,6 +55,12 @@ export class AudioPlaybackManager {
   /** Voice playing in another window (desktop pet: the main window plays, the pet moves its mouth). */
   private remotePlaying = false;
   private generation = 0;
+  /** Extra volume factor for each clip (the desktop pet's voice is quieter at night). */
+  private gainAdjust: () => number = () => 1;
+
+  setGainAdjust(adjust: () => number) {
+    this.gainAdjust = adjust;
+  }
   private state: AudioPlaybackState = 'idle';
 
   private readonly onFrameCallbacks = new Set<(amplitude: number, visemes: Visemes) => void>();
@@ -165,7 +171,7 @@ export class AudioPlaybackManager {
     const source = context.createBufferSource();
     source.buffer = buffer;
     const volume = context.createGain();
-    volume.gain.value = gain;
+    volume.gain.value = gain * this.gainAdjust();
     source.connect(volume);
     volume.connect(context.destination);
     if (this.analyser) source.connect(this.analyser);

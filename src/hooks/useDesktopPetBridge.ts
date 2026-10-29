@@ -4,7 +4,7 @@ import { useAppStore } from '../store/useAppStore';
 import { audioPlayer } from '../services/audioPlayer';
 import { streamingTts } from '../services/streamingTts';
 import { api } from '../services/api';
-import { manualEmotion, resolveInochi2dPath, resolveVrmPath } from '../components/avatars/avatarMatch';
+import { manualEmotion, resolveInochi2dPath, resolveLive2dPath, resolveVrmPath } from '../components/avatars/avatarMatch';
 import { APP_DEFAULT_COMPANION_NAME } from '../constants/branding';
 import {
   PET_AUDIO_EVENT,
@@ -18,7 +18,9 @@ import {
   PET_STATE_EVENT,
   PET_TOGGLE_EVENT,
   PET_VISIBILITY_EVENT,
+  PORTRAIT_PREFIX,
   loadPetOpen,
+  loadPetPrefs,
   type PetAudioFrame,
   type PetSay,
   type PetSentence,
@@ -26,6 +28,7 @@ import {
 } from '../services/desktopPet';
 import { bubbleText } from '../components/companion/petBehavior';
 import { translate } from '../i18n';
+import { isNightHour, NIGHT_VOLUME } from '../utils/dayTime';
 import { errorMessage } from '../utils/errors';
 
 /** A reply counts as new this long after a generation ended (also a regenerated one). */
@@ -46,13 +49,31 @@ function lastReplyKey(s: StoreState): string | null {
 
 /** The figure's models the pet chooses from (also the Desktop-Pet tab's preview). */
 export function petModels(
-  s: Pick<StoreState, 'activeCharacter' | 'scannedVrms' | 'activeVrmPath' | 'scannedInochi2ds' | 'activeInochi2dPath' | 'avatarMode'>,
-): Pick<PetState, 'modelPath' | 'vrmPath' | 'inochi2dPath'> {
+  s: Pick<
+    StoreState,
+    | 'activeCharacter'
+    | 'scannedVrms'
+    | 'activeVrmPath'
+    | 'scannedInochi2ds'
+    | 'activeInochi2dPath'
+    | 'scannedLive2ds'
+    | 'activeLive2dPath'
+    | 'avatarMode'
+  >,
+): Pick<PetState, 'modelPath' | 'vrmPath' | 'inochi2dPath' | 'live2dPath' | 'portraitPath' | 'portrait'> {
   const vrmPath = resolveVrmPath(s.activeCharacter, s.scannedVrms, s.activeVrmPath);
   const inochi2dPath = resolveInochi2dPath(s.activeCharacter, s.scannedInochi2ds, s.activeInochi2dPath);
-  // The chat shows an Inochi2D puppet: the pet shows it too; otherwise the 3D model (unless
-  // the pet's menu asks for one of them).
-  return { modelPath: (s.avatarMode === 'inochi2d' && inochi2dPath) || vrmPath, vrmPath, inochi2dPath };
+  const live2dPath = resolveLive2dPath(s.activeCharacter, s.scannedLive2ds, s.activeLive2dPath);
+  const portrait = s.activeCharacter?.avatar_data_url ?? '';
+  const portraitPath = portrait ? `${PORTRAIT_PREFIX}${s.activeCharacter?.id ?? ''}` : '';
+  // The chat shows an Inochi2D puppet, a Live2D model or the portrait: the pet shows it too;
+  // otherwise the 3D model (unless the pet's menu asks for one of them).
+  const shown =
+    (s.avatarMode === 'inochi2d' && inochi2dPath) ||
+    (s.avatarMode === 'live2d' && live2dPath) ||
+    (s.avatarMode === '2d' && portraitPath) ||
+    vrmPath;
+  return { modelPath: shown, vrmPath, inochi2dPath, live2dPath: live2dPath ?? '', portraitPath, portrait };
 }
 
 function petState(s: StoreState): PetState {
@@ -130,6 +151,8 @@ export function useDesktopPetBridge(enabled = true) {
         s.avatarMode !== prev.avatarMode ||
         s.scannedInochi2ds !== prev.scannedInochi2ds ||
         s.activeInochi2dPath !== prev.activeInochi2dPath ||
+        s.scannedLive2ds !== prev.scannedLive2ds ||
+        s.activeLive2dPath !== prev.activeLive2dPath ||
         s.currentEmotion !== prev.currentEmotion ||
         s.avatarMotions !== prev.avatarMotions ||
         s.avatarGesture !== prev.avatarGesture ||
@@ -170,6 +193,9 @@ export function useDesktopPetBridge(enabled = true) {
         .then((expression) => emitTo(PET_LABEL, PET_SENTENCE_EVENT, { text, ms, expression } satisfies PetSentence))
         .catch(() => {});
     });
+
+    // The pet's voice is quieter at night while it is open (its switch in the menu and the tab).
+    audioPlayer.setGainAdjust(() => (open && loadPetPrefs().quietAtNight && isNightHour(new Date().getHours()) ? NIGHT_VOLUME : 1));
 
     const unlisteners: Promise<() => void>[] = [
       listen<boolean>(PET_VISIBILITY_EVENT, (event) => {
@@ -221,6 +247,7 @@ export function useDesktopPetBridge(enabled = true) {
       stopReopen();
       stopSentences();
       stopFrames();
+      audioPlayer.setGainAdjust(() => 1);
       for (const unlisten of unlisteners) void unlisten.then((stop) => stop());
     };
   }, [enabled]);

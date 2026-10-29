@@ -1,4 +1,6 @@
+import { emitTo } from '@tauri-apps/api/event';
 import type { AvatarMotion } from '../types';
+import { bubbleText } from '../components/companion/petBehavior';
 import { DEFAULT_PET_FRAMING, PET_LIFT_RANGE, PET_ZOOM_RANGE, type PetFraming } from './avatarViewState';
 import type { GestureRequest } from '../utils/avatarGestures';
 import type { Visemes } from './lipSync';
@@ -35,7 +37,14 @@ export const PET_SCREEN_EVENT = 'pet:screen';
 export interface PetScreen {
   fullscreen: boolean;
   locked: boolean;
+  /** Handle of the window in front (0: none or the pet itself); only a change counts. */
+  focus: number;
 }
+
+/** Backend → pet: music starts or stops playing on the computer (payload boolean; Windows only). */
+export const PET_MUSIC_EVENT = 'pet:music';
+/** Backend → pet: a beat of that music. */
+export const PET_BEAT_EVENT = 'pet:beat';
 
 /** Backend → pet: walkable top edges of the other windows (Windows only). */
 export const PET_PLATFORMS_EVENT = 'pet:platforms';
@@ -58,6 +67,11 @@ export const PET_SAY_EVENT = 'pet:say';
 
 export interface PetSay {
   text: string;
+  /**
+   * A message the character wrote on their own: the pet greets, keeps the bubble longer and a
+   * click on it opens that chat.
+   */
+  chat?: { charId: string; chatId: string };
 }
 
 /** Both ways: the pet's switches changed (its menu or the Desktop-Pet tab); payload `PetPrefs`. */
@@ -82,6 +96,10 @@ export interface PetState {
   /** The figure's 3D model and Inochi2D puppet ("" if none), for the pet's own choice. */
   vrmPath: string;
   inochi2dPath: string;
+  /** The Live2D model ("" if none) and the portrait: a marker path (`portrait:<id>`, "" without picture) and its picture. */
+  live2dPath: string;
+  portraitPath: string;
+  portrait: string;
   /** GoEmotions name (shown in the status panel). */
   emotion: string;
   /** VRM expression behind it (drives the face). */
@@ -234,17 +252,31 @@ export interface PetPrefs {
   hideInFullscreen: boolean;
   /** On battery the figure rests: no random actions, ~12 FPS while it stands still. */
   batterySaver: boolean;
+  /** The voice is quieter at night (23–6 h) while the pet is open. */
+  quietAtNight: boolean;
+  /** Glances at a window switch and nods along to music (local signals only, nothing read). */
+  reactToDesktop: boolean;
   /** Which of the figure's models the pet shows: as in the chat, or always 3D / Inochi2D. */
   figure: PetFigureChoice;
 }
 
-export type PetFigureChoice = 'chat' | '3d' | 'inochi2d';
-const FIGURE_CHOICES: PetFigureChoice[] = ['chat', '3d', 'inochi2d'];
+export type PetFigureChoice = 'chat' | '3d' | 'inochi2d' | 'live2d' | 'portrait';
+const FIGURE_CHOICES: PetFigureChoice[] = ['chat', '3d', 'inochi2d', 'live2d', 'portrait'];
+
+/** The portrait has no file: its "model path" is a marker that still keys size and framing. */
+export const PORTRAIT_PREFIX = 'portrait:';
+export const isPortraitPath = (path: string) => path.startsWith(PORTRAIT_PREFIX);
+export const isLive2dPath = (path: string) => /\.model3?\.json$/i.test(path);
 
 /** The model the pet shows for its choice; one the figure lacks falls back to the chat's. */
-export function petModelPath(state: Pick<PetState, 'modelPath' | 'vrmPath' | 'inochi2dPath'>, figure: PetFigureChoice): string {
+export function petModelPath(
+  state: Pick<PetState, 'modelPath' | 'vrmPath' | 'inochi2dPath' | 'live2dPath' | 'portraitPath'>,
+  figure: PetFigureChoice,
+): string {
   if (figure === '3d' && state.vrmPath) return state.vrmPath;
   if (figure === 'inochi2d' && state.inochi2dPath) return state.inochi2dPath;
+  if (figure === 'live2d' && state.live2dPath) return state.live2dPath;
+  if (figure === 'portrait' && state.portraitPath) return state.portraitPath;
   return state.modelPath;
 }
 
@@ -256,6 +288,8 @@ const DEFAULT_PREFS: PetPrefs = {
   rideWindows: false,
   hideInFullscreen: true,
   batterySaver: true,
+  quietAtNight: true,
+  reactToDesktop: true,
   figure: 'chat',
 };
 
@@ -296,6 +330,8 @@ export function loadPetPrefs(): PetPrefs {
       hideInFullscreen:
         typeof stored?.hideInFullscreen === 'boolean' ? stored.hideInFullscreen : DEFAULT_PREFS.hideInFullscreen,
       batterySaver: typeof stored?.batterySaver === 'boolean' ? stored.batterySaver : DEFAULT_PREFS.batterySaver,
+      quietAtNight: typeof stored?.quietAtNight === 'boolean' ? stored.quietAtNight : DEFAULT_PREFS.quietAtNight,
+      reactToDesktop: typeof stored?.reactToDesktop === 'boolean' ? stored.reactToDesktop : DEFAULT_PREFS.reactToDesktop,
       figure: FIGURE_CHOICES.includes(stored?.figure as PetFigureChoice) ? stored!.figure! : DEFAULT_PREFS.figure,
     };
   } catch {
@@ -353,3 +389,56 @@ export const isPetWindow = () =>
 
 /** Moods offered in the pet's menu (GoEmotions names). */
 export const PET_MOODS = ['joy', 'love', 'amusement', 'surprise', 'curiosity', 'embarrassment', 'sadness', 'anger', 'neutral'] as const;
+
+/** The pet's global shortcut as the backend reports it. */
+export interface PetShortcut {
+  shortcut: string;
+  default: string;
+  /** False when another program holds the combination. */
+  registered: boolean;
+}
+
+type KeyLike = Pick<KeyboardEvent, 'code' | 'ctrlKey' | 'altKey' | 'shiftKey' | 'metaKey'>;
+
+const MODIFIER_CODES = /^(Control|Shift|Alt|Meta|OS)(Left|Right)$/;
+const NAMED_KEYS = /^(Space|Arrow(Up|Down|Left|Right)|Home|End|PageUp|PageDown|Insert|Delete|F([1-9]|1\d|2[0-4]))$/;
+
+/**
+ * The key combination of a key press as a shortcut string (`Control+Alt+KeyP` style as the
+ * global-shortcut plugin reads it). Null while only modifiers are held, no modifier besides
+ * Shift is held (that would swallow normal typing) or the key cannot be a shortcut.
+ */
+export function acceleratorFromKey(event: KeyLike): string | null {
+  if (MODIFIER_CODES.test(event.code)) return null;
+  if (!event.ctrlKey && !event.altKey && !event.metaKey) return null;
+  const letter = /^Key([A-Z])$/.exec(event.code)?.[1] ?? /^Digit(\d)$/.exec(event.code)?.[1];
+  const key = letter ?? (NAMED_KEYS.test(event.code) ? event.code : null);
+  if (!key) return null;
+  const parts = [event.ctrlKey && 'Control', event.altKey && 'Alt', event.shiftKey && 'Shift', event.metaKey && 'Super'];
+  return [...parts.filter(Boolean), key].join('+');
+}
+
+/** A shortcut string for display ("Ctrl+Alt+Shift+P"). */
+export function formatAccelerator(accelerator: string, mac = /Mac/i.test(navigator.platform)): string {
+  return accelerator
+    .replace(/CommandOrControl|CmdOrCtrl/gi, mac ? 'Cmd' : 'Ctrl')
+    .replace(/Control/g, 'Ctrl')
+    .replace(/(Super|Meta)/g, mac ? 'Cmd' : 'Win')
+    .replace(/Alt/g, mac ? 'Option' : 'Alt');
+}
+
+/**
+ * A message the character wrote on their own, announced by the open desktop pet: it greets and
+ * shows the text in its bubble (a click opens the chat). False when no pet is open or it has
+ * its bubbles off, so the caller knows only a notification reaches the user.
+ */
+export async function announceOnPet(content: string, chat: NonNullable<PetSay['chat']>): Promise<boolean> {
+  const { useAppStore } = await import('../store/useAppStore');
+  if (!useAppStore.getState().companionState?.overlay_active || !loadPetPrefs().chatBubbles) return false;
+  const text = bubbleText(content);
+  if (!text) return false;
+  return emitTo(PET_LABEL, PET_SAY_EVENT, { text, chat } satisfies PetSay).then(
+    () => true,
+    () => false,
+  );
+}

@@ -87,8 +87,7 @@ export interface PetDrive {
 
 export const NEUTRAL_DRIVE: PetDrive = { fatigue: 50, dopamine: 50, cortisol: 50, night: false };
 
-/** Night hours (local time) in which the figure is sleepier and calmer. */
-export const isNightHour = (hour: number) => hour >= 23 || hour < 6;
+export { isNightHour } from '../../utils/dayTime';
 
 /** 0 at neutral or below, 1 at the top of the scale. */
 const above = (value: number) => Math.min(1, Math.max(0, (value - 50) / 50));
@@ -106,6 +105,9 @@ const WALK_MS: [number, number] = [3000, 7000];
 const SIT_MS: [number, number] = [12_000, 30_000];
 /** How far the figure turns into its walking direction (about 50°, the face stays visible). */
 export const WALK_TURN = 0.9;
+/** A glance after a window switch lasts this long; the next one waits this long. */
+const GLANCE_MS = 900;
+const GLANCE_GAP_MS = 8000;
 /** "Komm her" gives up after this long (target out of reach, e.g. on another floor). */
 const COME_MS = 30_000;
 
@@ -147,6 +149,9 @@ export class PetBehavior {
   private cues: PetCue[] = [];
   private idleActions = true;
   private saving = false;
+  private music = false;
+  private beatUntil = 0;
+  private lastGlance = Number.NEGATIVE_INFINITY;
   private physics = true;
   private grounded = true;
   /** Standing on another window's edge (sitting is only done there, legs over the edge). */
@@ -225,6 +230,15 @@ export class PetBehavior {
     this.cues.push({ kind: 'gesture', role: 'greeting' });
   }
 
+  /** The character wrote on their own: wakes up, brightens and waves for attention. */
+  announce(now: number) {
+    this.lastPointer = now;
+    if (this.mode === 'dozing') this.mode = 'idle';
+    this.react(now, 'happy', 1600, { x: 0, y: 0.1 });
+    this.hopUntil = now + HOP_MS;
+    this.cues.push({ kind: 'gesture', role: 'greeting' });
+  }
+
   /** A hand is held (pressed without dragging): it blushes and looks at it until let go. */
   holdHand(now: number) {
     this.lastPointer = now;
@@ -261,6 +275,24 @@ export class PetBehavior {
   private dozeAfter() {
     const { fatigue, night } = this.drive;
     return DOZE_AFTER_MS * (1 - 0.6 * above(fatigue)) * (night ? 0.5 : 1);
+  }
+
+  /** Music plays on the computer: the figure looks relaxed and nods on the beats. */
+  setMusic(playing: boolean) {
+    this.music = playing;
+  }
+
+  /** A beat of that music. */
+  beat(now: number) {
+    if (this.music && this.mode === 'idle' && !this.saving) this.beatUntil = now + 200;
+  }
+
+  /** Another window came to the front: a quick glance after it (not more often than every 8 s). */
+  windowSwitched(now: number) {
+    if (this.mode !== 'idle' || this.saving || now - this.lastGlance < GLANCE_GAP_MS) return;
+    this.lastGlance = now;
+    const side = this.random() < 0.5 ? -1 : 1;
+    this.react(now, null, GLANCE_MS, { x: side * 0.7, y: 0.05 });
   }
 
   /** Power-saving: no random actions (dozing and reactions to the user stay). */
@@ -472,9 +504,12 @@ export class PetBehavior {
       default: {
         const direction = this.action?.kind === 'walk' ? this.action.direction! : 0;
         const sitting = this.action?.kind === 'sit';
+        const swaying = this.music && !this.action && !this.saving;
         frame = {
           ...still,
           ...this.actionFrame(now),
+          // Listening to music: relaxed, the head dips on each beat.
+          ...(swaying ? { expression: 'relaxed', gaze: now < this.beatUntil ? { x: 0, y: -0.55 } : null } : {}),
           mode: direction ? 'walking' : sitting ? 'sitting' : 'idle',
           walk: direction,
           turn: direction * WALK_TURN,

@@ -850,6 +850,16 @@ export const api = {
     return await invoke<boolean>('toggle_desktop_pet', { enable, placement: placement ?? null });
   },
 
+  /** The pet's global shortcut (chosen or default) and whether the system accepted it. */
+  getPetShortcut: async (): Promise<{ shortcut: string; default: string; registered: boolean }> => {
+    return await invoke('get_pet_shortcut');
+  },
+
+  /** Chooses the pet's shortcut ('' = default); rejects when another program holds it. */
+  setPetShortcut: async (shortcut: string): Promise<{ shortcut: string; default: string; registered: boolean }> => {
+    return await invoke('set_pet_shortcut', { shortcut });
+  },
+
   showMainWindow: async (): Promise<void> => {
     await invoke('show_main_window');
   },
