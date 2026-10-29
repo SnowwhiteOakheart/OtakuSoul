@@ -21,7 +21,7 @@ import { translate, useTranslation } from '../../i18n';
 import { errorMessage } from '../../utils/errors';
 import type { GestureRequest, LoopRole } from '../../utils/avatarGestures';
 import { DropdownMenu } from '../ui/DropdownMenu';
-import type { PetFigure } from './avatarStage';
+import { SAVER_FRAME_MS, type PetFigure } from './avatarStage';
 
 interface Inochi2dViewerProps {
   /** Absolute path of the `.inp`/`.inx` file. */
@@ -126,6 +126,7 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
     const mouse = { x: 0, y: 0 };
     let pendingProbe: { x: number; y: number; onResult: (hit: boolean) => void } | null = null;
     let paused = false;
+    let saver = false;
     // A 2D puppet cannot turn round: a turn (walking) becomes looking that way.
     let turn = 0;
     const probePixel = new Uint8Array(4);
@@ -202,6 +203,10 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
     let last = 0;
     const loop = (now: number) => {
       if (disposed) return;
+      if (saver && last && now - last < SAVER_FRAME_MS) {
+        frame = requestAnimationFrame(loop);
+        return;
+      }
       const dt = last ? Math.min((now - last) / 1000, 0.1) : 0;
       last = now;
       const animator = animatorRef.current;
@@ -297,6 +302,9 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
             },
             setPaused: (next) => {
               paused = next;
+            },
+            setSaver: (next) => {
+              saver = next;
             },
             setTurn: (yaw) => {
               turn = yaw;

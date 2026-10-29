@@ -70,6 +70,7 @@ import {
   type PetCursor,
   type PetFramingChange,
   type PetPrefs,
+  watchOnBattery,
   type PetSay,
   type PetScreen,
   type PetSentence,
@@ -485,6 +486,15 @@ export const DesktopPet: React.FC = () => {
     cueTexts.current = { doze: t('pet.doze'), wake: t('pet.wake') };
   });
 
+  // Power-saving on battery: no random actions, and at rest only ~12 FPS.
+  const [onBattery, setOnBattery] = useState(false);
+  const savingRef = useRef(false);
+  useEffect(() => watchOnBattery(setOnBattery), []);
+  useEffect(() => {
+    savingRef.current = prefs.batterySaver && onBattery;
+    behavior.setSaving(savingRef.current);
+  }, [behavior, prefs.batterySaver, onBattery]);
+
   // Hormones steer the idle behaviour only while the companion simulates them.
   const driveRef = useRef<PetDrive>(NEUTRAL_DRIVE);
   const driveHormones = companionState?.settings.enable_neurohormones ? companionState.hormones : null;
@@ -522,6 +532,7 @@ export const DesktopPet: React.FC = () => {
       gazeOverride.current = frame.gaze;
       const stage = stageRef.current;
       stage?.setTurn(frame.turn);
+      stage?.setSaver(savingRef.current && (frame.mode === 'idle' || frame.mode === 'dozing'));
       if (stage) {
         const gaze = frame.gaze ?? pointerGaze.current;
         stage.mouse.x = gaze.x;
@@ -780,6 +791,11 @@ export const DesktopPet: React.FC = () => {
           text: t('pet.idleActions'),
           checked: prefs.idleActions,
           action: () => setPrefs((p) => ({ ...p, idleActions: !p.idleActions })),
+        },
+        {
+          text: t('pet.batterySaver'),
+          checked: prefs.batterySaver,
+          action: () => setPrefs((p) => ({ ...p, batterySaver: !p.batterySaver })),
         },
         {
           text: t('pet.chatBubbles'),

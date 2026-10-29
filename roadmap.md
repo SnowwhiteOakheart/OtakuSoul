@@ -95,7 +95,6 @@
 ### Leistung & Qualität
 - [ ] **E2E-Test fürs Pet-Fenster:** tauri-driver mit zweitem Fenster (Öffnen, Zustand vom Hauptfenster, Ausblenden,
   Wiederkehr beim Start); Physik und Verhalten sind bereits per Vitest abgedeckt.
-- [ ] **Sparmodus im Akkubetrieb:** Leerlauf mit 10–15 FPS und ohne zufällige Aktionen, wenn das Gerät auf Akku läuft.
 - [ ] **Speicher des Pet-Webviews messen** (zweiter WebView2-Prozess, Modell doppelt geladen) und ggf. Modelldaten aus
   dem Hauptfenster übergeben statt erneut zu lesen.
 

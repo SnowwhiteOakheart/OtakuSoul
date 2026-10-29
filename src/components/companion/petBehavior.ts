@@ -141,6 +141,7 @@ export class PetBehavior {
   private speaking = false;
   private cues: PetCue[] = [];
   private idleActions = true;
+  private saving = false;
   private physics = true;
   private grounded = true;
   /** Standing on another window's edge (sitting is only done there, legs over the edge). */
@@ -250,6 +251,12 @@ export class PetBehavior {
   private dozeAfter() {
     const { fatigue, night } = this.drive;
     return DOZE_AFTER_MS * (1 - 0.6 * above(fatigue)) * (night ? 0.5 : 1);
+  }
+
+  /** Power-saving: no random actions (dozing and reactions to the user stay). */
+  setSaving(on: boolean) {
+    this.saving = on;
+    if (on && !this.action?.come) this.action = null;
   }
 
   /** Random actions on or off (pet menu). */
@@ -407,7 +414,7 @@ export class PetBehavior {
     }
     if (this.mode !== 'idle') {
       this.action = null;
-    } else if (!this.action && this.idleActions && now >= this.nextActionAt) {
+    } else if (!this.action && this.idleActions && !this.saving && now >= this.nextActionAt) {
       this.startAction(now);
     }
 

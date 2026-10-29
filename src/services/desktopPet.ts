@@ -232,6 +232,8 @@ export interface PetPrefs {
   rideWindows: boolean;
   /** Step back while a game, video or presentation fills the screen. */
   hideInFullscreen: boolean;
+  /** On battery the figure rests: no random actions, ~12 FPS while it stands still. */
+  batterySaver: boolean;
   /** Which of the figure's models the pet shows: as in the chat, or always 3D / Inochi2D. */
   figure: PetFigureChoice;
 }
@@ -253,8 +255,35 @@ const DEFAULT_PREFS: PetPrefs = {
   physics: true,
   rideWindows: false,
   hideInFullscreen: true,
+  batterySaver: true,
   figure: 'chat',
 };
+
+interface BatteryManagerLike extends EventTarget {
+  charging: boolean;
+}
+
+/**
+ * Calls `onChange(true)` while the device runs on battery (and `false` on mains power); stays
+ * silent where the browser has no battery API (desktops, Firefox, Safari). Returns the stop function.
+ */
+export function watchOnBattery(onChange: (onBattery: boolean) => void): () => void {
+  let stopped = false;
+  let battery: BatteryManagerLike | null = null;
+  const report = () => battery && !stopped && onChange(!battery.charging);
+  void (navigator as Navigator & { getBattery?: () => Promise<BatteryManagerLike> })
+    .getBattery?.()
+    .then((manager) => {
+      battery = manager;
+      manager.addEventListener('chargingchange', report);
+      report();
+    })
+    .catch(() => {});
+  return () => {
+    stopped = true;
+    battery?.removeEventListener('chargingchange', report);
+  };
+}
 
 export function loadPetPrefs(): PetPrefs {
   try {
@@ -266,6 +295,7 @@ export function loadPetPrefs(): PetPrefs {
       rideWindows: typeof stored?.rideWindows === 'boolean' ? stored.rideWindows : DEFAULT_PREFS.rideWindows,
       hideInFullscreen:
         typeof stored?.hideInFullscreen === 'boolean' ? stored.hideInFullscreen : DEFAULT_PREFS.hideInFullscreen,
+      batterySaver: typeof stored?.batterySaver === 'boolean' ? stored.batterySaver : DEFAULT_PREFS.batterySaver,
       figure: FIGURE_CHOICES.includes(stored?.figure as PetFigureChoice) ? stored!.figure! : DEFAULT_PREFS.figure,
     };
   } catch {

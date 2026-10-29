@@ -115,6 +115,15 @@ describe('PetBehavior', () => {
     expect(firstAction({ fatigue: 100 }, 0.2)).toBe('yawn');
   });
 
+  it('does nothing on its own while saving power, but still dozes off', () => {
+    const pet = new PetBehavior(0, fixed(0));
+    pet.setSaving(true);
+    const quiet = run(pet, 0, 30_000);
+    expect(quiet.frame).toMatchObject({ mode: 'idle', gaze: null, expression: null, hop: false });
+    expect(quiet.cues).toEqual([]);
+    expect(run(pet, 30_100, DOZE_AFTER_MS + 200).frame.mode).toBe('dozing');
+  });
+
   it('counts 23:00 to 06:00 as night', () => {
     expect([22, 23, 0, 5, 6, 12].map(isNightHour)).toEqual([false, true, true, true, false, false]);
   });

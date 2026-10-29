@@ -3955,6 +3955,7 @@
   "pet.doze": "Хррр …",
   "pet.wake": "Ой! Ты снова здесь.",
   "pet.idleActions": "Двигается сам",
+  "pet.batterySaver": "Экономия при работе от аккумулятора",
   "pet.chatBubbles": "Ответы чата в облачке",
   "pet.physics": "Гравитация и ходьба",
   "pet.rideWindows": "Ездить вместе с окнами",
