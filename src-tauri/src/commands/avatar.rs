@@ -40,6 +40,20 @@ pub fn get_inochi2d_catalog(
     crate::modules::inochi2d::catalog(lang.as_deref().unwrap_or("en"))
 }
 
+/// VRM and Live2D models the hub offers (registry from the data repository).
+#[tauri::command]
+pub fn get_hub_avatars(lang: String) -> Vec<crate::modules::avatar_hub::HubAvatar> {
+    crate::modules::avatar_hub::catalog(&lang)
+}
+
+/// Downloads a hub avatar into the user's folder (SHA-256 checked); returns the file to open.
+#[tauri::command]
+pub async fn download_hub_avatar(
+    avatar_id: String,
+) -> Result<crate::modules::avatar_hub::HubAvatarInstalled, String> {
+    crate::modules::avatar_hub::download_hub_avatar(&avatar_id).await
+}
+
 /// Ready-made motion sets for 3D avatars (registry from the data repository).
 #[tauri::command]
 pub fn get_motion_packs(lang: String) -> Vec<crate::modules::motion_packs::MotionPackItem> {

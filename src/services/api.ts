@@ -3,6 +3,8 @@ import type { ThoughtEvent } from '../types/generated/ThoughtEvent';
 import type { UiLanguage } from '../types/generated/UiLanguage';
 import type { OpenRouterLogin } from '../types/generated/OpenRouterLogin';
 import type { MotionPackItem } from '../types/generated/MotionPackItem';
+import type { HubAvatar } from '../types/generated/HubAvatar';
+import type { HubAvatarInstalled } from '../types/generated/HubAvatarInstalled';
 import { invoke } from '@tauri-apps/api/core';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import {
@@ -841,6 +843,16 @@ export const api = {
     args: JsonObject
   ): Promise<string> => {
     return await invoke<string>('execute_companion_plugin', { pluginId, arguments: args });
+  },
+
+  /** VRM and Live2D models of the hub (registry from the data repository). */
+  getHubAvatars: async (lang: string): Promise<HubAvatar[]> => {
+    return await invoke<HubAvatar[]>('get_hub_avatars', { lang });
+  },
+
+  /** Loads a hub avatar into the user's folder (SHA-256 checked); returns the file to open. */
+  downloadHubAvatar: async (avatarId: string): Promise<HubAvatarInstalled> => {
+    return await invoke<HubAvatarInstalled>('download_hub_avatar', { avatarId });
   },
 
   /** Ready-made motion sets for 3D avatars (from the data repository). */

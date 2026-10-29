@@ -9,6 +9,7 @@ pub mod companion;
 pub mod companion_tools;
 pub mod content_lang;
 pub mod context_window;
+pub mod avatar_hub;
 pub mod desktop_audio;
 pub mod motion_packs;
 pub mod desktop_windows;

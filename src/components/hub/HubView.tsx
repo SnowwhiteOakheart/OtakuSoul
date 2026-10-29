@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { useDragScroll } from '../../hooks/useDragScroll';
 import { useShallow } from 'zustand/react/shallow';
-import { BookOpen, Compass, Dice5, Globe, Link as LinkIcon, RotateCcw, Search, Sparkles, X, type LucideIcon } from 'lucide-react';
+import { BookOpen, Compass, Dice5, Globe, Link as LinkIcon, RotateCcw, Search, Shirt, Sparkles, X, type LucideIcon } from 'lucide-react';
 import { useStoreFields } from '../../store/useAppStore';
 import { useTranslation, type TranslationKey } from '../../i18n';
 import { useHubStore } from './hubStore';
@@ -9,21 +9,25 @@ import { GatewayCharactersTab } from './tabs/GatewayCharactersTab';
 import { ChubFilters, ChubTab } from './tabs/ChubTab';
 import { GatewayLorebooksTab } from './tabs/GatewayLorebooksTab';
 import { GatewayScenesTab } from './tabs/GatewayScenesTab';
+import { HubAvatarsTab } from './tabs/HubAvatarsTab';
 import { UrlImportModal } from './UrlImportModal';
 import { CollectionModal } from './CollectionModal';
 
-type HubTab = 'soul_gateway' | 'chub_ai' | 'lorebooks' | 'scenes';
+type HubTab = 'soul_gateway' | 'chub_ai' | 'lorebooks' | 'scenes' | 'avatars';
 
 const TABS: { id: HubTab; label: string | TranslationKey; translate: boolean; icon: LucideIcon; iconClass: string; search: TranslationKey }[] = [
   { id: 'soul_gateway', label: 'hub.tabGateway', translate: true, icon: Sparkles, iconClass: 'text-accent-400', search: 'hub.searchGateway' },
   { id: 'chub_ai', label: 'Chub AI', translate: false, icon: Globe, iconClass: 'text-cyan-400', search: 'hub.searchChub' },
   { id: 'lorebooks', label: 'hub.tabLorebooks', translate: true, icon: BookOpen, iconClass: 'text-amber-400', search: 'hub.searchLorebooks' },
   { id: 'scenes', label: 'hub.tabScenes', translate: true, icon: Dice5, iconClass: 'text-emerald-400', search: 'hub.searchScenes' },
+  { id: 'avatars', label: 'hub.tabAvatars', translate: true, icon: Shirt, iconClass: 'text-pink-400', search: 'hub.searchAvatars' },
 ];
 
 const reloadTab = (tab: HubTab) => {
   const hub = useHubStore.getState();
   if (tab === 'lorebooks' || tab === 'scenes') void hub.loadCollections();
+  // The avatars tab reads its lists itself when it opens.
+  if (tab === 'avatars') return undefined;
   return { soul_gateway: hub.loadGateway, chub_ai: () => hub.loadChub(1, false), lorebooks: hub.loadLorebooks, scenes: hub.loadScenes }[tab]();
 };
 
@@ -113,7 +117,7 @@ export const HubView = () => {
         <div role="tablist" aria-label={t('hub.tabs')} className="flex items-center gap-1 -mb-px">
           {TABS.map(({ id, label, translate, icon: Icon, iconClass }) => {
             const selected = activeTab.id === id;
-            const count = id === 'chub_ai' ? null : hub[id];
+            const count = id === 'chub_ai' ? null : id === 'avatars' ? 0 : hub[id];
             return (
               <button
                 key={id}
@@ -152,6 +156,7 @@ export const HubView = () => {
         {activeTab.id === 'chub_ai' && <ChubTab />}
         {activeTab.id === 'lorebooks' && <GatewayLorebooksTab />}
         {activeTab.id === 'scenes' && <GatewayScenesTab />}
+        {activeTab.id === 'avatars' && <HubAvatarsTab />}
       </div>
 
       {isUrlModalOpen && <UrlImportModal onClose={() => setIsUrlModalOpen(false)} />}

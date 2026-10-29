@@ -1,0 +1,420 @@
+{
+  "version": 1,
+  "avatars": [
+    {
+      "id": "vrm-seed-san",
+      "kind": "vrm",
+      "name": "Seed-san",
+      "author": "VRM Consortium / pixiv Inc.",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source_url": "https://github.com/vrm-c/vrm-specification/tree/master/samples/Seed-san",
+      "nsfw": false,
+      "entry": "Seed-san.vrm",
+      "files": [
+        {
+          "path": "Seed-san.vrm",
+          "url": "https://raw.githubusercontent.com/vrm-c/vrm-specification/master/samples/Seed-san/vrm/Seed-san.vrm",
+          "sha256": "624d0d554bc205bbdc33e22a68a2c3c20edebb3e573011ead8878a65e5329b23",
+          "size_bytes": 10917800
+        }
+      ],
+      "description": {
+        "de": "Offizielles VRM-1.0-Beispielmodell des VRM-Konsortiums, frei nutzbar (CC0).",
+        "en": "Official VRM 1.0 sample model of the VRM Consortium, free to use (CC0).",
+        "ru": "Официальная пример-модель VRM 1.0 от VRM Consortium, свободное использование (CC0).",
+        "ja": "VRMコンソーシアム公式の VRM 1.0 サンプルモデル(CC0、自由に利用可能)。"
+      }
+    },
+    {
+      "id": "live2d-mao_pro",
+      "kind": "live2d",
+      "name": "Niziiro Mao (PRO)",
+      "author": "Live2D Inc.",
+      "license": "Live2D Free Material License",
+      "license_url": "https://www.live2d.com/eula/live2d-free-material-license-agreement_en.html",
+      "license_note": "This content uses sample data owned and copyrighted by Live2D Inc. The sample data are utilized in accordance with terms and conditions set by Live2D Inc. This content itself is created at the author’s sole discretion.",
+      "source_url": "https://www.live2d.com/en/learn/sample/",
+      "nsfw": false,
+      "entry": "mao_pro/mao_pro.model3.json",
+      "files": [
+        {
+          "path": "mao_pro/ReadMe.txt",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/mao_pro/ReadMe.txt",
+          "sha256": "3b7fc11254f52f2c008c3557878951c472cceb84b35323aa037567f40f48931f",
+          "size_bytes": 2520
+        },
+        {
+          "path": "mao_pro/expressions/exp_01.exp3.json",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/mao_pro/expressions/exp_01.exp3.json",
+          "sha256": "afbe54559e428acdaf43190d1c497792048c35ed37979f33d9a37c70181ddf5b",
+          "size_bytes": 1981
+        },
+        {
+          "path": "mao_pro/expressions/exp_02.exp3.json",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/mao_pro/expressions/exp_02.exp3.json",
+          "sha256": "6d35132627f9e362e526c0ce8c2152ece2b305c9abd3368da43460c2af8538f6",
+          "size_bytes": 1981
+        },
+        {
+          "path": "mao_pro/expressions/exp_03.exp3.json",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/mao_pro/expressions/exp_03.exp3.json",
+          "sha256": "460a3077d61adfdd1e6b9a062d0d7c3fcc2fb74c80f67ec3649982a9fab49bee",
+          "size_bytes": 1981
+        },
+        {
+          "path": "mao_pro/expressions/exp_04.exp3.json",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/mao_pro/expressions/exp_04.exp3.json",
+          "sha256": "abad61f4ec7f1a157d6b914643e5bd4ffb29964e67f538cace420ebc9f69a716",
+          "size_bytes": 1985
+        },
+        {
+          "path": "mao_pro/expressions/exp_05.exp3.json",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/mao_pro/expressions/exp_05.exp3.json",
+          "sha256": "331fe0d9c78861496a9cc9acba9650f295a72af8c36df7036ab8a372840d2cc1",
+          "size_bytes": 1986
+        },
+        {
+          "path": "mao_pro/expressions/exp_06.exp3.json",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/mao_pro/expressions/exp_06.exp3.json",
+          "sha256": "52f1e391008d61efb17a33602c004a637a42bdb8af8aca3d2319ac5dac215ed1",
+          "size_bytes": 1985
+        },
+        {
+          "path": "mao_pro/expressions/exp_07.exp3.json",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/mao_pro/expressions/exp_07.exp3.json",
+          "sha256": "8bf587d3d7bef509166c8ff95cc9f47c23c895eaf55f9d95110263e44452a53a",
+          "size_bytes": 1987
+        },
+        {
+          "path": "mao_pro/expressions/exp_08.exp3.json",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/mao_pro/expressions/exp_08.exp3.json",
+          "sha256": "761190452e48d22727fce91e76270af2c27b0bb0ee3d04b2c6b0dc6cec49f88d",
+          "size_bytes": 1982
+        },
+        {
+          "path": "mao_pro/mao_pro.4096/texture_00.png",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/mao_pro/mao_pro.4096/texture_00.png",
+          "sha256": "0a5f5436f26dcc908cf7c5ec1f8b54ff36b895cacaf9804daba31b92d424c594",
+          "size_bytes": 8209997
+        },
+        {
+          "path": "mao_pro/mao_pro.cdi3.json",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/mao_pro/mao_pro.cdi3.json",
+          "sha256": "ec699097d81d19bee7d4dda85dc85d8261e1d3de032faae857452cf7d99e4c58",
+          "size_bytes": 15929
+        },
+        {
+          "path": "mao_pro/mao_pro.moc3",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/mao_pro/mao_pro.moc3",
+          "sha256": "247d028f9900be2a46e4530816ece5749524d35013ba77424bd943598e0e54ff",
+          "size_bytes": 870272
+        },
+        {
+          "path": "mao_pro/mao_pro.model3.json",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/mao_pro/mao_pro.model3.json",
+          "sha256": "27b71a0e5476d870ba69d1b52f5bd068ed5a03113739b4f5337e579e954b7e2a",
+          "size_bytes": 1645
+        },
+        {
+          "path": "mao_pro/mao_pro.physics3.json",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/mao_pro/mao_pro.physics3.json",
+          "sha256": "b52221fe919dd7b84b74e594f50ac9a7878bf3a128ab6b4e3153447a037e2055",
+          "size_bytes": 21803
+        },
+        {
+          "path": "mao_pro/mao_pro.pose3.json",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/mao_pro/mao_pro.pose3.json",
+          "sha256": "efac160eccb7183ee6555d4e53a739042e1c55b92f59a99c2e4bed8e73a5ab91",
+          "size_bytes": 254
+        },
+        {
+          "path": "mao_pro/motions/mtn_01.motion3.json",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/mao_pro/motions/mtn_01.motion3.json",
+          "sha256": "5456d9ee0b2e13ab1174918a077490cb79fb3f73cad74c962f5f78214e98b007",
+          "size_bytes": 27147
+        },
+        {
+          "path": "mao_pro/motions/mtn_02.motion3.json",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/mao_pro/motions/mtn_02.motion3.json",
+          "sha256": "d5d4bd768336d88839d3e8d17802c8ce4fe4f232bd06b7507e02bd876f15a9d6",
+          "size_bytes": 23760
+        },
+        {
+          "path": "mao_pro/motions/mtn_03.motion3.json",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/mao_pro/motions/mtn_03.motion3.json",
+          "sha256": "2e7f784918acde7c6cac0e9243cf5f826f64b4f18fadc3d27069f92c46679c5f",
+          "size_bytes": 22428
+        },
+        {
+          "path": "mao_pro/motions/mtn_04.motion3.json",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/mao_pro/motions/mtn_04.motion3.json",
+          "sha256": "c84387bde7f862fda9f5e8fa29703664623649828de585650d170045f86a6bbc",
+          "size_bytes": 26840
+        },
+        {
+          "path": "mao_pro/motions/special_01.motion3.json",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/mao_pro/motions/special_01.motion3.json",
+          "sha256": "846d5bbac4fc80c7451688f5d56a5cb60f01d951b5c719a36bbdfa46fe08b49f",
+          "size_bytes": 33723
+        },
+        {
+          "path": "mao_pro/motions/special_02.motion3.json",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/mao_pro/motions/special_02.motion3.json",
+          "sha256": "6bc5d29371ea5edffe030271bd09a1a4fd51d35eaa511d977fbfb5703de75a57",
+          "size_bytes": 41295
+        },
+        {
+          "path": "mao_pro/motions/special_03.motion3.json",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/mao_pro/motions/special_03.motion3.json",
+          "sha256": "5e3b89bb95f5abe067cdec47395c19c88882846051b4b35e5f7c8bc875b83d17",
+          "size_bytes": 47803
+        }
+      ],
+      "description": {
+        "de": "Magierin mit Ausdrücken, Bewegungen und Farbeffekten – das große Live2D-Beispielmodell.",
+        "en": "Mage girl with expressions, motions and colour effects – the large Live2D sample model.",
+        "ru": "Девушка-маг с выражениями, движениями и цветовыми эффектами — большая модель-пример Live2D.",
+        "ja": "表情・モーション・カラーエフェクト付きの魔法使いの少女 — Live2D の大型サンプルモデル。"
+      }
+    },
+    {
+      "id": "live2d-shizuku",
+      "kind": "live2d",
+      "name": "Shizuku (PRO)",
+      "author": "Live2D Inc.",
+      "license": "Live2D Free Material License",
+      "license_url": "https://www.live2d.com/eula/live2d-free-material-license-agreement_en.html",
+      "license_note": "This content uses sample data owned and copyrighted by Live2D Inc. The sample data are utilized in accordance with terms and conditions set by Live2D Inc. This content itself is created at the author’s sole discretion.",
+      "source_url": "https://www.live2d.com/en/learn/sample/",
+      "nsfw": false,
+      "entry": "shizuku/shizuku.model3.json",
+      "files": [
+        {
+          "path": "shizuku/ReadMe.txt",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/shizuku/ReadMe.txt",
+          "sha256": "2a81f7e921f12c93d9266f5bf2e71dbba1143ffa0fa2cb74949745e3f8d07af3",
+          "size_bytes": 2323
+        },
+        {
+          "path": "shizuku/motion/01.motion3.json",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/shizuku/motion/01.motion3.json",
+          "sha256": "79f29fbe47d51ec0eab8f1b95681725165e52a4f828646daf8a933cbf2b0c96f",
+          "size_bytes": 6081
+        },
+        {
+          "path": "shizuku/motion/02.motion3.json",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/shizuku/motion/02.motion3.json",
+          "sha256": "53e0a3a17301959d1d1b9d8771cde4a3c46ed5001bcfbad9d42ef08f4ffe28ec",
+          "size_bytes": 11099
+        },
+        {
+          "path": "shizuku/motion/03.motion3.json",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/shizuku/motion/03.motion3.json",
+          "sha256": "e7221a9c00d6e5ec328f397123afd1c1688350a0a432807f9f1ba5333b721901",
+          "size_bytes": 6587
+        },
+        {
+          "path": "shizuku/motion/04.motion3.json",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/shizuku/motion/04.motion3.json",
+          "sha256": "cec5bfeec113d133215408815eb3e06fa680eaecfd684c0ab4b44928d8a798cd",
+          "size_bytes": 6233
+        },
+        {
+          "path": "shizuku/shizuku.1024/texture_00.png",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/shizuku/shizuku.1024/texture_00.png",
+          "sha256": "ead4e9a764ae2f9210ee8f78af59fe43ca1d8e1f821f76337b6a80113c10b38a",
+          "size_bytes": 581818
+        },
+        {
+          "path": "shizuku/shizuku.1024/texture_01.png",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/shizuku/shizuku.1024/texture_01.png",
+          "sha256": "576ddc54a1f53fcb6a9febc172eb17ad57bd58561b8e47d85228166d96ef352f",
+          "size_bytes": 1039960
+        },
+        {
+          "path": "shizuku/shizuku.1024/texture_02.png",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/shizuku/shizuku.1024/texture_02.png",
+          "sha256": "a9bdc3d13f64a15a975329c8089df19ea8bc97202c6ed55e8e4545a8041f7cff",
+          "size_bytes": 1256245
+        },
+        {
+          "path": "shizuku/shizuku.1024/texture_03.png",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/shizuku/shizuku.1024/texture_03.png",
+          "sha256": "c0de2f11935525019aa878eafc810abf5487c69d7ece1d16a7dfe7aa0a591dad",
+          "size_bytes": 534673
+        },
+        {
+          "path": "shizuku/shizuku.1024/texture_04.png",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/shizuku/shizuku.1024/texture_04.png",
+          "sha256": "acdfb823e2e1a6e914e0e76242b62460e9142dfee69c0a3446ca876e1f955584",
+          "size_bytes": 1038025
+        },
+        {
+          "path": "shizuku/shizuku.cdi3.json",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/shizuku/shizuku.cdi3.json",
+          "sha256": "4576c0c2a762c02e804ee1d0edd6a069ee353fd33c05b336bab0de133a9aa0fa",
+          "size_bytes": 6329
+        },
+        {
+          "path": "shizuku/shizuku.moc3",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/shizuku/shizuku.moc3",
+          "sha256": "c61cfd02474386a4f2ee19d82cc4a873472b226ad725118f772f15088e74556c",
+          "size_bytes": 761472
+        },
+        {
+          "path": "shizuku/shizuku.model3.json",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/shizuku/shizuku.model3.json",
+          "sha256": "cad88160d5ec3c2f8ef41119e08d85a36b0c3b3a3d87f65eabc507bf4d2d50ce",
+          "size_bytes": 917
+        },
+        {
+          "path": "shizuku/shizuku.physics3.json",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/shizuku/shizuku.physics3.json",
+          "sha256": "b64a0763a87872dd2b3f47a1bb09be4896379cab9d978f808784bf1233c71917",
+          "size_bytes": 4267
+        },
+        {
+          "path": "shizuku/shizuku.pose3.json",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/live2d/shizuku/shizuku.pose3.json",
+          "sha256": "3c2339b80a805b846a4528cf2c45bdae7904e7e89027a536cd0b71529ed187db",
+          "size_bytes": 286
+        }
+      ],
+      "description": {
+        "de": "Klassisches Schulmädchen mit Hand- und Gesichtsanimationen (Name und Einstellungen bleiben unverändert).",
+        "en": "Classic school girl with hand and face animations (name and settings stay unchanged).",
+        "ru": "Классическая школьница с анимациями рук и лица (имя и настройки не меняются).",
+        "ja": "手と顔のアニメーション付きのクラシックな女子学生(名前と設定は変更不可)。"
+      }
+    },
+    {
+      "id": "vroid-yuri",
+      "kind": "vrm",
+      "name": "Yuri",
+      "author": "Lala",
+      "license": "VRoid Hub",
+      "page_url": "https://hub.vroid.com/en/characters/4336227932743836004/models/1700604965229935902",
+      "nsfw": false,
+      "files": [],
+      "description": {
+        "de": "Nur über VRoid Hub erhältlich (Anmeldung nötig). Weitergabe erlaubt, Namensnennung nötig.",
+        "en": "Only available on VRoid Hub (sign-in needed). Redistribution allowed, credit required.",
+        "ru": "Доступно только на VRoid Hub (нужен вход). Распространение разрешено, указание автора обязательно.",
+        "ja": "VRoid Hub でのみ入手可能(ログインが必要)。再配布可、クレジット表記必須。"
+      }
+    },
+    {
+      "id": "vroid-freemodel",
+      "kind": "vrm",
+      "name": "Freemodel オーロラグラデJK",
+      "author": "pinehead",
+      "license": "VRoid Hub",
+      "page_url": "https://hub.vroid.com/en/characters/6997111234814927135/models/6071722136745758338",
+      "nsfw": false,
+      "files": [],
+      "description": {
+        "de": "Nur über VRoid Hub erhältlich (Anmeldung nötig). Weitergabe und Bearbeitung erlaubt.",
+        "en": "Only available on VRoid Hub (sign-in needed). Redistribution and modification allowed.",
+        "ru": "Доступно только на VRoid Hub (нужен вход). Распространение и изменение разрешены.",
+        "ja": "VRoid Hub でのみ入手可能(ログインが必要)。再配布・改変可。"
+      }
+    },
+    {
+      "id": "vroid-angel-egna",
+      "kind": "vrm",
+      "name": "Angel Egna",
+      "author": "KANA",
+      "license": "VRoid Hub",
+      "page_url": "https://hub.vroid.com/en/characters/8559605736438220397/models/6856185847602907189",
+      "nsfw": false,
+      "files": [],
+      "description": {
+        "de": "Nur über VRoid Hub erhältlich (Anmeldung nötig). Weitergabe, Bearbeitung und kommerzielle Nutzung erlaubt.",
+        "en": "Only available on VRoid Hub (sign-in needed). Redistribution, modification and commercial use allowed.",
+        "ru": "Доступно только на VRoid Hub (нужен вход). Разрешены распространение, изменение и коммерческое использование.",
+        "ja": "VRoid Hub でのみ入手可能(ログインが必要)。再配布・改変・商用利用可。"
+      }
+    },
+    {
+      "id": "vroid-nyx-advent",
+      "kind": "vrm",
+      "name": "Nyx Advent",
+      "author": "Astral_Overseas",
+      "license": "VRoid Hub",
+      "page_url": "https://hub.vroid.com/en/characters/1604943105772755711/models/6150833061750504767",
+      "nsfw": false,
+      "files": [],
+      "description": {
+        "de": "Nur über VRoid Hub erhältlich (Anmeldung nötig). Weitergabe erlaubt, Namensnennung nötig.",
+        "en": "Only available on VRoid Hub (sign-in needed). Redistribution allowed, credit required.",
+        "ru": "Доступно только на VRoid Hub (нужен вход). Распространение разрешено, указание автора обязательно.",
+        "ja": "VRoid Hub でのみ入手可能(ログインが必要)。再配布可、クレジット表記必須。"
+      }
+    },
+    {
+      "id": "vroid-mikku",
+      "kind": "vrm",
+      "name": "Mikku",
+      "author": "VRoid Hub",
+      "license": "VRoid Hub",
+      "page_url": "https://hub.vroid.com/en/characters/7032412562763742257/models/4025778039146486049",
+      "nsfw": false,
+      "files": [],
+      "description": {
+        "de": "Nur über VRoid Hub erhältlich (Anmeldung nötig). Weitergabe und Bearbeitung erlaubt, Namensnennung nötig.",
+        "en": "Only available on VRoid Hub (sign-in needed). Redistribution and modification allowed, credit required.",
+        "ru": "Доступно только на VRoid Hub (нужен вход). Распространение и изменение разрешены, указание автора обязательно.",
+        "ja": "VRoid Hub でのみ入手可能(ログインが必要)。再配布・改変可、クレジット表記必須。"
+      }
+    },
+    {
+      "id": "vroid-2b",
+      "kind": "vrm",
+      "name": "2B",
+      "author": "RAMMSIOO",
+      "license": "VRoid Hub",
+      "page_url": "https://hub.vroid.com/en/characters/7668160067984824906/models/2242061262413958110",
+      "nsfw": false,
+      "files": [],
+      "description": {
+        "de": "Nur über VRoid Hub erhältlich (Anmeldung nötig). Keine Weitergabe, keine Bearbeitung.",
+        "en": "Only available on VRoid Hub (sign-in needed). No redistribution, no modification.",
+        "ru": "Доступно только на VRoid Hub (нужен вход). Без распространения и изменений.",
+        "ja": "VRoid Hub でのみ入手可能(ログインが必要)。再配布・改変不可。"
+      }
+    },
+    {
+      "id": "vroid-hoshika",
+      "kind": "vrm",
+      "name": "Hoshika",
+      "author": "VRoid Hub",
+      "license": "VRoid Hub",
+      "page_url": "https://hub.vroid.com/en/characters/3990471198787218878/models/3661778864028306547",
+      "nsfw": false,
+      "files": [],
+      "description": {
+        "de": "Nur über VRoid Hub erhältlich (Anmeldung nötig). Keine Weitergabe, keine Bearbeitung, nur nicht-kommerziell.",
+        "en": "Only available on VRoid Hub (sign-in needed). No redistribution, no modification, non-commercial only.",
+        "ru": "Доступно только на VRoid Hub (нужен вход). Без распространения и изменений, только некоммерчески.",
+        "ja": "VRoid Hub でのみ入手可能(ログインが必要)。再配布・改変不可、非商用のみ。"
+      }
+    },
+    {
+      "id": "vroid-modelt2",
+      "kind": "vrm",
+      "name": "modelT2-bodyglove",
+      "author": "hecote464748",
+      "license": "VRoid Hub",
+      "page_url": "https://hub.vroid.com/en/characters/6768471073562252128/models/2803042328906244342",
+      "nsfw": false,
+      "files": [],
+      "description": {
+        "de": "Nur über VRoid Hub erhältlich (Anmeldung nötig). Keine Weitergabe, Bearbeitung erlaubt, Namensnennung nötig.",
+        "en": "Only available on VRoid Hub (sign-in needed). No redistribution, modification allowed, credit required.",
+        "ru": "Доступно только на VRoid Hub (нужен вход). Без распространения, изменение разрешено, указание автора обязательно.",
+        "ja": "VRoid Hub でのみ入手可能(ログインが必要)。再配布不可、改変可、クレジット表記必須。"
+      }
+    }
+  ]
+}

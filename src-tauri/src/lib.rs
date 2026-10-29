@@ -128,6 +128,7 @@ pub fn run() {
             // Inochi2D puppets to download: the data repository may list more than this release.
             tauri::async_runtime::spawn(modules::inochi2d::refresh_registry());
             tauri::async_runtime::spawn(modules::motion_packs::refresh_registry());
+            tauri::async_runtime::spawn(modules::avatar_hub::refresh_registry());
             allow_app_asset_dirs(app);
             create_main_window(app)?;
             #[cfg(desktop)]
@@ -471,6 +472,8 @@ pub fn run() {
             commands::avatar::scan_inochi2d_models,
             commands::avatar::get_inochi2d_catalog,
             commands::avatar::download_inochi2d_model,
+            commands::avatar::get_hub_avatars,
+            commands::avatar::download_hub_avatar,
             commands::avatar::get_motion_packs,
             commands::avatar::download_motion_pack,
             commands::avatar::import_inochi2d_model,

@@ -26,9 +26,9 @@ import { normalizeColorMode, syncColorMode, type ColorModePreference } from '../
 export interface AppSlice {
   activeTab: AppTab;
   setActiveTab: (tab: AppTab) => void;
-  hubSubTab: 'soul_gateway' | 'chub_ai' | 'lorebooks' | 'scenes';
-  setHubSubTab: (tab: 'soul_gateway' | 'chub_ai' | 'lorebooks' | 'scenes') => void;
-  openSoulHubTab: (tab: 'soul_gateway' | 'chub_ai' | 'lorebooks' | 'scenes') => void;
+  hubSubTab: 'soul_gateway' | 'chub_ai' | 'lorebooks' | 'scenes' | 'avatars';
+  setHubSubTab: (tab: 'soul_gateway' | 'chub_ai' | 'lorebooks' | 'scenes' | 'avatars') => void;
+  openSoulHubTab: (tab: 'soul_gateway' | 'chub_ai' | 'lorebooks' | 'scenes' | 'avatars') => void;
   appPaths: AppPaths | null;
   initApp: () => Promise<void>;
   /**
