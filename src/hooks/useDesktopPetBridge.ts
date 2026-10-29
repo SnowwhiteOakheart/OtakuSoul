@@ -66,13 +66,17 @@ export function petModels(
   const live2dPath = resolveLive2dPath(s.activeCharacter, s.scannedLive2ds, s.activeLive2dPath);
   const portrait = s.activeCharacter?.avatar_data_url ?? '';
   const portraitPath = portrait ? `${PORTRAIT_PREFIX}${s.activeCharacter?.id ?? ''}` : '';
-  // The chat shows an Inochi2D puppet, a Live2D model or the portrait: the pet shows it too;
-  // otherwise the 3D model (unless the pet's menu asks for one of them).
+  // The chat shows an Inochi2D puppet or a Live2D model: the pet shows it too; otherwise the
+  // 3D model (unless the pet's menu asks for another). Without a 3D model it takes what the
+  // figure has: a Live2D model, an Inochi2D puppet or at least the portrait.
   const shown =
     (s.avatarMode === 'inochi2d' && inochi2dPath) ||
     (s.avatarMode === 'live2d' && live2dPath) ||
-    (s.avatarMode === '2d' && portraitPath) ||
-    vrmPath;
+    (s.avatarMode === '2d' && !vrmPath && portraitPath) ||
+    vrmPath ||
+    live2dPath ||
+    inochi2dPath ||
+    portraitPath;
   return { modelPath: shown, vrmPath, inochi2dPath, live2dPath: live2dPath ?? '', portraitPath, portrait };
 }
 
@@ -102,16 +106,24 @@ export function useDesktopPetBridge(enabled = true) {
     let open = false;
     let lastSent = '';
     let staleGestureId: number | null = null;
+    /** The portrait the pet has (a data URL, often MBs): it goes along only when it changed. */
+    let sentPortrait: string | null = null;
 
     const send = (force = false) => {
       if (!open) return;
       const state = petState(useAppStore.getState());
       // A gesture plays once: a freshly opened pet does not repeat the one from before.
       if (force) staleGestureId = state.gesture?.id ?? null;
-      const payload = { ...state, gesture: state.gesture?.id === staleGestureId ? null : state.gesture };
-      const key = JSON.stringify(payload);
-      if (!force && key === lastSent) return;
+      const portraitChanged = force || state.portrait !== sentPortrait;
+      const payload: PetState = {
+        ...state,
+        gesture: state.gesture?.id === staleGestureId ? null : state.gesture,
+        portrait: portraitChanged ? state.portrait : undefined,
+      };
+      const key = JSON.stringify({ ...payload, portrait: undefined });
+      if (!force && !portraitChanged && key === lastSent) return;
       lastSent = key;
+      sentPortrait = state.portrait ?? '';
       void emitTo(PET_LABEL, PET_STATE_EVENT, payload).catch(() => {});
     };
 

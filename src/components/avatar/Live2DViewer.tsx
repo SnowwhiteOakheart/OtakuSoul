@@ -68,8 +68,18 @@ ModelSettings.prototype.resolveURL = function (targetPath: string): string {
     }
   }
 
+  // Windows paths come back with backslashes, often with the long-path prefix (`\\?\C:\Users\…`):
+  // worked on with `/` below and turned back into the same form, which the asset scope allows.
+  const windowsPath = basePath.includes('\\');
+  basePath = basePath.replace(/\\/g, '/');
+  const longPrefix = basePath.startsWith('//?/');
+  if (longPrefix) basePath = basePath.slice('//?/'.length);
+  const windowsDrive = /^[a-zA-Z]:/.test(basePath);
+  const native = (path: string) =>
+    windowsDrive && windowsPath ? `${longPrefix ? '\\\\?\\' : ''}${path.replace(/\//g, '\\')}` : path;
+
   // Ensure leading slash on Unix systems
-  if (!basePath.startsWith('/') && !/^[a-zA-Z]:/.test(basePath)) {
+  if (!basePath.startsWith('/') && !windowsDrive) {
     basePath = '/' + basePath;
   }
 
@@ -86,7 +96,7 @@ ModelSettings.prototype.resolveURL = function (targetPath: string): string {
     if (idx !== -1) {
       const rootAssets = baseDir.substring(0, idx) + '/assets';
       const expPath = `${rootAssets}/emotions/live2d/expressions/${filename}`;
-      return convertFileSrc(expPath);
+      return convertFileSrc(native(expPath));
     }
     // Model lives outside the bundled assets (e.g. user data dir): use the bundled emotion set.
     const bundledVrmDir = useAppStore.getState().appPaths?.bundled_vrm_dir?.replace(/\\/g, '/');
@@ -99,7 +109,9 @@ ModelSettings.prototype.resolveURL = function (targetPath: string): string {
 
   // Standard relative file path resolution
   const cleanTarget = targetPath.replace(/\\/g, '/');
-  const resolved = '/' + normalizePath([...baseDir.split('/'), ...cleanTarget.split('/')]);
+  const joined = normalizePath([...baseDir.split('/'), ...cleanTarget.split('/')]);
+  // A drive letter stays in front (`C:/…`); Unix paths start at the root.
+  const resolved = windowsDrive ? native(joined) : '/' + joined;
 
   return convertFileSrc(resolved);
 };
@@ -223,6 +235,7 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
     let stopSnapshots: (() => void) | null = null;
     let saveTimer: number | null = null;
     let updateRomanceParams: (() => void) | null = null;
+    let petResize: ResizeObserver | null = null;
 
     const saveViewState = () => {
       const model = modelRef.current;
@@ -296,18 +309,21 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
           // Desktop pet: the whole figure stands on the window's bottom (feet at the model's
           // lower edge), the top fifth stays free for speech bubbles; its own framing zooms around
           // the feet and lifts them.
-          const w = containerWidth;
-          const h = containerHeight;
-          const fit = Math.min((h * 0.8) / bounds.height, (w * 0.95) / bounds.width);
-          baseScaleRef.current = fit;
           let framing: PetFraming = DEFAULT_PET_FRAMING;
+          // The window's size changes (size presets, Ctrl+wheel): framed from its size each time.
           const framePet = () => {
+            const w = container.clientWidth || containerWidth;
+            const h = container.clientHeight || containerHeight;
+            const fit = Math.min((h * 0.8) / bounds.height, (w * 0.95) / bounds.width);
+            baseScaleRef.current = fit;
             model.anchor.set(0.5, 1);
             model.scale.set(fit * framing.zoom);
             model.x = w / 2;
             model.y = h * (1 - PET_FEET_SHARE - framing.lift);
           };
           framePet();
+          petResize = new ResizeObserver(framePet);
+          petResize.observe(container);
           const focus = model.internalModel?.focusController as { focus?: (x: number, y: number) => void } | undefined;
           const figure: PetFigure = {
             mouse: { x: 0, y: 0 },
@@ -342,6 +358,7 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
             },
             headLine: () => {
               const b = model.getBounds();
+              const h = container.clientHeight;
               return h > 0 ? (b.y + b.height * 0.28) / h : null;
             },
             handAt: () => false,
@@ -514,7 +531,9 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
     return () => {
       isDisposed = true;
       if (saveTimer !== null) window.clearTimeout(saveTimer);
-      saveViewState();
+      // The pet's framing is its own; the chat's view stays as it was.
+      if (!petMode) saveViewState();
+      petResize?.disconnect();
       if (cleanupAudio) cleanupAudio();
       if (updateRomanceParams) {
         try {
@@ -568,6 +587,15 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
     if (!modelRef.current) return;
     void playTapMotion(modelRef.current);
   };
+
+  // Desktop pet: only the figure on a transparent window (no background, controls or labels).
+  if (pet) {
+    return (
+      <div className="relative w-full h-full overflow-hidden select-none">
+        <div ref={containerRef} className="w-full h-full touch-none" />
+      </div>
+    );
+  }
 
   return (
     <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden bg-app/60 select-none">

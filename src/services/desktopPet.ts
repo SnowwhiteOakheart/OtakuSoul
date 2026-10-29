@@ -99,7 +99,8 @@ export interface PetState {
   /** The Live2D model ("" if none) and the portrait: a marker path (`portrait:<id>`, "" without picture) and its picture. */
   live2dPath: string;
   portraitPath: string;
-  portrait: string;
+  /** Left out when unchanged since the last state (it is large); the pet keeps the one it has. */
+  portrait?: string;
   /** GoEmotions name (shown in the status panel). */
   emotion: string;
   /** VRM expression behind it (drives the face). */

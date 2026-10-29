@@ -128,7 +128,8 @@ export const DesktopPetTab: React.FC = () => {
     portrait: !!models.portraitPath,
   };
 
-  const shownShortcut = shortcut ? formatAccelerator(shortcut.shortcut) : '';
+  // Until the backend answered: the default, so the hint never reads without its keys.
+  const shownShortcut = formatAccelerator(shortcut?.shortcut ?? 'CommandOrControl+Alt+Shift+P');
   const hints = [
     { icon: Move, text: t('pet.hintDrag') },
     { icon: MousePointerClick, text: t('pet.hintClick') },
@@ -279,7 +280,7 @@ export const DesktopPetTab: React.FC = () => {
         <figure className="space-y-1.5">
           <figcaption className="text-xs font-semibold text-slate-300">{t('pet.preview')}</figcaption>
           {previewPath ? (
-            <PetFramePreview modelPath={previewPath} framing={previewFraming} portrait={models.portrait} />
+            <PetFramePreview modelPath={previewPath} framing={previewFraming} portrait={models.portrait ?? ''} />
           ) : (
             <div className="rounded-xl border border-slate-800 bg-app" style={petWindowSize(PET_PRESETS.small)} data-pet-preview>
               <p className="p-3 text-center text-xs text-slate-400">{t('pet.noModel')}</p>

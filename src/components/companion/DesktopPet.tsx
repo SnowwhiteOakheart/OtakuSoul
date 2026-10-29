@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { loadCubismCore } from '../../services/live2dRuntime';
 import type React from 'react';
 import { emitTo, listen } from '@tauri-apps/api/event';
 import {
@@ -94,7 +95,12 @@ const SIT_DROP = 0.2;
 const isGltfModel = (path: string) => /\.(glb|gltf)$/i.test(path);
 // Inochi2D puppets bring their own runtime; only loaded for them.
 const Inochi2dViewer = lazy(() => import('../avatar/Inochi2dViewer'));
-const Live2DViewer = lazy(() => import('../avatar/Live2DViewer').then((module) => ({ default: module.Live2DViewer })));
+// The Cubism core has to be loaded before the Live2D engine (as in the chat).
+const Live2DViewer = lazy(() =>
+  loadCubismCore()
+    .then(() => import('../avatar/Live2DViewer'))
+    .then((module) => ({ default: module.Live2DViewer })),
+);
 const PortraitPet = lazy(() => import('../avatar/PortraitPet'));
 const isInochi2dModel = (path: string) => /\.(inp|inx)$/i.test(path);
 /** The pet's faces are VRM expressions; an Inochi2D puppet takes the feeling behind them. */
@@ -606,7 +612,8 @@ export const DesktopPet: React.FC = () => {
     const unlisteners = [
       listen<PetState>(PET_STATE_EVENT, ({ payload }) => {
         if (!isSubscribed) return;
-        setPet(payload);
+        // The portrait comes only when it changed.
+        setPet((current) => (payload.portrait === undefined ? { ...payload, portrait: current?.portrait ?? '' } : payload));
         if (payload.gesture) setGesture(payload.gesture);
         const store = useAppStore.getState();
         if (payload.appLanguage && payload.appLanguage !== store.appLanguage) store.setAppLanguage(payload.appLanguage);
@@ -1080,7 +1087,7 @@ export const DesktopPet: React.FC = () => {
             {isPortraitPath(modelPath) ? (
               <PortraitPet
                 key={modelPath}
-                src={pet.portrait}
+                src={pet.portrait ?? ''}
                 isSpeaking={isSpeaking}
                 pet={petLink}
                 loop={loop}

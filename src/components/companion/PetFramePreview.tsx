@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useRef } from 'react';
+import { loadCubismCore } from '../../services/live2dRuntime';
 import { VrmViewer } from '../avatar/VrmViewer';
 import type { PetFigure } from '../avatar/avatarStage';
 import { PET_FEET_SHARE, type PetFraming } from '../../services/avatarViewState';
@@ -7,7 +8,12 @@ import { isLive2dPath, isPortraitPath, PET_PRESETS, petWindowSize } from '../../
 const MmdViewer = lazy(() => import('../avatar/MmdViewer'));
 const GltfViewer = lazy(() => import('../avatar/GltfViewer'));
 const Inochi2dViewer = lazy(() => import('../avatar/Inochi2dViewer'));
-const Live2DViewer = lazy(() => import('../avatar/Live2DViewer').then((module) => ({ default: module.Live2DViewer })));
+// The Cubism core has to be loaded before the Live2D engine (as in the chat).
+const Live2DViewer = lazy(() =>
+  loadCubismCore()
+    .then(() => import('../avatar/Live2DViewer'))
+    .then((module) => ({ default: module.Live2DViewer })),
+);
 const PortraitPet = lazy(() => import('../avatar/PortraitPet'));
 
 /**
