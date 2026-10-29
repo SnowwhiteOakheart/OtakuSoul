@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import type * as THREE from 'three';
 import type { AvatarMotion } from '../../types';
-import type { GestureRequest, LoopRole, MotionRole } from '../../utils/avatarGestures';
+import { LOOP_ROLES, type GestureRequest, type LoopRole, type MotionRole } from '../../utils/avatarGestures';
 import type { AvatarMotionPlayer } from './vrmMotions';
 
 interface Options<Model> {
@@ -114,7 +114,7 @@ export function useAvatarMotions<Model>({
     const current = player.current;
     if (!current) return;
     current.setLoopState(loop);
-    onLoopsRef.current?.({ walk: current.has('walk'), sit: current.has('sit') });
+    onLoopsRef.current?.(Object.fromEntries(LOOP_ROLES.map((role) => [role, current.has(role)])) as Record<LoopRole, boolean>);
     // `player` is stable per viewer; `count` changes once the clips are set.
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [loop, count]);

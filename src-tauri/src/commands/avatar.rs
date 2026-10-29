@@ -40,6 +40,20 @@ pub fn get_inochi2d_catalog(
     crate::modules::inochi2d::catalog(lang.as_deref().unwrap_or("en"))
 }
 
+/// Ready-made motion sets for 3D avatars (registry from the data repository).
+#[tauri::command]
+pub fn get_motion_packs(lang: String) -> Vec<crate::modules::motion_packs::MotionPackItem> {
+    crate::modules::motion_packs::catalog(&lang)
+}
+
+/// Downloads a motion set into the animations folder (SHA-256 checked) and gives it its uses.
+#[tauri::command]
+pub async fn download_motion_pack(
+    pack_id: String,
+) -> Result<Vec<crate::modules::avatar_motions::AvatarMotion>, String> {
+    crate::modules::motion_packs::download_motion_pack(&pack_id).await
+}
+
 #[tauri::command]
 pub async fn download_inochi2d_model(
     model_id: String,

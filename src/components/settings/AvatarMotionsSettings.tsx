@@ -8,6 +8,7 @@ import { MOTION_ROLES, type MotionRole } from '../../utils/avatarGestures';
 import { errorMessage } from '../../utils/errors';
 import { toast } from '../ui/feedback';
 import { ModelClipsSettings, MoodSelect } from './ModelClipsSettings';
+import { MotionPacks } from './MotionPacks';
 
 /**
  * Body motions of the 3D avatar: imported VRMA files and what they are used for (idle loop,
@@ -69,6 +70,7 @@ export const AvatarMotionsSettings = () => {
         </button>
       </div>
       <p className="text-xs text-slate-400">{t('motions.intro')}</p>
+      <MotionPacks onLoaded={refreshAvatarMotions} />
       {avatarMotions.length === 0 ? (
         <p className="text-xs text-slate-500 italic">{t('motions.empty')}</p>
       ) : (

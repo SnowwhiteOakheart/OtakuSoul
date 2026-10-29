@@ -4,7 +4,7 @@
  * match an emotion ("Expr_Verlegen", "Laugh") and gestures ("Wink_L", "Nod").
  */
 import type { Param, Puppet } from './puppet';
-import type { LoopRole } from '../../utils/avatarGestures';
+import type { LoopRole, PuppetLoop } from '../../utils/avatarGestures';
 
 type Json = Record<string, unknown>;
 
@@ -213,13 +213,13 @@ function pick(animations: PuppetAnimation[], wanted: string[] | undefined): Pupp
 }
 
 /** Name words of the desktop pet's state loops ("Walk_Loop", "Gehen", "Sit_Idle", "Sitzen" …). */
-const LOOP_WORDS: Record<LoopRole, RegExp> = {
+const LOOP_WORDS: Record<PuppetLoop, RegExp> = {
   walk: /\b(walk|walking|geh|gehen|lauf|laufen|run|running|stroll)\b/,
   sit: /\b(sit|sits|sitting|sitzen|sitzt|seated)\b/,
 };
 /** Name words split at everything but letters and digits, so "Idle_Sit" reads "idle sit" ("position" stays one word). */
 const nameWords = (name: string) => words(name).replace(/[^a-z0-9]+/g, ' ');
-const loopRoleOf = (a: PuppetAnimation) => (Object.keys(LOOP_WORDS) as LoopRole[]).find((role) => LOOP_WORDS[role].test(nameWords(a.name)));
+const loopRoleOf = (a: PuppetAnimation) => (Object.keys(LOOP_WORDS) as PuppetLoop[]).find((role) => LOOP_WORDS[role].test(nameWords(a.name)));
 
 /** The puppet's loop to stand in (named "Idle", "Ruhe" …); a sitting or walking idle is not it. */
 export const findIdle = (animations: PuppetAnimation[]) => {

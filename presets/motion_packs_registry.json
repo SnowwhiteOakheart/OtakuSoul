@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "packs": [
+    {
+      "id": "quaternius-ual-starter",
+      "name": "Quaternius Starter",
+      "author": "Quaternius",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source_url": "https://quaternius.itch.io/universal-animation-library",
+      "description": {
+        "de": "Grundbewegungen aus der Universal Animation Library: Stehen, Sprechen, Gehen, Sitzen, Springen, Fallen, Landen und Tanzen.",
+        "en": "Basic motions from the Universal Animation Library: standing, talking, walking, sitting, jumping, falling, landing and dancing.",
+        "ru": "Базовые движения из Universal Animation Library: стойка, разговор, ходьба, сидение, прыжок, падение, приземление и танец.",
+        "ja": "Universal Animation Library の基本モーション:待機、会話、歩行、座り、ジャンプ、落下、着地、ダンス。"
+      },
+      "files": [
+        {
+          "file": "ual_idle.vrma",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/motions/quaternius-ual/ual_idle.vrma",
+          "sha256": "a74fea766732ae80ab3b79ef4115052ac203589203e6de1c4e2d51c21a56834e",
+          "size_bytes": 92808,
+          "role": "idle"
+        },
+        {
+          "file": "ual_talk.vrma",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/motions/quaternius-ual/ual_talk.vrma",
+          "sha256": "72651a9851319316dc5776ce53b7cb21a0aae7fc3c9a824bb67838468aee2408",
+          "size_bytes": 103856,
+          "role": "talk"
+        },
+        {
+          "file": "ual_walk.vrma",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/motions/quaternius-ual/ual_walk.vrma",
+          "sha256": "ccb5daa16effe123dadfc301bbe6421241809061be55e97e48d84ac538593fec",
+          "size_bytes": 63080,
+          "role": "walk"
+        },
+        {
+          "file": "ual_sit.vrma",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/motions/quaternius-ual/ual_sit.vrma",
+          "sha256": "25d8cd9649c7486d58a3d8d3f7709b0ee6d3059dc85707b5251b59a85d7321da",
+          "size_bytes": 71572,
+          "role": "sit"
+        },
+        {
+          "file": "ual_jump.vrma",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/motions/quaternius-ual/ual_jump.vrma",
+          "sha256": "3665febcb4d5e8fbf4929107142fd48bcc755be2722aa3ace4f6b37b0080252f",
+          "size_bytes": 63084,
+          "role": "jump"
+        },
+        {
+          "file": "ual_fall.vrma",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/motions/quaternius-ual/ual_fall.vrma",
+          "sha256": "a67f16cd2c4f039d6fcacacb484db6e78a850a91e8eae59866f159676fff5612",
+          "size_bytes": 92808,
+          "role": "fall"
+        },
+        {
+          "file": "ual_land.vrma",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/motions/quaternius-ual/ual_land.vrma",
+          "sha256": "2b49b369616f4217c743789f14a755f3d62f4733e6271e607b8eeb1eb3980ff8",
+          "size_bytes": 61384,
+          "role": "land"
+        },
+        {
+          "file": "ual_dance.vrma",
+          "url": "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/avatars/motions/quaternius-ual/ual_dance.vrma",
+          "sha256": "c31e69dc802793cbf28040f5a7fc081391221101552e0c058948ea739e19d296",
+          "size_bytes": 54580,
+          "role": "dance"
+        }
+      ]
+    }
+  ]
+}

@@ -10,6 +10,7 @@ pub mod companion_tools;
 pub mod content_lang;
 pub mod context_window;
 pub mod desktop_audio;
+pub mod motion_packs;
 pub mod desktop_windows;
 pub mod discord;
 pub mod edge_tts_drm;

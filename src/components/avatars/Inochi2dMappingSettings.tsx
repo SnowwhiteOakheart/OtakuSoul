@@ -8,7 +8,7 @@ import { errorMessage } from '../../utils/errors';
 import { toast } from '../ui/feedback';
 import { MAPPABLE_EMOTIONS } from '../avatar/Inochi2dViewer';
 import type { Inochi2dMapping } from '../../types';
-import type { LoopRole } from '../../utils/avatarGestures';
+import type { PuppetLoop } from '../../utils/avatarGestures';
 
 interface Props {
   /** Path of the puppet file. */
@@ -18,7 +18,7 @@ interface Props {
 }
 
 const EMPTY: Inochi2dMapping = { channels: {}, emotions: {}, loops: {} };
-const LOOP_ROLES: LoopRole[] = ['walk', 'sit'];
+const LOOP_ROLES: PuppetLoop[] = ['walk', 'sit'];
 /** Select value of a parameter axis. */
 const SEP = '\u0001';
 const encode = (param: string, axis: number) => `${param}${SEP}${axis}`;
@@ -89,7 +89,7 @@ export function Inochi2dMappingSettings({ path, info }: Props) {
     setMapping({ ...mapping, channels: { ...mapping.channels, [key]: { ...chosen, inverted } } });
   };
 
-  const setLoop = (role: LoopRole, value: string) => {
+  const setLoop = (role: PuppetLoop, value: string) => {
     const loops = { ...mapping.loops };
     if (value === 'auto') delete loops[role];
     else loops[role] = value === 'none' ? '' : value;

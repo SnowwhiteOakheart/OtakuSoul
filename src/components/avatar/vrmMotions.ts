@@ -7,6 +7,8 @@ import type { AvatarMotion } from '../../types';
 import { bestByMood, pickByMood, type LoopRole, type MotionRole } from '../../utils/avatarGestures';
 
 const FADE_SECONDS = 0.35;
+/** With several idle loops, another one takes over after this long (random within). */
+const IDLE_SWITCH_SECONDS: [number, number] = [18, 40];
 
 /**
  * Reads a motion file and turns it into a clip for this avatar: VRMA directly, Mixamo FBX
@@ -56,6 +58,8 @@ export class AvatarMotionPlayer {
   private clips = new Map<MotionRole, THREE.AnimationClip[]>();
   private extras: THREE.AnimationClip[] = [];
   private mood = 'neutral';
+  /** Seconds until the next idle loop takes over (several idle loops only). */
+  private idleSwitchIn = IDLE_SWITCH_SECONDS[0];
   /** Called with the clip name whenever the idle loop or a gesture starts (for test hooks). */
   onClipChange?: (kind: 'idle' | 'gesture', name: string) => void;
 
@@ -169,6 +173,32 @@ export class AvatarMotionPlayer {
     return true;
   }
 
+  /** Idle loops for this mood: those meant for it, else those for any mood, else all. */
+  private idlesFor(mood: string): THREE.AnimationClip[] {
+    const idles = this.clips.get('idle') ?? [];
+    const exact = idles.filter((clip) => clipMood(clip) === mood);
+    if (exact.length) return exact;
+    const any = idles.filter((clip) => !clipMood(clip));
+    return any.length ? any : idles;
+  }
+
+  /** Several idle loops: now and then another one, so standing around does not repeat. */
+  private varyIdle(delta: number) {
+    this.idleSwitchIn -= delta;
+    if (this.idleSwitchIn > 0) return;
+    const [min, max] = IDLE_SWITCH_SECONDS;
+    this.idleSwitchIn = min + Math.random() * (max - min);
+    if (this.gesture || this.loop || !this.idle) return;
+    const others = this.idlesFor(this.mood).filter((clip) => clip !== this.idle?.getClip());
+    if (!others.length) return;
+    const next = others[Math.floor(Math.random() * others.length)]!;
+    const previous = this.idle;
+    this.idle = this.mixer.clipAction(next).setLoop(THREE.LoopRepeat, Infinity);
+    this.idle.reset().play();
+    this.idle.crossFadeFrom(previous, FADE_SECONDS * 3, false);
+    this.onClipChange?.('idle', next.name);
+  }
+
   private idleFor(mood: string): THREE.AnimationClip | undefined {
     const idles = this.clips.get('idle') ?? [];
     return bestByMood(idles.map((clip) => ({ clip, mood: clipMood(clip) })), mood)?.clip;
@@ -179,6 +209,7 @@ export class AvatarMotionPlayer {
   }
 
   update(delta: number) {
+    this.varyIdle(delta);
     this.mixer.update(delta);
   }
 

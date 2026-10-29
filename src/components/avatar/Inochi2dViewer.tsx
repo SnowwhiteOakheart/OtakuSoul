@@ -19,7 +19,7 @@ import { Puppet } from '../../services/inochi2d/puppet';
 import { decodeTextures, PuppetRenderer } from '../../services/inochi2d/renderer';
 import { translate, useTranslation } from '../../i18n';
 import { errorMessage } from '../../utils/errors';
-import type { GestureRequest, LoopRole } from '../../utils/avatarGestures';
+import { LOOP_ROLES, type GestureRequest, type LoopRole } from '../../utils/avatarGestures';
 import { DropdownMenu } from '../ui/DropdownMenu';
 import { DEFAULT_PET_FRAME_RATE, frameInterval, SAVER_FRAME_MS, type PetFigure } from './avatarStage';
 
@@ -112,7 +112,7 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
     animator.emotion = emotionRef.current;
     animator.loop = loopRef.current;
     animatorRef.current = animator;
-    petRef.current?.onLoops?.({ walk: animator.hasLoop('walk'), sit: animator.hasLoop('sit') });
+    petRef.current?.onLoops?.(Object.fromEntries(LOOP_ROLES.map((role) => [role, animator.hasLoop(role)])) as Record<LoopRole, boolean>);
   };
 
   useEffect(() => {

@@ -13,7 +13,7 @@ use std::path::{Path, PathBuf};
 use ts_rs::TS;
 
 /// Uses a motion can have; the frontend plays them on emotions and roleplay actions.
-pub const ROLES: [&str; 10] = [
+pub const ROLES: [&str; 17] = [
     "idle",
     "greeting",
     "nod",
@@ -22,9 +22,18 @@ pub const ROLES: [&str; 10] = [
     "angry",
     "surprised",
     "thinking",
-    // Loops of the desktop pet while it walks or sits (instead of the idle loop).
+    // Loops of the desktop pet while it walks, sits, speaks, dances to music, falls or sleeps
+    // (instead of the idle loop).
     "walk",
     "sit",
+    "talk",
+    "dance",
+    "fall",
+    "sleep",
+    // One-off moves of the desktop pet: taking off, landing, yawning.
+    "jump",
+    "land",
+    "yawn",
 ];
 
 /// Moods a motion can be meant for (VRM expressions); empty = any mood. With several motions for
@@ -68,7 +77,7 @@ pub struct AvatarMotion {
     pub mood: String,
 }
 
-fn motions_dir() -> PathBuf {
+pub(crate) fn motions_dir() -> PathBuf {
     crate::modules::paths::base_dirs().1.join("animations")
 }
 
@@ -107,6 +116,24 @@ pub fn guess_role(name: &str) -> &'static str {
     let has = |words: &[&str]| words.iter().any(|w| name.contains(w));
     if has(&["idle", "stand", "breath", "wait", "ruhe", "warten"]) {
         "idle"
+    } else if has(&["walk", "gehen", "laufen"]) {
+        "walk"
+    } else if has(&["sitting", "sit_", "_sit", "sitz"]) {
+        "sit"
+    } else if has(&["talk", "speak", "sprech", "reden"]) {
+        "talk"
+    } else if has(&["dance", "tanz"]) {
+        "dance"
+    } else if has(&["jump_start", "takeoff", "absprung"]) {
+        "jump"
+    } else if has(&["landing", "_land", "land_"]) {
+        "land"
+    } else if has(&["fall", "jump_loop", "in_air"]) {
+        "fall"
+    } else if has(&["sleep", "schlaf"]) {
+        "sleep"
+    } else if has(&["yawn", "gähn", "gaehn"]) {
+        "yawn"
     } else if has(&[
         "greet", "wave", "hello", "hi_", "bye", "wink", "gruß", "gruss", "hallo",
     ]) {
@@ -186,7 +213,7 @@ fn write_map(dir: &Path, file: &str, map: &impl Serialize) -> Result<(), String>
     fs::write(dir.join(file), text).map_err(|e| crate::err!("backend.common.fileWrite", error = e))
 }
 
-fn read_roles(dir: &Path) -> BTreeMap<String, String> {
+pub(crate) fn read_roles(dir: &Path) -> BTreeMap<String, String> {
     fs::read_to_string(dir.join(ROLES_FILE))
         .ok()
         .and_then(|text| serde_json::from_str(&text).ok())
@@ -290,7 +317,7 @@ pub fn set_avatar_motion_role(file: &str, role: &str) -> Result<(), String> {
     set_role_in(&motions_dir(), file, role)
 }
 
-fn set_role_in(dir: &Path, file: &str, role: &str) -> Result<(), String> {
+pub(crate) fn set_role_in(dir: &Path, file: &str, role: &str) -> Result<(), String> {
     if !role.is_empty() && !ROLES.contains(&role) {
         return Err(crate::err!("backend.avatarMotion.role", role = role));
     }
@@ -734,6 +761,14 @@ mod tests {
         assert_eq!(guess_role("Idle_Breathing"), "idle");
         assert_eq!(guess_role("nicken"), "nod");
         assert_eq!(guess_role("VRMA_05_spin"), "");
+        assert_eq!(guess_role("ual_walk.vrma"), "walk");
+        assert_eq!(guess_role("Sitting_Idle_Loop"), "idle");
+        assert_eq!(guess_role("ual_sit.vrma"), "sit");
+        assert_eq!(guess_role("Jump_Start"), "jump");
+        assert_eq!(guess_role("Jump_Land"), "land");
+        assert_eq!(guess_role("ual_fall.vrma"), "fall");
+        assert_eq!(guess_role("Long Hair Sway"), "");
+        assert_eq!(guess_role("Dance_Loop"), "dance");
     }
 
     #[test]
@@ -755,7 +790,7 @@ mod tests {
 
         set_role_in(&dir, "Wave Hello.vrma", "idle").unwrap();
         assert_eq!(scan_in(&dir)[0].role, "idle");
-        assert!(set_role_in(&dir, "Wave Hello.vrma", "dance").is_err());
+        assert!(set_role_in(&dir, "Wave Hello.vrma", "fly").is_err());
 
         let fbx = tmp.join("Mixamo Nod.fbx");
         let mut binary = b"Kaydara FBX Binary  \0\x1a\0".to_vec();

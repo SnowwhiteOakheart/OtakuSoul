@@ -2,6 +2,7 @@ import type { TokenEvent } from '../types/generated/TokenEvent';
 import type { ThoughtEvent } from '../types/generated/ThoughtEvent';
 import type { UiLanguage } from '../types/generated/UiLanguage';
 import type { OpenRouterLogin } from '../types/generated/OpenRouterLogin';
+import type { MotionPackItem } from '../types/generated/MotionPackItem';
 import { invoke } from '@tauri-apps/api/core';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import {
@@ -840,6 +841,16 @@ export const api = {
     args: JsonObject
   ): Promise<string> => {
     return await invoke<string>('execute_companion_plugin', { pluginId, arguments: args });
+  },
+
+  /** Ready-made motion sets for 3D avatars (from the data repository). */
+  getMotionPacks: async (lang: string): Promise<MotionPackItem[]> => {
+    return await invoke<MotionPackItem[]>('get_motion_packs', { lang });
+  },
+
+  /** Downloads a motion set (SHA-256 checked) and gives its motions their uses. */
+  downloadMotionPack: async (packId: string): Promise<AvatarMotion[]> => {
+    return await invoke<AvatarMotion[]>('download_motion_pack', { packId });
   },
 
   /** Opens or hides the desktop pet; a new window starts at `placement` (physical position, logical size). */

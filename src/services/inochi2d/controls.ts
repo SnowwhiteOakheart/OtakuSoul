@@ -6,7 +6,7 @@
  * eyes, head tilt) that is blended in smoothly.
  */
 import { applyAnimation, findEmotionClip, findGestureClip, findIdle, findLoopClip, type PuppetAnimation } from './animation';
-import type { LoopRole } from '../../utils/avatarGestures';
+import type { LoopRole, PuppetLoop } from '../../utils/avatarGestures';
 import type { Param, Puppet } from './puppet';
 import type { Visemes } from '../lipSync';
 import type { Inochi2dMapping } from '../../types/generated/Inochi2dMapping';
@@ -79,10 +79,10 @@ export interface PuppetInfo {
   /** Automatically chosen own clip per emotion (null = pose only). */
   emotionClips: Record<string, string | null>;
   /** Automatically chosen loop for walking and sitting in the desktop pet (null = none). */
-  loopClips: Record<LoopRole, string | null>;
+  loopClips: Record<PuppetLoop, string | null>;
 }
 
-const LOOP_ROLES: LoopRole[] = ['walk', 'sit'];
+const LOOP_ROLES: PuppetLoop[] = ['walk', 'sit'];
 
 const describeAxis = (a: Axis | undefined) => (a ? `${a.param.name}${a.param.isVec2 ? (a.axis ? ' (y)' : ' (x)') : ''}` : null);
 

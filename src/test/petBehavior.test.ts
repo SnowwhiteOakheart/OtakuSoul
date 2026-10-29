@@ -186,6 +186,30 @@ describe('PetBehavior', () => {
     expect(woke.cues).toContainEqual({ kind: 'gesture', role: 'greeting' });
   });
 
+  it('asks for the loop of each state: asleep, in the air, speaking and dancing to music', () => {
+    const sleepy = new PetBehavior(0, fixed(0.5));
+    sleepy.setIdleActions(false);
+    expect(run(sleepy, 0, DOZE_AFTER_MS + 200).frame.loop).toBe('sleep');
+
+    const pet = new PetBehavior(0, fixed(0.5));
+    pet.setIdleActions(false);
+    pet.setGrounded(false, 100);
+    expect(pet.tick(100).frame.loop).toBe('fall');
+    pet.setGrounded(true, 500);
+    const landed = pet.tick(500);
+    expect(landed.cues).toContainEqual({ kind: 'gesture', role: 'land' });
+
+    pet.dragStart(3000);
+    expect(pet.tick(3000).frame.loop).toBe('fall');
+    pet.dragEnd(3100);
+
+    pet.say(5000, 2000);
+    expect(pet.tick(5000).frame.loop).toBe('talk');
+
+    pet.setMusic(true);
+    expect(run(pet, 7200, 8000).frame.loop).toBe('dance');
+  });
+
   it('counts 23:00 to 06:00 as night', () => {
     expect([22, 23, 0, 5, 6, 12].map(isNightHour)).toEqual([false, true, true, true, false, false]);
   });

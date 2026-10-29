@@ -1,8 +1,32 @@
 /** Uses of avatar motions (same list as `avatar_motions::ROLES` in the backend). */
-export const MOTION_ROLES = ['idle', 'greeting', 'nod', 'happy', 'sad', 'angry', 'surprised', 'thinking', 'walk', 'sit'] as const;
+export const MOTION_ROLES = [
+  'idle',
+  'greeting',
+  'nod',
+  'happy',
+  'sad',
+  'angry',
+  'surprised',
+  'thinking',
+  'walk',
+  'sit',
+  'talk',
+  'dance',
+  'fall',
+  'sleep',
+  'jump',
+  'land',
+  'yawn',
+] as const;
 export type MotionRole = (typeof MOTION_ROLES)[number];
-/** Uses that loop while a state lasts (desktop pet walking or sitting) instead of the idle loop. */
-export type LoopRole = 'walk' | 'sit';
+/**
+ * Uses that loop while a state lasts instead of the idle loop: the desktop pet walking, sitting,
+ * speaking, dancing to music, in the air (falling, thrown, dragged) or asleep.
+ */
+export const LOOP_ROLES = ['walk', 'sit', 'talk', 'dance', 'fall', 'sleep'] as const;
+export type LoopRole = (typeof LOOP_ROLES)[number];
+/** The loops an Inochi2D puppet can bring itself (found by name or chosen in its settings). */
+export type PuppetLoop = Extract<LoopRole, 'walk' | 'sit'>;
 
 /**
  * A gesture the 3D avatar should play: by use (from the chat or a preview) or a clip of the model

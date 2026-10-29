@@ -334,6 +334,7 @@ export class PetBehavior {
         this.react(now, 'surprised', 700);
         this.hopUntil = now + HOP_MS;
       }
+      this.cues.push({ kind: 'gesture', role: 'land' });
     }
   }
 
@@ -436,7 +437,7 @@ export class PetBehavior {
     }
     if (kind === 'hop' || kind === 'wave') this.hopUntil = now + HOP_MS;
     if (kind === 'jump') this.cues.push({ kind: 'jump' });
-    const gesture: Partial<Record<PetAction, MotionRole>> = { wave: 'greeting', think: 'thinking', nod: 'nod' };
+    const gesture: Partial<Record<PetAction, MotionRole>> = { wave: 'greeting', think: 'thinking', nod: 'nod', yawn: 'yawn' };
     if (gesture[kind]) this.cues.push({ kind: 'gesture', role: gesture[kind] });
     this.action = action;
   }
@@ -485,21 +486,21 @@ export class PetBehavior {
     let frame: PetFrame;
     switch (this.mode) {
       case 'dozing':
-        frame = { ...still, mode: 'dozing', expression: 'relaxed', gaze: { x: 0, y: -0.8 } };
+        frame = { ...still, mode: 'dozing', expression: 'relaxed', gaze: { x: 0, y: -0.8 }, loop: 'sleep' };
         break;
       case 'dragged':
-        frame = { ...still, mode: 'dragged', expression: 'surprised', gaze: { x: 0, y: -0.6 } };
+        frame = { ...still, mode: 'dragged', expression: 'surprised', gaze: { x: 0, y: -0.6 }, loop: 'fall' };
         break;
       case 'falling':
         frame = this.leaping
-          ? { ...still, mode: 'falling', expression: 'happy', gaze: null }
-          : { ...still, mode: 'falling', expression: 'surprised', gaze: { x: 0, y: -0.7 } };
+          ? { ...still, mode: 'falling', expression: 'happy', gaze: null, loop: 'fall' }
+          : { ...still, mode: 'falling', expression: 'surprised', gaze: { x: 0, y: -0.7 }, loop: 'fall' };
         break;
       case 'reacting':
         frame = { ...still, mode: 'reacting', expression: this.reactExpression, gaze: this.reactGaze };
         break;
       case 'talking':
-        frame = { ...still, mode: 'talking', expression: null, gaze: null };
+        frame = { ...still, mode: 'talking', expression: null, gaze: null, loop: 'talk' };
         break;
       default: {
         const direction = this.action?.kind === 'walk' ? this.action.direction! : 0;
@@ -513,7 +514,8 @@ export class PetBehavior {
           mode: direction ? 'walking' : sitting ? 'sitting' : 'idle',
           walk: direction,
           turn: direction * WALK_TURN,
-          loop: direction ? 'walk' : sitting ? 'sit' : null,
+          // Music without anything else to do: it dances (with a dance motion; otherwise it nods along).
+          loop: direction ? 'walk' : sitting ? 'sit' : swaying ? 'dance' : null,
         };
       }
     }
