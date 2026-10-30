@@ -1,5 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef } from 'react';
 import type { PetFigure } from './avatarStage';
+import { TalkingOverlay, useTalkingSet } from './TalkingPortrait';
 import type { LoopRole } from '../../utils/avatarGestures';
 import { DEFAULT_PET_FRAMING, PET_FEET_SHARE, type PetFraming } from '../../services/avatarViewState';
 
@@ -15,6 +16,8 @@ const TILT = 0.12;
 interface PortraitPetProps {
   /** The character's portrait picture (data URL). */
   src: string;
+  /** The figure, for its speaking portrait (mouth shapes and blinking, if set up). */
+  characterId?: string;
   isSpeaking?: boolean;
   /** Desktop pet link: receives the figure's controls once it is shown. */
   pet: { onStage: (figure: PetFigure | null) => void };
@@ -26,7 +29,8 @@ interface PortraitPetProps {
  * round frame at the window's bottom. It breathes, bobs while it speaks and tilts when it walks;
  * clicks count only on the circle.
  */
-export const PortraitPet: React.FC<PortraitPetProps> = ({ src, isSpeaking = false, pet, loop = null }) => {
+export const PortraitPet: React.FC<PortraitPetProps> = ({ src, characterId, isSpeaking = false, pet, loop = null }) => {
+  const talking = useTalkingSet(characterId, src);
   const containerRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const petRef = useRef(pet);
@@ -109,6 +113,7 @@ export const PortraitPet: React.FC<PortraitPetProps> = ({ src, isSpeaking = fals
         }`}
       >
         <img src={src} alt="" draggable={false} className="h-full w-full object-cover" />
+        {talking && <TalkingOverlay set={talking} isSpeaking={isSpeaking} />}
       </div>
     </div>
   );

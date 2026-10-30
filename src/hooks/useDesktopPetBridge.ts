@@ -83,6 +83,7 @@ export function petModels(
 function petState(s: StoreState): PetState {
   return {
     characterName: s.activeCharacter?.card.data.name || APP_DEFAULT_COMPANION_NAME,
+    characterId: s.activeCharacter?.id ?? '',
     ...petModels(s),
     emotion: s.currentEmotion.emotion,
     expression: s.currentEmotion.vrm_expression,

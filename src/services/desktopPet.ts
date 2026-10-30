@@ -91,6 +91,8 @@ export const PET_RESIZE_EVENT = 'pet:resize';
 
 export interface PetState {
   characterName: string;
+  /** The figure's id (its speaking portrait, if set up). */
+  characterId: string;
   /** The model the chat shows (Inochi2D puppet in that view, otherwise the 3D model). */
   modelPath: string;
   /** The figure's 3D model and Inochi2D puppet ("" if none), for the pet's own choice. */

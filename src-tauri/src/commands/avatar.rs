@@ -74,7 +74,7 @@ pub fn set_talking_portrait_placement(
 pub async fn guess_talking_portrait_placement(
     image: String,
 ) -> Result<crate::modules::talking_portrait::HeadPlacement, String> {
-    let bytes = decode_picture(&image)?;
+    let bytes = picture_bytes(&image).await?;
     tauri::async_runtime::spawn_blocking(move || {
         crate::modules::talking_portrait::guess_placement(&bytes)
     })
@@ -82,18 +82,49 @@ pub async fn guess_talking_portrait_placement(
     .map_err(|e| e.to_string())?
 }
 
-/// The mouth-shape frames of a picture (made once on the CPU, then cached).
+/// The mouth-shape frames of a picture (made once on the CPU, then cached), optionally with the
+/// face of an emotion (VRM expression) for pictures without their own emotion picture.
 #[tauri::command]
 pub async fn prepare_talking_portrait(
     image: String,
     placement: crate::modules::talking_portrait::HeadPlacement,
+    emotion: Option<String>,
 ) -> Result<crate::modules::talking_portrait::TalkingSet, String> {
-    let bytes = decode_picture(&image)?;
+    let bytes = picture_bytes(&image).await?;
     tauri::async_runtime::spawn_blocking(move || {
-        crate::modules::talking_portrait::prepare(&bytes, &placement)
+        crate::modules::talking_portrait::prepare(&bytes, &placement, emotion.as_deref())
     })
     .await
     .map_err(|e| e.to_string())?
+}
+
+/// A picture: base64 (optionally a data URL) or an https address (hub pictures; the window's
+/// content security policy lets it show them but not read their bytes).
+async fn picture_bytes(image: &str) -> Result<Vec<u8>, String> {
+    if !image.starts_with("https://") {
+        return decode_picture(image);
+    }
+    const MAX_BYTES: usize = 25 * 1024 * 1024;
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(30))
+        .build()
+        .map_err(|e| crate::err!("backend.common.httpClient", error = e))?;
+    let bytes = client
+        .get(image)
+        .send()
+        .await
+        .and_then(reqwest::Response::error_for_status)
+        .map_err(|e| crate::err!("backend.common.downloadFailed", error = e))?
+        .bytes()
+        .await
+        .map_err(|e| crate::err!("backend.common.downloadRead", error = e))?;
+    if bytes.len() > MAX_BYTES {
+        return Err(crate::err!(
+            "backend.talkingPortrait.image",
+            error = "too large"
+        ));
+    }
+    Ok(bytes.to_vec())
 }
 
 /// A picture sent as base64, optionally as data URL.

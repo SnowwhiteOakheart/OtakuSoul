@@ -873,8 +873,8 @@ export const api = {
   },
 
   /** The mouth-shape frames of a picture (base64); made once, then cached by the backend. */
-  prepareTalkingPortrait: async (image: string, placement: HeadPlacement): Promise<TalkingSet> => {
-    return await invoke<TalkingSet>('prepare_talking_portrait', { image, placement });
+  prepareTalkingPortrait: async (image: string, placement: HeadPlacement, emotion?: string | null): Promise<TalkingSet> => {
+    return await invoke<TalkingSet>('prepare_talking_portrait', { image, placement, emotion: emotion ?? null });
   },
 
   /** VRM and Live2D models of the hub (registry from the data repository). */

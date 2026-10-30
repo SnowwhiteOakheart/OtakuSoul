@@ -57,6 +57,8 @@ interface MorphingPortraitProps {
   src: string;
   /** The character, for its speaking portrait (mouth shapes from THA3, if set up). */
   characterId?: string;
+  /** VRM expression of the mood, shown by the speaking portrait on the main picture. */
+  expression?: string;
   fallbackSrc?: string | null;
   alt: string;
   isSpeaking: boolean;
@@ -67,6 +69,7 @@ interface MorphingPortraitProps {
 export const MorphingPortrait: React.FC<MorphingPortraitProps> = ({
   src,
   characterId,
+  expression,
   fallbackSrc,
   alt,
   isSpeaking,
@@ -77,7 +80,7 @@ export const MorphingPortrait: React.FC<MorphingPortraitProps> = ({
   // (`PORTRAIT_FPS`), no re-render per frame.
   const alive = useAppStore((s) => s.portraitMotion);
   // Speaking portrait: mouth shapes and blinking over the picture (once set up for the character).
-  const talking = useTalkingSet(characterId, src);
+  const talking = useTalkingSet(characterId, src, fallbackSrc, expression);
   const swayRef = useRef<HTMLDivElement>(null);
   const breathRef = useRef<HTMLDivElement>(null);
   const speechRef = useRef<HTMLDivElement>(null);
@@ -490,6 +493,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
             <MorphingPortrait
               key={character?.id || 'none'}
               characterId={character?.id}
+              expression={currentEmotion.vrm_expression}
               src={emotionImage || character?.avatar_data_url || ''}
               fallbackSrc={character?.avatar_data_url}
               alt={charName}

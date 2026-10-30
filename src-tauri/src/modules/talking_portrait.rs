@@ -392,16 +392,65 @@ fn pose(values: &[(usize, f32)]) -> [f32; POSE_COUNT] {
 }
 
 // Indices in THA3's pose vector.
+const EYEBROW_TROUBLED: [usize; 2] = [0, 1];
+const EYEBROW_ANGRY: [usize; 2] = [2, 3];
+const EYEBROW_RAISED: [usize; 2] = [6, 7];
+const EYEBROW_HAPPY: [usize; 2] = [8, 9];
+const EYE_SURPRISED: [usize; 2] = [16, 17];
 const EYE_RELAXED: [usize; 2] = [18, 19];
+const EYE_UNIMPRESSED: [usize; 2] = [20, 21];
+const MOUTH_LOWERED_CORNER: [usize; 2] = [32, 33];
+const MOUTH_RAISED_CORNER: [usize; 2] = [34, 35];
+
+/// The face of an emotion (VRM expression names) for pictures without their own emotion
+/// picture: eyebrows, eyes and mouth corners, on which mouth shapes and blinking are laid.
+fn emotion_pose(emotion: &str) -> Option<Vec<(usize, f32)>> {
+    let both = |[l, r]: [usize; 2], v: f32| [(l, v), (r, v)];
+    let parts: Vec<[(usize, f32); 2]> = match emotion {
+        "happy" => vec![
+            both(EYEBROW_HAPPY, 1.0),
+            both(MOUTH_RAISED_CORNER, 0.8),
+            both(EYE_RELAXED, 0.25),
+        ],
+        "sad" => vec![
+            both(EYEBROW_TROUBLED, 1.0),
+            both(MOUTH_LOWERED_CORNER, 0.7),
+            both(EYE_RELAXED, 0.2),
+        ],
+        "angry" => vec![
+            both(EYEBROW_ANGRY, 1.0),
+            both(EYE_UNIMPRESSED, 0.4),
+            both(MOUTH_LOWERED_CORNER, 0.5),
+        ],
+        "surprised" => vec![both(EYEBROW_RAISED, 1.0), both(EYE_SURPRISED, 0.8)],
+        "relaxed" => vec![
+            both(EYE_RELAXED, 0.5),
+            both(EYEBROW_HAPPY, 0.3),
+            both(MOUTH_RAISED_CORNER, 0.35),
+        ],
+        _ => return None,
+    };
+    Some(parts.into_iter().flatten().collect())
+}
 const MOUTH_AAA: usize = 26;
 const MOUTH_III: usize = 27;
 const MOUTH_UUU: usize = 28;
 const MOUTH_EEE: usize = 29;
 const MOUTH_OOO: usize = 30;
 
-/// The frames a set holds: name and pose.
-fn frame_poses() -> Vec<(&'static str, [f32; POSE_COUNT])> {
+/// The frames a set holds: name and pose. With an emotion, every frame carries its face, and
+/// `rest` shows it with the mouth closed.
+fn frame_poses(emotion: Option<&str>) -> Vec<(&'static str, [f32; POSE_COUNT])> {
+    let base = emotion.and_then(emotion_pose).unwrap_or_default();
+    let with = |extra: &[(usize, f32)]| {
+        let mut values: Vec<(usize, f32)> = base.clone();
+        values.extend_from_slice(extra);
+        pose(&values)
+    };
     let mut frames = Vec::new();
+    if !base.is_empty() {
+        frames.push(("rest", with(&[])));
+    }
     for (name, half, index) in [
         ("aa", "aa_half", MOUTH_AAA),
         ("ih", "ih_half", MOUTH_III),
@@ -409,12 +458,13 @@ fn frame_poses() -> Vec<(&'static str, [f32; POSE_COUNT])> {
         ("ee", "ee_half", MOUTH_EEE),
         ("oh", "oh_half", MOUTH_OOO),
     ] {
-        frames.push((name, pose(&[(index, 1.0)])));
-        frames.push((half, pose(&[(index, 0.5)])));
+        frames.push((name, with(&[(index, 1.0)])));
+        frames.push((half, with(&[(index, 0.5)])));
     }
+    // Blinking overrides the emotion's eyes (a later value for the same index wins).
     frames.push((
         "blink",
-        pose(&[(EYE_RELAXED[0], 1.0), (EYE_RELAXED[1], 1.0)]),
+        with(&[(EYE_RELAXED[0], 1.0), (EYE_RELAXED[1], 1.0)]),
     ));
     frames
 }
@@ -580,10 +630,33 @@ fn session(file: &str) -> Result<ort::session::Session, String> {
         .map_err(|e| crate::err!("backend.talkingPortrait.model", error = e))
 }
 
-/// Cache key of a set: picture, placement and set version.
-fn set_key(bytes: &[u8], placement: &HeadPlacement) -> String {
+/// THA3's raw output (linear colour, -1..1) for one pose of a prepared input.
+fn pose_frame(
+    tha: &mut ort::session::Session,
+    input: &ndarray::Array4<f32>,
+    values: &[f32; POSE_COUNT],
+) -> Result<Vec<f32>, String> {
+    let pose = ndarray::Array2::from_shape_vec((1, POSE_COUNT), values.to_vec())
+        .map_err(|e| e.to_string())?;
+    let outputs = tha
+        .run(ort::inputs![
+            "image" => ort::value::TensorRef::from_array_view(input).map_err(|e| e.to_string())?,
+            "pose" => ort::value::TensorRef::from_array_view(&pose).map_err(|e| e.to_string())?,
+        ])
+        .map_err(|e| crate::err!("backend.talkingPortrait.model", error = e))?;
+    let (_, data) = outputs["output"]
+        .try_extract_tensor::<f32>()
+        .map_err(|e| e.to_string())?;
+    Ok(data.to_vec())
+}
+
+/// Cache key of a set: picture, placement, emotion and set version.
+fn set_key(bytes: &[u8], placement: &HeadPlacement, emotion: Option<&str>) -> String {
     let mut hasher = Sha256::new();
     hasher.update(bytes);
+    if let Some(emotion) = emotion {
+        hasher.update(emotion.as_bytes());
+    }
     hasher.update(format!(
         "{:.4}:{:.4}:{:.4}:{SET_VERSION}",
         placement.top, placement.chin, placement.center_x
@@ -596,10 +669,16 @@ fn set_key(bytes: &[u8], placement: &HeadPlacement) -> String {
         .collect()
 }
 
-/// The frames for a picture (made once, then read from the cache).
-pub fn prepare(bytes: &[u8], placement: &HeadPlacement) -> Result<TalkingSet, String> {
+/// The frames for a picture (made once, then read from the cache); with an emotion (VRM
+/// expression) the face shows it.
+pub fn prepare(
+    bytes: &[u8],
+    placement: &HeadPlacement,
+    emotion: Option<&str>,
+) -> Result<TalkingSet, String> {
+    let emotion = emotion.filter(|e| emotion_pose(e).is_some());
     let dir = sets_dir();
-    let cache = dir.join(format!("{}.json", set_key(bytes, placement)));
+    let cache = dir.join(format!("{}.json", set_key(bytes, placement, emotion)));
     if let Some(set) = fs::read_to_string(&cache)
         .ok()
         .and_then(|t| serde_json::from_str::<TalkingSet>(&t).ok())
@@ -615,24 +694,11 @@ pub fn prepare(bytes: &[u8], placement: &HeadPlacement) -> Result<TalkingSet, St
     let mask = cut_out(&mut session(MODELS[0].file)?, &image)?;
     let input = tha_input(&image, &mask, placement);
     let mut tha = session(MODELS[1].file)?;
-    let mut run = |values: &[f32; POSE_COUNT]| -> Result<Vec<f32>, String> {
-        let pose = ndarray::Array2::from_shape_vec((1, POSE_COUNT), values.to_vec())
-            .map_err(|e| e.to_string())?;
-        let outputs = tha
-            .run(ort::inputs![
-                "image" => ort::value::TensorRef::from_array_view(&input).map_err(|e| e.to_string())?,
-                "pose" => ort::value::TensorRef::from_array_view(&pose).map_err(|e| e.to_string())?,
-            ])
-            .map_err(|e| crate::err!("backend.talkingPortrait.model", error = e))?;
-        let (_, data) = outputs["output"]
-            .try_extract_tensor::<f32>()
-            .map_err(|e| e.to_string())?;
-        Ok(data.to_vec())
-    };
+    let mut run = |values: &[f32; POSE_COUNT]| pose_frame(&mut tha, &input, values);
     let neutral = run(&[0.0; POSE_COUNT])?;
     let transform = frame_transform(placement, w, h);
     let mut frames = BTreeMap::new();
-    for (name, values) in frame_poses() {
+    for (name, values) in frame_poses(emotion) {
         let posed = run(&values)?;
         let mask = change_mask(&posed, &neutral);
         if let Some((x, y, patch)) = patch(&tha_output(&posed), &mask, transform, w, h) {
@@ -664,8 +730,12 @@ pub fn prepare(bytes: &[u8], placement: &HeadPlacement) -> Result<TalkingSet, St
     Ok(set)
 }
 
-/// A first guess of the head from the cut-out: top of the figure, face in the middle of the
-/// top rows, chin about 0.55 of the picture's width below the top (portraits of head and shoulders).
+/// Head sizes tried when detecting (chin below the top, in shares of the picture's width): from
+/// a whole figure (small head) to a close-up.
+const GUESS_SIZES: [f32; 7] = [0.2, 0.28, 0.36, 0.44, 0.52, 0.6, 0.7];
+
+/// Where the head of a picture is: the top of the cut-out figure, and of several head sizes the
+/// one at which THA3 visibly opens the mouth (it only does when the head fits its frame).
 pub fn guess_placement(bytes: &[u8]) -> Result<HeadPlacement, String> {
     let image = image::load_from_memory(bytes)
         .map_err(|e| crate::err!("backend.talkingPortrait.image", error = e))?
@@ -675,27 +745,52 @@ pub fn guess_placement(bytes: &[u8]) -> Result<HeadPlacement, String> {
     let top = (0..h)
         .find(|&y| (0..w).filter(|&x| mask.get_pixel(x, y)[0] > 128).count() as u32 > w / 50)
         .unwrap_or(0);
-    let band = top..(top + h / 5).min(h);
-    let (mut sum, mut count) = (0u64, 0u64);
-    for y in band {
-        for x in 0..w {
-            if mask.get_pixel(x, y)[0] > 128 {
-                sum += x as u64;
-                count += 1;
+    // The middle of the figure in a band below the top (the head).
+    let centre = |rows: std::ops::Range<u32>| {
+        let (mut sum, mut count) = (0u64, 0u64);
+        for y in rows {
+            for x in 0..w {
+                if mask.get_pixel(x, y)[0] > 128 {
+                    sum += x as u64;
+                    count += 1;
+                }
             }
         }
-    }
-    let cx = if count > 0 {
-        sum as f32 / count as f32
-    } else {
-        w as f32 / 2.0
+        if count > 0 {
+            sum as f32 / count as f32
+        } else {
+            w as f32 / 2.0
+        }
     };
-    let chin = (top as f32 + w as f32 * 0.55).min(h as f32);
-    Ok(HeadPlacement {
-        top: top as f32 / h as f32,
-        chin: chin / h as f32,
-        center_x: cx / w as f32,
-    })
+    let candidates: Vec<HeadPlacement> = GUESS_SIZES
+        .iter()
+        .map(|&size| {
+            let chin = (top as f32 + w as f32 * size).min(h as f32);
+            let cx = centre(top..(top + ((chin - top as f32) * 0.8) as u32).clamp(top + 1, h));
+            HeadPlacement {
+                top: top as f32 / h as f32,
+                chin: chin / h as f32,
+                center_x: cx / w as f32,
+            }
+        })
+        .filter(|p| p.chin > p.top + 0.02)
+        .collect();
+    let mut tha = session(MODELS[1].file)?;
+    let mut best: Option<(u32, HeadPlacement)> = None;
+    for placement in candidates {
+        let input = tha_input(&image, &mask, &placement);
+        let neutral = pose_frame(&mut tha, &input, &[0.0; POSE_COUNT])?;
+        let open = pose_frame(&mut tha, &input, &pose(&[(MOUTH_AAA, 1.0)]))?;
+        let score = change_mask(&open, &neutral)
+            .pixels()
+            .filter(|p| p[0] > 128)
+            .count() as u32;
+        if best.is_none_or(|(s, _)| score > s) {
+            best = Some((score, placement));
+        }
+    }
+    best.map(|(_, p)| p)
+        .ok_or_else(|| crate::err!("backend.talkingPortrait.placement"))
 }
 
 #[cfg(test)]
@@ -804,7 +899,12 @@ mod tests {
             })
             .unwrap_or(guess);
         let started = std::time::Instant::now();
-        let set = prepare(&bytes, &placement).unwrap();
+        let set = prepare(
+            &bytes,
+            &placement,
+            std::env::var("TALKING_PORTRAIT_EMOTION").ok().as_deref(),
+        )
+        .unwrap();
         println!(
             "{} frames in {:.1} s",
             set.frames.len(),
@@ -832,10 +932,29 @@ mod tests {
 
     #[test]
     fn every_mouth_shape_has_a_full_and_a_half_frame() {
-        let names: Vec<_> = frame_poses().into_iter().map(|(n, _)| n).collect();
+        let names: Vec<_> = frame_poses(None).into_iter().map(|(n, _)| n).collect();
         for v in ["aa", "ih", "ou", "ee", "oh"] {
             assert!(names.contains(&v) && names.contains(&format!("{v}_half").as_str()));
         }
         assert!(names.contains(&"blink"));
+        assert!(!names.contains(&"rest"));
+    }
+
+    #[test]
+    fn an_emotion_is_laid_under_every_frame() {
+        let frames = frame_poses(Some("happy"));
+        let rest = frames.iter().find(|(n, _)| *n == "rest").unwrap().1;
+        assert!(rest[EYEBROW_HAPPY[0]] > 0.0 && rest[MOUTH_RAISED_CORNER[1]] > 0.0);
+        let aa = frames.iter().find(|(n, _)| *n == "aa").unwrap().1;
+        assert_eq!(aa[MOUTH_AAA], 1.0);
+        assert_eq!(aa[EYEBROW_HAPPY[0]], rest[EYEBROW_HAPPY[0]]);
+        // Blinking closes the eyes fully, whatever the emotion set.
+        let blink = frames.iter().find(|(n, _)| *n == "blink").unwrap().1;
+        assert_eq!(blink[EYE_RELAXED[0]], 1.0);
+        assert!(
+            frame_poses(Some("neutral"))
+                .iter()
+                .all(|(n, _)| *n != "rest")
+        );
     }
 }

@@ -35,8 +35,12 @@ export function mouthFrame(visemes: Visemes | null, level: number, frames: Recor
   return null;
 }
 
-/** A picture (data, asset or blob URL) as base64 for the backend. */
+/**
+ * A picture for the backend: base64 of a data, asset or blob URL; an https address (hub
+ * pictures) as it is, since the window may show those but not read them.
+ */
 async function pictureBase64(src: string): Promise<string> {
+  if (src.startsWith('https://')) return src;
   const blob = await (await fetch(src)).blob();
   const bytes = new Uint8Array(await blob.arrayBuffer());
   let binary = '';
@@ -46,12 +50,19 @@ async function pictureBase64(src: string): Promise<string> {
 
 const sets = new Map<string, Promise<TalkingSet>>();
 
-/** The frames of a picture with this head placement (made once by the backend, then cached). */
-export function talkingSet(src: string, placement: HeadPlacement): Promise<TalkingSet> {
-  const key = `${src.length}:${src.slice(0, 64)}:${src.slice(-64)}:${placement.top}:${placement.chin}:${placement.center_x}`;
+/** Emotions THA3 can lay on a picture (VRM expressions); others show it as it is. */
+export const TALKING_EMOTIONS = ['happy', 'sad', 'angry', 'surprised', 'relaxed'];
+
+/**
+ * The frames of a picture with this head placement (made once by the backend, then cached);
+ * with an emotion, the face shows it.
+ */
+export function talkingSet(src: string, placement: HeadPlacement, emotion?: string | null): Promise<TalkingSet> {
+  const mood = emotion && TALKING_EMOTIONS.includes(emotion) ? emotion : null;
+  const key = `${src.length}:${src.slice(0, 64)}:${src.slice(-64)}:${placement.top}:${placement.chin}:${placement.center_x}:${mood ?? ''}`;
   let pending = sets.get(key);
   if (!pending) {
-    pending = pictureBase64(src).then((image) => api.prepareTalkingPortrait(image, placement));
+    pending = pictureBase64(src).then((image) => api.prepareTalkingPortrait(image, placement, mood));
     pending.catch(() => sets.delete(key));
     sets.set(key, pending);
   }
@@ -61,4 +72,17 @@ export function talkingSet(src: string, placement: HeadPlacement): Promise<Talki
 /** A first guess where the head of a picture is. */
 export async function guessPlacement(src: string): Promise<HeadPlacement> {
   return api.guessTalkingPortraitPlacement(await pictureBase64(src));
+}
+
+const detected = new Map<string, Promise<HeadPlacement>>();
+
+/** The detected head of a picture, asked once per picture. */
+export function detectedPlacement(src: string): Promise<HeadPlacement> {
+  let pending = detected.get(src);
+  if (!pending) {
+    pending = guessPlacement(src);
+    pending.catch(() => detected.delete(src));
+    detected.set(src, pending);
+  }
+  return pending;
 }

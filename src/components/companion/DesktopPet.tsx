@@ -1103,6 +1103,7 @@ export const DesktopPet: React.FC = () => {
               <PortraitPet
                 key={modelPath}
                 src={pet.portrait ?? ''}
+                characterId={pet.characterId}
                 isSpeaking={isSpeaking}
                 pet={petLink}
                 loop={loop}

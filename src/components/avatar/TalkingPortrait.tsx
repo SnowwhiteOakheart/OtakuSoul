@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../../services/api';
 import { audioPlayer } from '../../services/audioPlayer';
-import { mouthFrame, talkingSet, TALKING_PORTRAIT_EVENT } from '../../services/talkingPortrait';
+import { detectedPlacement, mouthFrame, talkingSet, TALKING_PORTRAIT_EVENT } from '../../services/talkingPortrait';
 import type { Visemes } from '../../services/lipSync';
 import type { HeadPlacement } from '../../types/generated/HeadPlacement';
 import type { TalkingSet } from '../../types/generated/TalkingSet';
@@ -10,8 +10,16 @@ import { createBlinker } from './avatarStage';
 /**
  * The speaking frames of a character's picture, once its head placement is set and the models
  * are there; null otherwise (the portrait stays still). Made in the background on first use.
+ * The saved head frame belongs to the main portrait (`base`); other pictures of the character
+ * (emotion or hub pictures, often framed differently) get theirs detected.
  */
-export function useTalkingSet(characterId: string | undefined, src: string): TalkingSet | null {
+export function useTalkingSet(
+  characterId: string | undefined,
+  src: string,
+  base?: string | null,
+  /** VRM expression: shown by THA3 on the main portrait (other pictures are the emotion's own). */
+  emotion?: string | null,
+): TalkingSet | null {
   const [placement, setPlacement] = useState<HeadPlacement | null>(null);
   const [set, setSet] = useState<TalkingSet | null>(null);
 
@@ -41,7 +49,10 @@ export function useTalkingSet(characterId: string | undefined, src: string): Tal
     setSet(null);
     if (!placement || !src) return undefined;
     let cancelled = false;
-    talkingSet(src, placement)
+    const main = !base || src === base;
+    const framing = main ? Promise.resolve(placement) : detectedPlacement(src);
+    framing
+      .then((found) => talkingSet(src, found, main ? emotion : null))
       .then((made) => {
         if (!cancelled) setSet(made);
       })
@@ -49,7 +60,7 @@ export function useTalkingSet(characterId: string | undefined, src: string): Tal
     return () => {
       cancelled = true;
     };
-  }, [placement, src]);
+  }, [placement, src, base, emotion]);
 
   return set;
 }
@@ -79,7 +90,8 @@ export function TalkingOverlay({ set, isSpeaking, className }: { set: TalkingSet
     const start = performance.now();
     const draw = () => {
       const blinking = !mouth && blink((performance.now() - start) / 1000) > 0.5;
-      const next = mouth ?? (blinking && images.has('blink') ? 'blink' : null);
+      // The emotion's face (`rest`) stays while nothing else is shown.
+      const next = mouth ?? (blinking && images.has('blink') ? 'blink' : images.has('rest') ? 'rest' : null);
       if (next === shown) return;
       shown = next;
       context.clearRect(0, 0, canvas.width, canvas.height);
