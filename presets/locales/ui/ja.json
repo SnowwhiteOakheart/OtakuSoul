@@ -71,7 +71,7 @@
   "palette.placeholder": "画面やコマンドを検索…",
   "palette.noResults": "一致するコマンドが見つかりません。",
   "palette.actions": "アクション",
-  "header.version": "v0.6.1",
+  "header.version": "v0.7.0",
   "header.logs": "システムログ",
   "header.update": "アップデートを確認",
   "header.about": "このアプリについて",
