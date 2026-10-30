@@ -26,6 +26,8 @@ pub mod image_loras;
 pub mod inference;
 pub mod inochi2d;
 pub mod kokoro;
+#[cfg(target_os = "linux")]
+pub mod kwin_bridge;
 pub mod live2d;
 pub mod llama_manager;
 pub mod llm_benchmark;

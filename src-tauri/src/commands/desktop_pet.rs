@@ -78,7 +78,6 @@ fn position_on_screen(app: &AppHandle, x: i32, y: i32) -> bool {
 fn spawn_cursor_watch(app: AppHandle) {
     std::thread::spawn(move || {
         let mut last: Option<PetCursor> = None;
-        let through = crate::modules::desktop_windows::click_through_reliable();
         let clock = std::time::Instant::now();
         loop {
             std::thread::sleep(CURSOR_INTERVAL);
@@ -97,6 +96,15 @@ fn spawn_cursor_watch(app: AppHandle) {
             ) else {
                 continue;
             };
+            // KDE Wayland: XWayland's pointer stands still over other programs, KWin's does not.
+            #[cfg(target_os = "linux")]
+            let cursor = {
+                crate::modules::kwin_bridge::set_scale(scale);
+                crate::modules::kwin_bridge::cursor()
+                    .map(|(x, y)| tauri::PhysicalPosition::new(x, y))
+                    .unwrap_or(cursor)
+            };
+            let through = crate::modules::desktop_windows::click_through_reliable();
             let x = (cursor.x - origin.x as f64) / scale;
             let y = (cursor.y - origin.y as f64) / scale;
             let (w, h) = (size.width as f64 / scale, size.height as f64 / scale);
@@ -115,6 +123,7 @@ fn spawn_cursor_watch(app: AppHandle) {
                     || (prev.y - next.y).abs() > 0.5
                     || prev.inside != next.inside
                     || prev.button != next.button
+                    || prev.through != next.through
                     // While the window is dragged the pointer keeps its place in it.
                     || (prev.gx - next.gx).abs() > 0.5
                     || (prev.gy - next.gy).abs() > 0.5
@@ -133,15 +142,19 @@ fn spawn_cursor_watch(app: AppHandle) {
 const PLATFORM_INTERVAL: std::time::Duration = std::time::Duration::from_millis(100);
 
 /// Sends the top edges of the other windows (`pet:platforms`) and whether a fullscreen window or
-/// the lock screen is in front (`pet:screen`) whenever they change. Linux has no window edges
-/// yet (always none), only the screen state.
+/// the lock screen is in front (`pet:screen`) whenever they change, and every two seconds also
+/// unchanged: the first ones may come before the pet's webview listens. On Linux the window
+/// edges come from KWin (`kwin_bridge`, KDE Wayland only), elsewhere there none yet.
 #[cfg(any(windows, target_os = "linux"))]
 fn spawn_platform_watch(app: AppHandle) {
     std::thread::spawn(move || {
         let mut last: Option<Vec<crate::modules::desktop_windows::Platform>> = None;
         let mut last_screen = crate::modules::desktop_windows::ScreenState::default();
+        let mut tick: u32 = 0;
         loop {
             std::thread::sleep(PLATFORM_INTERVAL);
+            tick = tick.wrapping_add(1);
+            let repeat = tick.is_multiple_of(20);
             let Some(window) = app.get_webview_window(PET_LABEL) else {
                 break;
             };
@@ -154,12 +167,12 @@ fn spawn_platform_watch(app: AppHandle) {
             #[cfg(not(windows))]
             let own = 0;
             let screen = crate::modules::desktop_windows::screen_state(own);
-            if screen != last_screen {
+            if screen != last_screen || repeat {
                 let _ = window.emit_to(PET_LABEL, "pet:screen", screen);
                 last_screen = screen;
             }
             let platforms = crate::modules::desktop_windows::scan(own);
-            if last.as_ref() != Some(&platforms) {
+            if last.as_ref() != Some(&platforms) || repeat {
                 let _ = window.emit_to(PET_LABEL, "pet:platforms", &platforms);
                 last = Some(platforms);
             }
@@ -261,6 +274,8 @@ pub async fn toggle_desktop_pet(
         let handle = app.clone();
         window.on_window_event(move |event| {
             if let tauri::WindowEvent::Destroyed = event {
+                #[cfg(target_os = "linux")]
+                std::thread::spawn(crate::modules::kwin_bridge::stop);
                 handle
                     .state::<AppState>()
                     .companion_engine
@@ -269,6 +284,13 @@ pub async fn toggle_desktop_pet(
             }
         });
         spawn_cursor_watch(app.clone());
+        // KDE Wayland: pointer, fullscreen and window edges from KWin (D-Bus calls block).
+        #[cfg(target_os = "linux")]
+        std::thread::spawn(|| {
+            if crate::modules::kwin_bridge::start() {
+                tracing::info!("Desktop-Pet: KWin-Skript läuft");
+            }
+        });
         #[cfg(any(windows, target_os = "linux"))]
         spawn_platform_watch(app.clone());
         #[cfg(windows)]

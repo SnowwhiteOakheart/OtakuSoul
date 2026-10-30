@@ -976,7 +976,7 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `syncWindow` Position und Arbeitsbereich neu, sonst fällt das Pet vom alten Platz. Pro Schritt nur ein `setPosition`
   zur Zeit (wartet auf das vorige). Drehung beim Gehen über die Kamera (`stage.setTurn`), nicht am Modell – so
   funktioniert sie für VRM, glTF und MMD gleich.
-- Pet auf fremden Fenstern: `modules/desktop_windows.rs` (Kanten nur Windows; `visible_edges` ist plattformneutral getestet,
+- Pet auf fremden Fenstern: `modules/desktop_windows.rs` (Kanten unter Windows und KDE Wayland; `visible_edges` ist plattformneutral getestet,
   `cargo test scan_prints_the_desktop -- --ignored --nocapture` zeigt, was der Scan auf dem Rechner sieht). Unsichtbare
   Vollbild-Overlays mit `WS_EX_TRANSPARENT`/`WS_EX_NOACTIVATE` würden sonst alle Titelleisten „verdecken“. Plattformen
   sind physische Pixel wie die Pet-Physik. Jede Änderung unter `src-tauri/` startet die App in `tauri dev` neu – ein
@@ -990,9 +990,17 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
 - Pet unter Linux (`desktop_windows::linux`): nur über XWayland (`GDK_BACKEND=x11`) – reines Wayland erlaubt kein
   `setPosition` und kein „immer oben“. In einer Wayland-Sitzung kennt XWayland Zeiger und Tasten nur über X11-Fenstern
   (`XQueryPointer` bleibt sonst stehen); daher `pet:cursor.through = false` (`click_through_reliable`): kein
-  Click-Through, das Fenster bleibt als Ganzes greifbar, auch nach Vollbild/Sperre. KWin lässt `_NET_ACTIVE_WINDOW`
+  Click-Through, das Fenster bleibt als Ganzes greifbar, auch nach Vollbild/Sperre. Unter KDE Wayland lädt das Pet
+  beim Öffnen ein KWin-Skript (`modules/kwin_pet.js` über `modules/kwin_bridge.rs`: `loadScript`/`run` auf
+  `org.kde.KWin /Scripting`, Name `otakusoul_pet_<pid>`), das alle 33 ms Zeiger (`workspace.cursorPos`), aktives
+  Fenster (`fullScreen`) und Fenster (`stackingOrder`, oben zuerst) als JSON-String per `callDBus` an
+  `org.otakusoul.Pet.p<pid>` meldet (nur Aufrufe vom KWin-Busnamen zählen; Zahlen als JSON, weil QJSValue sie mal
+  als int, mal als double schickt). Solange es lebt (Meldung < 5 s), gilt wieder Click-Through, Vollbild und Kanten
+  kommen von dort. Logische KWin-Pixel × Skalierung des Pet-Fensters = Pet-Physik. Ohne App (Absturz) entlädt sich
+  das Skript selbst (`NameHasOwner` alle 2 s). `pet:screen`/`pet:platforms` werden alle 2 s wiederholt – die
+  ersten Meldungen kommen sonst, bevor das Pet-Webview zuhört. KWin lässt `_NET_ACTIVE_WINDOW`
   unter Wayland auf dem letzten X11-Fenster stehen, auch wenn ein Wayland-Fenster vorne ist (geprüft per KWin-Skript:
-  Vollbild-Spiel gemeldet, vorne war `plasmashell`) – Vollbild wird deshalb nur in X11-Sitzungen gelesen; Sperre über
+  Vollbild-Spiel gemeldet, vorne war `plasmashell`) – Vollbild per X11 deshalb nur in X11-Sitzungen; Sperre über
   D-Bus `org.freedesktop.ScreenSaver.GetActive` (GNOME: `org.gnome.ScreenSaver`). KWin legt Vollbildfenster über
   „immer oben“, das Pet ist dort ohnehin verdeckt. Prüfen auf dem echten Desktop: `launch()` aus `e2e/harness.mjs`,
   `toggle_desktop_pet` per `invoke`, das Pet-Webview ist per `getWindowHandles` erreichbar.

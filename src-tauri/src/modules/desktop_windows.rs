@@ -4,8 +4,9 @@
 //! window covers that line. Coordinates are physical screen pixels. The scan itself exists on
 //! Windows only (`EnumWindows` + DWM frame bounds); elsewhere the pet keeps to the floor.
 //!
-//! On Linux the pet reads the mouse button over X11 (also XWayland), the fullscreen window only
-//! in an X11 session and the lock screen over D-Bus; window edges are not read there yet.
+//! On Linux the pet reads the mouse button over X11 (also XWayland) and the lock screen over
+//! D-Bus. Under KDE Wayland a KWin script (`kwin_bridge`) reports pointer, active window and
+//! window edges; in an X11 session the fullscreen window comes from X11, edges not yet.
 
 use serde::Serialize;
 
@@ -99,7 +100,8 @@ pub fn screen_state(exclude: isize) -> ScreenState {
 /// On Linux `exclude` is unused: the pet's own window is told apart by its process id.
 #[cfg(target_os = "linux")]
 pub fn screen_state(_exclude: isize) -> ScreenState {
-    let (fullscreen, focus) = linux::active_window();
+    let (fullscreen, focus) =
+        crate::modules::kwin_bridge::screen().unwrap_or_else(linux::active_window);
     ScreenState {
         fullscreen,
         locked: linux::session_locked(),
@@ -115,11 +117,11 @@ pub fn screen_state(_exclude: isize) -> ScreenState {
 /// Whether the pet may let clicks through to the desktop. It then sees the pointer only through
 /// the global position: in a Wayland session (also under XWayland) that position stands still
 /// while the pointer is over other programs, so the pet could never be grabbed again and stays
-/// clickable as a whole window instead.
+/// clickable as a whole window instead - unless KWin reports the pointer (`kwin_bridge`).
 pub fn click_through_reliable() -> bool {
     #[cfg(target_os = "linux")]
     {
-        !linux::wayland_session()
+        !linux::wayland_session() || crate::modules::kwin_bridge::alive()
     }
     #[cfg(not(target_os = "linux"))]
     {
@@ -152,7 +154,20 @@ pub fn scan(exclude: isize) -> Vec<Platform> {
     visible_edges(&win::visible_windows(exclude))
 }
 
-#[cfg(not(windows))]
+/// Under KDE Wayland from the KWin script; elsewhere on Linux none yet.
+#[cfg(target_os = "linux")]
+pub fn scan(_exclude: isize) -> Vec<Platform> {
+    crate::modules::kwin_bridge::windows()
+        .map(|windows| visible_edges(&windows))
+        .unwrap_or_default()
+}
+
+#[cfg(target_os = "linux")]
+pub fn wayland_session() -> bool {
+    linux::wayland_session()
+}
+
+#[cfg(not(any(windows, target_os = "linux")))]
 pub fn scan(_exclude: isize) -> Vec<Platform> {
     Vec::new()
 }
