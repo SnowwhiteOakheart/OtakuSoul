@@ -1,8 +1,9 @@
 # Die Gruft der vergessenen Schatten – 5e-Starter-Abenteuer (Soul Stage)
 
 Ein kurzes, vollständig spielbares Abenteuer für Soul Stage mit den 5e-kompatiblen Regeln (SRD 5.1): vier klassische
-Helden, drei Akte, drei Karten. Alle Texte sind auf Deutsch geschrieben; Karten und Szenen tragen englische und
-russische Übersetzungen in `extensions.otakusoul_i18n`.
+Helden, drei Akte, drei Karten. Alle Texte sind auf Deutsch geschrieben; Karten und Szenen tragen englische,
+russische und japanische Übersetzungen in `extensions.otakusoul_i18n`, und die Heldenkarten bringen englische
+Stimmbeschreibungen für VoiceDesign in `extensions.otakusoul_voice` mit.
 
 ## Helden
 
@@ -26,8 +27,9 @@ Die Porträts sind verkleinerte Fassungen von `public/stage/heroes/`, die Spielb
 
 Die Akte sind gewöhnliche Szenen (`SceneDefinition` mit `rules.ruleset = "5e"`, `map_id`, `goals`, `next_scene`).
 Sind alle Ziele erreicht, führt „Weiter mit dem nächsten Akt“ die Gruppe samt Klassen und Inventar in den nächsten Akt.
-Die App kopiert die Akte beim Start in den Szenenordner „Die Gruft der vergessenen Schatten“. Gestartet wird über
-**Stage → 5e-Abenteuer** (Lobby mit Regelwerk-Filter und Abenteuer-Banner).
+Die App kopiert die Akte beim Start in den Szenenordner „Die Gruft der vergessenen Schatten“. Gestartet wird über die
+Sammlungskarte mit Titelbild (`cover.webp`) in der **Story-Galerie** oder über **Stage → 5e-Abenteuer** (Lobby mit
+Regelwerk-Filter und Abenteuer-Banner).
 
 ## Namensnennung
 
