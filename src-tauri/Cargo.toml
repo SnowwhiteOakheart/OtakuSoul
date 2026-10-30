@@ -71,6 +71,13 @@ whisper-rs = { version = "0.16", features = ["tracing_backend"] }
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
 
+[target.'cfg(target_os = "linux")'.dependencies]
+# Desktop pet: mouse button (X11 / XWayland) and fullscreen window (X11 session) (`modules::desktop_windows`);
+# both already come with arboard and global-hotkey.
+x11rb = "0.13"
+# Desktop pet: lock screen via `org.freedesktop.ScreenSaver` (already in use by notify-rust).
+zbus = "5"
+
 [target.'cfg(windows)'.dependencies]
 # Chat notifications whose click opens the chat (`commands::app::notify_chat`); the notification
 # plugin brings the same crate but no click handler.

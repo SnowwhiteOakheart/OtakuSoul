@@ -32,8 +32,11 @@ struct PetCursor {
     x: f64,
     y: f64,
     inside: bool,
-    /// Left mouse button held (Windows); the pet ends a drag and throws on release.
+    /// Left mouse button held (Windows, Linux over X11); the pet ends a drag and throws on release.
     button: Option<bool>,
+    /// Whether clicks may go through the window's empty parts (false in a Wayland session,
+    /// where the position above stands still over other programs).
+    through: bool,
     /// Global pointer position (physical px) and when it was read (ms on this thread's
     /// clock): the speed of a throw, measured here rather than from late window events.
     gx: f64,
@@ -75,6 +78,7 @@ fn position_on_screen(app: &AppHandle, x: i32, y: i32) -> bool {
 fn spawn_cursor_watch(app: AppHandle) {
     std::thread::spawn(move || {
         let mut last: Option<PetCursor> = None;
+        let through = crate::modules::desktop_windows::click_through_reliable();
         let clock = std::time::Instant::now();
         loop {
             std::thread::sleep(CURSOR_INTERVAL);
@@ -101,6 +105,7 @@ fn spawn_cursor_watch(app: AppHandle) {
                 y,
                 inside: x >= 0.0 && y >= 0.0 && x < w && y < h,
                 button: crate::modules::desktop_windows::primary_button_down(),
+                through,
                 gx: cursor.x,
                 gy: cursor.y,
                 t: clock.elapsed().as_secs_f64() * 1000.0,
@@ -124,12 +129,13 @@ fn spawn_cursor_watch(app: AppHandle) {
 
 /// Window edges are read this often: often enough that a pet riding on a dragged window keeps
 /// up smoothly (a scan takes about a millisecond, and only changes are sent).
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "linux"))]
 const PLATFORM_INTERVAL: std::time::Duration = std::time::Duration::from_millis(100);
 
 /// Sends the top edges of the other windows (`pet:platforms`) and whether a fullscreen window or
-/// the lock screen is in front (`pet:screen`) whenever they change.
-#[cfg(windows)]
+/// the lock screen is in front (`pet:screen`) whenever they change. Linux has no window edges
+/// yet (always none), only the screen state.
+#[cfg(any(windows, target_os = "linux"))]
 fn spawn_platform_watch(app: AppHandle) {
     std::thread::spawn(move || {
         let mut last: Option<Vec<crate::modules::desktop_windows::Platform>> = None;
@@ -143,7 +149,10 @@ fn spawn_platform_watch(app: AppHandle) {
                 last = None;
                 continue;
             }
+            #[cfg(windows)]
             let own = window.hwnd().map(|h| h.0 as isize).unwrap_or_default();
+            #[cfg(not(windows))]
+            let own = 0;
             let screen = crate::modules::desktop_windows::screen_state(own);
             if screen != last_screen {
                 let _ = window.emit_to(PET_LABEL, "pet:screen", screen);
@@ -260,7 +269,7 @@ pub async fn toggle_desktop_pet(
             }
         });
         spawn_cursor_watch(app.clone());
-        #[cfg(windows)]
+        #[cfg(any(windows, target_os = "linux"))]
         spawn_platform_watch(app.clone());
         #[cfg(windows)]
         spawn_music_watch(app.clone());

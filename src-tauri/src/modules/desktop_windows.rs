@@ -3,6 +3,9 @@
 //! Windows come top to bottom (z-order); a window's top edge counts only where no higher
 //! window covers that line. Coordinates are physical screen pixels. The scan itself exists on
 //! Windows only (`EnumWindows` + DWM frame bounds); elsewhere the pet keeps to the floor.
+//!
+//! On Linux the pet reads the mouse button over X11 (also XWayland), the fullscreen window only
+//! in an X11 session and the lock screen over D-Bus; window edges are not read there yet.
 
 use serde::Serialize;
 
@@ -93,9 +96,35 @@ pub fn screen_state(exclude: isize) -> ScreenState {
     }
 }
 
-#[cfg(not(windows))]
+/// On Linux `exclude` is unused: the pet's own window is told apart by its process id.
+#[cfg(target_os = "linux")]
+pub fn screen_state(_exclude: isize) -> ScreenState {
+    let (fullscreen, focus) = linux::active_window();
+    ScreenState {
+        fullscreen,
+        locked: linux::session_locked(),
+        focus,
+    }
+}
+
+#[cfg(not(any(windows, target_os = "linux")))]
 pub fn screen_state(_exclude: isize) -> ScreenState {
     ScreenState::default()
+}
+
+/// Whether the pet may let clicks through to the desktop. It then sees the pointer only through
+/// the global position: in a Wayland session (also under XWayland) that position stands still
+/// while the pointer is over other programs, so the pet could never be grabbed again and stays
+/// clickable as a whole window instead.
+pub fn click_through_reliable() -> bool {
+    #[cfg(target_os = "linux")]
+    {
+        !linux::wayland_session()
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        true
+    }
 }
 
 /// Whether the left mouse button is held (the pet sees the end of a system drag at once);
@@ -107,7 +136,12 @@ pub fn primary_button_down() -> Option<bool> {
     Some(unsafe { GetAsyncKeyState(i32::from(VK_LBUTTON.0)) } < 0)
 }
 
-#[cfg(not(windows))]
+#[cfg(target_os = "linux")]
+pub fn primary_button_down() -> Option<bool> {
+    linux::primary_button_down()
+}
+
+#[cfg(not(any(windows, target_os = "linux")))]
 pub fn primary_button_down() -> Option<bool> {
     None
 }
@@ -121,6 +155,173 @@ pub fn scan(exclude: isize) -> Vec<Platform> {
 #[cfg(not(windows))]
 pub fn scan(_exclude: isize) -> Vec<Platform> {
     Vec::new()
+}
+
+#[cfg(target_os = "linux")]
+mod linux {
+    use std::sync::Mutex;
+    use std::time::{Duration, Instant};
+    use x11rb::connection::Connection;
+    use x11rb::protocol::xproto::{Atom, AtomEnum, ConnectionExt, KeyButMask, Window};
+    use x11rb::rust_connection::RustConnection;
+
+    struct X11 {
+        conn: RustConnection,
+        root: Window,
+        active: Atom,
+        state: Atom,
+        fullscreen: Atom,
+        pid: Atom,
+    }
+
+    impl X11 {
+        fn open() -> Option<Self> {
+            let (conn, screen) = x11rb::connect(None).ok()?;
+            let root = conn.setup().roots.get(screen)?.root;
+            let atom = |name: &str| -> Option<Atom> {
+                Some(
+                    conn.intern_atom(false, name.as_bytes())
+                        .ok()?
+                        .reply()
+                        .ok()?
+                        .atom,
+                )
+            };
+            Some(Self {
+                active: atom("_NET_ACTIVE_WINDOW")?,
+                state: atom("_NET_WM_STATE")?,
+                fullscreen: atom("_NET_WM_STATE_FULLSCREEN")?,
+                pid: atom("_NET_WM_PID")?,
+                conn,
+                root,
+            })
+        }
+
+        fn property(&self, window: Window, name: Atom, kind: AtomEnum) -> Option<Vec<u32>> {
+            let reply = self
+                .conn
+                .get_property(false, window, name, kind, 0, 64)
+                .ok()?
+                .reply()
+                .ok()?;
+            Some(reply.value32()?.collect())
+        }
+    }
+
+    /// One connection for the pet's watch threads; dropped on an error and opened again later.
+    static X: Mutex<Option<X11>> = Mutex::new(None);
+    /// After a failed connection the next try waits this long (no X server: no spam).
+    const RETRY: Duration = Duration::from_secs(10);
+    static LAST_TRY: Mutex<Option<Instant>> = Mutex::new(None);
+
+    fn with_x11<T>(read: impl FnOnce(&X11) -> Option<T>) -> Option<T> {
+        let mut guard = X.lock().ok()?;
+        if guard.is_none() {
+            let mut last = LAST_TRY.lock().ok()?;
+            if last.is_some_and(|at| at.elapsed() < RETRY) {
+                return None;
+            }
+            *last = Some(Instant::now());
+            *guard = X11::open();
+        }
+        let value = read(guard.as_ref()?);
+        if value.is_none() {
+            *guard = None;
+        }
+        value
+    }
+
+    pub fn wayland_session() -> bool {
+        std::env::var_os("WAYLAND_DISPLAY").is_some()
+            || std::env::var("XDG_SESSION_TYPE").is_ok_and(|kind| kind == "wayland")
+    }
+
+    pub fn primary_button_down() -> Option<bool> {
+        with_x11(|x| {
+            let reply = x.conn.query_pointer(x.root).ok()?.reply().ok()?;
+            Some(reply.mask.contains(KeyButMask::BUTTON1))
+        })
+    }
+
+    /// Whether the active window is fullscreen, and its id; the pet's own window counts as
+    /// none. Only in an X11 session: under Wayland KWin keeps `_NET_ACTIVE_WINDOW` on the last
+    /// X11 window while a Wayland window is in front (a fullscreen game would hide the pet for
+    /// good), so it is not read there.
+    pub fn active_window() -> (bool, isize) {
+        if wayland_session() {
+            return (false, 0);
+        }
+        with_x11(|x| {
+            let active = x
+                .property(x.root, x.active, AtomEnum::WINDOW)?
+                .first()
+                .copied()
+                .unwrap_or(0);
+            if active == 0 {
+                return Some((false, 0));
+            }
+            let own = x
+                .property(active, x.pid, AtomEnum::CARDINAL)
+                .and_then(|pid| pid.first().copied())
+                .is_some_and(|pid| pid == std::process::id());
+            if own {
+                return Some((false, 0));
+            }
+            // A window closed in between has no properties any more: not fullscreen.
+            let fullscreen = x
+                .property(active, x.state, AtomEnum::ATOM)
+                .is_some_and(|states| states.contains(&x.fullscreen));
+            Some((fullscreen, active as isize))
+        })
+        .unwrap_or((false, 0))
+    }
+
+    /// The lock screen asks the session bus; it changes rarely, so the answer is kept a second.
+    const LOCK_CHECK: Duration = Duration::from_secs(1);
+    static LOCK: Mutex<Option<(Instant, bool)>> = Mutex::new(None);
+    static BUS: std::sync::OnceLock<Option<zbus::blocking::Connection>> =
+        std::sync::OnceLock::new();
+
+    pub fn session_locked() -> bool {
+        let Ok(mut cached) = LOCK.lock() else {
+            return false;
+        };
+        if let Some((at, locked)) = *cached
+            && at.elapsed() < LOCK_CHECK
+        {
+            return locked;
+        }
+        let locked = BUS
+            .get_or_init(|| zbus::blocking::Connection::session().ok())
+            .as_ref()
+            .is_some_and(screensaver_active);
+        *cached = Some((Instant::now(), locked));
+        locked
+    }
+
+    /// KDE, Xfce and most others offer `org.freedesktop.ScreenSaver`; GNOME its own name.
+    fn screensaver_active(bus: &zbus::blocking::Connection) -> bool {
+        [
+            (
+                "org.freedesktop.ScreenSaver",
+                "/ScreenSaver",
+                "org.freedesktop.ScreenSaver",
+            ),
+            (
+                "org.gnome.ScreenSaver",
+                "/org/gnome/ScreenSaver",
+                "org.gnome.ScreenSaver",
+            ),
+        ]
+        .iter()
+        .find_map(|(service, path, interface)| {
+            let reply = bus
+                .call_method(Some(*service), *path, Some(*interface), "GetActive", &())
+                .ok()?;
+            reply.body().deserialize::<bool>().ok()
+        })
+        .unwrap_or(false)
+    }
 }
 
 #[cfg(windows)]

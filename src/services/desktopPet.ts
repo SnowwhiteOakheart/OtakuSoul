@@ -126,8 +126,13 @@ export interface PetCursor {
   x: number;
   y: number;
   inside: boolean;
-  /** Left mouse button held (Windows; null elsewhere): its release ends a drag at once. */
+  /** Left mouse button held (Windows, Linux over X11; null elsewhere): its release ends a drag at once. */
   button: boolean | null;
+  /**
+   * Clicks may go through the window's empty parts. False in a Wayland session: the global
+   * position stands still over other programs there, so the window stays clickable as a whole.
+   */
+  through: boolean;
   /** Global pointer position (physical px) and the backend's time of reading it (ms). */
   gx: number;
   gy: number;

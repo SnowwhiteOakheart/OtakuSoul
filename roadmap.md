@@ -69,8 +69,11 @@
   kCGWindowListExcludeDesktopElements)` (`kCGWindowBounds`, Ebene 0, eigene PID ausnehmen), Berechtigung „Bildschirm-
   aufnahme“ für Fenstertitel prüfen und erklären; Maustastenstatus (`NSEvent.pressedMouseButtons`) für sofortiges
   Drag-Ende und Werfen; Vollbild/Sperre (`CGSessionCopyCurrentDictionary`). Braucht einen Mac zum Bauen und Testen.
-- [ ] **Linux (X11, nach Möglichkeit):** Transparenz und Click-Through hängen vom Fenstermanager ab; unter X11 Fenster
-  über `_NET_CLIENT_LIST_STACKING` lesen, unter Wayland bewusst nur Boden und Ränder.
+- [ ] **Linux – Folgestufe:** Grundstufe erledigt (30.10.2026: transparent, immer oben, verschiebbar, Maustaste über
+  X11, Vollbild in X11-Sitzungen, Sperre per D-Bus; unter Wayland ohne Click-Through). Offen: Fensterkanten in
+  X11-Sitzungen über `_NET_CLIENT_LIST_STACKING`; unter KDE-Wayland ein KWin-Skript (`workspace.activeWindow`,
+  `cursorPos`, `stackingOrder`, Rückmeldung per `callDBus`) für Vollbild, Zeiger (dann wieder Click-Through) und
+  Kanten; Musik/Takt über den PipeWire-Monitor; Werfen unter Wayland (Zeigerposition steht dort beim Ziehen still).
 
 ### Bedienung & Einstellungen
 - [ ] **Mehrere Pets:** Bei Gruppenchats auf Wunsch mehrere Figuren gleichzeitig, die sich gegenseitig anschauen und

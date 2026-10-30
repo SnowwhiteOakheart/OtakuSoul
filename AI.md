@@ -976,7 +976,7 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `syncWindow` Position und Arbeitsbereich neu, sonst fällt das Pet vom alten Platz. Pro Schritt nur ein `setPosition`
   zur Zeit (wartet auf das vorige). Drehung beim Gehen über die Kamera (`stage.setTurn`), nicht am Modell – so
   funktioniert sie für VRM, glTF und MMD gleich.
-- Pet auf fremden Fenstern: `modules/desktop_windows.rs` (nur Windows; `visible_edges` ist plattformneutral getestet,
+- Pet auf fremden Fenstern: `modules/desktop_windows.rs` (Kanten nur Windows; `visible_edges` ist plattformneutral getestet,
   `cargo test scan_prints_the_desktop -- --ignored --nocapture` zeigt, was der Scan auf dem Rechner sieht). Unsichtbare
   Vollbild-Overlays mit `WS_EX_TRANSPARENT`/`WS_EX_NOACTIVATE` würden sonst alle Titelleisten „verdecken“. Plattformen
   sind physische Pixel wie die Pet-Physik. Jede Änderung unter `src-tauri/` startet die App in `tauri dev` neu – ein
@@ -984,9 +984,18 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   sichtbare Breite gleich bleibt – sonst ist der seitliche Versatz unbekannt und nur die Höhe wird übernommen.
 - Pet-Ziehen und Werfen: Das Ende eines System-Drags sieht das Pet nur über `pet:cursor.button` (Windows,
   `GetAsyncKeyState`); Fenster-`onMoved` kommt gebündelt und über 100 ms zu spät, die Wurfgeschwindigkeit daher aus
-  den Zeigerdaten mit Rust-Zeitstempel (`gx`/`gy`/`t`). Ohne Tastenstatus (macOS/Linux) endet ein Drag nach 1,2 s
+  den Zeigerdaten mit Rust-Zeitstempel (`gx`/`gy`/`t`). Ohne Tastenstatus (macOS) endet ein Drag nach 1,2 s
   Ruhe. Testen per Computer-Use: Mausbewegungen springen, deshalb misst `finishDrag` bis zur letzten echten
   Positionsänderung.
+- Pet unter Linux (`desktop_windows::linux`): nur über XWayland (`GDK_BACKEND=x11`) – reines Wayland erlaubt kein
+  `setPosition` und kein „immer oben“. In einer Wayland-Sitzung kennt XWayland Zeiger und Tasten nur über X11-Fenstern
+  (`XQueryPointer` bleibt sonst stehen); daher `pet:cursor.through = false` (`click_through_reliable`): kein
+  Click-Through, das Fenster bleibt als Ganzes greifbar, auch nach Vollbild/Sperre. KWin lässt `_NET_ACTIVE_WINDOW`
+  unter Wayland auf dem letzten X11-Fenster stehen, auch wenn ein Wayland-Fenster vorne ist (geprüft per KWin-Skript:
+  Vollbild-Spiel gemeldet, vorne war `plasmashell`) – Vollbild wird deshalb nur in X11-Sitzungen gelesen; Sperre über
+  D-Bus `org.freedesktop.ScreenSaver.GetActive` (GNOME: `org.gnome.ScreenSaver`). KWin legt Vollbildfenster über
+  „immer oben“, das Pet ist dort ohnehin verdeckt. Prüfen auf dem echten Desktop: `launch()` aus `e2e/harness.mjs`,
+  `toggle_desktop_pet` per `invoke`, das Pet-Webview ist per `getWindowHandles` erreichbar.
 - Pet-Schleifen `walk`/`sit` (`AvatarMotionPlayer.setLoopState`): gelten statt der Ruhe-Schleife; Sitzen nur mit
   Sitz-Animation und nur auf Fensterkanten, gezeichnet `SIT_DROP` tiefer (Treffertest gleicht aus).
 - Chat-Blasen der Brücke: nur frische Antworten (nach Generierungsende oder < 2 min) – der Verlauf eines Chats kommt

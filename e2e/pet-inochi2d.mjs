@@ -35,7 +35,7 @@ try {
   // No bar, no badge: only the figure in the transparent window.
   assert.equal(await browser.$('[data-inochi2d-viewer] button').isExisting(), false, 'Bedienelemente im Pet');
   const size = await browser.execute(() => [window.innerWidth, window.innerHeight]);
-  const cursor = (x, y) => emit('pet:cursor', { x, y, inside: true, button: null, gx: x, gy: y, t: Date.now() });
+  const cursor = (x, y) => emit('pet:cursor', { x, y, inside: true, button: null, through: true, gx: x, gy: y, t: Date.now() });
   // On the figure (middle, lower half) the pet takes the click …
   await browser.waitUntil(async () => {
     await cursor(size[0] / 2, size[1] * 0.75);
@@ -46,6 +46,11 @@ try {
     await cursor(4, size[1] * 0.5);
     return (await clickThrough()) === 'true';
   }, { timeout: 10_000, interval: 300, timeoutMsg: 'Klick neben der Figur geht nicht durch' });
+  // Wayland session (through: false): the pointer is not seen outside, so the window stays clickable.
+  await browser.waitUntil(async () => {
+    await emit('pet:cursor', { x: 4, y: size[1] * 0.5, inside: true, button: null, through: false, gx: 4, gy: size[1] * 0.5, t: Date.now() });
+    return (await clickThrough()) === 'false';
+  }, { timeout: 10_000, interval: 300, timeoutMsg: 'Pet unter Wayland nicht greifbar' });
   await browser.saveScreenshot(path.join(screenshotDir, '113-inochi2d-pet.png'));
   console.log('Pet mit Inochi2D-Puppe: Anzeige, Treffertest auf der Figur und Klick-Durchlass daneben bestanden.');
 } finally {

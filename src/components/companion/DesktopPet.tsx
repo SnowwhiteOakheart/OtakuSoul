@@ -231,6 +231,8 @@ export const DesktopPet: React.FC = () => {
   const [screen, setScreen] = useState<PetScreen>({ fullscreen: false, locked: false, focus: 0 });
   const away = screen.locked || (screen.fullscreen && prefs.hideInFullscreen);
   const awayRef = useRef(away);
+  /** Last word from the backend whether clicks may go through (false: Wayland session). */
+  const throughRef = useRef(true);
   const stageRef = useRef<PetFigure | null>(null);
   const ignoreRef = useRef<boolean | null>(null);
   /** Pressed on the pet: click-through stays off until released. */
@@ -697,8 +699,9 @@ export const DesktopPet: React.FC = () => {
       listen(PET_COME_EVENT, () => {
         void comeHere();
       }),
-      listen<PetCursor>(PET_CURSOR_EVENT, ({ payload: { x, y, inside, button, gx, gy, t: polledAt } }) => {
+      listen<PetCursor>(PET_CURSOR_EVENT, ({ payload: { x, y, inside, button, through, gx, gy, t: polledAt } }) => {
         lastCursor.current = { x: gx, y: gy };
+        throughRef.current = through !== false;
         const dragging = drag.current;
         if (dragging && !dragging.ending) {
           const previous = dragging.samples[dragging.samples.length - 1];
@@ -720,6 +723,11 @@ export const DesktopPet: React.FC = () => {
         }
         if (awayRef.current) {
           setIgnore(true);
+          return;
+        }
+        // Without a reliable pointer the pet could not be grabbed again after letting clicks through.
+        if (through === false) {
+          setIgnore(false);
           return;
         }
         if (!inside) {
@@ -1014,6 +1022,8 @@ export const DesktopPet: React.FC = () => {
     if (away) {
       setIgnore(true);
     } else {
+      // Without a reliable pointer no cursor event may come to make it grabbable again.
+      if (!throughRef.current) setIgnore(false);
       // Back from fullscreen or the lock screen: where it stands may have changed meanwhile.
       void syncWindow().catch(() => {});
     }
