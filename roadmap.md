@@ -93,6 +93,28 @@
 - [ ] **Fehlende Inochi2D-Funktionen:** Emission/Bump-Licht, BC7-Texturen, `translate_children` und verschachtelte
   Mesh-Gruppen – erst mit einem Modell, das sie nutzt (Aka, Midori und Nagatoro brauchen sie nicht).
 
+## 3b. VRoid-Hub-Anbindung (VRM-Modelle per Anmeldung)
+
+> Ziel: Nutzer melden sich in der App bei VRoid Hub an und verwenden dort freigegebene VRM-Modelle direkt, ohne
+> Download und Import von Hand. Mitliefern dürfen wir solche Modelle meist nicht („Redistribution: Do not allow“).
+> Doku: <https://developer.vroid.com/en/api/quick-start.html>.
+
+- [ ] **Vorab klären:** Akzeptiert VRoid Hub als Redirect-URI `http://127.0.0.1:<port>/callback` oder ein eigenes
+  Schema (`otakusoul://`)? (Erst beim Anlegen der App sichtbar.) Entwicklerbedingungen von pixiv lesen
+  (<https://policies.pixiv.net/en.html#vroidhubdeveloper>), vor allem ob Modelle dauerhaft gespeichert werden dürfen
+  (Download-Lizenzen haben `expires_at`) und was die Prüfung für „VRoid Hub-approved applications“ verlangt.
+- [ ] **OAuth 2.0 mit PKCE** (`/oauth/authorize`, `/oauth/token`, Header `X-Api-Version: 11`): Der Token-Tausch
+  verlangt zusätzlich `client_secret`. Das Secret kommt nie ins Repository: GitHub-Actions-Secret
+  `VROID_CLIENT_SECRET`, im Release-Build per `option_env!` eingebacken, lokal über eine gitignorte `.env`. Builds
+  ohne Secret blenden die Anmeldung aus oder nehmen eigene Zugangsdaten aus den Einstellungen. Ausweichweg, falls
+  nötig: kleiner Token-Proxy (z. B. Cloudflare Worker), der das Secret anhängt. Tokens im Schlüsselbund (`secrets.rs`).
+- [ ] **Modelle laden:** eigene und gelikte Modelle auflisten, Download-Lizenz ausstellen
+  (`POST /api/download_licenses`), VRM über `/download` holen und im Avatar-Manager wie ein lokales VRM nutzen.
+- [ ] **Nutzungsbedingungen je Modell** unter dem Titel „Model Data Conditions of Use“ nach den VRoid-Richtlinien
+  anzeigen (VRM 0.0 und 1.0 getrennt, <https://developer.vroid.com/en/guidelines/conditions_of_use.html>).
+  „Sexual acts: Do not allow“ sperrt das Modell für Romance- und 18+-Inhalte; „Attribution: Required“ zeigt den
+  Urheber in der App.
+
 ## 4. Kognitives Gedächtnis (Memory 2.0 – Ausblick & Folgepunkte)
 
 - [ ] **Lokale Embeddings (nur falls FTS5 nicht reicht):**
