@@ -264,6 +264,8 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
   let sessionRequest = 0;
   let generationSessionRequest = 0;
   let cancelled = false;
+  /** Read in loops over awaits: `abortGeneration` sets `cancelled` meanwhile. */
+  const stopped = () => cancelled;
   let generationSequence = 0;
   let abortPending: Promise<void> | null = null;
   let generationPreparation: AbortController | null = null;
@@ -593,7 +595,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     try {
       let last = { name: nameOf(lastMessage.speaker_id ?? ''), text: lastMessage.content };
       const thisTurn = [last.name];
-      for (let n = 0; n < GROUP_MAX_REPLIES && !cancelled; n += 1) {
+      for (let n = 0; n < GROUP_MAX_REPLIES && !stopped(); n += 1) {
         const next = await nextSpeaker(activeChatId, last, thisTurn, false, preparation.signal, lastUser?.content ?? '', true);
         if (next === null || cancelled || !inContext(activeChatId, activeCharacter.id)) break;
         const replyId = crypto.randomUUID();
@@ -1361,7 +1363,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       if (round) {
         const thisTurn = [nameOf(firstSpeaker)];
         let last = { name: nameOf(firstSpeaker), text: cleanedText };
-        for (let n = 1; n < GROUP_MAX_REPLIES && !cancelled && !done.aborted; n += 1) {
+        for (let n = 1; n < GROUP_MAX_REPLIES && !stopped() && !done.aborted; n += 1) {
           const next = await nextSpeaker(chatId, last, thisTurn, false, preparation.signal, content);
           if (next === null || cancelled) break;
           const replyId = crypto.randomUUID();

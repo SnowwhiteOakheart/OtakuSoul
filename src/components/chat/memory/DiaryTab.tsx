@@ -31,8 +31,8 @@ export const DiaryTab = () => {
       setNewDiaryTitle('');
       setNewDiaryText('');
       toast.success(translate('memory.diarySaved'));
-    } catch (e) {
-      toast.error(translate('memory.saveFailed', { error: errorMessage(e) }));
+    } catch (error) {
+      toast.error(translate('memory.saveFailed', { error: errorMessage(error) }));
     } finally {
       setIsSaving(false);
     }
@@ -44,8 +44,8 @@ export const DiaryTab = () => {
     try {
       const entry = await generateManualDiary();
       if (entry) toast.success(translate('memory.diaryGenerated'));
-    } catch (e) {
-      toast.error(translate('memory.saveFailed', { error: errorMessage(e) }));
+    } catch (error) {
+      toast.error(translate('memory.saveFailed', { error: errorMessage(error) }));
     } finally {
       setIsGenerating(false);
     }

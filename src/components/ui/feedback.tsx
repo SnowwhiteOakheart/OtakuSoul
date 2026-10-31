@@ -93,9 +93,9 @@ export const FeedbackHost: React.FC = () => {
   const { t } = useTranslation();
   const pendingConfirm = useFeedbackStore((state) => state.pendingConfirm);
   const toasts = useFeedbackStore((state) => state.toasts);
-  const [checked, setChecked] = React.useState(false);
-  // Every new dialog starts with the checkbox cleared.
-  React.useEffect(() => setChecked(false), [pendingConfirm]);
+  // The dialog the checkbox was ticked in: every new dialog starts with it cleared.
+  const [checkedIn, setCheckedIn] = React.useState<typeof pendingConfirm>(null);
+  const checked = !!pendingConfirm && checkedIn === pendingConfirm;
 
   return (
     <>
@@ -127,7 +127,7 @@ export const FeedbackHost: React.FC = () => {
                 <input
                   type="checkbox"
                   checked={checked}
-                  onChange={(e) => setChecked(e.target.checked)}
+                  onChange={(e) => setCheckedIn(e.target.checked ? pendingConfirm : null)}
                   className="h-4 w-4 rounded border-slate-600 bg-slate-800 accent-accent-500"
                 />
                 {pendingConfirm.checkboxLabel}

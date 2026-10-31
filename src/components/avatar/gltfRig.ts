@@ -41,18 +41,18 @@ function fingerAliases(side: Side): Record<string, string[]> {
 
 function limbAliases(side: Side): Record<string, string[]> {
   return {
-    [`${side}Shoulder`]: sided(side, ({ l, side, jp }) => [`${side}shoulder`, `clavicle${l}`, `bip001${l}clavicle`, `jbip${l}shoulder`, `shoulder${l}`, `${l}clavicle`, `${jp}肩`]),
-    [`${side}Arm`]: sided(side, ({ l, side, jp }) => [`${side}arm`, `${side}upperarm`, `upperarm${l}`, `upperarm01${l}`, `${l}upperarm`, `arm${side}`, `jbip${l}upperarm`, `bip001${l}upperarm`, `${jp}腕`, `arm${l}`]),
-    [`${side}ForeArm`]: sided(side, ({ l, side, jp }) => [
+    [`${side}Shoulder`]: sided(side, ({ l, jp }) => [`${side}shoulder`, `clavicle${l}`, `bip001${l}clavicle`, `jbip${l}shoulder`, `shoulder${l}`, `${l}clavicle`, `${jp}肩`]),
+    [`${side}Arm`]: sided(side, ({ l, jp }) => [`${side}arm`, `${side}upperarm`, `upperarm${l}`, `upperarm01${l}`, `${l}upperarm`, `arm${side}`, `jbip${l}upperarm`, `bip001${l}upperarm`, `${jp}腕`, `arm${l}`]),
+    [`${side}ForeArm`]: sided(side, ({ l, jp }) => [
       `${side}forearm`, `${side}lowerarm`, `lowerarm${l}`, `lowerarm01${l}`, `forearm${l}`, `${l}forearm`, `jbip${l}lowerarm`,
       `bip001${l}forearm`, `${side}elbow`, `elbow${l}`, `${l}elbow`, `${jp}ひじ`, `${jp}肘`,
     ]),
-    [`${side}Hand`]: sided(side, ({ l, side, jp }) => [`${side}hand`, `hand${l}`, `bip001${l}hand`, `jbip${l}hand`, `${side}wrist`, `wrist${l}`, `${l}hand`, `${jp}手首`]),
+    [`${side}Hand`]: sided(side, ({ l, jp }) => [`${side}hand`, `hand${l}`, `bip001${l}hand`, `jbip${l}hand`, `${side}wrist`, `wrist${l}`, `${l}hand`, `${jp}手首`]),
     // MMD calls the thigh "leg" and the shin "knee" – see `findRigBones`.
-    [`${side}UpLeg`]: sided(side, ({ l, side, jp }) => [`${side}upleg`, `thigh${l}`, `bip001${l}thigh`, `jbip${l}upperleg`, `upperleg${l}`, `upperleg01${l}`, `${side}upperleg`, `${l}thigh`, `${jp}足`]),
-    [`${side}Leg`]: sided(side, ({ l, side, jp }) => [`${side}leg`, `calf${l}`, `bip001${l}calf`, `jbip${l}lowerleg`, `lowerleg${l}`, `lowerleg01${l}`, `${side}lowerleg`, `shin${l}`, `${l}calf`, `${side}knee`, `${jp}ひざ`]),
-    [`${side}Foot`]: sided(side, ({ l, side, jp }) => [`${side}foot`, `foot${l}`, `bip001${l}foot`, `jbip${l}foot`, `${side}ankle`, `${l}foot`, `${jp}足首`]),
-    [`${side}ToeBase`]: sided(side, ({ l, side, jp }) => [`${side}toebase`, `ball${l}`, `bip001${l}toe0`, `jbip${l}toebase`, `${side}toe`, `toe${l}`, `${jp}つま先`]),
+    [`${side}UpLeg`]: sided(side, ({ l, jp }) => [`${side}upleg`, `thigh${l}`, `bip001${l}thigh`, `jbip${l}upperleg`, `upperleg${l}`, `upperleg01${l}`, `${side}upperleg`, `${l}thigh`, `${jp}足`]),
+    [`${side}Leg`]: sided(side, ({ l, jp }) => [`${side}leg`, `calf${l}`, `bip001${l}calf`, `jbip${l}lowerleg`, `lowerleg${l}`, `lowerleg01${l}`, `${side}lowerleg`, `shin${l}`, `${l}calf`, `${side}knee`, `${jp}ひざ`]),
+    [`${side}Foot`]: sided(side, ({ l, jp }) => [`${side}foot`, `foot${l}`, `bip001${l}foot`, `jbip${l}foot`, `${side}ankle`, `${l}foot`, `${jp}足首`]),
+    [`${side}ToeBase`]: sided(side, ({ l, jp }) => [`${side}toebase`, `ball${l}`, `bip001${l}toe0`, `jbip${l}toebase`, `${side}toe`, `toe${l}`, `${jp}つま先`]),
     ...fingerAliases(side),
   };
 }

@@ -28,7 +28,7 @@ const clickClose = (pid) => {
   try {
     return execFileSync('python3', [wmclose, pid], { stdio: 'pipe' }).toString().trim();
   } catch (e) {
-    throw new Error(`wmclose: ${e.stderr}`);
+    throw new Error(`wmclose: ${e.stderr}`, { cause: e });
   }
 };
 

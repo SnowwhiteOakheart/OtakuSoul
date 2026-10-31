@@ -25,6 +25,14 @@
     "jsx-a11y/prefer-tag-over-role": "off",
     "typescript/no-explicit-any": "warn"
   },
+  "overrides": [
+    {
+      "files": ["e2e/**"],
+      "rules": {
+        "no-underscore-dangle": "off"
+      }
+    }
+  ],
   "ignorePatterns": [
     "dist",
     "target",

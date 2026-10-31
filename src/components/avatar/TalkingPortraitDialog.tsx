@@ -194,16 +194,16 @@ export function TalkingPortraitDialog({ characterId, name, src, onClose }: { cha
             </button>
             {preview && (
               <div className="flex flex-wrap gap-1" role="group" aria-label={t('talkingPortrait.preview')}>
-                {PREVIEW_FRAMES.map((name) => (
+                {PREVIEW_FRAMES.map((frameName) => (
                   <button
-                    key={name}
+                    key={frameName}
                     type="button"
-                    disabled={!(name in preview.frames)}
-                    aria-pressed={frame === name}
-                    onClick={() => setFrame(name)}
-                    className={`px-2 py-1 rounded-md border text-[11px] disabled:opacity-30 ${frame === name ? 'border-accent-400 bg-accent-600 text-white' : 'border-slate-700 text-slate-300'}`}
+                    disabled={!(frameName in preview.frames)}
+                    aria-pressed={frame === frameName}
+                    onClick={() => setFrame(frameName)}
+                    className={`px-2 py-1 rounded-md border text-[11px] disabled:opacity-30 ${frame === frameName ? 'border-accent-400 bg-accent-600 text-white' : 'border-slate-700 text-slate-300'}`}
                   >
-                    {name}
+                    {frameName}
                   </button>
                 ))}
                 <button type="button" onClick={() => setPreview(null)} className="px-2 py-1 rounded-md border border-slate-700 text-[11px] text-slate-300">

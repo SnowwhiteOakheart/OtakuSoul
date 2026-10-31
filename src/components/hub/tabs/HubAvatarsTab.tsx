@@ -60,12 +60,12 @@ export const HubAvatarsTab = () => {
   const [kind, setKind] = useState<Kind | 'all'>('all');
   const [busy, setBusy] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const fetchCards = useCallback(async (): Promise<AvatarCard[]> => {
     const [hub, puppets] = await Promise.all([
       api.getHubAvatars(currentLanguage).catch(() => [] as HubAvatar[]),
       api.getInochi2dCatalog(currentLanguage).catch(() => []),
     ]);
-    setCards([
+    return [
       ...(hub ?? []).map(fromHub),
       ...(puppets ?? []).map((p): AvatarCard => ({
         id: `inochi2d:${p.id}`,
@@ -83,12 +83,20 @@ export const HubAvatarsTab = () => {
         installed: p.is_installed,
         nsfw: false,
       })),
-    ]);
+    ];
   }, [currentLanguage]);
+  const load = useCallback(async () => setCards(await fetchCards()), [fetchCards]);
 
+  // A list for an earlier language that arrives late does not replace the current one.
   useEffect(() => {
-    void load();
-  }, [load]);
+    let current = true;
+    void fetchCards().then((loaded) => {
+      if (current) setCards(loaded);
+    });
+    return () => {
+      current = false;
+    };
+  }, [fetchCards]);
 
   /** Loads the figure (again a no-op when it is there) and returns what to select. */
   const fetchFigure = async (card: AvatarCard): Promise<{ kind: Kind; path: string }> => {

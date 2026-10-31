@@ -68,10 +68,10 @@ try {
   assert.ok(await browser.$('button[aria-label="Situationsbild des aktuellen Charakters generieren"]').isDisplayed({ withinViewport: true }), 'HUD abgeschnitten');
   // The avatar controls wrap inside their column instead of being cut off at its left edge.
   const clipped = await browser.execute(() => {
-    const menu = document.querySelector('button[aria-label^="Aktuelle Emotion"]');
-    const column = menu?.closest('.\\@container');
-    if (!menu || !column) return 'nicht gefunden';
-    return menu.getBoundingClientRect().left < column.getBoundingClientRect().left ? 'abgeschnitten' : '';
+    const emotionButton = document.querySelector('button[aria-label^="Aktuelle Emotion"]');
+    const column = emotionButton?.closest('.\\@container');
+    if (!emotionButton || !column) return 'nicht gefunden';
+    return emotionButton.getBoundingClientRect().left < column.getBoundingClientRect().left ? 'abgeschnitten' : '';
   });
   assert.equal(clipped, '', `Gefühlsmenü des Avatars: ${clipped}`);
   await shot('49-chat-kleines-fenster');

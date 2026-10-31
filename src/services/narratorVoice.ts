@@ -52,7 +52,7 @@ export function splitActions(text: string): { action: boolean; text: string }[] 
  */
 export async function voiceParts(text: string, voice: VoiceConfig): Promise<{ text: string; voice: VoiceConfig }[]> {
   if (!voice.narrator_for_actions) return [{ text, voice }];
-  const narrator = await narratorVoice();
-  if (!narrator) return [{ text, voice }];
-  return splitActions(text).map((part) => ({ text: part.text, voice: part.action ? narrator : voice }));
+  const reader = await narratorVoice();
+  if (!reader) return [{ text, voice }];
+  return splitActions(text).map((part) => ({ text: part.text, voice: part.action ? reader : voice }));
 }

@@ -90,9 +90,11 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
     setGroupStartedFor(session.id);
     setActiveTab('group');
   };
-  useEffect(() => {
-    if (activeTab !== 'group') setGroupStartedFor(null);
-  }, [activeTab]);
+  // Leaving the group tab ends "just started": coming back does not open the invitation again.
+  const selectTab = (tab: SidebarTab) => {
+    setActiveTab(tab);
+    if (tab !== 'group') setGroupStartedFor(null);
+  };
   const [isImporting, setIsImporting] = useState(false);
   const pending = useRef(new Set<string>());
   const [saving, setSaving] = useState<string[]>([]);
@@ -238,7 +240,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
             key={tab}
             role="tab"
             aria-selected={activeTab === tab}
-            onClick={() => setActiveTab(tab)}
+            onClick={() => selectTab(tab)}
             className={`flex-auto py-1.5 px-2.5 rounded-md font-medium text-center transition-all whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
               activeTab === tab
                 ? 'bg-accent-600/30 text-accent-300 border border-accent-500/40 shadow-sm'

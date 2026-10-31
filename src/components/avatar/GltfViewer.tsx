@@ -336,7 +336,7 @@ export const GltfViewer = ({
       facesRef.current = null;
       faceRef.current = null;
     };
-  }, [modelPath]);
+  }, [modelPath, setClipMisfits]);
 
   /** Morph targets (own or recognised) first, else face bones, else none. */
   function chooseFace() {

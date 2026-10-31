@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useGridCols } from '../../../hooks/useGridCols';
 import { Users } from 'lucide-react';
@@ -12,6 +12,7 @@ import { useAppStore } from '../../../store/useAppStore';
 import { importCharacterTask, installCharacter } from '../hubInstall';
 import { CollectionCard, HubSectionTitle, collectionMembers, groupByCollection, useCollectionLists } from '../collections';
 import type { GatewayCharacterEntry } from '../../../types';
+import { useScrollMargin } from '../../../hooks/useScrollMargin';
 
 /** Curated characters from the Soul Gateway registry. */
 export const GatewayCharactersTab = () => {
@@ -31,14 +32,7 @@ export const GatewayCharactersTab = () => {
 
   const { ref: gridRef, cols } = useGridCols({ 640: 3, 768: 4, 1024: 5, 1280: 6 }, 2);
   // The collection cards above the grid push it down: the virtualizer counts from the grid's top.
-  const [scrollMargin, setScrollMargin] = useState(0);
-  useLayoutEffect(() => {
-    const panel = document.getElementById('hub-tabpanel');
-    const grid = gridRef.current;
-    if (!panel || !grid) return;
-    const margin = grid.getBoundingClientRect().top - panel.getBoundingClientRect().top + panel.scrollTop;
-    setScrollMargin((current) => (Math.abs(current - margin) > 1 ? margin : current));
-  });
+  const scrollMargin = useScrollMargin('hub-tabpanel', gridRef, `${groups.length > 0}|${rest.length > 0}`);
   // oxlint-disable-next-line react/incompatible-library
   const virtualizer = useVirtualizer({
     count: Math.ceil(rest.length / cols),

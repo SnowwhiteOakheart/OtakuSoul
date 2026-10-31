@@ -51,7 +51,7 @@ describe('characterPortraits', () => {
     it('returns empty object when character is null or has no extensions', () => {
       expect(getPortraitExpressions(null)).toEqual({});
       const charWithoutExt = createMockCharacter();
-      delete (charWithoutExt.card.data as any).extensions;
+      delete (charWithoutExt.card.data as unknown as Record<string, unknown>).extensions;
       expect(getPortraitExpressions(charWithoutExt)).toEqual({});
     });
 
@@ -64,7 +64,7 @@ describe('characterPortraits', () => {
 
     it('extracts expressions from legacy sow_expressions if expressions is missing', () => {
       const char = createMockCharacter();
-      delete (char.card.data.extensions as any).expressions;
+      delete (char.card.data.extensions as Record<string, unknown>).expressions;
       char.card.data.extensions.sow_expressions = {
         neutral: 'legacy/neutral.png',
       };
@@ -137,7 +137,7 @@ describe('characterPortraits', () => {
 
     it('falls back to avatar_data_url when character has no expressions', () => {
       const char = createMockCharacter();
-      delete (char.card.data.extensions as any).expressions;
+      delete (char.card.data.extensions as Record<string, unknown>).expressions;
       const portrait = selectCharacterPortrait(char, 'happy', 'happy');
       expect(portrait).toBe('data:image/png;base64,fallbackImageData');
     });

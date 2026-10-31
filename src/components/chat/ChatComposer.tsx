@@ -25,11 +25,11 @@ export const ChatComposer: React.FC = () => {
   const {
     sendMessage, suggestReplies, draftReply, isGenerating, abortGeneration, activeVoiceConfig, setAutoTtsEnabled, contextUsage,
     selectedBackend, serverConfig, generationFailure, retryGeneration, activeChatId, isChatLoading, chatLoadError, retryChatLoad,
-    markReplyInterrupted,
+    markReplyInterrupted, openSettingsSection, startServer, reopenOnboarding,
   } = useStoreFields(
     'sendMessage', 'suggestReplies', 'draftReply', 'isGenerating', 'abortGeneration', 'activeVoiceConfig', 'setAutoTtsEnabled', 'contextUsage',
     'selectedBackend', 'serverConfig', 'generationFailure', 'retryGeneration', 'activeChatId', 'isChatLoading', 'chatLoadError', 'retryChatLoad',
-    'markReplyInterrupted',
+    'markReplyInterrupted', 'openSettingsSection', 'startServer', 'reopenOnboarding',
   );
   // The text of each chat survives switching chats and restarts (files don't).
   const draftKey = activeChatId ? `composer:${activeChatId}` : null;
@@ -150,7 +150,8 @@ export const ChatComposer: React.FC = () => {
     try { await abortGeneration(); } catch (e) { toast.error(errorMessage(e)); }
   };
 
-  const failureFix = generationFailure ? errorFix(generationFailure.cause ?? generationFailure.message, useAppStore.getState()) : null;
+  const failureFix = generationFailure ? errorFix(generationFailure.cause ?? generationFailure.message,
+    { selectedBackend, serverConfig, openSettingsSection, startServer, reopenOnboarding }) : null;
   return (
     <div className="p-4 border-t border-slate-800 bg-slate-900/60 backdrop-blur">
       {isChatLoading && <p role="status" className="max-w-4xl mx-auto mb-2 text-sm text-slate-300">{t('chat.historyLoading')}</p>}

@@ -19,10 +19,10 @@ export const SettingsView = () => {
   const [activeTab, setActiveTab] = useState<SettingsSection>(
     () => useAppStore.getState().pendingSettingsSection ?? 'general'
   );
-  // Jumps while the view is already open (command palette, header status).
+  // Jumps while the view is already open (command palette, header status). The section asked
+  // for at opening is already shown (state initializer): here it is only marked as done.
   useEffect(() => {
-    const initial = useAppStore.getState().consumePendingSettingsSection();
-    if (initial) setActiveTab(initial);
+    useAppStore.getState().consumePendingSettingsSection();
     return useAppStore.subscribe((state, previous) => {
       if (!state.pendingSettingsSection || state.pendingSettingsSection === previous.pendingSettingsSection) return;
       const section = useAppStore.getState().consumePendingSettingsSection();

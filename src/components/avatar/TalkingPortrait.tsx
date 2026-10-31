@@ -21,7 +21,8 @@ export function useTalkingSet(
   emotion?: string | null,
 ): TalkingSet | null {
   const [placement, setPlacement] = useState<HeadPlacement | null>(null);
-  const [set, setSet] = useState<TalkingSet | null>(null);
+  // The set with what it was made from: after a change it no longer counts until the new one is ready.
+  const [made, setMade] = useState<{ set: TalkingSet; placement: HeadPlacement; src: string; base?: string | null; emotion?: string | null } | null>(null);
 
   useEffect(() => {
     if (!characterId) return undefined;
@@ -46,15 +47,14 @@ export function useTalkingSet(
   }, [characterId]);
 
   useEffect(() => {
-    setSet(null);
     if (!placement || !src) return undefined;
     let cancelled = false;
     const main = !base || src === base;
     const framing = main ? Promise.resolve(placement) : detectedPlacement(src);
     framing
       .then((found) => talkingSet(src, found, main ? emotion : null))
-      .then((made) => {
-        if (!cancelled) setSet(made);
+      .then((result) => {
+        if (!cancelled && result) setMade({ set: result, placement, src, base, emotion });
       })
       .catch((e) => console.warn('Sprechendes Porträt nicht erzeugt:', e));
     return () => {
@@ -62,7 +62,8 @@ export function useTalkingSet(
     };
   }, [placement, src, base, emotion]);
 
-  return set;
+  const current = made && made.placement === placement && made.src === src && made.base === base && made.emotion === emotion;
+  return current ? made.set : null;
 }
 
 /**

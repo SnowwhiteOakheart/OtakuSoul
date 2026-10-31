@@ -1,4 +1,4 @@
-import { useState, useMemo, useLayoutEffect, useRef } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from '../../store/useAppStore';
 import { CharacterProfile } from '../../types';
@@ -35,6 +35,7 @@ import { EmptyState } from '../ui/EmptyState';
 import { errorMessage } from '../../utils/errors';
 import { importWithOverwrite } from '../../services/characterImport';
 import { fillCardMacros, localizeCard } from '../../utils/cardI18n';
+import { useScrollMargin } from '../../hooks/useScrollMargin';
 
 const SECONDARY_BUTTON =
   'px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium flex items-center gap-1.5 border border-slate-700 transition-colors whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400';
@@ -113,14 +114,7 @@ export const CharacterLibraryView = () => {
   // The banner pushes the grid down: the virtualizer counts from the grid's top.
   const gridRef = useRef<HTMLDivElement>(null);
   useDragScroll(parentRef);
-  const [scrollMargin, setScrollMargin] = useState(0);
-  useLayoutEffect(() => {
-    const panel = parentRef.current;
-    const grid = gridRef.current;
-    if (!panel || !grid) return;
-    const margin = grid.getBoundingClientRect().top - panel.getBoundingClientRect().top + panel.scrollTop;
-    setScrollMargin((current) => (Math.abs(current - margin) > 1 ? margin : current));
-  });
+  const scrollMargin = useScrollMargin(parentRef, gridRef, `${starterCount > 0}|${filteredCharacters.length === 0}`);
   // oxlint-disable-next-line react/incompatible-library
   const rowVirtualizer = useVirtualizer({
     count: Math.ceil(filteredCharacters.length / cols),
