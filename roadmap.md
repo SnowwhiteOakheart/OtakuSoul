@@ -97,10 +97,12 @@
 
 > Ziel: Nutzer melden sich in der App bei VRoid Hub an und verwenden dort freigegebene VRM-Modelle direkt, ohne
 > Download und Import von Hand. Mitliefern dürfen wir solche Modelle meist nicht („Redistribution: Do not allow“).
-> Doku: <https://developer.vroid.com/en/api/quick-start.html>. Entwicklerkonto registriert (31.10.2026), App unter
-> <https://hub.vroid.com/oauth/applications>.
+> Doku: <https://developer.vroid.com/en/api/quick-start.html>. Entwicklerkonto registriert und App angelegt
+> (31.10.2026, <https://hub.vroid.com/oauth/applications>). Client-ID (öffentlich, darf in den Code):
+> `f-gDzdEkE8LVgYq9Qv7j_Z2d-6-_gekmc-pzU_eYaYI`. Secret liegt als GitHub-Actions-Secret `VROID_CLIENT_SECRET`
+> (noch nicht in `release.yml` verdrahtet).
 
-> **App-Einstellungen bei VRoid Hub (geplant, nach dem Anlegen abgleichen):** Scope nur `default`; Plattformen
+> **App-Einstellungen bei VRoid Hub (so geplant; bei Abweichungen hier nachziehen):** Scope nur `default`; Plattformen
 > Windows/macOS/Linux; App-Altersfreigabe R-18 (wegen der optionalen 18+-Inhalte); VRM 0.0 und 1.0; Modell-Nutzung:
 > Änderung Nein, Weitergabe Nein, Avatar Ja, sexuelle Darstellung Nein, Gewalt Nein, Namensnennung Ja; für
 > Einzelpersonen, nicht kommerziell; nur Modelle „für alle Altersstufen“. **Diese Angaben filtern serverseitig**,
