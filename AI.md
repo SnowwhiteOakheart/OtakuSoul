@@ -112,6 +112,10 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Anweisungs-Kennung, Erinnerungen aus `recent_memories`, Zusammenfassung ja/nein); `chatSlice.promptHits` hält sie je
   `hitKey(messageId, swipeIndex)` nur für die laufende Sitzung (Fortsetzen über `mergeHits`). Anzeige `chat/PromptHitsView.tsx`
   (Knopf in der Kopfzeile der Antwort, `data-prompt-hits`). E2E `chat-prompt-hits.mjs`.
+- **Welche Lorebooks ein Chat liest:** nur globale und an den Sprecher bzw. den Chat-Charakter gebundene
+  (`utils/lorebookUsage.ts` → `chatLorebooks`, Verweis per ID, Pfad oder Name). Kein Rückgriff auf „alle“: sonst liest ein
+  fremder Chat die Lore einer installierten Hub-Welt mit. Global gilt nicht in Stages (die lesen nur `definition.lorebook`).
+  Die Lorebook-Ansicht zeigt die Verwendung (`LorebookUsage.tsx`), die Chat-Kopfzeile die gelesenen Bücher (`data-hud-lore`).
 - **Mit OpenRouter anmelden** (`modules/openrouter_auth.rs`, Befehle `openrouter_login`/`openrouter_login_cancel`): OAuth mit
   PKCE (S256), Rückruf auf `http://localhost:<freier Port>/callback` (OpenRouter erlaubt jeden Port; gelauscht wird auf
   127.0.0.1 und ::1), `state` gegen fremde Antworten, 5 min Zeitlimit. Code → `POST /api/v1/auth/keys`; `GET /api/v1/key`

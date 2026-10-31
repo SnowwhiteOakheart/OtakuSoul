@@ -16,18 +16,9 @@ export const isGlobalLorebook = (lb: Lorebook, globalIds: string[]) =>
 export const isBoundTo = (lb: Lorebook, character: CharacterProfile) =>
   (character.bound_lorebooks || []).some((ref) => refersToLorebook(lb, ref));
 
-/**
- * The lorebooks a chat reads: the global ones and those bound to its characters. With none of
- * them every lorebook is read (`fallback`), as chats did before lorebooks could be assigned.
- */
-export const chatLorebooks = (
-  all: Lorebook[],
-  globalIds: string[],
-  characters: CharacterProfile[]
-): { books: Lorebook[]; fallback: boolean } => {
-  const books = all.filter((lb) => isGlobalLorebook(lb, globalIds) || characters.some((c) => isBoundTo(lb, c)));
-  return books.length > 0 ? { books, fallback: false } : { books: all, fallback: all.length > 0 };
-};
+/** The lorebooks a chat reads: the global ones and those bound to its characters, nothing else. */
+export const chatLorebooks = (all: Lorebook[], globalIds: string[], characters: CharacterProfile[]): Lorebook[] =>
+  all.filter((lb) => isGlobalLorebook(lb, globalIds) || characters.some((c) => isBoundTo(lb, c)));
 
 export const charactersBoundTo = (lb: Lorebook, characters: CharacterProfile[]) =>
   characters.filter((c) => isBoundTo(lb, c));

@@ -60,17 +60,17 @@ export const AdaptiveHud = ({ compact = false }: { compact?: boolean }) => {
   // The lorebooks this chat reads (global or bound to the character), as the prompt does.
   // In a group chat the guests read their own lorebooks too.
   const chatGuestCards = chatGuests(chatSessions.find((c) => c.id === activeChatId), availableCharacters);
-  const chatLore = activeCharacter
-    ? chatLorebooks(allLorebooks, globalLorebookIds, [activeCharacter, ...chatGuestCards])
-    : { books: [], fallback: false };
-  const loreLabel = chatLore.fallback
-    ? t('hud.lorebookFallback')
-    : t('hud.lorebookList', { names: chatLore.books.map((b) => b.name).join(', ') });
+  const chatLore = activeCharacter ? chatLorebooks(allLorebooks, globalLorebookIds, [activeCharacter, ...chatGuestCards]) : [];
+  // With lorebooks installed but none assigned, the badge says so: the chat reads none of them.
+  const loreUnassigned = chatLore.length === 0 && allLorebooks.length > 0;
+  const loreLabel = loreUnassigned
+    ? t('hud.lorebookNoneHint')
+    : t('hud.lorebookList', { names: chatLore.map((b) => b.name).join(', ') });
   const openLore = () => {
-    if (chatLore.books[0] && !chatLore.fallback) selectLorebook(chatLore.books[0]);
+    if (chatLore[0]) selectLorebook(chatLore[0]);
     setActiveTab('lorebooks');
   };
-  const hasDetails = stateVariables.length > 0 || chatLore.books.length > 0;
+  const hasDetails = stateVariables.length > 0 || chatLore.length > 0 || loreUnassigned;
 
   const handleGenerateSituationalImage = async () => {
     try {
@@ -164,18 +164,18 @@ export const AdaptiveHud = ({ compact = false }: { compact?: boolean }) => {
         )}
 
         {/* Lorebook Badge */}
-        {showDetails && chatLore.books.length > 0 && (
+        {showDetails && (chatLore.length > 0 || loreUnassigned) && (
           <button
             type="button"
             onClick={openLore}
             title={loreLabel}
             aria-label={loreLabel}
-            data-hud-lore={chatLore.fallback ? 'all' : chatLore.books.length}
+            data-hud-lore={chatLore.length}
             className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/70 border border-slate-700/60 text-slate-300 text-xs hover:border-slate-600 hover:text-slate-100 transition-colors outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
           >
-            <BookOpen className="w-3 h-3 text-amber-400" aria-hidden="true" />
+            <BookOpen className={`w-3 h-3 ${loreUnassigned ? 'text-slate-500' : 'text-amber-400'}`} aria-hidden="true" />
             <span className="whitespace-nowrap">
-              {chatLore.fallback ? t('hud.lorebookAll') : tPlural('hud.lorebookCount', chatLore.books.length)}
+              {loreUnassigned ? t('hud.lorebookNone') : tPlural('hud.lorebookCount', chatLore.length)}
             </span>
           </button>
         )}

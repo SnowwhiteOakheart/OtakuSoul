@@ -24,15 +24,15 @@ describe('lorebookUsage', () => {
   const other = book('kyoto', 'Kyoto');
 
   it('reads the global and bound lorebooks, by id, path or name', () => {
-    expect(chatLorebooks([world, other], ['kyoto'], [character('sora')]).books).toEqual([other]);
-    expect(chatLorebooks([world, other], [], [character('sora', ['/lore/ngnl_world.json'])]).books).toEqual([world]);
+    expect(chatLorebooks([world, other], ['kyoto'], [character('sora')])).toEqual([other]);
+    expect(chatLorebooks([world, other], [], [character('sora', ['/lore/ngnl_world.json'])])).toEqual([world]);
     // Stage NPCs are bound by the scene's lorebook names.
-    expect(chatLorebooks([world, other], [], [character('npc', ['no game no life – welt & gebote'])]).books).toEqual([world]);
+    expect(chatLorebooks([world, other], [], [character('npc', ['no game no life – welt & gebote'])])).toEqual([world]);
   });
 
-  it('falls back to all lorebooks when none is assigned', () => {
-    expect(chatLorebooks([world, other], [], [character('sora')])).toEqual({ books: [world, other], fallback: true });
-    expect(chatLorebooks([], [], [character('sora')])).toEqual({ books: [], fallback: false });
+  it('reads no lorebook when none is assigned', () => {
+    // Another world's lore must not leak into a chat that has nothing to do with it.
+    expect(chatLorebooks([world, other], [], [character('sora')])).toEqual([]);
   });
 
   it('finds the stories that name a lorebook', () => {

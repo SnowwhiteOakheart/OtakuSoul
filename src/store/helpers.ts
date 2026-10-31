@@ -69,7 +69,7 @@ export async function resolvePromptWithLore(
 
   // 1. The lorebooks of this chat: global ones and those bound to the speaker. A guest also knows
   // the lorebooks of the chat's own character (the shared world).
-  const candidateLorebooks = chatLorebooks(allLorebooks, globalLorebookIds || [], [activeCharacter, chatCharacter]).books;
+  const candidateLorebooks = chatLorebooks(allLorebooks, globalLorebookIds || [], [activeCharacter, chatCharacter]);
 
   // 2. Scene Tension Accumulator
   let effectiveTension = currentTension;
