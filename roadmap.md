@@ -109,9 +109,24 @@
 > welche Modelle die API liefert. Mit „Nein“ bei Sex/Gewalt kommen alle Modelle, dafür gilt für die App dauerhaft:
 > VRoid-Modelle nie in sexuellen Inhalten und nie in Kampfszenen – unabhängig davon, was ein einzelnes Modell erlaubt.
 
-- [ ] **Vorab klären:** Entwicklerbedingungen von pixiv lesen
-  (<https://policies.pixiv.net/en.html#vroidhubdeveloper>), vor allem ob Modelle dauerhaft gespeichert werden dürfen
-  (Download-Lizenzen haben `expires_at`) und was die Prüfung für „VRoid Hub-approved applications“ verlangt.
+- [x] **Entwicklerbedingungen gelesen** (01.11.2026, <https://policies.pixiv.net/en.html#vroidhubdeveloper>).
+  Kein ausdrückliches Verbot, Modelle zwischenzuspeichern, aber verbindlich:
+  - Nur der angemeldete Nutzer, dem VRoid Hub das Modell freigibt, darf es benutzen (Art. 4 Abs. 2 Nr. 1).
+  - Die App muss den bei VRoid hinterlegten App-Einstellungen entsprechen (Art. 4 Abs. 2 Nr. 2) und darf die
+    API nur für den angegebenen Zweck nutzen (Art. 4 Abs. 3). Ändert sich etwas, zuerst die Einstellungen bei
+    VRoid anpassen.
+  - Modelldaten nicht außerhalb der App nutzen, keine Funktion zum Teilen mit Dritten; Bilder und Texte von
+    VRoid Hub (Icons, Nutzernamen) nur in der App (Art. 6 Nr. 8, 9).
+  - Keine Nutzung für obszöne Inhalte (Art. 6 Nr. 10); Werk und Ansehen der Urheber wahren (Art. 4 Abs. 2 Nr. 3).
+  - Nichts bauen, was VRoid Hub nachbildet (Art. 6 Nr. 2): VRoid-Modelle nicht in den eigenen Hub oder die
+    Avatar-Registry aufnehmen.
+  - Fertige App bei pixiv melden, danach Prüfung und ggf. „Certified App“ (Art. 7). Ohne Freigabe darf die App
+    trotzdem verteilt werden, VRoid Hub kann dann aber vor ihr warnen. Immer die aktuelle API-Version nutzen (Art. 9).
+- [ ] **Zwischenspeicher, vorsichtig ausgelegt:** VRM nur im App-Datenordner, je VRoid-Konto getrennt und als
+  VRoid-Modell markiert. Vor dem Laden die Download-Lizenz prüfen bzw. neu ausstellen; ist das Modell nicht mehr
+  freigegeben, gelöscht oder der Nutzer abgemeldet, den Cache löschen. Keine Ablage im Avatar-Ordner des Nutzers.
+  Offene Frage für das VRoid-Discord: ist ein unverschlüsselter lokaler Cache in Ordnung (das Unity-SDK
+  verschlüsselt seinen)?
 - [ ] **Redirect-URI:** Die Adresse muss exakt passen, ein zufälliger Port wie bei der OpenRouter-Anmeldung
   (`openrouter_auth.rs`) geht nicht. Eingetragen werden `otakusoul://vroidhub/callback` (braucht
   `tauri-plugin-deep-link`, unter Linux/Windows als Protokoll registrieren) und `http://127.0.0.1:47823/vroidhub/callback`
@@ -127,7 +142,9 @@
   (VRM 0.0 und 1.0). Speichern nur so, wie die Entwicklerbedingungen es erlauben.
 - [ ] **Sperren in der App:** VRoid-Modelle tragen eine Herkunftsmarke. Sie sind bei aktiver 18+-Freigabe für
   Romance-/NSFW-Inhalte gesperrt und in der Stage nicht im 5e-Kampf/auf dem Spielbrett nutzbar; keine Änderung oder
-  Weitergabe (kein Export, kein Profil-Backup der VRM-Datei).
+  Weitergabe (kein Export, kein Profil-Backup der VRM-Datei, kein Ausliefern über den Web-Server an andere Geräte
+  oder Nutzer, keine Hub-Einreichung).
+- [ ] **Bei pixiv melden**, sobald die Anbindung fertig ist (Prüfung zur „Certified App“).
 - [ ] **Nutzungsbedingungen je Modell** unter dem Titel „Model Data Conditions of Use“ nach den VRoid-Richtlinien
   anzeigen (VRM 0.0 und 1.0 getrennt, <https://developer.vroid.com/en/guidelines/conditions_of_use.html>), dazu den
   Urheber, wenn „Attribution: Required“.
