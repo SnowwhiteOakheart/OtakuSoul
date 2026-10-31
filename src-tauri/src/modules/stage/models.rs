@@ -553,6 +553,9 @@ pub struct ScenePreview {
     /// Content for adults (`extensions.otakusoul_nsfw`): hidden while adult content is off.
     #[serde(default)]
     pub nsfw: bool,
+    /// The lorebooks the scene reads (names in the source language, or ids).
+    #[serde(default)]
+    pub lorebook: Vec<String>,
 }
 
 /// A piece of live text during a Stage turn (event `stage-stream`); the message with the same

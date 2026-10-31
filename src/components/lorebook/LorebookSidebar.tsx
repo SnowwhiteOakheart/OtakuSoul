@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from '../../i18n';
 import { pressable } from '../../utils/pressable';
-import { isGlobalLorebook } from './isGlobalLorebook';
+import { isGlobalLorebook } from '../../utils/lorebookUsage';
 
 interface LorebookSidebarProps {
   onCreate: () => void;

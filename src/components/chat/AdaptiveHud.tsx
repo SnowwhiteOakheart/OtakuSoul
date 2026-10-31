@@ -6,6 +6,7 @@ import { translate, useTranslation, type TranslationKey } from '../../i18n';
 import { toast } from '../ui/feedback';
 import { DropdownMenu } from '../ui/DropdownMenu';
 import { errorMessage } from '../../utils/errors';
+import { chatLorebooks } from '../../utils/lorebookUsage';
 import { localizeCard } from '../../utils/cardI18n';
 import { chatGuests, presentedAs } from '../../utils/groupChat';
 
@@ -30,7 +31,11 @@ export const AdaptiveHud = ({ compact = false }: { compact?: boolean }) => {
     availableCharacters,
     selectCharacter,
     stateVariables,
-    activeLorebooks,
+    allLorebooks,
+    globalLorebookIds,
+    selectLorebook,
+    chatSessions,
+    activeChatId,
     serverConfig,
     setServerConfig,
     setActiveTab,
@@ -38,11 +43,11 @@ export const AdaptiveHud = ({ compact = false }: { compact?: boolean }) => {
     isGeneratingSceneImage: isGeneratingImage,
   } = useStoreFields(
     'activeCharacter', 'availableCharacters', 'selectCharacter', 'stateVariables',
-    'activeLorebooks', 'serverConfig', 'setServerConfig', 'setActiveTab',
+    'allLorebooks', 'globalLorebookIds', 'selectLorebook', 'chatSessions', 'activeChatId', 'serverConfig', 'setServerConfig', 'setActiveTab',
     'generateSceneImage', 'isGeneratingSceneImage',
   );
 
-  const { t, currentLanguage } = useTranslation();
+  const { t, tPlural, currentLanguage } = useTranslation();
   const label = (name: string) => {
     const key = STATE_LABELS[name.toLowerCase()];
     return key ? t(key) : name;
@@ -52,7 +57,20 @@ export const AdaptiveHud = ({ compact = false }: { compact?: boolean }) => {
   const showMemoryDrawer = useAppStore((s) => s.isMemoryDrawerOpen);
   const setShowMemoryDrawer = useAppStore((s) => s.setMemoryDrawerOpen);
   const [showDetails, setShowDetails] = usePersistentFlag('otakusoul.hud.details', true);
-  const hasDetails = stateVariables.length > 0 || activeLorebooks.length > 0;
+  // The lorebooks this chat reads (global or bound to the character), as the prompt does.
+  // In a group chat the guests read their own lorebooks too.
+  const chatGuestCards = chatGuests(chatSessions.find((c) => c.id === activeChatId), availableCharacters);
+  const chatLore = activeCharacter
+    ? chatLorebooks(allLorebooks, globalLorebookIds, [activeCharacter, ...chatGuestCards])
+    : { books: [], fallback: false };
+  const loreLabel = chatLore.fallback
+    ? t('hud.lorebookFallback')
+    : t('hud.lorebookList', { names: chatLore.books.map((b) => b.name).join(', ') });
+  const openLore = () => {
+    if (chatLore.books[0] && !chatLore.fallback) selectLorebook(chatLore.books[0]);
+    setActiveTab('lorebooks');
+  };
+  const hasDetails = stateVariables.length > 0 || chatLore.books.length > 0;
 
   const handleGenerateSituationalImage = async () => {
     try {
@@ -146,11 +164,20 @@ export const AdaptiveHud = ({ compact = false }: { compact?: boolean }) => {
         )}
 
         {/* Lorebook Badge */}
-        {showDetails && activeLorebooks.length > 0 && (
-          <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/70 border border-slate-700/60 text-slate-300 text-xs">
-            <BookOpen className="w-3 h-3 text-amber-400" />
-            <span className="whitespace-nowrap">{t('hud.lorebookActive')}</span>
-          </div>
+        {showDetails && chatLore.books.length > 0 && (
+          <button
+            type="button"
+            onClick={openLore}
+            title={loreLabel}
+            aria-label={loreLabel}
+            data-hud-lore={chatLore.fallback ? 'all' : chatLore.books.length}
+            className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/70 border border-slate-700/60 text-slate-300 text-xs hover:border-slate-600 hover:text-slate-100 transition-colors outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
+          >
+            <BookOpen className="w-3 h-3 text-amber-400" aria-hidden="true" />
+            <span className="whitespace-nowrap">
+              {chatLore.fallback ? t('hud.lorebookAll') : tPlural('hud.lorebookCount', chatLore.books.length)}
+            </span>
+          </button>
         )}
 
         {/* State Variables */}

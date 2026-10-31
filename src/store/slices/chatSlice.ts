@@ -663,7 +663,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       // The prompt as if this chat were open; the open chat's scene state stays untouched.
       const view = {
         ...get(), activeCharacter: character, activeChatId: chatId, chatSessions: [session], storedMessages: history,
-        cognitiveOverview: cognitive, stateVariables: [], activeLorebooks: [], sceneTensionEnabled: false,
+        cognitiveOverview: cognitive, stateVariables: [], sceneTensionEnabled: false,
         currentTension: 0, setCurrentTension: () => {},
       };
       const prompt = await resolvePromptWithLore(view, flat, undefined, signal, speaker);

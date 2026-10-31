@@ -17,4 +17,8 @@ story?: StoryInfo,
 /**
  * Content for adults (`extensions.otakusoul_nsfw`): hidden while adult content is off.
  */
-nsfw: boolean, };
+nsfw: boolean, 
+/**
+ * The lorebooks the scene reads (names in the source language, or ids).
+ */
+lorebook: Array<string>, };

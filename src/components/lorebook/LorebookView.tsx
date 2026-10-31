@@ -16,7 +16,8 @@ import {
 import { EntryEditorModal } from './EntryEditorModal';
 import { EntryCard } from './EntryCard';
 import { LorebookSidebar } from './LorebookSidebar';
-import { isGlobalLorebook } from './isGlobalLorebook';
+import { LorebookUsage } from './LorebookUsage';
+import { isGlobalLorebook } from '../../utils/lorebookUsage';
 import { translate, useTranslation } from '../../i18n';
 import { confirmDialog, toast } from '../ui/feedback';
 import { errorMessage } from '../../utils/errors';
@@ -296,6 +297,8 @@ export const LorebookView: React.FC = () => {
                 )}
               </div>
             </div>
+
+            <LorebookUsage lorebook={activeLorebook} />
 
             {/* Tension Accumulator HUD & Config */}
             <div className="p-3 bg-app/70 border border-slate-800/80 rounded-xl flex flex-wrap items-center justify-between gap-4">

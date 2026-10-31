@@ -5,10 +5,10 @@ import type {
   Lorebook,
 } from '../../types';
 import type { SliceCreator } from '../storeTypes';
+import { refersToLorebook } from '../../utils/lorebookUsage';
 
 /** Lorebooks, global lorebooks and scene tension. */
 export interface LorebookSlice {
-  activeLorebooks: Lorebook[];
   allLorebooks: Lorebook[];
   activeLorebook: Lorebook | null;
   currentTension: number;
@@ -25,7 +25,8 @@ export interface LorebookSlice {
   importLorebook: (sourcePath: string) => Promise<Lorebook>;
   exportLorebook: (lb: Lorebook, targetPath: string) => Promise<void>;
   toggleGlobalLorebook: (lorebookId: string) => Promise<void>;
-  bindLorebookToCharacter: (charId: string, lorebookId: string, bound: boolean) => Promise<void>;
+  /** Binds a lorebook to a character, or removes every reference to it (id, path or name). */
+  bindLorebookToCharacter: (charId: string, lorebook: Lorebook, bound: boolean) => Promise<void>;
   lorebookScanDepth: number;
   setLorebookScanDepth: (depth: number) => void;
 }
@@ -37,8 +38,6 @@ export const createLorebookSlice: SliceCreator<LorebookSlice> = (set, get) => ({
     set({ lorebookScanDepth });
     get().saveCurrentSettings();
   },
-
-  activeLorebooks: [],
 
   allLorebooks: [],
 
@@ -139,22 +138,14 @@ export const createLorebookSlice: SliceCreator<LorebookSlice> = (set, get) => ({
     await get().saveCurrentSettings();
   },
 
-  bindLorebookToCharacter: async (charId, lorebookId, bound) => {
+  bindLorebookToCharacter: async (charId, lorebook, bound) => {
     const char = get().availableCharacters.find((c) => c.id === charId);
-    if (!char) return;
-    const currentBound = char.bound_lorebooks || [];
-    const updatedBound = bound
-      ? Array.from(new Set([...currentBound, lorebookId]))
-      : currentBound.filter((id) => id !== lorebookId);
-
-    const updatedProfile: CharacterProfile = {
-      ...char,
-      bound_lorebooks: updatedBound,
-    };
-    await api.saveCharacterCard(updatedProfile);
+    const ref = lorebook.id || lorebook.file_path;
+    if (!char || !ref) return;
+    const others = (char.bound_lorebooks || []).filter((r) => !refersToLorebook(lorebook, r));
+    const updatedProfile: CharacterProfile = { ...char, bound_lorebooks: bound ? [...others, ref] : others };
+    const saved = await api.saveCharacterCard(updatedProfile);
     await get().refreshCharacters();
-    if (get().activeCharacter?.id === charId) {
-      set({ activeCharacter: updatedProfile });
-    }
+    if (get().activeCharacter?.id === charId) set({ activeCharacter: saved });
   },
 });

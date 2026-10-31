@@ -319,6 +319,7 @@ pub(super) fn parse_scene_file_preview(
                 .is_some_and(|r| !r.goals.is_empty()),
             story: state.definition.story_info(),
             nsfw: crate::modules::nsfw::is_marked(&state.definition.extensions),
+            lorebook: state.definition.lorebook.clone(),
         });
     }
 
@@ -359,6 +360,7 @@ pub(super) fn parse_scene_file_preview(
             adventure: def.rules.as_ref().is_some_and(|r| !r.goals.is_empty()),
             story: def.story_info(),
             nsfw: crate::modules::nsfw::is_marked(&def.extensions),
+            lorebook: def.lorebook.clone(),
         });
     }
 

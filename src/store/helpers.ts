@@ -1,6 +1,7 @@
 import { api } from '../services/api';
 import { soundFx } from '../services/soundFx';
 import { waitWithAbort } from '../utils/cancellation';
+import { chatLorebooks } from '../utils/lorebookUsage';
 import { resolveInochi2dPath, resolveLive2dPath } from '../components/avatars/avatarMatch';
 import type { AssembledPrompt, CharacterProfile, ChatMessage, CognitiveOverview, GroupMember, LorebookEntry, LlmProviderType, SamplingParams } from '../types';
 import type { AppStoreState } from './storeTypes';
@@ -49,7 +50,6 @@ export async function resolvePromptWithLore(
     storedMessages,
     lorebookScanDepth,
     allLorebooks,
-    activeLorebooks,
     globalLorebookIds,
     currentTension,
     sceneTensionEnabled,
@@ -67,23 +67,9 @@ export async function resolvePromptWithLore(
     .map((m) => m.content)
     .join(' ');
 
-  // 1. Gather all candidate lorebooks (bound to character or global)
-  // A guest also knows the lorebooks of the chat's own character (the shared world).
-  const boundSet = new Set([...(activeCharacter.bound_lorebooks || []), ...(chatCharacter.bound_lorebooks || [])]);
-  const globalSet = new Set(globalLorebookIds || []);
-
-  let candidateLorebooks = allLorebooks.filter(
-    (lb) =>
-      (lb.id && boundSet.has(lb.id)) ||
-      (lb.file_path && boundSet.has(lb.file_path)) ||
-      lb.is_global ||
-      (lb.id && globalSet.has(lb.id)) ||
-      (lb.file_path && globalSet.has(lb.file_path))
-  );
-
-  if (candidateLorebooks.length === 0) {
-    candidateLorebooks = activeLorebooks.length > 0 ? activeLorebooks : allLorebooks;
-  }
+  // 1. The lorebooks of this chat: global ones and those bound to the speaker. A guest also knows
+  // the lorebooks of the chat's own character (the shared world).
+  const candidateLorebooks = chatLorebooks(allLorebooks, globalLorebookIds || [], [activeCharacter, chatCharacter]).books;
 
   // 2. Scene Tension Accumulator
   let effectiveTension = currentTension;

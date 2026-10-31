@@ -586,6 +586,8 @@ export interface ScenePreview {
   story?: import('./generated/StoryInfo').StoryInfo;
   /** Content for adults: hidden while adult content is off. */
   nsfw?: boolean;
+  /** The lorebooks the scene reads (names in the source language, or ids). */
+  lorebook?: string[];
 }
 
 export interface SceneDefinition {
