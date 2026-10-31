@@ -39,6 +39,20 @@ describe('sentence-wise speech while the reply streams', () => {
     expect(played()).toEqual(['audio:Hallo du.']);
   });
 
+  it('speaks each reply of a group round with its own voice', async () => {
+    const tts = new StreamingTtsManager();
+    const ayu = { engine: 'local', voice_id: 'ayu' } as VoiceConfig;
+    const sora = { engine: 'edge', voice_id: 'sora' } as VoiceConfig;
+    tts.push('Hallo du. ', ayu);
+    tts.flush('', ayu);
+    tts.push('Und ich? ', sora);
+    tts.flush('', sora);
+    // A reply without streamed tokens still uses its own voice and text.
+    tts.flush('Ich auch.', ayu);
+    await tts.waitForIdle();
+    expect(played()).toEqual(['audio:ayu:Hallo du.', 'audio:sora:Und ich?', 'audio:ayu:Ich auch.']);
+  });
+
   it('drops held audio when the reply is cancelled', async () => {
     const tts = new StreamingTtsManager();
     tts.push('Hallo du. ', { engine: 'local' } as VoiceConfig);

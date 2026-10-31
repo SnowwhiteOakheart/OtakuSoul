@@ -1439,6 +1439,14 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       if (get().activeCharacter?.id === charId) {
         set({ activeVoiceConfig: config });
       }
+      // A group chat guest speaks with the new voice from their next reply on (loaded fresh,
+      // completed by the card's voice description).
+      if (charId in get().speakerVoices) {
+        set((st) => {
+          const { [charId]: _old, ...rest } = st.speakerVoices;
+          return { speakerVoices: rest };
+        });
+      }
     } catch (e) {
       console.error('Failed to save voice config:', e);
       throw e;

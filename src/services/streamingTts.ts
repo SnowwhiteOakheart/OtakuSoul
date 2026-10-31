@@ -38,9 +38,11 @@ export class StreamingTtsManager {
   private session = 0;
   private config: VoiceConfig | null = null;
   private synthesisChain: Promise<void> = Promise.resolve();
-  /** The reply is complete; local speech no longer waits for it. */
-  private done = false;
-  private held: (() => void)[] = [];
+  /**
+   * The reply being spoken: once it is complete its local speech no longer waits. A group chat
+   * round speaks several replies in a row, each with its own voice and its own hold-back.
+   */
+  private reply: { done: boolean; held: (() => void)[] } = { done: false, held: [] };
   /** Sentences of the current reply in order, with when they play (for barge-in). */
   private spoken: SpokenSentence[] = [];
   private readonly sentenceListeners = new Set<SentenceListener>();
@@ -70,12 +72,25 @@ export class StreamingTtsManager {
     this.cancel(false);
     this.active = true;
     this.config = config;
-    this.done = false;
+    this.reply = { done: false, held: [] };
+    this.spoken = [];
+  }
+
+  /**
+   * The next reply after a finished one (group chat: another character speaks): its own voice,
+   * while what the one before still has queued keeps playing in order.
+   */
+  private nextReply(config: VoiceConfig) {
+    this.config = config;
+    this.buffer = '';
+    this.receivedText = false;
+    this.reply = { done: false, held: [] };
     this.spoken = [];
   }
 
   public push(token: string, config: VoiceConfig) {
     if (!this.active) this.begin(config);
+    else if (this.reply.done) this.nextReply(config);
     this.receivedText = true;
     this.buffer += token;
     this.queueCompletedSentences();
@@ -103,6 +118,7 @@ export class StreamingTtsManager {
   private queueSynthesis(text: string) {
     const config = this.config;
     const session = this.session;
+    const reply = this.reply;
     if (!config || config.engine === 'disabled') return;
     const sentence: SpokenSentence = { text, start: null, end: null };
     this.spoken.push(sentence);
@@ -127,8 +143,8 @@ export class StreamingTtsManager {
               scheduled,
             );
           // Local speech (character or narrator) waits until the reply is complete.
-          if (!this.done && (config.engine === 'local' || part.voice.engine === 'local')) this.held.push(play);
-          else if (this.held.length > 0) this.held.push(play);
+          if (!reply.done && (config.engine === 'local' || part.voice.engine === 'local')) reply.held.push(play);
+          else if (reply.held.length > 0) reply.held.push(play);
           else play();
         }
       } catch (error) {
@@ -139,6 +155,8 @@ export class StreamingTtsManager {
 
   public flush(fallbackFullText = '', config?: VoiceConfig) {
     if (!this.active && config) this.begin(config);
+    // A reply that streamed no tokens after a finished one still gets its own voice.
+    else if (this.reply.done && config) this.nextReply(config);
     if (!this.active || !this.config) return;
     const remainder = (this.receivedText ? this.buffer : fallbackFullText).trim();
     this.buffer = '';
@@ -148,9 +166,10 @@ export class StreamingTtsManager {
 
   /** The reply is complete: play what was held back, later sentences play right away. */
   private releaseHeld() {
-    this.done = true;
-    const held = this.held;
-    this.held = [];
+    const reply = this.reply;
+    reply.done = true;
+    const held = reply.held;
+    reply.held = [];
     held.forEach((play) => play());
   }
 
@@ -170,8 +189,7 @@ export class StreamingTtsManager {
     this.receivedText = false;
     this.active = false;
     this.config = null;
-    this.done = false;
-    this.held = [];
+    this.reply = { done: false, held: [] };
     this.spoken = [];
     this.synthesisChain = Promise.resolve();
     this.sentenceTimers.forEach((timer) => clearTimeout(timer));
