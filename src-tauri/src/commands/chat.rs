@@ -444,7 +444,7 @@ pub fn delete_messages_after(
 
 /// The chat in SillyTavern's JSONL format; with `target_path` also written to that file (the
 /// webview cannot download files itself).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn export_chat_jsonl(
     state: State<'_, AppState>,
     chat_id: String,
@@ -477,7 +477,7 @@ pub fn export_chat_jsonl(
     Ok(jsonl)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn import_chat_jsonl(
     state: State<'_, AppState>,
     character_id: String,

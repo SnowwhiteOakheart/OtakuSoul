@@ -30,7 +30,7 @@ pub async fn synthesize_speech(
     crate::modules::voice::synthesize_speech(&text, &config).await
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn list_tts_models() -> Vec<crate::modules::tts_local::TtsModelInfo> {
     crate::modules::tts_local::list_models()
 }
@@ -64,13 +64,13 @@ pub async fn save_tts_local_settings(
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn list_cloned_voices() -> Vec<crate::modules::tts_local::ClonedVoice> {
     crate::modules::tts_local::list_cloned_voices()
 }
 
 /// Stores a cloned voice from base64-encoded little-endian f32 mono samples.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn create_cloned_voice(
     name: String,
     samples_base64: String,

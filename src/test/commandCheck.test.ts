@@ -61,7 +61,7 @@ interface RustCommand {
 const rustCommands = (): Map<string, RustCommand> => {
   const commands = new Map<string, RustCommand>();
   for (const [file, source] of Object.entries(rustSources)) {
-    const attribute = /#\[tauri::command\]/g;
+    const attribute = /#\[tauri::command(?:\(async\))?\]/g;
     for (let match = attribute.exec(source); match; match = attribute.exec(source)) {
       const fn = /pub\s+(?:async\s+)?fn\s+(\w+)\s*(<[^(]*>)?\s*\(/g;
       fn.lastIndex = match.index;

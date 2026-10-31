@@ -1,6 +1,6 @@
 //! Live2D and Inochi2D models, avatar library and emotion classification.
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn scan_live2d_models() -> Vec<crate::modules::live2d::ScannedLive2d> {
     crate::modules::live2d::scan_available_live2d_models()
 }
@@ -21,14 +21,14 @@ pub async fn classify_text_emotion(text: String) -> crate::modules::emotions::Em
     crate::modules::emotions::classify_emotion(&text)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn import_live2d_model(
     source_path: String,
 ) -> Result<crate::modules::live2d::ScannedLive2d, String> {
     crate::modules::live2d::import_live2d_model(&source_path)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn scan_inochi2d_models() -> Vec<crate::modules::inochi2d::ScannedInochi2d> {
     crate::modules::inochi2d::scan_inochi2d_models()
 }
@@ -201,12 +201,12 @@ pub fn set_inochi2d_mapping(
     crate::modules::inochi2d::set_mapping(&data_dir, &key, mapping)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn scan_avatar_motions() -> Vec<crate::modules::avatar_motions::AvatarMotion> {
     crate::modules::avatar_motions::scan_avatar_motions()
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn import_avatar_motion(
     source_path: String,
 ) -> Result<crate::modules::avatar_motions::AvatarMotion, String> {
@@ -218,7 +218,7 @@ pub fn set_avatar_motion_role(file: String, role: String) -> Result<(), String> 
     crate::modules::avatar_motions::set_avatar_motion_role(&file, &role)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn list_model_clips(
     model_path: String,
 ) -> Result<Vec<crate::modules::avatar_motions::ModelClip>, String> {

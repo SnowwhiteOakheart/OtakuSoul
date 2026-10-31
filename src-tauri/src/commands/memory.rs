@@ -487,7 +487,7 @@ pub fn backup_memory_state(
         .backup_memory_state(&char_id, user_name.as_deref(), None)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn list_memory_backups(
     state: State<'_, AppState>,
     char_id: String,

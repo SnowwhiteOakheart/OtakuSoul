@@ -58,7 +58,7 @@ pub async fn get_llama_server_status(state: State<'_, AppState>) -> Result<Serve
     Ok(state.llama_manager.get_status().await)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn load_character_card(
     file_path: String,
 ) -> Result<crate::modules::characters::CharacterProfile, String> {

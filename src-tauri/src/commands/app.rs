@@ -2,7 +2,7 @@
 
 /// Reads a file for the webview as raw bytes (an `ArrayBuffer` there). Avatars and motions run to
 /// tens of MB; as a JSON number list they took seconds to send and parse.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn read_file_binary(file_path: String) -> Result<tauri::ipc::Response, String> {
     std::fs::read(&file_path)
         .map(tauri::ipc::Response::new)
@@ -47,7 +47,7 @@ pub fn load_ui_language(id: String) -> Result<std::collections::HashMap<String, 
 }
 
 /// Copies a language file chosen by the user into the language folder; returns its id.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn import_ui_language(path: String) -> Result<String, String> {
     crate::modules::ui_locales::import_file(std::path::Path::new(&path))
 }
@@ -86,27 +86,27 @@ pub async fn disk_space() -> crate::modules::hardware::DiskSpace {
         })
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn scan_vision_projectors() -> Vec<crate::modules::paths::ScannedModel> {
     crate::modules::paths::scan_vision_projectors()
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn scan_loras() -> Vec<crate::modules::paths::ScannedModel> {
     crate::modules::paths::scan_loras()
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn scan_vrm_models() -> Vec<crate::modules::paths::ScannedVrm> {
     crate::modules::paths::scan_available_vrm_models()
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn import_vrm_model(source_path: String) -> Result<crate::modules::paths::ScannedVrm, String> {
     crate::modules::paths::import_vrm_model(&source_path)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn list_avatar_model_files(model_path: String) -> Result<Vec<String>, String> {
     crate::modules::avatar_models::list_model_files(
         &model_path,
@@ -129,7 +129,7 @@ pub fn clear_app_logs() -> Result<(), String> {
     crate::modules::logger::clear_app_logs()
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn export_app_logs() -> Result<String, String> {
     crate::modules::logger::export_app_logs()
 }

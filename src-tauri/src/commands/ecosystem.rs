@@ -15,7 +15,7 @@ pub fn create_profile_backup(
     )
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn list_profile_backups() -> Result<Vec<crate::modules::profile_backup::BackupEntryInfo>, String>
 {
     Ok(crate::modules::profile_backup::ProfileBackupManager::list_backups())
@@ -132,7 +132,7 @@ fn wants_extras(with_extras: Option<bool>) -> bool {
     })
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn list_image_models(
     with_extras: Option<bool>,
 ) -> Vec<crate::modules::local_image::ImageModelInfo> {
@@ -164,7 +164,7 @@ pub async fn delete_image_model(
     crate::modules::local_image::delete_model(&model_id)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn list_image_loras() -> Vec<crate::modules::image_loras::LoraInfo> {
     crate::modules::image_loras::list_loras()
 }
@@ -185,7 +185,7 @@ pub async fn stop_local_image_server(state: State<'_, AppState>) -> Result<(), S
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn list_generated_images()
 -> Result<Vec<crate::modules::image_generator::GeneratedImageInfo>, String> {
     Ok(crate::modules::image_generator::ImageGenerator::list_generated_images())

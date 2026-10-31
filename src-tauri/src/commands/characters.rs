@@ -3,7 +3,7 @@
 use crate::state::AppState;
 use tauri::State;
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn load_lorebook(file_path: String) -> Result<crate::modules::lorebook::Lorebook, String> {
     let book =
         crate::modules::lorebook::Lorebook::load_from_file(std::path::Path::new(&file_path))?;
@@ -19,7 +19,7 @@ pub async fn scan_characters() -> Vec<crate::modules::characters::CharacterProfi
         .unwrap_or_default()
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn save_character_card(
     profile: crate::modules::characters::CharacterProfile,
 ) -> Result<crate::modules::characters::CharacterProfile, String> {
@@ -27,7 +27,7 @@ pub fn save_character_card(
 }
 
 /// Imports a card file; asks via `backend.characters.exists` before replacing a character.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn import_character_file(
     file_path: String,
     overwrite: Option<bool>,
@@ -38,7 +38,7 @@ pub fn import_character_file(
     )
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn export_character_card(
     profile: crate::modules::characters::CharacterProfile,
     target_path: String,
@@ -87,7 +87,7 @@ pub fn parse_character_wizard_draft_cmd(
     crate::modules::characters::parse_character_wizard_draft(&raw_text)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn create_character_from_draft(
     draft: crate::modules::characters::CharacterDraft,
 ) -> Result<crate::modules::characters::CharacterProfile, String> {

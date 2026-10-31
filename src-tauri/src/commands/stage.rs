@@ -86,7 +86,7 @@ pub fn stage_promote_npc(
     Ok(crate::modules::stage::StageNpcPromotion { scene, character })
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn list_stage_scenes() -> Result<Vec<crate::modules::stage::ScenePreview>, String> {
     Ok(crate::modules::stage::scan_available_scenes())
 }
@@ -131,7 +131,7 @@ pub fn update_stage_scene_definition(
     Ok(scene)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn list_stage_assets() -> std::collections::HashMap<String, Vec<String>> {
     crate::modules::stage::list_stage_assets()
 }
@@ -142,7 +142,7 @@ pub fn get_stage_ambient_audio(name: String) -> Result<String, String> {
     crate::modules::stage::stage_ambient_data_url(&name)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn import_stage_asset(file_path: String, kind: String) -> Result<String, String> {
     crate::modules::stage::import_stage_asset(&file_path, &kind)
 }
@@ -162,12 +162,12 @@ pub fn delete_stage_scene(scene_id: String) -> Result<(), String> {
     crate::modules::stage::delete_scene(&scene_id)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn export_stage_markdown(scene_id: String) -> Result<String, String> {
     crate::modules::stage::export_scene_to_markdown(&scene_id)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn stage_list_folders() -> Result<Vec<String>, String> {
     crate::modules::stage::list_stage_folders()
 }
@@ -193,7 +193,7 @@ pub fn stage_delete_folder(folder_name: String) -> Result<(), String> {
     crate::modules::stage::delete_stage_folder(&folder_name)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn stage_import_scene_json(
     state: State<'_, AppState>,
     json_content: String,
@@ -205,7 +205,7 @@ pub fn stage_import_scene_json(
     Ok(res)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn stage_export_scene_json(scene_id: String) -> Result<String, String> {
     crate::modules::stage::export_stage_scene_json(&scene_id)
 }

@@ -1,6 +1,6 @@
 //! Lorebooks: files, import/export and activation.
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn list_all_lorebooks() -> Result<Vec<crate::modules::lorebook::Lorebook>, String> {
     let paths = crate::modules::paths::resolve_app_paths();
     // Adult lorebooks are left out while adult content is off (`list_all_lorebooks`).
@@ -64,7 +64,7 @@ pub fn delete_lorebook(file_path: String) -> Result<(), String> {
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn import_lorebook_file(
     source_path: String,
 ) -> Result<crate::modules::lorebook::Lorebook, String> {
@@ -92,7 +92,7 @@ pub fn export_lorebook_file(
     lorebook.save_to_file(std::path::Path::new(&target_path))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn evaluate_lorebook_context(
     lorebook: crate::modules::lorebook::Lorebook,
     context: String,
@@ -100,7 +100,7 @@ pub fn evaluate_lorebook_context(
     lorebook.scan_and_activate(&context)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn evaluate_multi_lorebooks(
     lorebooks: Vec<crate::modules::lorebook::Lorebook>,
     context: String,
