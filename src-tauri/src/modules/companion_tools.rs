@@ -1127,13 +1127,14 @@ impl CompanionTools {
         let mut disk_free_bytes = 0u64;
         let mut disk_total_bytes = 0u64;
         for d in disks.iter() {
-            disk_free_bytes += d.available_space();
-            disk_total_bytes += d.total_space();
+            // Some virtual file systems report absurd sizes: saturate instead of overflowing.
+            disk_free_bytes = disk_free_bytes.saturating_add(d.available_space());
+            disk_total_bytes = disk_total_bytes.saturating_add(d.total_space());
         }
         let disk_free_gb = disk_free_bytes as f64 / (1024.0 * 1024.0 * 1024.0);
         let disk_total_gb = disk_total_bytes as f64 / (1024.0 * 1024.0 * 1024.0);
         let disk_percent = if disk_total_bytes > 0 {
-            (((disk_total_bytes - disk_free_bytes) as f32) / (disk_total_bytes as f32)) * 100.0
+            ((disk_total_bytes.saturating_sub(disk_free_bytes) as f32) / (disk_total_bytes as f32)) * 100.0
         } else {
             0.0
         };
