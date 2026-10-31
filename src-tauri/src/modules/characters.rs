@@ -685,11 +685,17 @@ pub fn save_character_to_user_dir(profile: &CharacterProfile) -> Result<Characte
             "bound_lorebooks".to_string(),
             serde_json::to_value(&saved_profile.bound_lorebooks).unwrap_or(serde_json::Value::Null),
         );
-        if let Some(first_lb) = saved_profile.bound_lorebooks.first() {
-            ext.insert(
-                "selected_lorebook".to_string(),
-                serde_json::Value::String(first_lb.clone()),
-            );
+        // Without bindings the old key goes too: loading reads it back as a binding.
+        match saved_profile.bound_lorebooks.first() {
+            Some(first_lb) => {
+                ext.insert(
+                    "selected_lorebook".to_string(),
+                    serde_json::Value::String(first_lb.clone()),
+                );
+            }
+            None => {
+                ext.remove("selected_lorebook");
+            }
         }
     }
 
