@@ -59,6 +59,45 @@ fn create_main_window(app: &tauri::App) -> tauri::Result<()> {
     Ok(())
 }
 
+/// Whether the window-state plugin has saved a position for this window.
+#[cfg(desktop)]
+fn saved_window_state_exists(app: &tauri::App, label: &str) -> bool {
+    use tauri::Manager;
+    use tauri_plugin_window_state::AppHandleExt;
+    let Ok(dir) = app.path().app_config_dir() else {
+        return false;
+    };
+    std::fs::read(dir.join(app.handle().filename()))
+        .ok()
+        .and_then(|bytes| serde_json::from_slice::<serde_json::Value>(&bytes).ok())
+        .is_some_and(|state| state.get(label).is_some())
+}
+
+/// Centres the window on the monitor under the mouse pointer (else the primary one),
+/// shrunk to its work area if it would not fit.
+#[cfg(desktop)]
+fn center_on_active_monitor(window: &tauri::WebviewWindow) {
+    let monitor = window
+        .cursor_position()
+        .ok()
+        .and_then(|p| window.monitor_from_point(p.x, p.y).ok().flatten())
+        .or_else(|| window.primary_monitor().ok().flatten())
+        .or_else(|| window.current_monitor().ok().flatten());
+    let (Some(monitor), Ok(size)) = (monitor, window.outer_size()) else {
+        let _ = window.center();
+        return;
+    };
+    let area = monitor.work_area();
+    let width = size.width.min(area.size.width);
+    let height = size.height.min(area.size.height);
+    if (width, height) != (size.width, size.height) {
+        let _ = window.set_size(tauri::PhysicalSize::new(width, height));
+    }
+    let x = area.position.x + ((area.size.width - width) / 2) as i32;
+    let y = area.position.y + ((area.size.height - height) / 2) as i32;
+    let _ = window.set_position(tauri::PhysicalPosition::new(x, y));
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Console, in-app log viewer and rotating log file; level via RUST_LOG.
@@ -147,9 +186,18 @@ pub fn run() {
             if let Some(window) = app.get_webview_window("main") {
                 // The window-state plugin is only registered outside an isolated profile.
                 #[cfg(desktop)]
-                if modules::paths::isolated_home().is_none() {
-                    use tauri_plugin_window_state::WindowExt;
-                    let _ = window.restore_state(tauri_plugin_window_state::StateFlags::all());
+                {
+                    let restored = modules::paths::isolated_home().is_none()
+                        && saved_window_state_exists(app, "main");
+                    if restored {
+                        use tauri_plugin_window_state::WindowExt;
+                        let _ =
+                            window.restore_state(tauri_plugin_window_state::StateFlags::all());
+                    } else {
+                        // First start: otherwise the window may land at the top edge (X11),
+                        // with its title bar out of reach.
+                        center_on_active_monitor(&window);
+                    }
                 }
                 let _ = window.show();
 
