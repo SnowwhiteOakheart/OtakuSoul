@@ -2,9 +2,11 @@
 use rand::RngExt;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use std::cell::OnceCell;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
+use std::sync::LazyLock;
 use ts_rs::TS;
 
 fn default_trigger() -> String {
@@ -461,8 +463,52 @@ impl Lorebook {
     }
 }
 
+/// Compiled key patterns, kept across evaluations: every reply checks the same keys again.
+/// `None` remembers a pattern that doesn't compile.
+static REGEX_CACHE: LazyLock<parking_lot::Mutex<HashMap<String, Option<Regex>>>> =
+    LazyLock::new(Default::default);
+/// Beyond this many patterns the cache starts over (lorebooks were edited a lot).
+const REGEX_CACHE_LIMIT: usize = 4096;
+
+fn cached_regex(pattern: &str) -> Option<Regex> {
+    let mut cache = REGEX_CACHE.lock();
+    if let Some(re) = cache.get(pattern) {
+        return re.clone();
+    }
+    if cache.len() >= REGEX_CACHE_LIMIT {
+        cache.clear();
+    }
+    let re = Regex::new(pattern).ok();
+    cache.insert(pattern.to_owned(), re.clone());
+    re
+}
+
+/// The scanned text; its lowercase form is made once, when a case-insensitive key needs it.
+struct ScanText<'a> {
+    text: &'a str,
+    lower: OnceCell<String>,
+}
+
+impl<'a> ScanText<'a> {
+    fn new(text: &'a str) -> Self {
+        Self {
+            text,
+            lower: OnceCell::new(),
+        }
+    }
+
+    fn lower(&self) -> &str {
+        self.lower.get_or_init(|| self.text.to_lowercase())
+    }
+}
+
 /// Helper to check if a keyword matches context considering case and word boundary settings
-fn matches_keyword(context: &str, keyword: &str, case_sensitive: bool, whole_words: bool) -> bool {
+fn matches_keyword(
+    context: &ScanText,
+    keyword: &str,
+    case_sensitive: bool,
+    whole_words: bool,
+) -> bool {
     let kw = keyword.trim();
     if kw.is_empty() {
         return false;
@@ -474,15 +520,15 @@ fn matches_keyword(context: &str, keyword: &str, case_sensitive: bool, whole_wor
         } else {
             format!(r"(?i)\b{}\b", regex::escape(kw))
         };
-        if let Ok(re) = Regex::new(&pattern) {
-            return re.is_match(context);
+        if let Some(re) = cached_regex(&pattern) {
+            return re.is_match(context.text);
         }
     }
 
     if case_sensitive {
-        context.contains(kw)
+        context.text.contains(kw)
     } else {
-        context.to_lowercase().contains(&kw.to_lowercase())
+        context.lower().contains(&kw.to_lowercase())
     }
 }
 
@@ -492,29 +538,26 @@ pub fn evaluate_lorebooks(
     context: &str,
     current_tension: u32,
 ) -> EvaluatedLoreResult {
-    let mut candidate_entries: Vec<LorebookEntry> = Vec::new();
     let mut triggered_tension_events = Vec::new();
     let mut new_tension = current_tension;
+    let scan = ScanText::new(context);
 
-    // Collect all entries across all active lorebooks
-    for lb in lorebooks {
-        for entry in &lb.entries {
-            if !entry.enabled {
-                continue;
-            }
-            candidate_entries.push(entry.clone());
-        }
-    }
+    // Collect all entries across all active lorebooks (borrowed: only activated ones are copied)
+    let candidate_entries: Vec<&LorebookEntry> = lorebooks
+        .iter()
+        .flat_map(|lb| lb.entries.iter())
+        .filter(|entry| entry.enabled)
+        .collect();
 
-    let mut initially_activated: Vec<LorebookEntry> = Vec::new();
+    let mut initially_activated: Vec<&LorebookEntry> = Vec::new();
     let mut rng = rand::rng();
 
-    for entry in &candidate_entries {
+    for &entry in &candidate_entries {
         // 1. Check exclude keys first (NOT logic)
         let is_excluded = entry
             .exclude_key
             .iter()
-            .any(|ex| matches_keyword(context, ex, entry.case_sensitive, entry.match_whole_words));
+            .any(|ex| matches_keyword(&scan, ex, entry.case_sensitive, entry.match_whole_words));
         if is_excluded {
             continue;
         }
@@ -528,7 +571,7 @@ pub fn evaluate_lorebooks(
             triggered_tension_events.push(entry.name.clone());
             // Release tension by 25 points per triggered event
             new_tension = new_tension.saturating_sub(25);
-            initially_activated.push(entry.clone());
+            initially_activated.push(entry);
             continue;
         }
 
@@ -545,7 +588,7 @@ pub fn evaluate_lorebooks(
             {
                 continue;
             }
-            initially_activated.push(entry.clone());
+            initially_activated.push(entry);
             continue;
         }
 
@@ -557,11 +600,11 @@ pub fn evaluate_lorebooks(
                 continue;
             }
             let re_res = if entry.case_sensitive {
-                Regex::new(pat_str)
+                cached_regex(pat_str)
             } else {
-                Regex::new(&format!("(?i){}", pat_str))
+                cached_regex(&format!("(?i){}", pat_str))
             };
-            if let Ok(re) = re_res
+            if let Some(re) = re_res
                 && re.is_match(context)
             {
                 regex_matched = true;
@@ -573,14 +616,14 @@ pub fn evaluate_lorebooks(
         let primary_matched = entry
             .key
             .iter()
-            .any(|k| matches_keyword(context, k, entry.case_sensitive, entry.match_whole_words));
+            .any(|k| matches_keyword(&scan, k, entry.case_sensitive, entry.match_whole_words));
 
         let mut matched = regex_matched || primary_matched;
 
         // 6. Secondary keys check (AND logic: must match at least one secondary key if list is not empty)
         if matched && !entry.secondary_keys.is_empty() {
             let secondary_matched = entry.secondary_keys.iter().any(|sk| {
-                matches_keyword(context, sk, entry.case_sensitive, entry.match_whole_words)
+                matches_keyword(&scan, sk, entry.case_sensitive, entry.match_whole_words)
             });
             if !secondary_matched {
                 matched = false;
@@ -595,18 +638,18 @@ pub fn evaluate_lorebooks(
             {
                 continue;
             }
-            initially_activated.push(entry.clone());
+            initially_activated.push(entry);
         }
     }
 
     // 8. Resolve Chain Dependencies
     // Map entries by name and UID for lookup
-    let mut name_to_entry: HashMap<String, LorebookEntry> = HashMap::new();
-    let mut uid_to_entry: HashMap<u64, LorebookEntry> = HashMap::new();
-    for entry in &candidate_entries {
-        name_to_entry.insert(entry.name.to_lowercase(), entry.clone());
+    let mut name_to_entry: HashMap<String, &LorebookEntry> = HashMap::new();
+    let mut uid_to_entry: HashMap<u64, &LorebookEntry> = HashMap::new();
+    for &entry in &candidate_entries {
+        name_to_entry.insert(entry.name.to_lowercase(), entry);
         if let Some(u) = entry.uid {
-            uid_to_entry.insert(u, entry.clone());
+            uid_to_entry.insert(u, entry);
         }
     }
 
@@ -618,12 +661,12 @@ pub fn evaluate_lorebooks(
     let mut active_uids: HashSet<u64> = initially_activated.iter().filter_map(|e| e.uid).collect();
 
     let mut chained_additions = Vec::new();
-    for entry in &initially_activated {
+    for &entry in &initially_activated {
         for target in &entry.chain_activates {
             let t_lower = target.trim().to_lowercase();
             if let Some(target_entry) = name_to_entry.get(&t_lower) {
                 if !active_names.contains(&t_lower) {
-                    chained_additions.push(target_entry.clone());
+                    chained_additions.push(*target_entry);
                     active_names.insert(t_lower.clone());
                     if let Some(u) = target_entry.uid {
                         active_uids.insert(u);
@@ -633,7 +676,7 @@ pub fn evaluate_lorebooks(
                 && let Some(target_entry) = uid_to_entry.get(&uid_num)
                 && !active_uids.contains(&uid_num)
             {
-                chained_additions.push(target_entry.clone());
+                chained_additions.push(*target_entry);
                 active_uids.insert(uid_num);
                 active_names.insert(target_entry.name.to_lowercase());
             }
@@ -642,7 +685,7 @@ pub fn evaluate_lorebooks(
     initially_activated.extend(chained_additions);
 
     // 8b. Chain Requires (filter out entries whose prerequisites are missing)
-    let final_activated: Vec<LorebookEntry> = initially_activated
+    let final_activated: Vec<&LorebookEntry> = initially_activated
         .into_iter()
         .filter(|entry| {
             if entry.chain_requires.is_empty() {
@@ -665,7 +708,7 @@ pub fn evaluate_lorebooks(
         .collect();
 
     // 9. Deduplicate by UID / Name (keeping highest priority)
-    let mut deduped_map: HashMap<String, LorebookEntry> = HashMap::new();
+    let mut deduped_map: HashMap<String, &LorebookEntry> = HashMap::new();
     for entry in final_activated {
         let key = if let Some(uid) = entry.uid {
             format!("uid_{}", uid)
@@ -682,7 +725,7 @@ pub fn evaluate_lorebooks(
         }
     }
 
-    let mut sorted_entries: Vec<LorebookEntry> = deduped_map.into_values().collect();
+    let mut sorted_entries: Vec<LorebookEntry> = deduped_map.into_values().cloned().collect();
     // Sort by priority descending (higher numbers first)
     sorted_entries.sort_by_key(|e| std::cmp::Reverse(e.priority));
 
@@ -824,6 +867,7 @@ mod tests {
     fn test_keyword_matching_with_word_boundaries() {
         // "er" inside "Wasser" should NOT match when match_whole_words = true
         let context = "Hier ist frisches Wasser aus der Quelle.";
+        let context = &ScanText::new(context);
         assert!(!matches_keyword(context, "er", false, true));
         // But should match when whole_words = false
         assert!(matches_keyword(context, "er", false, false));
