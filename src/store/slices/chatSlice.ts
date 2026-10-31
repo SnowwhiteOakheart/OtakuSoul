@@ -87,6 +87,14 @@ export interface ChatSlice {
   sendMessage: (content: string, files?: File[], storedMessageId?: string, replySpeaker?: string) => Promise<void>;
   /** A reply by one character of a group chat ('' = the chat's own) without a new user message. */
   replyAs: (speakerId: string) => Promise<void>;
+  /** Group chat "Auto": the characters keep talking among themselves while the user is quiet. */
+  groupAutoTalk: boolean;
+  setGroupAutoTalk: (enabled: boolean) => void;
+  /**
+   * Group chat "Auto": after a character's line the characters decide who speaks next (up to a
+   * round of replies). False when nothing was written (busy, the user's turn, a failure).
+   */
+  continueGroupOnOwn: () => Promise<boolean>;
   /**
    * The chat's character writes on their own (`instruction` says why, given their name); returns
    * the saved message, or null when nothing was written (busy, other chat, failure).
@@ -388,6 +396,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     firstReply: boolean,
     signal: AbortSignal,
     userText: string,
+    autonomous = false,
   ): Promise<string | null> => {
     const state = get();
     const speakers = chatSpeakers(state.activeCharacter, state.chatSessions.find((s) => s.id === chatId), state.availableCharacters);
@@ -399,7 +408,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     try {
       answer = await waitWithAbort(() => api.routeGroupChat({
         last_speaker: last.name, last_text: last.text, candidates: named.map((n) => n.name), this_turn: [...thisTurn], recent, user_text: userText,
-        ...llmTarget(state),
+        autonomous, ...llmTarget(state),
       }), signal);
     } catch (e) {
       if (signal.aborted) throw e;
@@ -421,7 +430,8 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     if (get().isGenerating && get().generationChatId) {
       void get().abortGeneration().catch((error) => console.warn('Navigation abort failed:', error));
     }
-    set({ activeChatId: chatId, storedMessages: [], messages: [], contextUsage: null, generationSpeakerId: '', speakerEmotions: {},
+    // "Auto" belongs to the chat it was switched on in.
+    set({ activeChatId: chatId, storedMessages: [], messages: [], contextUsage: null, generationSpeakerId: '', speakerEmotions: {}, groupAutoTalk: false,
       generationId: null, generationFailure: null, streamingText: '', streamingThought: '', isChatLoading: true, chatLoadError: null });
     return request;
   };
@@ -558,6 +568,52 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     } finally {
       await finishGeneration();
     }
+  },
+
+  groupAutoTalk: false,
+  setGroupAutoTalk: (enabled) => set({ groupAutoTalk: enabled }),
+
+  continueGroupOnOwn: async () => {
+    const { activeChatId, activeCharacter } = get();
+    if (get().isGenerating || get().isChatLoading || get().chatLoadError || !activeChatId || !activeCharacter) return false;
+    const state = get();
+    const speakers = chatSpeakers(activeCharacter, state.chatSessions.find((s) => s.id === activeChatId), state.availableCharacters);
+    const lastMessage = [...state.storedMessages].reverse().find((m) => m.role !== 'system');
+    // Only after a character's line: a user message gets its round from `sendMessage`.
+    if (speakers.length < 2 || lastMessage?.role !== 'assistant') return false;
+    const nameOf = (id: string) => presentedAs((speakers.find((s) => s.id === id) ?? speakers[0]!).character, state.replyLanguage).name;
+    const lastUser = [...state.storedMessages].reverse().find((m) => m.role === 'user');
+    cancelled = false;
+    generationSessionRequest = sessionRequest;
+    generationSequence += 1;
+    const preparation = new AbortController();
+    generationPreparation = preparation;
+    set({ isGenerating: true, generationId: crypto.randomUUID(), generationChatId: activeChatId, generationFailure: null, streamingText: '', streamingThought: '' });
+    let wrote = false;
+    try {
+      let last = { name: nameOf(lastMessage.speaker_id ?? ''), text: lastMessage.content };
+      const thisTurn = [last.name];
+      for (let n = 0; n < GROUP_MAX_REPLIES && !cancelled; n += 1) {
+        const next = await nextSpeaker(activeChatId, last, thisTurn, false, preparation.signal, lastUser?.content ?? '', true);
+        if (next === null || cancelled || !inContext(activeChatId, activeCharacter.id)) break;
+        const replyId = crypto.randomUUID();
+        set({ generationId: replyId });
+        const more = await writeReply({ chatId: activeChatId, charId: activeCharacter.id, history: get().storedMessages, speakerId: next,
+          generationId: replyId, preparation, nudge: true });
+        if (!more) break;
+        wrote = true;
+        if (more.done.aborted) break;
+        thisTurn.push(nameOf(next));
+        last = { name: nameOf(next), text: more.cleanedText };
+      }
+    } catch (e) {
+      // Nobody asked for this reply: a failure is logged and "Auto" waits for the user.
+      if (!preparation.signal.aborted) console.warn('Group chat "Auto" failed:', e);
+      set({ groupAutoTalk: false });
+    } finally {
+      await finishGeneration();
+    }
+    return wrote;
   },
 
   writeOnOwn: async (instruction) => {
@@ -1381,7 +1437,8 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     const chatId = get().generationChatId;
     const generationId = get().generationId;
     cancelled = true;
-    set({ generationChatId: null, generationId: null });
+    // Stop also ends a group chat's "Auto" (it would otherwise go on after the pause).
+    set({ generationChatId: null, generationId: null, groupAutoTalk: false });
     const pending = api.abortChatGeneration();
     abortPending = pending;
     try {

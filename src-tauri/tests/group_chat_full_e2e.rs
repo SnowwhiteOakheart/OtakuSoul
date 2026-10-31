@@ -364,6 +364,7 @@ async fn test_group_chat_local_pipeline() {
                     .rev()
                     .find(|(s, _)| *s == user_name)
                     .map(|(_, t)| t.clone()),
+                autonomous: None,
             },
         )
         .await;

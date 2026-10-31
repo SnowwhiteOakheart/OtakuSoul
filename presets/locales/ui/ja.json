@@ -3607,6 +3607,8 @@
   "group.showEveryoneHint": "グループチャットの全キャラクターを画像で横並びに表示します。オフの場合は現在発言中または直前に発言したキャラクターのみ表示します",
   "chat.replyAsLabel": "次に発言:",
   "chat.replyAs": "{{name}}に今すぐ発言させる",
+  "chat.autoTalk": "オート",
+  "chat.autoTalkHint": "オート：次に誰が話すかをキャラクター自身が決め、あなたが書かない間はキャラクター同士で会話を続けます。入力または停止で止まります。",
   "chatStyle.intro": "このチャットの外観とサウンド設定です。画像と音声はステージと共通のライブラリを使用します。",
   "chatStyle.background": "背景",
   "chatStyle.none": "なし",

@@ -21,4 +21,8 @@ recent: Array<string>, endpoint_url: string, api_key: string | null, model: stri
 /**
  * The user's message that started this round: everyone it addresses gets a turn.
  */
-user_text?: string, };
+user_text?: string, 
+/**
+ * "Auto" mode: the characters carry on without the user unless someone asks them.
+ */
+autonomous?: boolean, };

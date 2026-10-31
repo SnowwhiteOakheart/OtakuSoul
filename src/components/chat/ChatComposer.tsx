@@ -12,7 +12,7 @@ import { readDraft, writeDraft } from '../../utils/drafts';
 import { reportFailure } from '../../store/reportFailure';
 import { REPLY_LENGTHS } from '../../store/helpers';
 import { DEFAULT_CHAT_STYLE } from '../../utils/settingDefaults';
-import { chatSpeakers, presentedAs } from '../../utils/groupChat';
+import { GROUP_AUTO_MAX_REPLIES, GROUP_AUTO_PAUSE_MS, chatSpeakers, presentedAs, repliesSinceUser } from '../../utils/groupChat';
 import { fillQuickReply, usesInput } from '../../utils/quickReplies';
 import type { QuickReply } from '../../types/generated/QuickReply';
 
@@ -220,7 +220,7 @@ export const ChatComposer: React.FC = () => {
           )}
         </div>
       )}
-      <SpeakerChips />
+      <SpeakerChips typing={input.trim() !== ''} />
       <QuickReplyBar onUse={applyQuickReply} disabled={isGenerating || !activeChatId || isChatLoading || !!chatLoadError} />
       {imagesWithoutVision && (
         <p className="max-w-4xl mx-auto mb-2 text-xs text-amber-300">{t('chat.noVisionHint')}</p>
@@ -415,16 +415,59 @@ const QuickReplyBar: React.FC<{ onUse: (reply: QuickReply) => void; disabled: bo
   );
 };
 
-const SpeakerChips: React.FC = () => {
+/**
+ * Group chat: who answers now, and "Auto" – the characters carry on among themselves after a
+ * pause (and once their voices are done) while the user is not typing.
+ */
+const SpeakerChips: React.FC<{ typing: boolean }> = ({ typing }) => {
   const { t } = useTranslation();
-  const { activeChatId, chatSessions, activeCharacter, availableCharacters, replyLanguage, replyAs, isGenerating, isChatLoading, chatLoadError } = useStoreFields(
+  const {
+    activeChatId, chatSessions, activeCharacter, availableCharacters, replyLanguage, replyAs, isGenerating, isChatLoading, chatLoadError,
+    groupAutoTalk, setGroupAutoTalk, storedMessages,
+  } = useStoreFields(
     'activeChatId', 'chatSessions', 'activeCharacter', 'availableCharacters', 'replyLanguage', 'replyAs', 'isGenerating', 'isChatLoading', 'chatLoadError',
+    'groupAutoTalk', 'setGroupAutoTalk', 'storedMessages',
   );
   const speakers = chatSpeakers(activeCharacter, chatSessions.find((s) => s.id === activeChatId), availableCharacters);
-  if (speakers.length < 2) return null;
+  const group = speakers.length > 1;
+  const last = storedMessages[storedMessages.length - 1];
+  const lastKey = last ? `${last.id}\n${last.swipe_index}\n${last.content.length}` : '';
+  const busy = isGenerating || isChatLoading || !!chatLoadError;
+  useEffect(() => {
+    if (!group || !groupAutoTalk || busy || typing || last?.role !== 'assistant') return undefined;
+    let stopped = false;
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        await streamingTts.waitForIdle();
+        const state = useAppStore.getState();
+        if (stopped || !state.groupAutoTalk || state.isGenerating) return;
+        if (repliesSinceUser(state.storedMessages) >= GROUP_AUTO_MAX_REPLIES) return;
+        await state.continueGroupOnOwn();
+      })();
+    }, GROUP_AUTO_PAUSE_MS);
+    return () => {
+      stopped = true;
+      window.clearTimeout(timer);
+    };
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- the key stands for the last message
+  }, [group, groupAutoTalk, busy, typing, lastKey]);
+  if (!group) return null;
   return (
     <div role="group" aria-label={t('chat.replyAsLabel')} className="max-w-4xl mx-auto mb-2 flex flex-wrap items-center gap-1.5 text-xs" data-speaker-chips>
       <span className="text-slate-400">{t('chat.replyAsLabel')}</span>
+      <button
+        type="button"
+        onClick={() => setGroupAutoTalk(!groupAutoTalk)}
+        disabled={isChatLoading || !!chatLoadError}
+        aria-pressed={groupAutoTalk}
+        title={t('chat.autoTalkHint')}
+        data-group-auto
+        className={`rounded-full border px-2.5 py-0.5 disabled:opacity-40 ${groupAutoTalk
+          ? 'border-accent-500 bg-accent-500/20 text-accent-200'
+          : 'border-slate-700 text-slate-200 hover:bg-slate-800'}`}
+      >
+        {t('chat.autoTalk')}
+      </button>
       {speakers.map(({ id, character }) => {
         const name = presentedAs(character, replyLanguage).name;
         return (

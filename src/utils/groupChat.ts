@@ -7,6 +7,20 @@ export const MAX_CHAT_GUESTS = 4;
 /** Replies one user message may set off in a group chat before it is the user's turn again. */
 export const GROUP_MAX_REPLIES = 3;
 
+/** "Auto": pause after the last line (and its voice) before the characters carry on. */
+export const GROUP_AUTO_PAUSE_MS = 4_000;
+/** "Auto": replies in a row without the user before the characters wait for them. */
+export const GROUP_AUTO_MAX_REPLIES = 12;
+
+/** Character replies since the user's last message. */
+export function repliesSinceUser(stored: StoredChatMessage[]): number {
+  let count = 0;
+  for (let i = stored.length - 1; i >= 0 && stored[i]!.role !== 'user'; i -= 1) {
+    if (stored[i]!.role === 'assistant') count += 1;
+  }
+  return count;
+}
+
 /** The guests of a chat that still exist in the library (removed cards drop out). */
 export function chatGuests(session: ChatSession | undefined, characters: CharacterProfile[]): CharacterProfile[] {
   return (session?.members ?? [])

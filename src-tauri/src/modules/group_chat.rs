@@ -12,6 +12,12 @@ use ts_rs::TS;
 /// Answer meaning "it is the user's turn".
 pub const PLAYER: &str = "PLAYER";
 
+/// The routing rule that ends a round when nothing calls for another voice.
+const PLAYER_RULE: &str = "7. When nothing calls for another voice, it is the PLAYER's turn.";
+/// Instead in "Auto" mode: the characters keep talking among themselves.
+const AUTO_RULE: &str = "7. The characters keep the conversation going among themselves: pick whoever would naturally \
+speak up next. Choose PLAYER only if someone just asked the player something directly or the conversation has clearly come to an end.";
+
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct GroupRouteRequest {
@@ -32,6 +38,10 @@ pub struct GroupRouteRequest {
     #[serde(default)]
     #[ts(optional)]
     pub user_text: Option<String>,
+    /// "Auto" mode: the characters carry on without the user unless someone asks them.
+    #[serde(default)]
+    #[ts(optional)]
+    pub autonomous: Option<bool>,
 }
 
 /// The name of the next speaker or [`PLAYER`]. A failed routing request means the user's turn.
@@ -69,6 +79,11 @@ pub async fn route(client: &InferenceClient, req: GroupRouteRequest) -> String {
         &req.this_turn,
         &req.recent,
     );
+    let prompt = if req.autonomous.unwrap_or(false) {
+        prompt.replace(PLAYER_RULE, AUTO_RULE)
+    } else {
+        prompt
+    };
     let request = ChatRequest {
         endpoint_url: req.endpoint_url,
         api_key: req.api_key,
@@ -114,7 +129,19 @@ mod tests {
             model: None,
             provider: None,
             user_text: None,
+            autonomous: None,
         }
+    }
+
+    #[test]
+    fn auto_mode_replaces_the_rule_that_hands_the_turn_back() {
+        let prompt = routing_prompt_with("[X]", "Ayu", "Hm.", &["Sora".into()], &[], &[]);
+        assert!(prompt.contains(PLAYER_RULE));
+        assert!(
+            prompt
+                .replace(PLAYER_RULE, AUTO_RULE)
+                .contains("among themselves")
+        );
     }
 
     #[tokio::test]

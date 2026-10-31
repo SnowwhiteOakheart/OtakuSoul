@@ -619,6 +619,7 @@ async fn test_full_soulstage_lorebooks_multi_llm_benchmark() {
                         .rev()
                         .find(|(s, _)| *s == user_name)
                         .map(|(_, t)| t.clone()),
+                    autonomous: None,
                 },
             )
             .await;
