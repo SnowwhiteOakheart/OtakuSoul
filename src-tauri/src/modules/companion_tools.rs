@@ -1134,7 +1134,8 @@ impl CompanionTools {
         let disk_free_gb = disk_free_bytes as f64 / (1024.0 * 1024.0 * 1024.0);
         let disk_total_gb = disk_total_bytes as f64 / (1024.0 * 1024.0 * 1024.0);
         let disk_percent = if disk_total_bytes > 0 {
-            ((disk_total_bytes.saturating_sub(disk_free_bytes) as f32) / (disk_total_bytes as f32)) * 100.0
+            ((disk_total_bytes.saturating_sub(disk_free_bytes) as f32) / (disk_total_bytes as f32))
+                * 100.0
         } else {
             0.0
         };
