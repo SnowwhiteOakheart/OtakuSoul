@@ -97,23 +97,38 @@
 
 > Ziel: Nutzer melden sich in der App bei VRoid Hub an und verwenden dort freigegebene VRM-Modelle direkt, ohne
 > Download und Import von Hand. Mitliefern dürfen wir solche Modelle meist nicht („Redistribution: Do not allow“).
-> Doku: <https://developer.vroid.com/en/api/quick-start.html>.
+> Doku: <https://developer.vroid.com/en/api/quick-start.html>. Entwicklerkonto registriert (31.10.2026), App unter
+> <https://hub.vroid.com/oauth/applications>.
 
-- [ ] **Vorab klären:** Akzeptiert VRoid Hub als Redirect-URI `http://127.0.0.1:<port>/callback` oder ein eigenes
-  Schema (`otakusoul://`)? (Erst beim Anlegen der App sichtbar.) Entwicklerbedingungen von pixiv lesen
+> **App-Einstellungen bei VRoid Hub (geplant, nach dem Anlegen abgleichen):** Scope nur `default`; Plattformen
+> Windows/macOS/Linux; App-Altersfreigabe R-18 (wegen der optionalen 18+-Inhalte); VRM 0.0 und 1.0; Modell-Nutzung:
+> Änderung Nein, Weitergabe Nein, Avatar Ja, sexuelle Darstellung Nein, Gewalt Nein, Namensnennung Ja; für
+> Einzelpersonen, nicht kommerziell; nur Modelle „für alle Altersstufen“. **Diese Angaben filtern serverseitig**,
+> welche Modelle die API liefert. Mit „Nein“ bei Sex/Gewalt kommen alle Modelle, dafür gilt für die App dauerhaft:
+> VRoid-Modelle nie in sexuellen Inhalten und nie in Kampfszenen – unabhängig davon, was ein einzelnes Modell erlaubt.
+
+- [ ] **Vorab klären:** Entwicklerbedingungen von pixiv lesen
   (<https://policies.pixiv.net/en.html#vroidhubdeveloper>), vor allem ob Modelle dauerhaft gespeichert werden dürfen
   (Download-Lizenzen haben `expires_at`) und was die Prüfung für „VRoid Hub-approved applications“ verlangt.
-- [ ] **OAuth 2.0 mit PKCE** (`/oauth/authorize`, `/oauth/token`, Header `X-Api-Version: 11`): Der Token-Tausch
-  verlangt zusätzlich `client_secret`. Das Secret kommt nie ins Repository: GitHub-Actions-Secret
-  `VROID_CLIENT_SECRET`, im Release-Build per `option_env!` eingebacken, lokal über eine gitignorte `.env`. Builds
-  ohne Secret blenden die Anmeldung aus oder nehmen eigene Zugangsdaten aus den Einstellungen. Ausweichweg, falls
-  nötig: kleiner Token-Proxy (z. B. Cloudflare Worker), der das Secret anhängt. Tokens im Schlüsselbund (`secrets.rs`).
+- [ ] **Redirect-URI:** Die Adresse muss exakt passen, ein zufälliger Port wie bei der OpenRouter-Anmeldung
+  (`openrouter_auth.rs`) geht nicht. Eingetragen werden `otakusoul://vroidhub/callback` (braucht
+  `tauri-plugin-deep-link`, unter Linux/Windows als Protokoll registrieren) und `http://127.0.0.1:47823/vroidhub/callback`
+  (fester Port; ist er belegt, Hinweis statt Ausweichport). Falls VRoid die `http`-Zeile ablehnt, nur das Schema.
+- [ ] **OAuth 2.0 mit PKCE und `state`** (`/oauth/authorize`, `/oauth/token`, `/oauth/revoke`, Header
+  `X-Api-Version: 11`), Anmeldung im System-Browser. Der Token-Tausch verlangt zusätzlich `client_secret`. Das
+  Secret kommt nie ins Repository: GitHub-Actions-Secret `VROID_CLIENT_SECRET`, im Release-Build per `option_env!`
+  eingebacken, lokal über eine gitignorte `.env`; die Client-ID darf im Code stehen. Builds ohne Secret blenden die
+  Anmeldung aus oder nehmen eigene Zugangsdaten aus den Einstellungen. Ausweichweg, falls nötig: kleiner Token-Proxy
+  (z. B. Cloudflare Worker), der das Secret anhängt. Tokens samt Refresh-Token im Schlüsselbund (`secrets.rs`).
 - [ ] **Modelle laden:** eigene und gelikte Modelle auflisten, Download-Lizenz ausstellen
-  (`POST /api/download_licenses`), VRM über `/download` holen und im Avatar-Manager wie ein lokales VRM nutzen.
+  (`POST /api/download_licenses`), VRM über `/download` holen und im Avatar-Manager wie ein lokales VRM nutzen
+  (VRM 0.0 und 1.0). Speichern nur so, wie die Entwicklerbedingungen es erlauben.
+- [ ] **Sperren in der App:** VRoid-Modelle tragen eine Herkunftsmarke. Sie sind bei aktiver 18+-Freigabe für
+  Romance-/NSFW-Inhalte gesperrt und in der Stage nicht im 5e-Kampf/auf dem Spielbrett nutzbar; keine Änderung oder
+  Weitergabe (kein Export, kein Profil-Backup der VRM-Datei).
 - [ ] **Nutzungsbedingungen je Modell** unter dem Titel „Model Data Conditions of Use“ nach den VRoid-Richtlinien
-  anzeigen (VRM 0.0 und 1.0 getrennt, <https://developer.vroid.com/en/guidelines/conditions_of_use.html>).
-  „Sexual acts: Do not allow“ sperrt das Modell für Romance- und 18+-Inhalte; „Attribution: Required“ zeigt den
-  Urheber in der App.
+  anzeigen (VRM 0.0 und 1.0 getrennt, <https://developer.vroid.com/en/guidelines/conditions_of_use.html>), dazu den
+  Urheber, wenn „Attribution: Required“.
 
 ## 4. Kognitives Gedächtnis (Memory 2.0 – Ausblick & Folgepunkte)
 
