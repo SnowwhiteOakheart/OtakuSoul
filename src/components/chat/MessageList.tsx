@@ -70,14 +70,17 @@ export const MessageList = React.memo<MessageListProps>(
     // loaded, nothing else re-renders the list) then showed no messages; one more render picks it up.
     const [, rerender] = useReducer((n: number) => n + 1, 0);
     const handedOver = useRef<HTMLElement | null>(null);
+    // The passive effect runs after the parent attached its ref; again whenever the virtualizer
+    // lost or swapped its container.
+    const seenElement = virtualizer.scrollElement;
     useEffect(() => {
       const el = scrollRef.current;
       // Once per container, so an engine that never takes it cannot loop.
-      if (el && virtualizer.scrollElement !== el && handedOver.current !== el) {
+      if (el && seenElement !== el && handedOver.current !== el) {
         handedOver.current = el;
         rerender();
       }
-    });
+    }, [scrollRef, seenElement]);
 
     // Follow the conversation: jump to the newest message when one arrives or a chat opens.
     // Heights are estimates until measured, so the jump is repeated until the bottom holds

@@ -3,7 +3,7 @@ import { OptionHint } from '../settings/OptionHint';
 import { open } from '@tauri-apps/plugin-dialog';
 import { Download, FolderOpen, Headphones, Mic, Play, RefreshCw, Save, SlidersHorizontal, Wand2, X } from 'lucide-react';
 import { VoiceEffectsPanel } from './VoiceEffectsPanel';
-import { useStoreFields } from '../../store/useAppStore';
+import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { api } from '../../services/api';
 import { KokoroDownloadProgress, ScannedVoice, SttEngine, TtsEngine, TtsFilterMode, VoiceConfig } from '../../types';
 import { audioPlayer, gainFromVoiceVolume } from '../../services/audioPlayer';
@@ -103,8 +103,8 @@ function testText(config: VoiceConfig) {
 
 export function CharacterVoiceModal({ onClose, target, embedded = false, autoSave = false }: CharacterVoiceModalProps) {
   const { t } = useTranslation();
-  const { activeCharacter, availableCharacters, activeVoiceConfig, saveVoiceConfigForCharacter, expertMode, replyLanguage } = useStoreFields(
-    'activeCharacter', 'availableCharacters', 'activeVoiceConfig', 'saveVoiceConfigForCharacter', 'expertMode', 'replyLanguage',
+  const { activeCharacter, activeVoiceConfig, saveVoiceConfigForCharacter, expertMode, replyLanguage } = useStoreFields(
+    'activeCharacter', 'activeVoiceConfig', 'saveVoiceConfigForCharacter', 'expertMode', 'replyLanguage',
   );
   const [tab, setTab] = useState<VoiceTab>('tts');
   // The narrator's own voice settings, opened from the "read actions with the narrator" option.
@@ -133,7 +133,9 @@ export function CharacterVoiceModal({ onClose, target, embedded = false, autoSav
   useEffect(() => {
     if (!loadId) return;
     let subscribed = true;
-    loadCharacterVoiceConfig(loadId, [activeCharacter, ...availableCharacters]).then((config) => {
+    // The cards are read once at loading time; a changed library must not reload over the draft.
+    const { activeCharacter: active, availableCharacters: characters } = useAppStore.getState();
+    loadCharacterVoiceConfig(loadId, [active, ...characters]).then((config) => {
       if (subscribed && config && !touched.current) setDraft(config);
     }).catch(() => {});
     return () => {
