@@ -115,7 +115,7 @@
 - [ ] **Redirect-URI:** Die Adresse muss exakt passen, ein zufälliger Port wie bei der OpenRouter-Anmeldung
   (`openrouter_auth.rs`) geht nicht. Eingetragen werden `otakusoul://vroidhub/callback` (braucht
   `tauri-plugin-deep-link`, unter Linux/Windows als Protokoll registrieren) und `http://127.0.0.1:47823/vroidhub/callback`
-  (fester Port; ist er belegt, Hinweis statt Ausweichport). Falls VRoid die `http`-Zeile ablehnt, nur das Schema.
+  (fester Port; ist er belegt, Hinweis statt Ausweichport). Beide hat VRoid Hub beim Anlegen angenommen.
 - [ ] **OAuth 2.0 mit PKCE und `state`** (`/oauth/authorize`, `/oauth/token`, `/oauth/revoke`, Header
   `X-Api-Version: 11`), Anmeldung im System-Browser. Der Token-Tausch verlangt zusätzlich `client_secret`. Das
   Secret kommt nie ins Repository: GitHub-Actions-Secret `VROID_CLIENT_SECRET`, im Release-Build per `option_env!`
