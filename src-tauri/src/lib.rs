@@ -74,20 +74,22 @@ fn saved_window_state_exists(app: &tauri::App, label: &str) -> bool {
 }
 
 /// Centres the window on the monitor under the mouse pointer (else the primary one),
-/// shrunk to its work area if it would not fit.
+/// shrunk to its work area if it would not fit. `size` is the configured logical size:
+/// a window that has not been shown yet still reports 0×0.
 #[cfg(desktop)]
-fn center_on_active_monitor(window: &tauri::WebviewWindow) {
+fn center_on_active_monitor(window: &tauri::WebviewWindow, size: tauri::LogicalSize<f64>) {
     let monitor = window
         .cursor_position()
         .ok()
         .and_then(|p| window.monitor_from_point(p.x, p.y).ok().flatten())
         .or_else(|| window.primary_monitor().ok().flatten())
         .or_else(|| window.current_monitor().ok().flatten());
-    let (Some(monitor), Ok(size)) = (monitor, window.outer_size()) else {
+    let Some(monitor) = monitor else {
         let _ = window.center();
         return;
     };
     let area = monitor.work_area();
+    let size = size.to_physical::<u32>(monitor.scale_factor());
     let width = size.width.min(area.size.width);
     let height = size.height.min(area.size.height);
     if (width, height) != (size.width, size.height) {
@@ -186,18 +188,27 @@ pub fn run() {
             if let Some(window) = app.get_webview_window("main") {
                 // The window-state plugin is only registered outside an isolated profile.
                 #[cfg(desktop)]
-                {
-                    let restored = modules::paths::isolated_home().is_none()
-                        && saved_window_state_exists(app, "main");
-                    if restored {
-                        use tauri_plugin_window_state::WindowExt;
-                        let _ =
-                            window.restore_state(tauri_plugin_window_state::StateFlags::all());
-                    } else {
-                        // First start: otherwise the window may land at the top edge (X11),
-                        // with its title bar out of reach.
-                        center_on_active_monitor(&window);
-                    }
+                let restored = modules::paths::isolated_home().is_none()
+                    && saved_window_state_exists(app, "main");
+                #[cfg(desktop)]
+                if restored {
+                    use tauri_plugin_window_state::WindowExt;
+                    let _ = window.restore_state(tauri_plugin_window_state::StateFlags::all());
+                }
+                // First start: otherwise the window may land at the top edge (X11), with its
+                // title bar out of reach.
+                #[cfg(desktop)]
+                if !restored {
+                    let size = app
+                        .config()
+                        .app
+                        .windows
+                        .iter()
+                        .find(|w| w.label == "main")
+                        .map_or(tauri::LogicalSize::new(1280.0, 840.0), |w| {
+                            tauri::LogicalSize::new(w.width, w.height)
+                        });
+                    center_on_active_monitor(&window, size);
                 }
                 let _ = window.show();
 
