@@ -507,7 +507,7 @@ mod tests {
         let first = write_promotion(&state, &state.npcs[0], &directory).unwrap();
         let retry = write_promotion(&state, &state.npcs[0], &directory).unwrap();
         assert_eq!(first.id, retry.id);
-        assert!(first.avatar_data_url.is_some());
+        assert!(first.avatar_path.is_some());
         assert_eq!(first.card.data.personality, "Wise");
         state.npcs[0].id = "other".into();
         assert!(write_promotion(&state, &state.npcs[0], &directory).is_err());

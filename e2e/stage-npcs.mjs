@@ -79,7 +79,8 @@ try {
   const character = characters.find((c) => c.id === id);
   assert.equal(character.card.spec, 'chara_card_v2');
   assert.equal(character.card.data.name, 'Liora');
-  assert.ok(character.avatar_data_url.startsWith('data:image/png;base64,'));
+  // The scan names the picture's file; the interface shows it via the asset protocol.
+  assert.ok(character.avatar_path?.endsWith('.png'), 'Beförderte Figur ohne Bilddatei');
   const memory = await invoke('get_cognitive_overview', { charId: id, userName: 'Kai' });
   assert.ok(memory.recent_memories.some((m) => m.content.includes('Saphirschlüssel')), 'Soul Memory wurde nicht übernommen');
   assert.ok(!memory.recent_memories.some((m) => m.content.includes('ABSENT_NPC_SECRET')));

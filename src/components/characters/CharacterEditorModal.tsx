@@ -208,7 +208,9 @@ export const CharacterEditorModal = ({
     const profileToSave: CharacterProfile = {
       id: character?.id || name.trim().toLowerCase().replace(/\s+/g, '_'),
       card: updatedCard,
+      // An unchanged picture stays the card's file; a new one travels as data URL.
       avatar_data_url: avatarDataUrl || undefined,
+      avatar_path: avatarDataUrl && avatarDataUrl === character?.avatar_data_url ? character.avatar_path : undefined,
       source_path: character?.source_path,
       bound_lorebooks: boundLorebooks,
     };

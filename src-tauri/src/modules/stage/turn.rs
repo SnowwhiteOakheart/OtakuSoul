@@ -1192,10 +1192,9 @@ Reply in {reply_language}.{memories}{secrets}"#,
                 return finish_turn(engine, state);
             };
             let comp_msg_id = format!("msg_{}_{}", Utc::now().timestamp_millis(), actor_depth);
-            let avatar_url = npc
-                .as_ref()
-                .map(|n| npc_avatar(&n.archetype))
-                .or_else(|| matched_char.and_then(|c| c.avatar_data_url.clone()));
+            // Companions get their picture in the interface (by name, from the library), so the
+            // scene doesn't store a Base64 copy of the card's PNG with every message.
+            let avatar_url = npc.as_ref().map(|n| npc_avatar(&n.archetype));
             let sender_role = if npc.is_some() { "npc" } else { "companion" };
             if let Ok(comp_text) = stream_message(
                 inference,

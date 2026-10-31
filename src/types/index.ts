@@ -371,7 +371,10 @@ export interface CharacterCardV2 {
 export interface CharacterProfile {
   id: string;
   card: CharacterCardV2;
+  /** A new picture as data URL, or (cards from disk) the asset URL of `avatar_path`. */
   avatar_data_url?: string;
+  /** The PNG holding the picture; see `utils/characterAvatar.ts`. */
+  avatar_path?: string;
   source_path?: string;
   bound_lorebooks: string[];
 }

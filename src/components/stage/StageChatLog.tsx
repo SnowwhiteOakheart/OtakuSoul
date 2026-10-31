@@ -5,6 +5,7 @@ import { speakStageMessages } from '../../services/stageVoice';
 import type { SceneTurnMessage } from '../../types';
 import { StageEventCardView } from './StageEventCardView';
 import { StageText } from './StageText';
+import { findCharacterByName } from '../../utils/characterName';
 import {
   Compass,
   MessageSquare,
@@ -50,6 +51,9 @@ export const StageChatLog: React.FC = () => {
   );
 
   const bottomRef = useRef<HTMLDivElement>(null);
+  // Companions' pictures come from the library (the scene stores them only for NPCs).
+  const avatarOf = (url: string | null | undefined, name: string, role?: string) =>
+    url || (role === 'companion' ? findCharacterByName(availableCharacters, name)?.avatar_data_url : null) || null;
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState('');
   // Translations of single messages into the app language, kept while the log is open.
@@ -317,7 +321,9 @@ export const StageChatLog: React.FC = () => {
           >
             {/* Sender and mode header */}
             <div className="flex items-center gap-2 px-1">
-              {msg.avatar_url && <img src={msg.avatar_url} alt="" decoding="async" className="w-8 h-8 rounded-lg object-cover" />}
+              {avatarOf(msg.avatar_url, msg.sender_name, msg.sender_role) && (
+                <img src={avatarOf(msg.avatar_url, msg.sender_name, msg.sender_role)!} alt="" decoding="async" className="w-8 h-8 rounded-lg object-cover" />
+              )}
               {msg.sender_role === 'npc' && <span className="text-[11px] text-emerald-400 font-semibold">NPC</span>}
               <span className="text-xs font-bold text-slate-300">
                 {msg.sender_name}
@@ -456,7 +462,9 @@ export const StageChatLog: React.FC = () => {
         ) : (
           <div key={live.message_id} className="flex flex-col items-start space-y-1.5">
             <div className="flex items-center gap-2 px-1">
-              {live.avatar_url && <img src={live.avatar_url} alt="" decoding="async" className="w-5 h-5 rounded-full object-cover" />}
+              {avatarOf(live.avatar_url, live.sender_name, live.sender_role) && (
+                <img src={avatarOf(live.avatar_url, live.sender_name, live.sender_role)!} alt="" decoding="async" className="w-5 h-5 rounded-full object-cover" />
+              )}
               <span className="text-xs font-bold text-slate-300">{live.sender_name}</span>
             </div>
             <div className="max-w-[85%] sm:max-w-[75%] p-3.5 rounded-2xl rounded-tl-sm text-xs sm:text-sm shadow-md leading-relaxed whitespace-pre-wrap bg-accent-900/30 border border-accent-500/40 text-accent-100">

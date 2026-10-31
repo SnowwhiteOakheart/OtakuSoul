@@ -109,10 +109,14 @@ pub fn character_reference_png(character_id: &str) -> Option<Vec<u8>> {
     let character = crate::modules::paths::scan_available_characters()
         .into_iter()
         .find(|c| c.id == character_id)?;
-    let data_url = character.avatar_data_url?;
-    let (_, data) = data_url.split_once(";base64,")?;
-    let bytes =
-        base64::Engine::decode(&base64::engine::general_purpose::STANDARD, data.trim()).ok()?;
+    // Cards from disk name their picture's file; a data URL may be any image type.
+    let bytes = match character.avatar_data_url.as_deref() {
+        Some(url) if url.starts_with("data:") => {
+            let (_, data) = url.split_once(";base64,")?;
+            base64::Engine::decode(&base64::engine::general_purpose::STANDARD, data.trim()).ok()?
+        }
+        _ => std::fs::read(character.avatar_path.as_deref()?).ok()?,
+    };
     reference_png(&bytes)
 }
 

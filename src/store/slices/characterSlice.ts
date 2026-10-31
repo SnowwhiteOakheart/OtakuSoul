@@ -169,6 +169,8 @@ export const createCharacterSlice: SliceCreator<CharacterSlice> = (set, get) => 
   },
 
   loadPresetCharacters: async () => {
+    // Opening the chat again needs no new scan: saves, imports and deletions refresh themselves.
+    if (get().availableCharacters.length > 0 && get().activeCharacter) return;
     await get().refreshCharacters();
   },
 

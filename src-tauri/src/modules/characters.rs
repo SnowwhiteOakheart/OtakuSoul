@@ -136,9 +136,37 @@ fn default_spec_version() -> String {
 pub struct CharacterProfile {
     pub id: String,
     pub card: CharacterCardV2,
+    /// A new picture as data URL (editor, imports). Cards read from disk leave it empty and name
+    /// the file in `avatar_path` instead: the library would otherwise send every PNG as Base64.
     pub avatar_data_url: Option<String>,
+    /// The PNG holding the card's picture; the interface shows it via the asset protocol.
+    #[serde(default)]
+    #[ts(optional)]
+    pub avatar_path: Option<String>,
     pub source_path: Option<String>,
     pub bound_lorebooks: Vec<String>,
+}
+
+impl CharacterProfile {
+    /// The picture's bytes: a PNG data URL first, otherwise the file in `avatar_path`.
+    /// Other data URLs (JPEG, WebP) count as no PNG, like before.
+    pub fn avatar_png_bytes(&self) -> Option<Vec<u8>> {
+        if let Some(url) = self.avatar_data_url.as_deref()
+            && url.starts_with("data:")
+        {
+            let stripped = url.strip_prefix("data:image/png;base64,")?;
+            return BASE64_STANDARD.decode(stripped.trim()).ok();
+        }
+        fs::read(self.avatar_path.as_deref()?).ok()
+    }
+
+    /// Whether the card has a picture at all (data URL or file).
+    pub fn has_avatar(&self) -> bool {
+        self.avatar_data_url
+            .as_deref()
+            .is_some_and(|url| url.starts_with("data:"))
+            || self.avatar_path.is_some()
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -351,6 +379,13 @@ pub fn parse_character_json(content: &str) -> Result<CharacterCardV2, String> {
 
 /// Extracts SillyTavern / Tavern V2 text chunk from a PNG binary
 pub fn parse_character_png(bytes: &[u8]) -> Result<(CharacterCardV2, String), String> {
+    let card = parse_character_png_card(bytes)?;
+    let avatar_data_url = format!("data:image/png;base64,{}", BASE64_STANDARD.encode(bytes));
+    Ok((card, avatar_data_url))
+}
+
+/// Only the card from a PNG, without encoding the picture (see [`parse_character_png`]).
+pub fn parse_character_png_card(bytes: &[u8]) -> Result<CharacterCardV2, String> {
     if bytes.len() < 8 || &bytes[0..8] != b"\x89PNG\r\n\x1a\n" {
         return Err(crate::err!("backend.characters.notPng"));
     }
@@ -390,10 +425,7 @@ pub fn parse_character_png(bytes: &[u8]) -> Result<(CharacterCardV2, String), St
     let chara_json =
         chara_json_opt.ok_or_else(|| crate::err!("backend.characters.noCharaChunk"))?;
 
-    let card = parse_character_json(&chara_json)?;
-    let avatar_data_url = format!("data:image/png;base64,{}", BASE64_STANDARD.encode(bytes));
-
-    Ok((card, avatar_data_url))
+    parse_character_json(&chara_json)
 }
 
 /// Injects CharacterCardV2 metadata into a PNG as a SillyTavern-compatible 'chara' tEXt chunk
@@ -532,28 +564,23 @@ pub fn load_character_from_file(path: &Path) -> Result<CharacterProfile, String>
         .unwrap_or_else(|| "character".to_string());
 
     let mut bound_lorebooks = Vec::new();
-    let (mut card, avatar_data_url) = if extension == "json" {
+    // Only the picture's path: the bytes are read where they are needed (save, export, image
+    // references), not for every card on every library scan.
+    let (mut card, avatar_path) = if extension == "json" {
         let content = fs::read_to_string(path)
             .map_err(|e| crate::err!("backend.common.jsonRead", error = e))?;
         let card = parse_character_json(&content)?;
         let parent = path.parent().unwrap_or(Path::new("."));
         let png_candidate = parent.join(format!("{}.png", id));
-        let avatar_data_url = if png_candidate.exists()
-            && let Ok(png_bytes) = fs::read(&png_candidate)
-        {
-            Some(format!(
-                "data:image/png;base64,{}",
-                BASE64_STANDARD.encode(&png_bytes)
-            ))
-        } else {
-            None
-        };
-        (card, avatar_data_url)
+        let avatar_path = png_candidate
+            .is_file()
+            .then(|| png_candidate.to_string_lossy().to_string());
+        (card, avatar_path)
     } else if extension == "png" {
         let bytes =
             fs::read(path).map_err(|e| crate::err!("backend.characters.pngRead", error = e))?;
-        let (card, avatar_data_url) = parse_character_png(&bytes)?;
-        (card, Some(avatar_data_url))
+        let card = parse_character_png_card(&bytes)?;
+        (card, Some(path.to_string_lossy().to_string()))
     } else {
         return Err(crate::err!(
             "backend.common.unsupportedFormat",
@@ -585,7 +612,8 @@ pub fn load_character_from_file(path: &Path) -> Result<CharacterProfile, String>
     Ok(CharacterProfile {
         id,
         card,
-        avatar_data_url,
+        avatar_data_url: None,
+        avatar_path,
         source_path: Some(path.to_string_lossy().to_string()),
         bound_lorebooks,
     })
@@ -665,18 +693,11 @@ pub fn save_character_to_user_dir(profile: &CharacterProfile) -> Result<Characte
         }
     }
 
-    // If avatar data is present, write as SillyTavern V2 PNG
-    if let Some(ref data_url) = profile.avatar_data_url {
-        let base_bytes = if let Some(stripped) = data_url.strip_prefix("data:image/png;base64,") {
-            BASE64_STANDARD
-                .decode(stripped)
-                .unwrap_or_else(|_| get_placeholder_png())
-        } else if let Some(stripped) = data_url.strip_prefix("data:image/jpeg;base64,") {
-            let _ = stripped;
-            get_placeholder_png()
-        } else {
-            get_placeholder_png()
-        };
+    // With a picture (new data URL or the card's file) write a SillyTavern V2 PNG.
+    if profile.has_avatar() {
+        let base_bytes = profile
+            .avatar_png_bytes()
+            .unwrap_or_else(get_placeholder_png);
 
         let enriched_png = inject_character_metadata_png(&base_bytes, &saved_profile.card)?;
         fs::write(&target_png, enriched_png).map_err(|e| {
@@ -688,6 +709,8 @@ pub fn save_character_to_user_dir(profile: &CharacterProfile) -> Result<Characte
         })?;
 
         saved_profile.source_path = Some(target_png.to_string_lossy().to_string());
+        saved_profile.avatar_path = saved_profile.source_path.clone();
+        saved_profile.avatar_data_url = None;
     } else {
         // Save as JSON
         let json_text = serde_json::to_string_pretty(&saved_profile.card)
@@ -701,6 +724,8 @@ pub fn save_character_to_user_dir(profile: &CharacterProfile) -> Result<Characte
         })?;
 
         saved_profile.source_path = Some(target_json.to_string_lossy().to_string());
+        saved_profile.avatar_path = None;
+        saved_profile.avatar_data_url = None;
     }
 
     Ok(saved_profile)
@@ -741,6 +766,7 @@ pub fn store_imported_card(
         id: card.data.name.clone(),
         card,
         avatar_data_url,
+        avatar_path: None,
         source_path: None,
         bound_lorebooks,
     };
@@ -820,7 +846,10 @@ pub fn import_character_file(
     overwrite: bool,
 ) -> Result<crate::modules::hub::CharacterImportResult, String> {
     let loaded = load_character_from_file(path)?;
-    store_imported_card(loaded.card, loaded.avatar_data_url, overwrite)
+    let avatar = loaded
+        .avatar_png_bytes()
+        .map(|bytes| format!("data:image/png;base64,{}", BASE64_STANDARD.encode(bytes)));
+    store_imported_card(loaded.card, avatar, overwrite)
 }
 
 /// Exports a character card to an arbitrary destination chosen by the user
@@ -855,17 +884,9 @@ pub fn export_character_card(
 ) -> Result<(), String> {
     let card = without_local_picture_paths(&profile.card);
     if export_as_png {
-        let base_bytes = if let Some(ref data_url) = profile.avatar_data_url {
-            if let Some(stripped) = data_url.strip_prefix("data:image/png;base64,") {
-                BASE64_STANDARD
-                    .decode(stripped)
-                    .unwrap_or_else(|_| get_placeholder_png())
-            } else {
-                get_placeholder_png()
-            }
-        } else {
-            get_placeholder_png()
-        };
+        let base_bytes = profile
+            .avatar_png_bytes()
+            .unwrap_or_else(get_placeholder_png);
 
         let enriched_png = inject_character_metadata_png(&base_bytes, &card)?;
         fs::write(target_path, enriched_png)
@@ -1124,6 +1145,7 @@ mod tests {
             }))
             .unwrap(),
             avatar_data_url: None,
+            avatar_path: None,
             source_path: None,
             bound_lorebooks: Vec::new(),
         }
@@ -1162,6 +1184,7 @@ mod tests {
             id: "export".into(),
             card,
             avatar_data_url: None,
+            avatar_path: None,
             source_path: None,
             bound_lorebooks: Vec::new(),
         };
@@ -1347,7 +1370,7 @@ mod tests {
                 load_character_from_file(&json_path).expect("Failed to load shiori_amane.json");
             assert_eq!(profile.card.data.name, "Shiori Amane");
             // Das Porträt liegt als relativer Pfad neben der JSON-Karte.
-            assert!(profile.avatar_data_url.is_some());
+            assert!(profile.avatar_path.is_some());
         }
     }
 
@@ -1367,7 +1390,7 @@ mod tests {
             let profile = load_character_from_file(&dir.join(format!("{slug}.json")))
                 .unwrap_or_else(|e| panic!("{slug}: {e}"));
             assert_eq!(profile.card.data.name, name);
-            assert!(profile.avatar_data_url.is_some(), "{slug}: Avatar fehlt");
+            assert!(profile.avatar_path.is_some(), "{slug}: Avatar fehlt");
             let expressions = profile.card.data.extensions["expressions"]
                 .as_object()
                 .unwrap();
@@ -1401,7 +1424,7 @@ mod tests {
             let profile = load_character_from_file(&dir.join(format!("{slug}.json")))
                 .unwrap_or_else(|e| panic!("{slug}: {e}"));
             assert_eq!(profile.card.data.name, name);
-            assert!(profile.avatar_data_url.is_some(), "{slug}: Avatar fehlt");
+            assert!(profile.avatar_path.is_some(), "{slug}: Avatar fehlt");
             let voice_desc = profile.card.data.extensions["otakusoul_voice"]["description"]
                 .as_str()
                 .unwrap_or_default();

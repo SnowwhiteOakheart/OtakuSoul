@@ -9,6 +9,7 @@ import type { TalkingPortraitStatus } from '../types/generated/TalkingPortraitSt
 import type { TalkingSet } from '../types/generated/TalkingSet';
 import type { HubAvatarInstalled } from '../types/generated/HubAvatarInstalled';
 import { invoke } from '@tauri-apps/api/core';
+import { bumpAvatarRevision, forBackend, withAvatarUrl } from '../utils/characterAvatar';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import {
   HardwareInfo,
@@ -146,6 +147,12 @@ import {
   ChatStyle,
 } from '../types';
 
+/** An imported card shows its picture like a scanned one (see `withAvatarUrl`). */
+const importResult = (result: CharacterImportResult): CharacterImportResult => {
+  bumpAvatarRevision();
+  return { ...result, profile: withAvatarUrl(result.profile) };
+};
+
 export const api = {
   // Hardware
   getHardwareInfo: async (): Promise<HardwareInfo> => {
@@ -205,7 +212,7 @@ export const api = {
 
   // Character Cards & Lorebooks (Phase 3)
   loadCharacterCard: async (filePath: string): Promise<CharacterProfile> => {
-    return await invoke<CharacterProfile>('load_character_card', { filePath });
+    return withAvatarUrl(await invoke<CharacterProfile>('load_character_card', { filePath }));
   },
 
   loadLorebook: async (filePath: string): Promise<Lorebook> => {
@@ -506,8 +513,10 @@ export const api = {
   setStageNpcActive: (sceneId: string, npcId: string, active: boolean): Promise<SceneState> =>
     invoke('stage_set_npc_active', { sceneId, npcId, active }),
 
-  promoteStageNpc: (sceneId: string, npcId: string): Promise<StageNpcPromotion> =>
-    invoke('stage_promote_npc', { sceneId, npcId }),
+  promoteStageNpc: async (sceneId: string, npcId: string): Promise<StageNpcPromotion> => {
+    const promotion = await invoke<StageNpcPromotion>('stage_promote_npc', { sceneId, npcId });
+    return { ...promotion, character: withAvatarUrl(promotion.character) };
+  },
 
   getStageState: async (): Promise<StageState> => {
     return await invoke<StageState>('get_stage_state');
@@ -968,7 +977,7 @@ export const api = {
   },
 
   scanCharacters: async (): Promise<CharacterProfile[]> => {
-    return await invoke<CharacterProfile[]>('scan_characters');
+    return (await invoke<CharacterProfile[]>('scan_characters')).map(withAvatarUrl);
   },
 
   scanModels: async (): Promise<ScannedModel[]> => {
@@ -1063,7 +1072,9 @@ export const api = {
   saveCharacterCard: async (
     profile: CharacterProfile
   ): Promise<CharacterProfile> => {
-    return await invoke<CharacterProfile>('save_character_card', { profile });
+    const saved = await invoke<CharacterProfile>('save_character_card', { profile: forBackend(profile) });
+    bumpAvatarRevision();
+    return withAvatarUrl(saved);
   },
 
   exportCharacterCard: async (
@@ -1072,7 +1083,7 @@ export const api = {
     exportAsPng: boolean
   ): Promise<void> => {
     return await invoke<void>('export_character_card', {
-      profile,
+      profile: forBackend(profile),
       targetPath,
       exportAsPng,
     });
@@ -1610,14 +1621,14 @@ export const api = {
     revision = 1,
     updated = ''
   ): Promise<CharacterImportResult> => {
-    return await invoke<CharacterImportResult>('import_soul_gateway_character', {
+    return importResult(await invoke<CharacterImportResult>('import_soul_gateway_character', {
       name,
       author,
       downloadUrl,
       overwrite,
       revision,
       updated,
-    });
+    }));
   },
 
   searchChubCharacters: async (
@@ -1643,16 +1654,16 @@ export const api = {
   },
 
   importChubCharacter: async (fullPath: string, overwrite = false): Promise<CharacterImportResult> => {
-    return await invoke<CharacterImportResult>('import_chub_character', { fullPath, overwrite });
+    return importResult(await invoke<CharacterImportResult>('import_chub_character', { fullPath, overwrite }));
   },
 
   importCharacterFromUrl: async (url: string, overwrite = false): Promise<CharacterImportResult> => {
-    return await invoke<CharacterImportResult>('import_character_from_url', { url, overwrite });
+    return importResult(await invoke<CharacterImportResult>('import_character_from_url', { url, overwrite }));
   },
 
   /** Imports a card file; a character of the same name is only replaced with `overwrite`. */
   importCharacterFile: async (filePath: string, overwrite = false): Promise<CharacterImportResult> => {
-    return await invoke<CharacterImportResult>('import_character_file', { filePath, overwrite });
+    return importResult(await invoke<CharacterImportResult>('import_character_file', { filePath, overwrite }));
   },
 
   fetchLorebooksGatewayRegistry: async (): Promise<GatewayLorebookEntry[]> => {
@@ -1892,7 +1903,8 @@ export const api = {
   },
 
   createCharacterFromDraft: async (draft: CharacterDraft): Promise<CharacterProfile> => {
-    return await invoke<CharacterProfile>('create_character_from_draft', { draft });
+    bumpAvatarRevision();
+    return withAvatarUrl(await invoke<CharacterProfile>('create_character_from_draft', { draft }));
   },
 
   generateCharacterDraftLlm: async (
