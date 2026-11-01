@@ -697,6 +697,7 @@
   "characterPreview.open": "{{name}}の詳細",
   "characterPreview.starter": "はじめての方におすすめ",
   "library.starterTitle": "スターターキャラクター",
+  "library.ownCharacters": "あなたのキャラクター",
   "library.starterText_one": "アプリに付属する{{count}}人のキャラクター。最初のチャットにぴったりです。彼らのストーリーはStageの「スターターストーリー」にあります。",
   "library.starterText_few": "アプリに付属する{{count}}人のキャラクター。最初のチャットにぴったりです。彼らのストーリーはStageの「スターターストーリー」にあります。",
   "library.starterText_many": "アプリに付属する{{count}}人のキャラクター。最初のチャットにぴったりです。彼らのストーリーはStageの「スターターストーリー」にあります。",

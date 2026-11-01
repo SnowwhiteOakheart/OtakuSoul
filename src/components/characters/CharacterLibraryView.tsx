@@ -109,21 +109,143 @@ export const CharacterLibraryView = () => {
   const [previewing, setPreviewing] = useState<CharacterProfile | null>(null);
 
   const { ref: parentRef, cols } = useGridCols({ 640: 2, 768: 3, 1024: 4, 1280: 5 }, 1);
-  // The starter characters come first; a cover above them introduces them.
-  const starterCount = filteredCharacters.filter(isStarterCharacter).length;
-  // The banner pushes the grid down: the virtualizer counts from the grid's top.
+  // The starter characters sit in their own framed block under the cover; the user's other
+  // characters follow in the virtualized grid, starting on a row of their own.
+  const starters = useMemo(() => filteredCharacters.filter(isStarterCharacter), [filteredCharacters]);
+  const others = useMemo(() => filteredCharacters.filter((char) => !isStarterCharacter(char)), [filteredCharacters]);
+  // One column more in the starter block when that fits them all into a single row (4 starters
+  // at 3 columns), instead of leaving one card alone on a second row.
+  const starterCols = starters.length === cols + 1 ? cols + 1 : cols;
+  // The starter block pushes the grid down: the virtualizer counts from the grid's top.
   const gridRef = useRef<HTMLDivElement>(null);
   useDragScroll(parentRef);
-  const scrollMargin = useScrollMargin(parentRef, gridRef, `${starterCount > 0}|${filteredCharacters.length === 0}`);
+  const scrollMargin = useScrollMargin(parentRef, gridRef, `${starters.length}|${others.length > 0}|${filteredCharacters.length === 0}`);
   // oxlint-disable-next-line react/incompatible-library
   const rowVirtualizer = useVirtualizer({
-    count: Math.ceil(filteredCharacters.length / cols),
+    count: Math.ceil(others.length / cols),
     getScrollElement: () => parentRef.current,
     estimateSize: () => 380, // rough height of a card + gap
     overscan: 2,
     scrollMargin,
   });
 
+
+  /** One character card (starter block and grid). */
+  const renderCard = (char: CharacterProfile) => {
+    // Cards are shown in the interface language; {{char}}/{{user}} become real names.
+    const data = localizeCard(char.card.data, currentLanguage);
+    const isActive = activeCharacter?.id === char.id;
+    const title = (data.extensions?.custom_title as string) || (data.extensions?.sow_title as string) || data.tags?.[0] || t('library.defaultTitle');
+
+    return (
+      <div
+        key={char.id}
+        className={`group rounded-2xl border flex flex-col overflow-hidden bg-slate-900/70 transition-all duration-200 hover:border-accent-500/60 hover:shadow-xl hover:shadow-accent-950/20 ${
+          isActive
+            ? 'border-accent-500/80 shadow-md shadow-accent-950/40 ring-1 ring-accent-500/50'
+            : 'border-slate-800'
+        }`}
+      >
+        {/* Avatar Image Header: opens the preview */}
+        <div className="aspect-[4/5] w-full bg-app relative overflow-hidden flex items-center justify-center">
+          <button
+            type="button"
+            onClick={() => setPreviewing(char)}
+            aria-label={t('characterPreview.open', { name: data.name })}
+            title={t('characterPreview.open', { name: data.name })}
+            className="absolute inset-0 z-0 cursor-pointer outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-400"
+          />
+          {char.avatar_data_url ? (
+            <img
+              src={char.avatar_data_url}
+              alt={data.name}
+              decoding="async"
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+          ) : (
+            <div className="w-20 h-20 rounded-full bg-linear-to-tr from-accent-600 to-indigo-600 flex items-center justify-center text-white font-bold text-2xl shadow-inner">
+              {data.name.charAt(0)}
+            </div>
+          )}
+
+          <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-app via-app/20 to-transparent" />
+          {isActive && (
+            <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-emerald-700 text-white text-xs font-bold flex items-center gap-1 shadow-md">
+              <CheckCircle2 className="w-3 h-3" />
+              <span>{t('library.active')}</span>
+            </div>
+          )}
+
+          {/* Card actions: shown on hover and on keyboard focus */}
+          <div className="absolute top-2.5 right-2.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+            <button
+              onClick={() => openEditor(char)}
+              className={`${CARD_ACTION_BUTTON} hover:bg-accent-600`}
+              title={t('library.edit', { name: data.name })}
+              aria-label={t('library.edit', { name: data.name })}
+            >
+              <Edit className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => handleExportCard(char, 'png')}
+              className={`${CARD_ACTION_BUTTON} hover:bg-cyan-600`}
+              title={t('library.exportPng', { name: data.name })}
+              aria-label={t('library.exportPng', { name: data.name })}
+            >
+              <Download className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => handleDeleteCard(char)}
+              className={`${CARD_ACTION_BUTTON} hover:bg-rose-600`}
+              title={t('library.delete', { name: data.name })}
+              aria-label={t('library.delete', { name: data.name })}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="pointer-events-none absolute bottom-2.5 left-3 right-3">
+            <div className="text-sm font-bold text-slate-100 line-clamp-1 group-hover:text-accent-300 transition-colors">
+              {data.name}
+            </div>
+            <div className="text-xs text-slate-400 line-clamp-1">{title}</div>
+          </div>
+        </div>
+
+        <div className="p-3.5 flex-1 flex flex-col justify-between gap-3 text-xs">
+          <p className="text-slate-400 text-xs line-clamp-2">
+            {fillCardMacros(data.description || data.personality, data.name, activePersona.name) ||
+              t('library.noDescription')}
+          </p>
+
+          {data.tags && data.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {data.tags.slice(0, 3).map((tag, idx) => (
+                <span
+                  key={idx}
+                  className="text-[11px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700/60"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+
+          <button
+            onClick={() => handleSelectAndChat(char)}
+            className={`w-full py-1.5 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
+              isActive
+                ? 'bg-accent-600 hover:bg-accent-500 text-white shadow-accent-900/40'
+                : 'bg-slate-800 hover:bg-accent-600/30 text-slate-300 hover:text-accent-200 border border-slate-700/80 hover:border-accent-500/50'
+            }`}
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            <span>{isActive ? t('library.openChat') : t('library.selectAndChat')}</span>
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   const openEditor = (character: CharacterProfile | null) => {
     setEditingCharacter(character);
@@ -333,22 +455,33 @@ export const CharacterLibraryView = () => {
           />
         ) : (
           <>
-          {starterCount > 0 && <StarterBanner count={starterCount} />}
+          {starters.length > 0 && (
+            <StarterBanner count={starters.length}>
+              <div className="grid gap-5" style={{ gridTemplateColumns: `repeat(${starterCols}, minmax(0, 1fr))` }}>
+                {starters.map(renderCard)}
+              </div>
+            </StarterBanner>
+          )}
+          {starters.length > 0 && others.length > 0 && (
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">{t('library.ownCharacters')}</h2>
+          )}
           <div
             ref={gridRef}
             style={{ height: `${rowVirtualizer.getTotalSize()}px`, width: '100%', position: 'relative' }}
           >
             {rowVirtualizer.getVirtualItems().map((virtualRow) => {
               const startIndex = virtualRow.index * cols;
-              const rowItems = filteredCharacters.slice(startIndex, startIndex + cols);
+              const rowItems = others.slice(startIndex, startIndex + cols);
 
               return (
                 <div
                   key={virtualRow.index}
                   ref={rowVirtualizer.measureElement}
                   data-index={virtualRow.index}
-                  className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5"
+                  className="grid gap-5"
                   style={{
+                    // Same column count for layout and row slicing (both from the container width).
+                    gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
                     position: 'absolute',
                     top: 0,
                     left: 0,
@@ -357,129 +490,7 @@ export const CharacterLibraryView = () => {
                     paddingBottom: '20px', // gap substitute since grid parent doesn't handle vertical gap between virtual rows
                   }}
                 >
-                  {rowItems.map((char) => {
-
-              // Cards are shown in the interface language; {{char}}/{{user}} become real names.
-              const data = localizeCard(char.card.data, currentLanguage);
-              const isActive = activeCharacter?.id === char.id;
-              const title = (data.extensions?.custom_title as string) || (data.extensions?.sow_title as string) || data.tags?.[0] || t('library.defaultTitle');
-
-              return (
-                <div
-                  key={char.id}
-                  className={`group rounded-2xl border flex flex-col overflow-hidden bg-slate-900/70 transition-all duration-200 hover:border-accent-500/60 hover:shadow-xl hover:shadow-accent-950/20 ${
-                    isActive
-                      ? 'border-accent-500/80 shadow-md shadow-accent-950/40 ring-1 ring-accent-500/50'
-                      : 'border-slate-800'
-                  }`}
-                >
-                  {/* Avatar Image Header: opens the preview */}
-                  <div className="aspect-[4/5] w-full bg-app relative overflow-hidden flex items-center justify-center">
-                    <button
-                      type="button"
-                      onClick={() => setPreviewing(char)}
-                      aria-label={t('characterPreview.open', { name: data.name })}
-                      title={t('characterPreview.open', { name: data.name })}
-                      className="absolute inset-0 z-0 cursor-pointer outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-400"
-                    />
-                    {char.avatar_data_url ? (
-                      <img
-                        src={char.avatar_data_url}
-                        alt={data.name}
-                        decoding="async"
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="w-20 h-20 rounded-full bg-linear-to-tr from-accent-600 to-indigo-600 flex items-center justify-center text-white font-bold text-2xl shadow-inner">
-                        {data.name.charAt(0)}
-                      </div>
-                    )}
-
-                    <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-app via-app/20 to-transparent" />
-
-                    {!isActive && isStarterCharacter(char) && (
-                      <div className="pointer-events-none absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-accent-600/90 text-white text-[11px] font-semibold shadow-md">
-                        {t('characterPreview.starter')}
-                      </div>
-                    )}
-                    {isActive && (
-                      <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-emerald-700 text-white text-xs font-bold flex items-center gap-1 shadow-md">
-                        <CheckCircle2 className="w-3 h-3" />
-                        <span>{t('library.active')}</span>
-                      </div>
-                    )}
-
-                    {/* Card actions: shown on hover and on keyboard focus */}
-                    <div className="absolute top-2.5 right-2.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => openEditor(char)}
-                        className={`${CARD_ACTION_BUTTON} hover:bg-accent-600`}
-                        title={t('library.edit', { name: data.name })}
-                        aria-label={t('library.edit', { name: data.name })}
-                      >
-                        <Edit className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleExportCard(char, 'png')}
-                        className={`${CARD_ACTION_BUTTON} hover:bg-cyan-600`}
-                        title={t('library.exportPng', { name: data.name })}
-                        aria-label={t('library.exportPng', { name: data.name })}
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteCard(char)}
-                        className={`${CARD_ACTION_BUTTON} hover:bg-rose-600`}
-                        title={t('library.delete', { name: data.name })}
-                        aria-label={t('library.delete', { name: data.name })}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-
-                    <div className="pointer-events-none absolute bottom-2.5 left-3 right-3">
-                      <div className="text-sm font-bold text-slate-100 line-clamp-1 group-hover:text-accent-300 transition-colors">
-                        {data.name}
-                      </div>
-                      <div className="text-xs text-slate-400 line-clamp-1">{title}</div>
-                    </div>
-                  </div>
-
-                  <div className="p-3.5 flex-1 flex flex-col justify-between gap-3 text-xs">
-                    <p className="text-slate-400 text-xs line-clamp-2">
-                      {fillCardMacros(data.description || data.personality, data.name, activePersona.name) ||
-                        t('library.noDescription')}
-                    </p>
-
-                    {data.tags && data.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {data.tags.slice(0, 3).map((tag, idx) => (
-                          <span
-                            key={idx}
-                            className="text-[11px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700/60"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    <button
-                      onClick={() => handleSelectAndChat(char)}
-                      className={`w-full py-1.5 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
-                        isActive
-                          ? 'bg-accent-600 hover:bg-accent-500 text-white shadow-accent-900/40'
-                          : 'bg-slate-800 hover:bg-accent-600/30 text-slate-300 hover:text-accent-200 border border-slate-700/80 hover:border-accent-500/50'
-                      }`}
-                    >
-                      <MessageSquare className="w-3.5 h-3.5" />
-                      <span>{isActive ? t('library.openChat') : t('library.selectAndChat')}</span>
-                    </button>
-                  </div>
-                </div>
-              );
-            
-                  })}
+                  {rowItems.map(renderCard)}
                 </div>
               );
             })}

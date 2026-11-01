@@ -696,6 +696,7 @@
   "characterPreview.open": "More about {{name}}",
   "characterPreview.starter": "Good to start with",
   "library.starterTitle": "Starter characters",
+  "library.ownCharacters": "Your characters",
   "library.starterText_one": "{{count}} character that comes with the app – ideal for your first chat. Their stories are in Stage under “Starter stories”.",
   "library.starterText_few": "{{count}} characters that come with the app – ideal for your first chat. Their stories are in Stage under “Starter stories”.",
   "library.starterText_many": "{{count}} characters that come with the app – ideal for your first chat. Their stories are in Stage under “Starter stories”.",
