@@ -169,23 +169,36 @@ export function bodyPose({ t, leftArm, rightArm, walkPhase, sway, look }: BodyIn
 export const FLOOR_SIT_HIPS = 0.09;
 
 /**
- * Sitting on the ground, facing the viewer: legs forward (one stretched, the other knee drawn up
- * a little), the back leaning slightly forward; the arms keep hanging beside the body, so the
- * hands rest near the ground. `leftArm` is the rig's X direction (VRM 0.x may flip it), which
- * sets where "outwards" and "forwards" are for the legs. Laid out for the leg proportions of `LEG_SHARE` with
- * the hips at `FLOOR_SIT_HIPS`: the feet stay just above the ground.
+ * Sitting on the ground, facing the viewer, knees drawn up and closed with the arms around them:
+ * a calm pose that keeps the lap covered and stays compact towards the camera (legs stretched
+ * forward came at the viewer and got cut off by the window edge). The back leans forward, the
+ * head looks up again. `leftArm` is the rig's X direction (VRM 0.x may flip it), which sets where
+ * "inwards" and "forwards" are. Laid out for the leg proportions of `LEG_SHARE` with the hips at
+ * `FLOOR_SIT_HIPS`: thighs rise to the knees, the shins come down so the feet stand flat just
+ * in front of the hips.
  */
 export function floorSitPose(leftArm: number): BodyPose {
   const out = Math.sign(leftArm) || 1;
+  const thigh = -2.2;
+  const knee = 2.6;
   const pose: BodyPose = {
-    spine: [0.12, 0, 0],
-    chest: [0.05, 0, 0],
-    leftUpperLeg: [-1.5, 0, out * 0.12],
-    leftLowerLeg: [0.08, 0, 0],
-    leftFoot: [0.3, 0, 0],
-    rightUpperLeg: [-1.75, 0, -out * 0.1],
-    rightLowerLeg: [0.5, 0, 0],
-    rightFoot: [0.2, 0, 0],
+    spine: [0.22, 0, 0],
+    chest: [0.1, 0, 0],
+    neck: [-0.2, 0, 0],
+    // Knees together (a little inwards), feet flat on the ground.
+    leftUpperLeg: [thigh, 0, -out * 0.04],
+    leftLowerLeg: [knee, 0, 0],
+    leftFoot: [-(thigh + knee), 0, 0],
+    rightUpperLeg: [thigh, 0, out * 0.04],
+    rightLowerLeg: [knee, 0, 0],
+    rightFoot: [-(thigh + knee), 0, 0],
+    // Arms forward and down to the knees, elbows bent round them.
+    leftUpperArm: [-0.8, 0, -out * 1.25],
+    leftLowerArm: [0, -out * 1.1, 0],
+    leftHand: [0, 0, 0],
+    rightUpperArm: [-0.8, 0, out * 1.25],
+    rightLowerArm: [0, out * 1.1, 0],
+    rightHand: [0, 0, 0],
   };
   return forFacing(pose, out);
 }
