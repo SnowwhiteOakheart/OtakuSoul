@@ -52,6 +52,11 @@ export interface AvatarViewerProps {
 
 /** On the ground the hip joint sits this far (share of the model height) below the ankles. */
 const SEAT_BELOW_ANKLES = 0.05;
+/**
+ * The ankles aim this far (share of the model height) below their standing height: at exactly
+ * that height the shoes still floated a little (legs not quite straight down in the rest pose).
+ */
+const FEET_BELOW_ANKLES = 0.04;
 const VISEME_KEYS = Object.keys(SILENT_VISEMES) as (keyof Visemes)[];
 const EXPRESSION_WEIGHTS: Record<string, number> = { happy: 0.9, angry: 0.8, sad: 0.7, surprised: 0.8, relaxed: 0.6 };
 
@@ -348,7 +353,7 @@ export const VrmViewer = ({
         const angles = edge
           ? EDGE_SIT_LEGS
           : legs
-            ? legReach(legs, 0.55 * (legs.thigh + legs.shin), hipTarget - legs.ankleY)
+            ? legReach(legs, 0.55 * (legs.thigh + legs.shin), hipTarget - (legs.ankleY - FEET_BELOW_ANKLES * modelHeight))
             : undefined;
         for (const [bone, [x, y, z]] of Object.entries(floorSitPose(leftArmDirection, angles, edge))) {
           const node = model.humanoid.getNormalizedBoneNode(bone as BodyBone);
