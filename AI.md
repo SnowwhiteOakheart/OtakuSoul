@@ -475,6 +475,15 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
 
 ### 4. Stage (Rollenspiel), GM-Director, NPCs & Story-Galerie
 
+- Stimmungsmusik (`modules/stage_music.rs`, `services/stageMusic.ts`, `stage/useStageMusic.ts`, `StageMusicModal.tsx`):
+  Titel liegen in `<Daten>/music/<stimmung>/` (Stimmungen `stage_music::MOODS` = `MUSIC_MOODS`, OGG/OPUS/MP3/WAV/FLAC) und
+  laufen per Asset-Protokoll (`convertFileSrc`, kein Base64). Der Planer setzt `GmPlan.music_mood` →
+  `SceneState.current_music_mood`; ein laufender Kampf hat Vorrang (`sceneMood`: lebender `role: "boss"` oder Planer-„boss“
+  → Bosskampf, sonst Kampf; nach dem Kampf keine Kampfmusik mehr). Fehlt einer Stimmung Musik, springt eine verwandte ein
+  (`playableMood`). Überblenden 3 s bei Stimmungswechsel, 1,5 s zum nächsten Titel derselben Stimmung. Globales Stumm und
+  der Schalter (`otakusoul.stageMusic`, Lautstärke `otakusoul.stageMusicVolume`) stoppen sie. Pakete: `music_registry.json`
+  (mitgeliefert leer, Hub-Kopie nur bei höherer `version`), Titel per Quelle + SHA-256, nach dem Download
+  `<Daten>/music/<paket>-lizenz.txt`.
 - Stage streamt über `stage-stream` (`InferenceClient::stream_text`), nicht über `llm-token` (das hört der Chat).
   `stage/history.rs` passt alle Sprecher-Anfragen ins Kontextfenster ein und speichert Zusammenfassungen getrennt
   nach Publikum (`history_summaries`); Änderungen am Verlauf müssen diese verwerfen.

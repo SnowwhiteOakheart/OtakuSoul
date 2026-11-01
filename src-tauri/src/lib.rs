@@ -170,6 +170,7 @@ pub fn run() {
             tauri::async_runtime::spawn(modules::inochi2d::refresh_registry());
             tauri::async_runtime::spawn(modules::motion_packs::refresh_registry());
             tauri::async_runtime::spawn(modules::avatar_hub::refresh_registry());
+            tauri::async_runtime::spawn(modules::stage_music::refresh_registry());
             tauri::async_runtime::spawn(modules::vroid_hub::sync());
             allow_app_asset_dirs(app);
             create_main_window(app)?;
@@ -380,6 +381,10 @@ pub fn run() {
             commands::stage::list_stage_assets,
             commands::stage::import_stage_asset,
             commands::stage::get_stage_ambient_audio,
+            commands::stage::list_stage_music,
+            commands::stage::open_stage_music_folder,
+            commands::stage::get_music_packs,
+            commands::stage::download_music_pack,
             commands::stage::delete_stage_scene,
             commands::stage::export_stage_markdown,
             commands::stage::stage_list_folders,

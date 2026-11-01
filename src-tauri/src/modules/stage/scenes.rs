@@ -147,6 +147,7 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
             None
         },
         current_ambient: ambient_name(&def.starting_ambient),
+        current_music_mood: None,
         arc_archive: Vec::new(),
         turns_since_audit: 0,
         overlays: Vec::new(),

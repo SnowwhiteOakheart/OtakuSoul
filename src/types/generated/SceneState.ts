@@ -24,6 +24,11 @@ export type SceneState = { definition: SceneDefinition, world: WorldState, clock
  */
 current_ambient: string | null, 
 /**
+ * Mood of the Stage music the game master picked last (`stage_music::MOODS`); a fight
+ * overrides it in the interface.
+ */
+current_music_mood: string | null, 
+/**
  * Summaries of resolved story arcs; the planner keeps them in mind instead of the open list.
  */
 arc_archive: Array<ArchivedArc>, 

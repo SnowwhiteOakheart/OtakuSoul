@@ -648,6 +648,10 @@ pub struct SceneState {
     /// Ambient sound playing now (file name); the scene's start value or the planner's pick.
     #[serde(default)]
     pub current_ambient: Option<String>,
+    /// Mood of the Stage music the game master picked last (`stage_music::MOODS`); a fight
+    /// overrides it in the interface.
+    #[serde(default)]
+    pub current_music_mood: Option<String>,
     /// Summaries of resolved story arcs; the planner keeps them in mind instead of the open list.
     #[serde(default)]
     pub arc_archive: Vec<ArchivedArc>,

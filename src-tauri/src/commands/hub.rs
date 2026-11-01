@@ -7,7 +7,8 @@ pub async fn refresh_hub_sources() {
     crate::modules::hub::pin_latest_commits().await;
     tokio::join!(
         crate::modules::avatar_hub::refresh_registry(),
-        crate::modules::inochi2d::refresh_registry()
+        crate::modules::inochi2d::refresh_registry(),
+        crate::modules::stage_music::refresh_registry()
     );
 }
 

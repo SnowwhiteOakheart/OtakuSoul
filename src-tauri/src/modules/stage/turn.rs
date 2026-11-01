@@ -262,6 +262,7 @@ Reply ONLY with a single valid JSON object in this format:
   "weather": null,
   "bg_image": null,
   "ambient_audio": null,
+  "music_mood": null,
   "next_actor": "{first_party_or_player}",
   "spawn_npcs": [],
   "despawn_npcs": [],
@@ -295,6 +296,7 @@ RULES:
 - despawn_npcs: names of NPCs who leave the scene. Their memories persist. Choose a present or newly spawned NPC as next_actor when they should speak.
 - bg_image: optionally the name of a fitting new background image (e.g. "Horizontal Elkia Grand Library.png"), or null.
 - ambient_audio: when the mood or place changes, one of these sound files: [{ambient_files}]; "None" for silence; otherwise null (keep the current one{current_ambient}).
+- music_mood: when the scene's mood shifts, one of [{music_moods}] ("boss" only for a climactic fight with a major villain); otherwise null (keep the current one{current_music}).
 - resource_delta: optional {{"target":"PLAYER or name", "hp_delta":-5, "stress_delta":10}}. HP and stress count outside combat too: wounds, exhaustion, fear and rest matter.
 - condition_updates: optional {{"target":"PLAYER or name", "add":"Poisoned", "turns":3}} or {{"target":"name", "remove":"Poisoned"}}; condition names in {reply_language}.
 - Private whispers and thoughts in the history are secret: never put their content into narration_plan or player_choices; only the whisper's recipient may react to it.
@@ -320,6 +322,12 @@ RULES:
             .current_ambient
             .as_deref()
             .map(|a| format!(": {a}"))
+            .unwrap_or_default(),
+        music_moods = crate::modules::stage_music::MOODS.join(", "),
+        current_music = state
+            .current_music_mood
+            .as_deref()
+            .map(|m| format!(": {m}"))
             .unwrap_or_default(),
         reply_language = reply_language,
         // The model copies the example badge as it is: in the player's language.
@@ -533,6 +541,16 @@ RULES:
                 }
             }
         }
+    }
+
+    // Only the known moods; anything else keeps the current music.
+    if let Some(mood) = gm_plan
+        .music_mood
+        .as_deref()
+        .map(|m| m.trim().to_lowercase())
+        && crate::modules::stage_music::MOODS.contains(&mood.as_str())
+    {
+        state.current_music_mood = Some(mood);
     }
 
     // Apply Clock updates

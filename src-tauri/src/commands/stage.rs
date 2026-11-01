@@ -142,6 +142,34 @@ pub fn get_stage_ambient_audio(name: String) -> Result<String, String> {
     crate::modules::stage::stage_ambient_data_url(&name)
 }
 
+/// The Stage's music files per mood (`<data>/music/<mood>/`).
+#[tauri::command(async)]
+pub fn list_stage_music() -> Vec<crate::modules::stage_music::StageMusicTrack> {
+    crate::modules::stage_music::list_tracks()
+}
+
+/// Opens the music folder (created with one subfolder per mood).
+#[tauri::command]
+pub fn open_stage_music_folder(app: tauri::AppHandle) -> Result<(), String> {
+    use tauri_plugin_opener::OpenerExt;
+    let dir = crate::modules::stage_music::prepare_dir()?;
+    app.opener()
+        .open_path(dir.to_string_lossy(), None::<&str>)
+        .map_err(|e| crate::err!("backend.common.openFolder", error = e))
+}
+
+/// Music packs of the data repository with how many of their tracks are downloaded.
+#[tauri::command(async)]
+pub fn get_music_packs(lang: String) -> Vec<crate::modules::stage_music::MusicPackInfo> {
+    crate::modules::stage_music::catalog(&lang)
+}
+
+/// Downloads the missing tracks of a music pack (SHA-256 checked); returns how many.
+#[tauri::command]
+pub async fn download_music_pack(pack_id: String) -> Result<u32, String> {
+    crate::modules::stage_music::download_pack(&pack_id).await
+}
+
 #[tauri::command(async)]
 pub fn import_stage_asset(file_path: String, kind: String) -> Result<String, String> {
     crate::modules::stage::import_stage_asset(&file_path, &kind)

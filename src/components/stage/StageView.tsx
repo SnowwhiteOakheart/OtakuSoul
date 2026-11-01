@@ -14,6 +14,9 @@ import { StoryGallery } from './StoryGallery';
 import { StoryWizard } from './StoryWizard';
 import { DropdownMenu } from '../ui/DropdownMenu';
 import { useStageAmbient } from './useStageAmbient';
+import { useStageMusic } from './useStageMusic';
+import { StageMusicModal } from './StageMusicModal';
+import { usePersistentFlag } from '../../hooks/usePersistentFlag';
 import { CharacterVoiceModal } from '../voice/CharacterVoiceModal';
 import { STAGE_NARRATOR_VOICE_ID } from '../../services/stageVoice';
 import { StageCampaignPanel } from './StageCampaignPanel';
@@ -42,6 +45,8 @@ import {
   Mic,
   Map as MapIcon,
   MoreHorizontal,
+  Music,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { SceneState } from '../../types';
@@ -171,6 +176,11 @@ export const StageView: React.FC = () => {
   const sceneAmbient = stageState?.definition.disable_ambient ? null : stageState?.current_ambient;
   const ambientOn = sceneAmbient ? ambientWanted && !isMuted : isAmbianceActive;
   useStageAmbient(sceneAmbient, ambientWanted && !isMuted);
+  // Mood music: the fight and the game master's pick choose it, the global mute silences it.
+  const [musicWanted, setMusicWanted] = usePersistentFlag('otakusoul.stageMusic', true);
+  const [showMusic, setShowMusic] = useState(false);
+  const music = useStageMusic(stageState, musicWanted && !isMuted);
+  const musicOn = musicWanted && !isMuted && music.mood !== null;
   /* oxlint-disable react/set-state-in-effect -- the synthesized campfire is an external audio source. */
   useEffect(() => {
     // A scene sound replaces the synthesized campfire.
@@ -533,6 +543,36 @@ export const StageView: React.FC = () => {
             </span>
           </button>
 
+          <div className="flex items-center">
+            <button
+              type="button"
+              data-testid="stage-music-toggle"
+              // Without any music the button explains where it comes from.
+              onClick={() => (music.hasMusic ? setMusicWanted(!musicWanted) : setShowMusic(true))}
+              className={`flex items-center gap-1.5 pl-2.5 pr-2 py-1.5 rounded-l-xl text-xs font-semibold border transition ${
+                musicOn
+                  ? 'bg-accent-600/30 text-accent-200 border-accent-500/50'
+                  : 'bg-slate-800/80 text-slate-400 border-slate-700 hover:text-slate-200'
+              }`}
+              title={t('stageMusic.buttonHint')}
+              aria-pressed={musicOn}
+            >
+              <Music className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">
+                {musicOn && music.mood ? t(`stageMusic.mood.${music.mood}` as 'stageMusic.mood.calm') : t('stageMusic.button')}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowMusic(true)}
+              title={t('stageMusic.settings')}
+              aria-label={t('stageMusic.settings')}
+              className="px-1.5 py-1.5 rounded-r-xl text-xs border border-l-0 border-slate-700 bg-slate-800/80 text-slate-400 hover:text-slate-200 transition"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
           <button
             onClick={() => setStageReadAloud(!stageReadAloud)}
             aria-pressed={stageReadAloud}
@@ -776,6 +816,17 @@ export const StageView: React.FC = () => {
       )}
 
       {/* Modal: New Clock */}
+      {showMusic && (
+        <StageMusicModal
+          onClose={() => setShowMusic(false)}
+          enabled={musicWanted}
+          onEnabledChange={setMusicWanted}
+          wanted={music.wanted}
+          mood={music.mood}
+          trackCount={music.trackCount}
+          onReload={music.reload}
+        />
+      )}
       {showClockModal && (
         <ModalOverlay onClose={() => setShowClockModal(false)} aria-labelledby="new-clock-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <form

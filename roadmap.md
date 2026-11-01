@@ -187,7 +187,7 @@
 - [ ] **Hörbuch-Kapitel-Export:** Fügt die generierten Sprachdateien (Erzählerstimme + Charakterstimmen) eines Kapitels automatisch zu einer durchgängigen Audiodatei zusammen.
 
 ### 🎭 „Puppenspieler & Regisseur“: Dynamische Musik-Dramaturgie & Kartenbau für die Stage
-- [ ] **Stimmungs- & phasenabhängiger Soundtrack:** Automatisches Crossfading von Hintergrundmusik und Ambient-Loops (z. B. „Taverne“, „Spannung“, „Bosskampf“, „Romantik“) anhand der erkannten `[emotion: …]`-Tags und 5e-Kampfevents (`CombatEvent`).
+- [ ] **Musikpaket für die Stimmungsmusik:** Die Stimmungsmusik der Stage ist eingebaut (1.11.2026: Ordner je Stimmung, Planer + Kampf/Boss, Überblenden, Paket-Download). Offen: ein CC0-/CC-BY-Paket in `otakusoul-data/music_registry.json` eintragen (Quelle, SHA-256, `size_bytes`, Lizenz; mindestens calm, tavern, tension, combat, boss) und die Ambient-Loops ebenfalls weich überblenden.
 - [ ] **1-Klick-Battlemap-Generierung aus Text:** Wenn der Spielleiter einen neuen Ort improvisiert, erzeugt `stable-diffusion.cpp` eine Top-Down-Karte, aus deren Helligkeits-/Strukturwerten automatisch Wände, Hindernisse und Sichtlinien für die 5e-Engine abgeleitet werden.
 
 ### 💌 Tagebuch-Synchronisation & Cozy-Lebensbegleiter (Real-Life Companion)

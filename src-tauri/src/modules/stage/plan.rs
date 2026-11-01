@@ -193,6 +193,9 @@ pub struct GmPlan {
     pub bg_image: Option<String>,
     #[serde(default)]
     pub ambient_audio: Option<String>,
+    /// Mood of the Stage music (`stage_music::MOODS`); null keeps the current one.
+    #[serde(default)]
+    pub music_mood: Option<String>,
     #[serde(default)]
     pub next_actor: Option<String>,
     #[serde(default)]

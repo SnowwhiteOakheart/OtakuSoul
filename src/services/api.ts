@@ -100,6 +100,8 @@ import {
   Live2dCatalogItem,
   ScannedInochi2d,
   Inochi2dCatalogItem,
+  MusicPackInfo,
+  StageMusicTrack,
   Inochi2dMapping,
   AvatarKind,
   EmotionResult,
@@ -548,6 +550,26 @@ export const api = {
   /** The scene's ambient sound file as `data:` URL. */
   getStageAmbientAudio: async (name: string): Promise<string> => {
     return await invoke<string>('get_stage_ambient_audio', { name });
+  },
+
+  /** The Stage's music files per mood (`<data>/music/<mood>/`). */
+  listStageMusic: async (): Promise<StageMusicTrack[]> => {
+    return await invoke<StageMusicTrack[]>('list_stage_music');
+  },
+
+  /** Opens the music folder (with one subfolder per mood). */
+  openStageMusicFolder: async (): Promise<void> => {
+    return await invoke<void>('open_stage_music_folder');
+  },
+
+  /** Music packs of the data repository with their download state. */
+  getMusicPacks: async (lang: string): Promise<MusicPackInfo[]> => {
+    return await invoke<MusicPackInfo[]>('get_music_packs', { lang });
+  },
+
+  /** Downloads a music pack's missing tracks (SHA-256 checked); returns how many. */
+  downloadMusicPack: async (packId: string): Promise<number> => {
+    return await invoke<number>('download_music_pack', { packId });
   },
 
   importStageAsset: async (filePath: string, kind: 'backgrounds' | 'ambient'): Promise<string> => {

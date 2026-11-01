@@ -87,6 +87,8 @@ import type { KokoroInstallResult } from './generated/KokoroInstallResult';
 import type { LayerRecommendation } from './generated/LayerRecommendation';
 import type { Live2dCatalogItem } from './generated/Live2dCatalogItem';
 import type { Inochi2dCatalogItem } from './generated/Inochi2dCatalogItem';
+import type { MusicPackInfo } from './generated/MusicPackInfo';
+import type { StageMusicTrack } from './generated/StageMusicTrack';
 import type { ScannedInochi2d } from './generated/ScannedInochi2d';
 import type { Inochi2dMapping } from './generated/Inochi2dMapping';
 import type { Inochi2dChannel } from './generated/Inochi2dChannel';
@@ -224,6 +226,8 @@ export type {
   LayerRecommendation,
   Live2dCatalogItem,
   Inochi2dCatalogItem,
+  MusicPackInfo,
+  StageMusicTrack,
   ScannedInochi2d,
   Inochi2dMapping,
   Inochi2dChannel,
@@ -746,6 +750,8 @@ export interface SceneState {
   current_bg?: string | null;
   /** Ambient sound playing now (file name). */
   current_ambient?: string | null;
+  /** Stage music mood the game master picked last (`MUSIC_MOODS`); a fight overrides it. */
+  current_music_mood?: string | null;
   /** Summaries of resolved story arcs. */
   arc_archive?: ArchivedArc[];
   turns_since_audit?: number;
