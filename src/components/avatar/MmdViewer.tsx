@@ -11,7 +11,7 @@ import { translate, useTranslation } from '../../i18n';
 import { errorMessage } from '../../utils/errors';
 import type { AvatarMotion } from '../../types';
 import { AvatarMotionPlayer } from './vrmMotions';
-import { createAvatarStage, createBlinker } from './avatarStage';
+import { createAvatarStage, createBlinker, neverCull } from './avatarStage';
 import { loweredArm } from './avatarPose';
 import { AvatarViewerChrome } from './AvatarViewerChrome';
 import { useAvatarMotions } from './useAvatarMotions';
@@ -113,6 +113,7 @@ export const MmdViewer = ({
           return;
         }
         model.setScalar(MMD_TO_METRES);
+        neverCull(model.mesh);
         stage.scene.add(model.mesh);
         model.mesh.updateMatrixWorld(true);
 

@@ -473,3 +473,14 @@ export function createBlinker() {
     return 0;
   };
 }
+
+/**
+ * Skinned meshes are culled by their bounds in the rest pose. Once a pose moves a part far from
+ * there (feet while sitting or stepping, near the window edge) three.js drops it although it is
+ * on screen: shoes vanished. An avatar is a handful of meshes, so they are always drawn.
+ */
+export function neverCull(root: THREE.Object3D) {
+  root.traverse((node) => {
+    if ((node as THREE.Mesh).isMesh) node.frustumCulled = false;
+  });
+}

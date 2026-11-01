@@ -11,7 +11,7 @@ import { translate, useTranslation } from '../../i18n';
 import { errorMessage } from '../../utils/errors';
 import type { AvatarMotion } from '../../types';
 import { AvatarMotionPlayer } from './vrmMotions';
-import { createAvatarStage, createBlinker, type AvatarStage } from './avatarStage';
+import { createAvatarStage, createBlinker, neverCull, type AvatarStage } from './avatarStage';
 import { applyToonLook } from './toonLook';
 import { BoneFace } from './boneFace';
 import { loadGltfAvatar } from './gltfFile';
@@ -238,6 +238,7 @@ export const GltfViewer = ({
           return;
         }
         const scene = gltf.scene;
+        neverCull(scene);
         stage.scene.add(scene);
         // Exports in other units (centimetres, decimetres …) are brought to human size; models
         // between half a metre (chibi) and three metres keep theirs.
