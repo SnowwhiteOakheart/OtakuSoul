@@ -502,3 +502,11 @@
   backdrop-filter: none;
   background-color: rgb(0 0 0 / 80%);
 }
+/* While the panel scrolls (`data-scrolling`, set by HubView) no card reacts to the pointer:
+   no hover restyles as cards pass beneath it. Character cards keep repaints to themselves. */
+.hub-view [data-scrolling] > * {
+  pointer-events: none;
+}
+.hub-view [data-hub-character] {
+  contain: layout paint;
+}

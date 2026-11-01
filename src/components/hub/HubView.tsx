@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import { useDragScroll } from '../../hooks/useDragScroll';
 import { useShallow } from 'zustand/react/shallow';
 import { BookOpen, Compass, Dice5, Globe, Link as LinkIcon, RotateCcw, Search, Shirt, Sparkles, X, type LucideIcon } from 'lucide-react';
@@ -31,6 +31,32 @@ const reloadTab = (tab: HubTab) => {
   return { soul_gateway: hub.loadGateway, chub_ai: () => hub.loadChub(1, false), lorebooks: hub.loadLorebooks, scenes: hub.loadScenes }[tab]();
 };
 
+/**
+ * Marks the panel with `data-scrolling` while it scrolls. The CSS then turns off pointer events
+ * on its content, so cards passing under a resting pointer do not start hover effects.
+ */
+const useScrollingFlag = (ref: RefObject<HTMLElement | null>) => {
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    let timer = 0;
+    const onScroll = () => {
+      if (!timer) el.dataset.scrolling = '';
+      else window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        timer = 0;
+        delete el.dataset.scrolling;
+      }, 150);
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      window.clearTimeout(timer);
+      delete el.dataset.scrolling;
+    };
+  }, [ref]);
+};
+
 /** Hub: curated gateway content and the chub.ai archive, each in its own tab. */
 export const HubView = () => {
   const { t } = useTranslation();
@@ -48,6 +74,7 @@ export const HubView = () => {
   const [isUrlModalOpen, setIsUrlModalOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   useDragScroll(panelRef);
+  useScrollingFlag(panelRef);
   const activeTab = TABS.find((tab) => tab.id === hubSubTab) ?? TABS[0]!;
 
   return (

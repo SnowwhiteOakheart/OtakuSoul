@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useGridCols } from '../../../hooks/useGridCols';
 import { Users } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { translate, useTranslation } from '../../../i18n';
-import { hubStatus, matchesQuery, useHubStore } from '../hubStore';
+import { hubStatus, matchesQuery, useHubStore, type HubStatus } from '../hubStore';
 import { HubListState, HubStatusBadge, NsfwBadge, ImportButton, UpdateAllBar, hubButtonLabel } from '../hubParts';
 import { toast } from '../../ui/feedback';
 import { errorMessage } from '../../../utils/errors';
@@ -94,17 +94,20 @@ const GatewayCharacterGrid = ({ items, importingId, installed, onImport, hasGrou
   onImport: (character: GatewayCharacterEntry) => Promise<unknown>;
   hasGroups: boolean;
 }) => {
-  const { t } = useTranslation();
-  const statusOf = (char: GatewayCharacterEntry) => hubStatus(installed, 'character', char.name, char.revision);
   const { ref: gridRef, cols } = useGridCols(GRID_BREAKPOINTS, 2);
   // The collection cards above the grid push it down: the virtualizer counts from the grid's top.
   const scrollMargin = useScrollMargin('hub-tabpanel', gridRef, `${hasGroups}|${items.length > 0}`);
+  // The virtualizer renders on every scroll event: cards only render again when their own data changes.
+  const importRef = useRef(onImport);
+  importRef.current = onImport;
+  const handleImport = useCallback((char: GatewayCharacterEntry) => void importRef.current(char), []);
   // oxlint-disable-next-line react/incompatible-library
   const virtualizer = useVirtualizer({
     count: Math.ceil(items.length / cols),
     getScrollElement: () => document.getElementById('hub-tabpanel'),
     estimateSize: () => 360,
-    overscan: 2,
+    // Rows (and their pictures) are ready a few rows before they scroll into view.
+    overscan: 3,
     scrollMargin,
   });
 
@@ -132,45 +135,13 @@ const GatewayCharacterGrid = ({ items, importingId, installed, onImport, hasGrou
               }}
             >
               {rowItems.map((char) => (
-
-          <div
-            key={char.name}
-            className="group relative rounded-2xl bg-slate-900/60 border border-slate-800/80 hover:border-accent-500/50 transition-all p-3 flex flex-col justify-between overflow-hidden shadow-sm hover:shadow-accent-950/20"
-          >
-            <div>
-              <div className="aspect-[3/4] w-full rounded-xl bg-app overflow-hidden relative mb-2.5 border border-slate-800">
-                <img
-                  src={char.download_url}
-                  alt={char.name}
-                  loading="lazy"
-                  decoding="async"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                <GatewayCharacterCard
+                  key={char.name}
+                  char={char}
+                  status={hubStatus(installed, 'character', char.name, char.revision)}
+                  busy={importingId === char.name}
+                  onImport={handleImport}
                 />
-                <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded-md bg-black/80 text-[11px] text-accent-300 font-mono border border-white/10">
-                  {char.author}
-                </div>
-              </div>
-              <div className="mb-1">
-                <HubStatusBadge status={statusOf(char)} updated={char.updated} />
-                <NsfwBadge nsfw={char.nsfw} />
-              </div>
-              <h3 className="font-bold text-xs text-slate-100 truncate" title={char.name}>
-                {char.name}
-              </h3>
-              <p className="text-xs text-slate-400 truncate">
-                {t('hub.creator')}: <span className="text-accent-300">{char.author}</span>
-              </p>
-            </div>
-            <ImportButton
-              busy={importingId === char.name}
-              onClick={() => void onImport(char)}
-              label={hubButtonLabel(statusOf(char), t('hub.import'))}
-              status={statusOf(char)}
-              busyLabel={t('hub.importing')}
-              className="mt-3 w-full py-1.5 px-3 rounded-xl bg-accent-600 hover:bg-accent-500 disabled:bg-accent-900/50 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-sm"
-            />
-          </div>
-        
               ))}
             </div>
           );
@@ -178,3 +149,48 @@ const GatewayCharacterGrid = ({ items, importingId, installed, onImport, hasGrou
       </div>
   );
 };
+
+/** One character in the grid; no hover zoom so cards passing under the pointer stay cheap. */
+const GatewayCharacterCard = memo(({ char, status, busy, onImport }: {
+  char: GatewayCharacterEntry;
+  status: HubStatus;
+  busy: boolean;
+  onImport: (character: GatewayCharacterEntry) => void;
+}) => {
+  const { t } = useTranslation();
+  return (
+    <div
+      data-hub-character
+      className="group relative rounded-2xl bg-slate-900/60 border border-slate-800/80 hover:border-accent-500/50 transition-colors p-3 flex flex-col justify-between overflow-hidden shadow-sm"
+    >
+      <div>
+        <div className="aspect-[3/4] w-full rounded-xl bg-app overflow-hidden relative mb-2.5 border border-slate-800">
+          {/* No `loading="lazy"`: the virtualizer already limits the rows, and lazy loading
+              would start the download only shortly before the picture becomes visible. */}
+          <img src={char.download_url} alt={char.name} decoding="async" draggable={false} className="w-full h-full object-cover" />
+          <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded-md bg-black/80 text-[11px] text-accent-300 font-mono border border-white/10">
+            {char.author}
+          </div>
+        </div>
+        <div className="mb-1">
+          <HubStatusBadge status={status} updated={char.updated} />
+          <NsfwBadge nsfw={char.nsfw} />
+        </div>
+        <h3 className="font-bold text-xs text-slate-100 truncate" title={char.name}>
+          {char.name}
+        </h3>
+        <p className="text-xs text-slate-400 truncate">
+          {t('hub.creator')}: <span className="text-accent-300">{char.author}</span>
+        </p>
+      </div>
+      <ImportButton
+        busy={busy}
+        onClick={() => onImport(char)}
+        label={hubButtonLabel(status, t('hub.import'))}
+        status={status}
+        busyLabel={t('hub.importing')}
+        className="mt-3 w-full py-1.5 px-3 rounded-xl bg-accent-600 hover:bg-accent-500 disabled:bg-accent-900/50 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+      />
+    </div>
+  );
+});

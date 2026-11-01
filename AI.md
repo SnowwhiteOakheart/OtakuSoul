@@ -958,6 +958,9 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   dessen ResizeObserver bleibt über Scroll-Renders erhalten. Gruppierung/Update-Liste sind memoisiert, ebenso die
   Sammlungskarten. Scroll-Updates bleiben in `GatewayCharacterGrid`; die Galerie rendert dabei nicht neu.
   Hub-Sammlungskarten begrenzen Paints und verwenden keine Blur-/Bildzoom-Effekte (`App.css`).
+  Der Virtualizer rendert bei jedem Scroll-Ereignis: Figurenkarten sind daher `memo` (`GatewayCharacterCard`, stabiler
+  Import-Callback), ohne Bildzoom und ohne `loading="lazy"` (Overscan 3 Zeilen lädt die Bilder vorab). Während das Panel
+  scrollt, setzt `HubView` `data-scrolling`; das CSS schaltet dann Pointer-Events des Inhalts ab (keine Hover-Effekte).
   `e2e/hub-scroll.mjs` prüft 240 Figuren und 24 bebilderte Sammlungen bei zwei Fensterbreiten und begrenztem DOM.
   Gleichnamige Einträge aus beiden Repos (Jibril, Albedo, Mint) löst `collectionMembers` nach der Quelle
   der Sammlung auf (`nsfw`). Die Stage-Galerie zeigt Sammlungen ebenfalls (`galleryCollections` in `StoryGallery.tsx`):
