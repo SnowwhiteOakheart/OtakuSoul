@@ -956,7 +956,9 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   hat keinen Installationsstand. Auch der Charaktere-Tab gruppiert (virtualisiertes Raster mit `scrollMargin` unter den
   Sammlungskarten). Spaltenzahl und CSS-Raster verwenden dieselbe Containerbreite (`useGridCols`);
   dessen ResizeObserver bleibt über Scroll-Renders erhalten. Gruppierung/Update-Liste sind memoisiert, ebenso die
-  Sammlungskarten. `e2e/hub-scroll.mjs` prüft 240 Figuren mit Sammlung bei zwei Fensterbreiten und begrenztem DOM.
+  Sammlungskarten. Scroll-Updates bleiben in `GatewayCharacterGrid`; die Galerie rendert dabei nicht neu.
+  Hub-Sammlungskarten begrenzen Paints und verwenden keine Blur-/Bildzoom-Effekte (`App.css`).
+  `e2e/hub-scroll.mjs` prüft 240 Figuren und 24 bebilderte Sammlungen bei zwei Fensterbreiten und begrenztem DOM.
   Gleichnamige Einträge aus beiden Repos (Jibril, Albedo, Mint) löst `collectionMembers` nach der Quelle
   der Sammlung auf (`nsfw`). Die Stage-Galerie zeigt Sammlungen ebenfalls (`galleryCollections` in `StoryGallery.tsx`):
   mitgelieferte Starter-Geschichten (`story_*`) und das 5e-Abenteuer mit den Titelbildern aus `presets/stories/cover.webp`

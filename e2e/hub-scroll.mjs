@@ -1,6 +1,7 @@
 // Large hub catalog: virtual rows must use the actual grid columns, also after resizing.
 import assert from 'node:assert/strict';
 import path from 'node:path';
+import { readFileSync } from 'node:fs';
 import { launch, screenshotDir } from './harness.mjs';
 
 const total = 240;
@@ -9,19 +10,20 @@ const characters = Array.from({ length: total }, (_, i) => ({
   download_url: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="120" height="160"%3E%3Crect width="120" height="160" fill="%23475569"/%3E%3C/svg%3E',
   revision: 1,
 }));
+const cover = `data:image/webp;base64,${readFileSync(new URL('../presets/stories/cover.webp', import.meta.url)).toString('base64')}`;
 const { browser, close } = await launch({}, { hubFiles: {
   'soul_registry.json': { version: '1', characters },
-  'collections_registry.json': { version: '1', collections: [{
-    id: 'scroll', title: 'Scroll-Sammlung', author: 'Test', description: 'Inhalte vor dem Raster',
-    cover_url: '', characters: [characters[0].name], lorebooks: [], scenes: [], revision: 1,
-  }] },
+  'collections_registry.json': { version: '1', collections: Array.from({ length: 24 }, (_, i) => ({
+    id: `scroll-${i}`, title: `Scroll-Sammlung ${i}`, author: 'Test', description: 'Sammlung mit echtem Titelbild vor dem Charakterraster',
+    cover_url: cover, characters: [characters[i].name], lorebooks: [], scenes: [], revision: 1,
+  })) },
   'lorebooks_registry.json': { version: '1', lorebooks: [] },
   'stages_registry.json': { version: '1', scenes: [] },
 } });
 try {
   await browser.$('button[aria-label="Hub"]').waitForExist({ timeout: 20_000 });
   await browser.$('button[aria-label="Hub"]').click();
-  await browser.$('[data-hub-collection="scroll"]').waitForDisplayed({ timeout: 15_000 });
+  await browser.$('[data-hub-collection="scroll-0"]').waitForDisplayed({ timeout: 15_000 });
   for (const width of [1100, 1500]) {
     await browser.setWindowSize(width, 900);
     await browser.waitUntil(() => browser.execute(() => {
@@ -30,18 +32,28 @@ try {
       const cols = getComputedStyle(row).gridTemplateColumns.split(' ').length;
       return row.children.length === cols;
     }), { timeout: 5000, timeoutMsg: 'Virtuelle Zeile und sichtbare Spalten stimmen nicht überein' });
+    const effects = await browser.execute(() => {
+      const card = document.querySelector('[data-hub-collection]');
+      const image = card.querySelector('img');
+      const label = card.querySelector('.backdrop-blur');
+      return { contain: getComputedStyle(card).contain, transform: getComputedStyle(image).transform, blur: getComputedStyle(label).backdropFilter };
+    });
+    assert.ok(effects.contain.includes('paint'), 'Sammlungskarte begrenzt ihre Zeichenfläche nicht');
+    assert.equal(effects.blur, 'none', 'Teurer Unschärfefilter im Hub');
+    assert.equal(effects.transform, 'none', 'Bildvergrößerung im Hub aktiv');
     const result = await browser.execute(async () => {
       const panel = document.getElementById('hub-tabpanel');
       const frames = [];
       let previous = performance.now();
       let maxCards = 0;
       // Walk the entire list and let row measurements settle on each frame.
-      for (let step = 0; step < 220; step++) {
+      for (let step = 0; step < 300; step++) {
         panel.scrollTop += 180;
         await new Promise(requestAnimationFrame);
         const now = performance.now();
         frames.push(now - previous);
         previous = now;
+        if (step > 10 && panel.scrollTop + panel.clientHeight >= panel.scrollHeight - 1) break;
         maxCards = Math.max(maxCards, panel.querySelectorAll('[data-index] h3').length);
       }
       return { maxCards, reachedLast: [...panel.querySelectorAll('h3')].some((h) => h.textContent === 'Scroll-Figur 239'),

@@ -11,7 +11,7 @@ import { errorMessage } from '../../../utils/errors';
 import { useAppStore } from '../../../store/useAppStore';
 import { importCharacterTask, installCharacter } from '../hubInstall';
 import { CollectionCard, HubSectionTitle, collectionMembers, groupByCollection, useCollectionLists } from '../collections';
-import type { GatewayCharacterEntry } from '../../../types';
+import type { GatewayCharacterEntry, InstalledHubItem } from '../../../types';
 import { useScrollMargin } from '../../../hooks/useScrollMargin';
 
 const GRID_BREAKPOINTS = { 640: 3, 768: 4, 1024: 5, 1280: 6 };
@@ -35,17 +35,6 @@ export const GatewayCharactersTab = () => {
     return groupByCollection(collections, (c) => collectionMembers(c, { gateway, lorebooks, scenes }).characters, visible, query, currentLanguage);
   }, [list.items, query, currentLanguage, collections, gateway, lorebooks, scenes]);
 
-  const { ref: gridRef, cols } = useGridCols(GRID_BREAKPOINTS, 2);
-  // The collection cards above the grid push it down: the virtualizer counts from the grid's top.
-  const scrollMargin = useScrollMargin('hub-tabpanel', gridRef, `${groups.length > 0}|${rest.length > 0}`);
-  // oxlint-disable-next-line react/incompatible-library
-  const virtualizer = useVirtualizer({
-    count: Math.ceil(rest.length / cols),
-    getScrollElement: () => document.getElementById('hub-tabpanel'),
-    estimateSize: () => 360,
-    overscan: 2,
-    scrollMargin,
-  });
 
 
   const handleImport = (char: GatewayCharacterEntry) => runImport(char.name, () => importCharacterTask(char, statusOf(char)));
@@ -90,10 +79,40 @@ export const GatewayCharactersTab = () => {
         </section>
       )}
       {groups.length > 0 && rest.length > 0 && <HubSectionTitle>{t('hub.singleCharacters')}</HubSectionTitle>}
+      <GatewayCharacterGrid items={rest} importingId={importingId} installed={installed} onImport={handleImport} hasGroups={groups.length > 0} />
+    </HubListState>
+    </>
+  );
+};
+
+
+/** Scroll updates stay inside the virtual grid, away from the collection gallery. */
+const GatewayCharacterGrid = ({ items, importingId, installed, onImport, hasGroups }: {
+  items: GatewayCharacterEntry[];
+  importingId: string | null;
+  installed: InstalledHubItem[];
+  onImport: (character: GatewayCharacterEntry) => Promise<unknown>;
+  hasGroups: boolean;
+}) => {
+  const { t } = useTranslation();
+  const statusOf = (char: GatewayCharacterEntry) => hubStatus(installed, 'character', char.name, char.revision);
+  const { ref: gridRef, cols } = useGridCols(GRID_BREAKPOINTS, 2);
+  // The collection cards above the grid push it down: the virtualizer counts from the grid's top.
+  const scrollMargin = useScrollMargin('hub-tabpanel', gridRef, `${hasGroups}|${items.length > 0}`);
+  // oxlint-disable-next-line react/incompatible-library
+  const virtualizer = useVirtualizer({
+    count: Math.ceil(items.length / cols),
+    getScrollElement: () => document.getElementById('hub-tabpanel'),
+    estimateSize: () => 360,
+    overscan: 2,
+    scrollMargin,
+  });
+
+  return (
       <div ref={gridRef} style={{ height: `${virtualizer.getTotalSize()}px`, width: '100%', position: 'relative', overflowAnchor: 'none' }}>
         {virtualizer.getVirtualItems().map((virtualRow) => {
           const startIndex = virtualRow.index * cols;
-          const rowItems = rest.slice(startIndex, startIndex + cols);
+          const rowItems = items.slice(startIndex, startIndex + cols);
 
           return (
             <div
@@ -144,7 +163,7 @@ export const GatewayCharactersTab = () => {
             </div>
             <ImportButton
               busy={importingId === char.name}
-              onClick={() => void handleImport(char)}
+              onClick={() => void onImport(char)}
               label={hubButtonLabel(statusOf(char), t('hub.import'))}
               status={statusOf(char)}
               busyLabel={t('hub.importing')}
@@ -157,7 +176,5 @@ export const GatewayCharactersTab = () => {
           );
         })}
       </div>
-    </HubListState>
-    </>
   );
 };

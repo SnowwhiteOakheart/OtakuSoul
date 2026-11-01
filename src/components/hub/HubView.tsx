@@ -51,9 +51,9 @@ export const HubView = () => {
   const activeTab = TABS.find((tab) => tab.id === hubSubTab) ?? TABS[0]!;
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-app overflow-hidden">
+    <div className="hub-view flex-1 flex flex-col h-full bg-app overflow-hidden">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-slate-800 bg-slate-900/60 backdrop-blur flex items-center justify-between gap-4">
+      <div className="px-6 py-4 border-b border-slate-800 bg-slate-900 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-accent-600/20 border border-accent-500/30 flex items-center justify-center text-accent-400 shadow-sm">
             <Compass className="w-5 h-5" />

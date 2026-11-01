@@ -486,3 +486,19 @@
 .portrait-alive .portrait-speech {
   transform-origin: 50% 100%;
 }
+
+/* Hub galleries: keep scrolling in WebKit free of backdrop sampling and image
+   zoom animations as cards pass beneath a stationary mouse pointer. Paint
+   containment bounds invalidations to each card without estimating its height. */
+.hub-view [data-hub-collection] {
+  contain: layout paint;
+  transition-property: border-color;
+}
+.hub-view [data-hub-collection] img {
+  transform: none;
+  transition: none;
+}
+.hub-view [data-hub-collection] .backdrop-blur {
+  backdrop-filter: none;
+  background-color: rgb(0 0 0 / 80%);
+}
