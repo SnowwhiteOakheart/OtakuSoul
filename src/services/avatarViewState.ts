@@ -128,6 +128,18 @@ export const PET_ZOOM_RANGE: [number, number] = [0.5, 2];
 export const PET_LIFT_RANGE: [number, number] = [-0.3, 0.3];
 /** Where the feet stand in the pet window without a lift (share of its height, from the bottom). */
 export const PET_FEET_SHARE = 0.02 / 1.275;
+/** Share of the pet window the whole figure fills at zoom 1 (the rest: bubble room on top). */
+const PET_FIGURE_FILL = 0.8 / 1.02;
+/** How far the toes reach towards the camera, as share of the model height. */
+const PET_FOOT_REACH = 0.1;
+
+/**
+ * Where the top of the pet figure shows (share of the window height from the top) with this
+ * framing; 0 or less when it reaches the window's top. The same for 3D, Live2D, Inochi2D and
+ * portraits (all fill the lower part of the window alike).
+ */
+export const petFigureTop = (framing: PetFraming = DEFAULT_PET_FRAMING): number =>
+  1 - (PET_FEET_SHARE + framing.lift) - PET_FIGURE_FILL * framing.zoom;
 
 /**
  * Whole figure from the feet (y = 0) to the top, for the desktop pet: the figure fills the
@@ -144,9 +156,12 @@ export function frameFullBody(
   const height = Math.max(0.5, topY);
   // The whole figure (2 % below the feet) fills the lower 80 % of the window at zoom 1.
   const halfHeight = (height * 1.02) / 0.8 / 2 / framing.zoom;
-  const bottom = -(PET_FEET_SHARE + framing.lift) * 2 * halfHeight;
-  const centerY = bottom + halfHeight;
   const halfWidth = (height * 0.24) / framing.zoom;
   const distance = Math.max(halfHeight / tan, halfWidth / (tan * Math.max(aspect, 0.1)));
+  // The toes point at the camera, which looks from about the middle of the body: in perspective
+  // they show lower than the feet's plane. They (not the heels) stand at the feet's share, or the
+  // window's bottom edge cuts them off.
+  const reach = Math.min(PET_FOOT_REACH * height, distance * 0.5);
+  const centerY = (1 - 2 * (PET_FEET_SHARE + framing.lift)) * (distance - reach) * tan;
   return { camera: [0, centerY, distance], target: [0, centerY, 0] };
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { frameFullBody, frameUpperBody, PET_FEET_SHARE } from '../services/avatarViewState';
+import { frameFullBody, frameUpperBody, PET_FEET_SHARE, petFigureTop } from '../services/avatarViewState';
 
 describe('frameUpperBody', () => {
   const visibleTop = (view: ReturnType<typeof frameUpperBody>, fov: number) =>
@@ -28,20 +28,37 @@ describe('frameFullBody (desktop pet)', () => {
   const FOV = 32;
   const ASPECT = 300 / 440;
   const half = (view: ReturnType<typeof frameFullBody>) => view.camera[2] * Math.tan((FOV * Math.PI) / 360);
-  /** Where y = 0 (the feet) shows, as share of the window height from the bottom. */
-  const feetShare = (view: ReturnType<typeof frameFullBody>) => (0 - (view.target[1] - half(view))) / (2 * half(view));
+  /**
+   * Where the toes show (y = 0, a tenth of the model height towards the camera), as share of the
+   * window height from the bottom – in perspective, like the stage draws them.
+   */
+  const feetShare = (view: ReturnType<typeof frameFullBody>, height = 1.6) => {
+    const depth = view.camera[2] - 0.1 * height;
+    const ndc = (0 - view.camera[1]) / (depth * Math.tan((FOV * Math.PI) / 360));
+    return (ndc + 1) / 2;
+  };
   const topShare = (view: ReturnType<typeof frameFullBody>, topY: number) =>
     (topY - (view.target[1] - half(view))) / (2 * half(view));
 
   it('shows the whole figure with the top fifth free', () => {
     const view = frameFullBody(1.6, FOV, ASPECT);
-    expect(feetShare(view)).toBeCloseTo(PET_FEET_SHARE);
-    expect(topShare(view, 1.6)).toBeCloseTo(0.8, 2);
+    expect(feetShare(view)).toBeCloseTo(PET_FEET_SHARE, 4);
+    expect(topShare(view, 1.6)).toBeGreaterThan(0.78);
+    expect(topShare(view, 1.6)).toBeLessThan(0.84);
+    // The figure's top as the speech bubble expects it (share from the top).
+    expect(1 - topShare(view, 1.6)).toBeGreaterThan(petFigureTop() - 0.04);
+  });
+
+  it('keeps the toes above the window edge, not only the heels', () => {
+    for (const height of [1.2, 1.6, 2.2]) {
+      const view = frameFullBody(height, FOV, ASPECT);
+      expect(feetShare(view, height)).toBeGreaterThan(0);
+    }
   });
 
   it('zooms around the feet: they stay where they stand, the figure grows', () => {
     const view = frameFullBody(1.6, FOV, ASPECT, { zoom: 1.5, lift: 0 });
-    expect(feetShare(view)).toBeCloseTo(PET_FEET_SHARE);
+    expect(feetShare(view)).toBeCloseTo(PET_FEET_SHARE, 4);
     expect(topShare(view, 1.6)).toBeGreaterThan(1);
     expect(half(view)).toBeCloseTo(half(frameFullBody(1.6, FOV, ASPECT)) / 1.5);
   });
@@ -58,6 +75,6 @@ describe('frameFullBody (desktop pet)', () => {
 
   it('lifts the feet by a share of the window', () => {
     const view = frameFullBody(1.6, FOV, ASPECT, { zoom: 1, lift: 0.1 });
-    expect(feetShare(view)).toBeCloseTo(PET_FEET_SHARE + 0.1);
+    expect(feetShare(view)).toBeCloseTo(PET_FEET_SHARE + 0.1, 4);
   });
 });

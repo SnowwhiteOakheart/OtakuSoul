@@ -3,6 +3,10 @@ import type { BubbleSide } from './petBehavior';
 
 /** A long sentence starts scrolling this long after it shows, and ends this long before it goes. */
 const SCROLL_PAUSE_MS = 900;
+/** Room above the head (px) the bubble needs to sit there; less and it shows at the top as before. */
+const MIN_ROOM_PX = 52;
+/** Gap between the tail's tip and the top of the figure (px). */
+const HEAD_GAP_PX = 10;
 
 /** Bubble position and where its tail sits (the window's middle, above the head) for each side. */
 const PLACEMENT: Record<BubbleSide, { box: string; tail: string }> = {
@@ -17,16 +21,19 @@ interface PetBubbleProps {
   /** How long it shows (ms): a sentence too long for the bubble scrolls through in that time. */
   ms: number;
   side: BubbleSide;
+  /** Free room above the figure: share of the window height from the top to the head. */
+  room: number;
   title: string;
   onClick: () => void;
 }
 
 /**
- * The desktop pet's speech bubble: at the top of the window with a tail down to the head,
- * leaning towards the screen's middle when the figure stands near an edge. Long sentences are
- * cut to a few lines and scroll by themselves (or by wheel).
+ * The desktop pet's speech bubble: above the head with a tail down to it, leaning towards the
+ * screen's middle when the figure stands near an edge. It grows upwards only as far as the room
+ * above the head allows; longer sentences scroll by themselves (or by wheel). A figure that fills
+ * the window (zoomed in) leaves no room: then the bubble sits at the top as before.
  */
-export function PetBubble({ text, ms, side, title, onClick }: PetBubbleProps) {
+export function PetBubble({ text, ms, side, room, title, onClick }: PetBubbleProps) {
   const scrollRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
@@ -58,17 +65,26 @@ export function PetBubble({ text, ms, side, title, onClick }: PetBubbleProps) {
   }, [text, ms]);
 
   const placement = PLACEMENT[side];
+  const roomPx = room * window.innerHeight - HEAD_GAP_PX;
+  const aboveHead = roomPx >= MIN_ROOM_PX;
   return (
     <button
       type="button"
       data-pet-solid
       data-pet-bubble={side}
+      data-pet-bubble-above-head={aboveHead}
       aria-live="polite"
       title={title}
-      className={`absolute top-2 ${placement.box} rounded-2xl bg-app/95 border border-accent-500/40 px-3 py-2 text-left text-xs text-slate-100 shadow-lg`}
+      className={`absolute ${aboveHead ? '' : 'top-2'} ${placement.box} rounded-2xl bg-app/95 border border-accent-500/40 px-3 py-2 text-left text-xs text-slate-100 shadow-lg`}
+      style={aboveHead ? { bottom: `calc(${(1 - room) * 100}% + ${HEAD_GAP_PX}px)` } : undefined}
       onClick={onClick}
     >
-      <span ref={scrollRef} className="block max-h-[32vh] overflow-y-auto overscroll-contain">
+      <span
+        ref={scrollRef}
+        className={`block overflow-y-auto overscroll-contain ${aboveHead ? '' : 'max-h-[32vh]'}`}
+        // The window's top edge (8 px), the padding (16 px) and the border stay outside.
+        style={aboveHead ? { maxHeight: `${Math.max(16, roomPx - 26)}px` } : undefined}
+      >
         {text}
       </span>
       <span

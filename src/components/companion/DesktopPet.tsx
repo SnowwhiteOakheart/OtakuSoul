@@ -39,7 +39,7 @@ import {
 } from './petBehavior';
 import { planJump, stepBody, throwVelocity, walkArea, type Body, type Platform, type Rect } from './petPhysics';
 import type { GestureRequest, LoopRole } from '../../utils/avatarGestures';
-import { DEFAULT_PET_FRAMING, PET_FEET_SHARE, type PetFraming } from '../../services/avatarViewState';
+import { DEFAULT_PET_FRAMING, PET_FEET_SHARE, petFigureTop, type PetFraming } from '../../services/avatarViewState';
 import {
   clampPetHeight,
   loadPetFraming,
@@ -1161,6 +1161,8 @@ export const DesktopPet: React.FC = () => {
           text={shownBubble}
           ms={shownBubble === bubble ? bubbleShowMs.current : 0}
           side={bubbleSideNow}
+          // Sitting draws the figure lower: more room above the head.
+          room={petFigureTop(framingRef.current) + (loop === 'sit' ? SIT_DROP : 0)}
           title={t('pet.compose')}
           onClick={bubbleChat ? openBubbleChat : openCompose}
         />
