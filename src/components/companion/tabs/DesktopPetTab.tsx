@@ -245,6 +245,13 @@ export const DesktopPetTab: React.FC = () => {
           </div>
 
           <div className="rounded-xl border border-slate-800 bg-app p-1">
+            <Toggle
+              id="pet-open-at-start"
+              label={t('pet.openAtStart')}
+              description={t('pet.openAtStartHint')}
+              checked={prefs.openAtStart}
+              onCheckedChange={(openAtStart) => update({ openAtStart })}
+            />
             <Toggle id="pet-idle-actions" label={t('pet.idleActions')} checked={prefs.idleActions} onCheckedChange={(idleActions) => update({ idleActions })} />
             <Toggle id="pet-battery-saver" label={t('pet.batterySaver')} checked={prefs.batterySaver} onCheckedChange={(batterySaver) => update({ batterySaver })} />
             <Toggle id="pet-quiet-night" label={t('pet.quietAtNight')} checked={prefs.quietAtNight} onCheckedChange={(quietAtNight) => update({ quietAtNight })} />

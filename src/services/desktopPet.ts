@@ -229,22 +229,12 @@ export function savePetPlacement(change: Partial<PetPlacement>) {
   }
 }
 
-const OPEN_KEY = 'otakusoul.desktopPetOpen';
-
-/** The pet was open when last switched (not when the app quit): it opens again at start. */
-export function loadPetOpen(): boolean {
+/** Earlier versions reopened the pet at start when it was open last; that marker is dropped. */
+export function forgetLegacyPetOpen() {
   try {
-    return localStorage.getItem(OPEN_KEY) === 'true';
+    localStorage.removeItem('otakusoul.desktopPetOpen');
   } catch {
-    return false;
-  }
-}
-
-export function savePetOpen(open: boolean) {
-  try {
-    localStorage.setItem(OPEN_KEY, String(open));
-  } catch {
-    // Only a convenience: the pet then stays closed at the next start.
+    // Nothing to forget without storage.
   }
 }
 
@@ -272,6 +262,8 @@ export interface PetPrefs {
   figure: PetFigureChoice;
   /** Posture chosen in the menu: by itself (stands, walks, sits now and then), standing or sitting. */
   pose: PetPose;
+  /** Open the pet whenever the app starts (off by default: the pet only shows when switched on). */
+  openAtStart: boolean;
 }
 
 export type PetPose = 'auto' | 'stand' | 'sit';
@@ -313,6 +305,7 @@ const DEFAULT_PREFS: PetPrefs = {
   frameRate: 30,
   figure: 'chat',
   pose: 'auto',
+  openAtStart: false,
 };
 
 interface BatteryManagerLike extends EventTarget {
@@ -357,6 +350,7 @@ export function loadPetPrefs(): PetPrefs {
       frameRate: FRAME_RATES.includes(stored?.frameRate as PetFrameRate) ? stored!.frameRate! : DEFAULT_PREFS.frameRate,
       figure: FIGURE_CHOICES.includes(stored?.figure as PetFigureChoice) ? stored!.figure! : DEFAULT_PREFS.figure,
       pose: PET_POSES.includes(stored?.pose as PetPose) ? stored!.pose! : DEFAULT_PREFS.pose,
+      openAtStart: typeof stored?.openAtStart === 'boolean' ? stored.openAtStart : DEFAULT_PREFS.openAtStart,
     };
   } catch {
     return { ...DEFAULT_PREFS };

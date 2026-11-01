@@ -984,7 +984,9 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Dateiaktionen laufen über den Bestätigungsbanner; ausgeführt wird in `execute_internal_sync`.
 - Desktop-Pet (`commands/desktop_pet.rs`, `components/companion/DesktopPet.tsx`): eigenes Webview mit eigenem Store
   ohne `initApp` – alles, was es zeigt, kommt per Event aus dem Hauptfenster (`hooks/useDesktopPetBridge.ts`, Namen in
-  `services/desktopPet.ts`); Lippensync über `audioPlayer.feedRemoteFrame`. Rechte stehen in
+  `services/desktopPet.ts`); Lippensync über `audioPlayer.feedRemoteFrame`. Beim App-Start öffnet die Bridge das Pet
+  nur mit dem Schalter „Beim Start öffnen“ (`PetPrefs.openAtStart`, Standard aus); den alten Merker
+  `otakusoul.desktopPetOpen` („war zuletzt offen“) löscht sie. Rechte stehen in
   `capabilities/desktop-pet.json` (ohne Eintrag dort kein `listen`, Ziehen oder Click-Through). Ein mausdurchlässiges
   Fenster bekommt keine Mausereignisse: Rust schickt deshalb den globalen Zeiger (`pet:cursor`), das Pet prüft per
   `stage.probe` die Deckkraft des Pixels; eigene Panels zählen über `data-pet-solid` als „getroffen“. Ausblenden

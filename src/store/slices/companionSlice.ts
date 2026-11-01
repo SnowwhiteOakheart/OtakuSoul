@@ -12,7 +12,7 @@ import type {
 } from '../../types';
 import type { SliceCreator } from '../storeTypes';
 import { reportFailure } from '../reportFailure';
-import { loadPetPlacement, petWindowSize, savePetOpen } from '../../services/desktopPet';
+import { loadPetPlacement, petWindowSize } from '../../services/desktopPet';
 
 /** Desktop companion: hormones, tools, goals, MCP servers, plugins and the desktop pet. */
 export interface CompanionSlice {
@@ -229,13 +229,9 @@ export const createCompanionSlice: SliceCreator<CompanionSlice> = (set, get) => 
   },
 
   toggleDesktopPet: async (enable) => {
-    // Remember "closed" before the call: hidden from its own menu, the pet window is destroyed
-    // by this call and would never get to the line after it (the pet then came back at start).
-    if (!enable) savePetOpen(false);
     try {
       const placement = loadPetPlacement();
       const res = await api.toggleDesktopPet(enable, { x: placement.x, y: placement.y, ...petWindowSize(placement.height) });
-      if (enable) savePetOpen(true);
       await get().fetchCompanionState();
       return res;
     } catch (e) {

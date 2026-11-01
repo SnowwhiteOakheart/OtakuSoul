@@ -20,7 +20,7 @@ import {
   PET_TOGGLE_EVENT,
   PET_VISIBILITY_EVENT,
   PORTRAIT_PREFIX,
-  loadPetOpen,
+  forgetLegacyPetOpen,
   loadPetPrefs,
   type PetAudioFrame,
   type PetSay,
@@ -243,12 +243,14 @@ export function useDesktopPetBridge(enabled = true) {
       }),
     ];
 
-    // Open at start when it was open before; after the settings, so the right model is known.
+    // Open at start only when the user switched "open at start" on; after the settings, so the
+    // right model is known.
     let reopened = false;
+    forgetLegacyPetOpen();
     const reopen = () => {
       if (reopened || !useAppStore.getState().settingsLoaded) return;
       reopened = true;
-      if (loadPetOpen() && !open) void useAppStore.getState().toggleDesktopPet(true);
+      if (loadPetPrefs().openAtStart && !open) void useAppStore.getState().toggleDesktopPet(true);
     };
     const stopReopen = useAppStore.subscribe((s) => {
       if (s.settingsLoaded) reopen();
