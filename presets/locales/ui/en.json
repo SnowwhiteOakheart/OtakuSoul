@@ -4119,5 +4119,9 @@
   "pet.loadMotions": "Load motions (walking, sitting …)",
   "pet.motionsLoading": "Fetching a few moves …",
   "pet.motionsLoaded": "Done! Now I can walk properly and sit down.",
-  "pet.motionsFailed": "Could not load the motions: {{error}}"
+  "pet.motionsFailed": "Could not load the motions: {{error}}",
+  "pet.pose": "Posture",
+  "pet.poseAuto": "By itself (stands, walks, sits now and then)",
+  "pet.poseStand": "Keep standing",
+  "pet.poseSit": "Sit down (VRM only)"
 }

@@ -379,6 +379,7 @@ export const DesktopPet: React.FC = () => {
   useEffect(() => {
     prefsRef.current = prefs;
     behavior.setIdleActions(prefs.idleActions);
+    behavior.setPose(prefs.pose);
     stageRef.current?.setFrameRate(prefs.frameRate);
     behavior.setPhysics(prefs.physics);
     if (prefs.physics) void syncWindow().catch(() => {});
@@ -924,6 +925,20 @@ export const DesktopPet: React.FC = () => {
           })),
         },
         {
+          text: t('pet.pose'),
+          items: [
+            { key: 'auto' as const, label: t('pet.poseAuto') },
+            { key: 'stand' as const, label: t('pet.poseStand') },
+            { key: 'sit' as const, label: t('pet.poseSit') },
+          ].map(({ key, label }) => ({
+            text: label,
+            checked: prefs.pose === key,
+            // Sitting on the ground needs a VRM figure (its own pose).
+            enabled: key !== 'sit' || canSit,
+            action: () => setPrefs((p) => ({ ...p, pose: key })),
+          })),
+        },
+        {
           text: t('pet.size'),
           items: sizes.map(({ key, label }) => ({
             text: label,
@@ -1063,12 +1078,22 @@ export const DesktopPet: React.FC = () => {
     [behavior],
   );
   // Only the VRM viewer can pose the figure sitting on the ground; it reports so once loaded.
-  const onFloorSit = useCallback((available: boolean) => behavior.setFloorSit(available), [behavior]);
+  const [canSit, setCanSit] = useState(false);
+  const onFloorSit = useCallback(
+    (available: boolean) => {
+      behavior.setFloorSit(available);
+      setCanSit(available);
+    },
+    [behavior],
+  );
   const petLink = useMemo(() => ({ onStage, onLoops, onFloorSit }), [onStage, onLoops, onFloorSit]);
 
   const modelPath = pet ? petModelPath(pet, prefs.figure) : '';
   // Another figure: it sits on the ground again only when its viewer says it can.
-  useEffect(() => behavior.setFloorSit(false), [behavior, modelPath]);
+  useEffect(() => {
+    behavior.setFloorSit(false);
+    setCanSit(false);
+  }, [behavior, modelPath]);
   // Each model comes back in the size it last had, with its own framing.
   useEffect(() => {
     modelRef.current = modelPath;

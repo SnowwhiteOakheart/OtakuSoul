@@ -4120,5 +4120,9 @@
   "pet.loadMotions": "モーションを読み込む（歩行・座り…）",
   "pet.motionsLoading": "モーションを取ってくるね…",
   "pet.motionsLoaded": "できた！これでちゃんと歩いたり座ったりできるよ。",
-  "pet.motionsFailed": "モーションを読み込めませんでした: {{error}}"
+  "pet.motionsFailed": "モーションを読み込めませんでした: {{error}}",
+  "pet.pose": "姿勢",
+  "pet.poseAuto": "おまかせ（立つ・歩く・時々座る）",
+  "pet.poseStand": "立ったまま",
+  "pet.poseSit": "座る（VRMのみ）"
 }

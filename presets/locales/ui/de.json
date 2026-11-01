@@ -4119,5 +4119,9 @@
   "pet.loadMotions": "Bewegungen laden (Gehen, Sitzen …)",
   "pet.motionsLoading": "Ich hole mir ein paar Bewegungen …",
   "pet.motionsLoaded": "Geschafft! Jetzt kann ich richtig laufen und mich hinsetzen.",
-  "pet.motionsFailed": "Die Bewegungen ließen sich nicht laden: {{error}}"
+  "pet.motionsFailed": "Die Bewegungen ließen sich nicht laden: {{error}}",
+  "pet.pose": "Haltung",
+  "pet.poseAuto": "Von selbst (steht, läuft, setzt sich ab und zu)",
+  "pet.poseStand": "Stehen bleiben",
+  "pet.poseSit": "Hinsetzen (nur VRM)"
 }

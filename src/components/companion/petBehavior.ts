@@ -1,4 +1,5 @@
 import type { LoopRole, MotionRole } from '../../utils/avatarGestures';
+import type { PetPose } from '../../services/desktopPet';
 import { withoutEmotionTag } from '../../utils/replyTags';
 
 /**
@@ -162,6 +163,8 @@ export class PetBehavior {
   private sitMotion = false;
   /** The figure can sit down on the ground by itself (VRM: a pose of its own). */
   private floorSit = false;
+  /** Posture chosen in the menu: `auto` decides itself, `stand` never walks or sits, `sit` stays seated. */
+  private pose: PetPose = 'auto';
   /** A window's edge is within jumping reach. */
   private canJump = false;
   /** In the air by its own jump (a happy leap, not a startled fall). */
@@ -368,6 +371,18 @@ export class PetBehavior {
     if (!available && this.action?.kind === 'sit') this.action = null;
   }
 
+  /** Posture from the menu; a chosen one ends what the figure was doing by itself. */
+  setPose(pose: PetPose) {
+    this.pose = pose;
+    const own = this.action?.kind;
+    if (pose !== 'auto' && (own === 'walk' || own === 'sit' || own === 'sitFloor') && !this.action?.come) this.action = null;
+  }
+
+  /** Sits on the ground because the menu says so (and the figure can). */
+  private get keptSeated(): boolean {
+    return this.pose === 'sit' && this.floorSit && this.grounded && this.action?.kind !== 'walk';
+  }
+
   /** Whether the figure can sit on the ground (a VRM pose); without it, it only sits on edges. */
   setFloorSit(available: boolean) {
     this.floorSit = available;
@@ -418,6 +433,8 @@ export class PetBehavior {
     // night the figure yawns more and stays calm (few hops, waves and walks).
     const { fatigue, dopamine, cortisol, night } = this.drive;
     const lively = lift(dopamine) * (night ? 0.4 : 1);
+    // A posture chosen in the menu: no walking or sitting by itself.
+    const free = this.pose === 'auto';
     const weights: [PetAction, number][] = [
       ['lookAround', pointerIdle ? 35 * (1 + above(cortisol) * 1.5) : 0],
       ['yawn', (now - this.lastPointer > 60_000 ? 25 : 10) * (1 + above(fatigue) * 2 + (night ? 1 : 0))],
@@ -425,11 +442,11 @@ export class PetBehavior {
       ['wave', 10 * (night ? 0.4 : 1)],
       ['think', 15],
       ['nod', 10],
-      ['walk', this.physics && this.grounded ? 30 * lively : 0],
-      ['sit', this.physics && this.onWindow && this.sitMotion ? 25 : 0],
+      ['walk', free && this.physics && this.grounded ? 30 * lively : 0],
+      ['sit', free && this.physics && this.onWindow && this.sitMotion ? 25 : 0],
       // On the ground (or an edge without a sitting motion) it sits down now and then, calmer when tired.
-      ['sitFloor', this.grounded && this.floorSit && !(this.onWindow && this.sitMotion) ? 14 * (1 + above(fatigue)) : 0],
-      ['jump', this.physics && this.grounded && this.canJump ? 18 : 0],
+      ['sitFloor', free && this.grounded && this.floorSit && !(this.onWindow && this.sitMotion) ? 14 * (1 + above(fatigue)) : 0],
+      ['jump', free && this.physics && this.grounded && this.canJump ? 18 : 0],
     ];
     const total = weights.reduce((sum, [, w]) => sum + w, 0);
     let pick = this.random() * total;
@@ -499,7 +516,7 @@ export class PetBehavior {
     let frame: PetFrame;
     switch (this.mode) {
       case 'dozing':
-        frame = { ...still, mode: 'dozing', expression: 'relaxed', gaze: { x: 0, y: -0.8 }, loop: 'sleep' };
+        frame = { ...still, mode: 'dozing', expression: 'relaxed', gaze: { x: 0, y: -0.8 }, loop: 'sleep', seated: this.keptSeated };
         break;
       case 'dragged':
         frame = { ...still, mode: 'dragged', expression: 'surprised', gaze: { x: 0, y: -0.6 }, loop: 'fall' };
@@ -510,15 +527,15 @@ export class PetBehavior {
           : { ...still, mode: 'falling', expression: 'surprised', gaze: { x: 0, y: -0.7 }, loop: 'fall' };
         break;
       case 'reacting':
-        frame = { ...still, mode: 'reacting', expression: this.reactExpression, gaze: this.reactGaze };
+        frame = { ...still, mode: 'reacting', expression: this.reactExpression, gaze: this.reactGaze, seated: this.keptSeated };
         break;
       case 'talking':
-        frame = { ...still, mode: 'talking', expression: null, gaze: null, loop: 'talk' };
+        frame = { ...still, mode: 'talking', expression: null, gaze: null, loop: 'talk', seated: this.keptSeated };
         break;
       default: {
         const direction = this.action?.kind === 'walk' ? this.action.direction! : 0;
         const sitting = this.action?.kind === 'sit';
-        const seated = this.action?.kind === 'sitFloor';
+        const seated = this.action?.kind === 'sitFloor' || this.keptSeated;
         const swaying = this.music && !this.action && !this.saving;
         frame = {
           ...still,

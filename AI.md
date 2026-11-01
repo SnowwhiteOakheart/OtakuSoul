@@ -999,7 +999,10 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   prüft, dass der Standfuß nicht rutscht; dazu Fußabrollen und `walkBob` (Hüfte über die Normal-Hüfte, die jedes Bild
   von der Ruhehöhe startet). Sitzen am Boden: Aktion `sitFloor` → `PetFrame.seated` (ohne Schleife), nur wenn der
   Viewer `pet.onFloorSit(true)` meldet (bisher nur `VrmViewer`); `floorSitPose` + `FLOOR_SIT_HIPS` werden über jede
-  Animation geblendet. Auf Fensterkanten mit Sitz-Animation hat `sit` Vorrang. Fehlen Lauf-/Sitz-Animationen,
+  Animation geblendet. Auf Fensterkanten mit Sitz-Animation hat `sit` Vorrang. Haltung im Kontextmenü
+  (`PetPrefs.pose`: `auto`/`stand`/`sit` → `PetBehavior.setPose`; `sit` bleibt auch beim Sprechen, Dösen, Reagieren
+  sitzen, nur mit `onFloorSit`). Alle X-Winkel (und Z beim Kopf) gelten für Rigs, die nach +Z schauen; VRM-0.x-Rigs
+  schauen intern nach -Z (linker Arm entlang -X) – `forFacing` dreht sie um, sonst knicken Knie nach vorn. Fehlen Lauf-/Sitz-Animationen,
   bieten Hub (Avatare, ganz oben), Avatar-Manager (`MotionPackOffer`) und Pet-Menü das Bewegungspaket an
   (`utils/motionPacks.ts`; das Pet lädt selbst und meldet `PET_MOTIONS_EVENT`, das Hauptfenster liest neu).
 - Pet-Physik (`petPhysics.ts`): rechnet in physischen Pixeln mit dem Fenster als Körper; Geschwindigkeiten sind logisch

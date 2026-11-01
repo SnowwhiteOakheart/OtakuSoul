@@ -4119,5 +4119,9 @@
   "pet.loadMotions": "Загрузить движения (ходьба, сидение …)",
   "pet.motionsLoading": "Загружаю пару движений …",
   "pet.motionsLoaded": "Готово! Теперь я могу нормально ходить и садиться.",
-  "pet.motionsFailed": "Не удалось загрузить движения: {{error}}"
+  "pet.motionsFailed": "Не удалось загрузить движения: {{error}}",
+  "pet.pose": "Поза",
+  "pet.poseAuto": "Сама (стоит, ходит, иногда садится)",
+  "pet.poseStand": "Стоять",
+  "pet.poseSit": "Сидеть (только VRM)"
 }

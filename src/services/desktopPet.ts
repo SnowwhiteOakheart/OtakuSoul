@@ -270,7 +270,12 @@ export interface PetPrefs {
   frameRate: PetFrameRate;
   /** Which of the figure's models the pet shows: as in the chat, or always 3D / Inochi2D. */
   figure: PetFigureChoice;
+  /** Posture chosen in the menu: by itself (stands, walks, sits now and then), standing or sitting. */
+  pose: PetPose;
 }
+
+export type PetPose = 'auto' | 'stand' | 'sit';
+export const PET_POSES: PetPose[] = ['auto', 'stand', 'sit'];
 
 export type PetFrameRate = 20 | 30 | 60;
 export const FRAME_RATES: PetFrameRate[] = [20, 30, 60];
@@ -307,6 +312,7 @@ const DEFAULT_PREFS: PetPrefs = {
   reactToDesktop: true,
   frameRate: 30,
   figure: 'chat',
+  pose: 'auto',
 };
 
 interface BatteryManagerLike extends EventTarget {
@@ -350,6 +356,7 @@ export function loadPetPrefs(): PetPrefs {
       reactToDesktop: typeof stored?.reactToDesktop === 'boolean' ? stored.reactToDesktop : DEFAULT_PREFS.reactToDesktop,
       frameRate: FRAME_RATES.includes(stored?.frameRate as PetFrameRate) ? stored!.frameRate! : DEFAULT_PREFS.frameRate,
       figure: FIGURE_CHOICES.includes(stored?.figure as PetFigureChoice) ? stored!.figure! : DEFAULT_PREFS.figure,
+      pose: PET_POSES.includes(stored?.pose as PetPose) ? stored!.pose! : DEFAULT_PREFS.pose,
     };
   } catch {
     return { ...DEFAULT_PREFS };

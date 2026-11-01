@@ -302,6 +302,26 @@ describe('PetBehavior on the desktop floor', () => {
     expect(pet.tick(21_100).frame.seated).toBe(false);
   });
 
+  it('follows the posture chosen in the menu', () => {
+    // Sitting stays, also while it talks; standing never walks or sits by itself.
+    const seated = new PetBehavior(0, fixed(0.99));
+    seated.setFloorSit(true);
+    seated.setPose('sit');
+    expect(run(seated, 0, 21_000).frame).toMatchObject({ seated: true, walk: 0 });
+    seated.setSpeaking(true);
+    expect(seated.tick(21_100).frame).toMatchObject({ mode: 'talking', seated: true });
+
+    const standing = new PetBehavior(0, fixed(0.99));
+    standing.setFloorSit(true);
+    standing.setPose('stand');
+    const frames = Array.from({ length: 60 }, (_, i) => standing.tick(i * 1000).frame);
+    expect(frames.some((f) => f.seated || f.walk !== 0)).toBe(false);
+
+    // Back to "by itself": it may sit down again.
+    standing.setPose('auto');
+    expect(run(standing, 60_000, 90_000).frame.seated).toBe(true);
+  });
+
   it('prefers the sitting motion on a window edge to sitting on the ground', () => {
     const pet = new PetBehavior(0, fixed(0.99));
     pet.setFloorSit(true);
