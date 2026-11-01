@@ -170,6 +170,7 @@ pub fn run() {
             tauri::async_runtime::spawn(modules::inochi2d::refresh_registry());
             tauri::async_runtime::spawn(modules::motion_packs::refresh_registry());
             tauri::async_runtime::spawn(modules::avatar_hub::refresh_registry());
+            tauri::async_runtime::spawn(modules::vroid_hub::sync());
             allow_app_asset_dirs(app);
             create_main_window(app)?;
             #[cfg(desktop)]
@@ -461,6 +462,14 @@ pub fn run() {
             commands::app::scan_vision_projectors,
             commands::app::disk_space,
             commands::app::scan_vrm_models,
+            commands::avatar::vroid_status,
+            commands::avatar::vroid_login,
+            commands::avatar::vroid_login_cancel,
+            commands::avatar::vroid_logout,
+            commands::avatar::vroid_models,
+            commands::avatar::vroid_add_model,
+            commands::avatar::vroid_remove_model,
+            commands::avatar::vroid_model_info,
             commands::app::import_vrm_model,
             commands::app::list_avatar_model_files,
             commands::app::load_settings,

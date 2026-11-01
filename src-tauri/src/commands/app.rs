@@ -2,9 +2,24 @@
 
 /// Reads a file for the webview as raw bytes (an `ArrayBuffer` there). Avatars and motions run to
 /// tens of MB; as a JSON number list they took seconds to send and parse.
-#[tauri::command(async)]
-pub fn read_file_binary(file_path: String) -> Result<tauri::ipc::Response, String> {
-    std::fs::read(&file_path)
+/// A VRoid Hub model (`vroid:<id>`) comes decrypted from its encrypted store.
+#[tauri::command]
+pub async fn read_file_binary(file_path: String) -> Result<tauri::ipc::Response, String> {
+    if file_path.starts_with(crate::modules::vroid_hub::PATH_PREFIX) {
+        return crate::modules::vroid_hub::model_bytes(&file_path)
+            .await
+            .map(tauri::ipc::Response::new);
+    }
+    let path = file_path.clone();
+    tokio::task::spawn_blocking(move || std::fs::read(&path))
+        .await
+        .map_err(|e| {
+            crate::err!(
+                "backend.common.fileReadPath",
+                path = format!("{:?}", file_path),
+                error = e
+            )
+        })?
         .map(tauri::ipc::Response::new)
         .map_err(|e| {
             crate::err!(

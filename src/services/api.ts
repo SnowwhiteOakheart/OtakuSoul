@@ -8,6 +8,9 @@ import type { HeadPlacement } from '../types/generated/HeadPlacement';
 import type { TalkingPortraitStatus } from '../types/generated/TalkingPortraitStatus';
 import type { TalkingSet } from '../types/generated/TalkingSet';
 import type { HubAvatarInstalled } from '../types/generated/HubAvatarInstalled';
+import type { VroidAccount } from '../types/generated/VroidAccount';
+import type { VroidModel } from '../types/generated/VroidModel';
+import type { VroidStatus } from '../types/generated/VroidStatus';
 import { invoke } from '@tauri-apps/api/core';
 import { bumpAvatarRevision, forBackend, withAvatarUrl } from '../utils/characterAvatar';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
@@ -995,6 +998,44 @@ export const api = {
 
   scanVrmModels: async (): Promise<ScannedVrm[]> => {
     return await invoke<ScannedVrm[]>('scan_vrm_models');
+  },
+
+  /** Whether this build can use VRoid Hub and who is signed in. */
+  vroidStatus: async (): Promise<VroidStatus> => {
+    return await invoke<VroidStatus>('vroid_status');
+  },
+
+  /** "Sign in with VRoid Hub" in the browser; resolves once VRoid Hub sent the user back. */
+  vroidLogin: async (language: string): Promise<VroidAccount> => {
+    return await invoke<VroidAccount>('vroid_login', { language });
+  },
+
+  vroidLoginCancel: async (): Promise<void> => {
+    await invoke('vroid_login_cancel');
+  },
+
+  /** Signs out and removes every stored VRoid Hub model. */
+  vroidLogout: async (): Promise<void> => {
+    await invoke('vroid_logout');
+  },
+
+  /** The signed-in user's own and liked models. */
+  vroidModels: async (): Promise<VroidModel[]> => {
+    return await invoke<VroidModel[]>('vroid_models');
+  },
+
+  /** Adds a VRoid Hub model to the 3D avatars (stored encrypted). */
+  vroidAddModel: async (id: string): Promise<ScannedVrm> => {
+    return await invoke<ScannedVrm>('vroid_add_model', { id });
+  },
+
+  vroidRemoveModel: async (id: string): Promise<void> => {
+    await invoke('vroid_remove_model', { id });
+  },
+
+  /** Conditions of use and author of an added VRoid Hub model. */
+  vroidModelInfo: async (id: string): Promise<VroidModel | null> => {
+    return await invoke<VroidModel | null>('vroid_model_info', { id });
   },
 
   scanAvatarMotions: async (): Promise<AvatarMotion[]> => {

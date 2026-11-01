@@ -65,6 +65,7 @@ pub mod tts_local;
 pub mod ui_locales;
 pub mod updater;
 pub mod voice;
+pub mod vroid_hub;
 pub mod web_server;
 
 pub const APP_NAME: &str = "OtakuSoul";

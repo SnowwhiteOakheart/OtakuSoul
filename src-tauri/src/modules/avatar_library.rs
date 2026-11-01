@@ -189,6 +189,15 @@ fn imported_entry(data_dir: &Path, kind: AvatarKind, path: &Path) -> Option<Path
     }
 }
 
+/// Forgets a model's own name and preview picture (a VRoid Hub model leaving the app).
+pub fn forget(data_dir: &Path, kind: AvatarKind, key: &str) {
+    let mut names = load(data_dir);
+    if names.of(kind).remove(key).is_some() {
+        let _ = store(data_dir, &names);
+    }
+    let _ = fs::remove_file(thumbnail_file(data_dir, kind, key));
+}
+
 /// Moves an imported model (with its folder) to the trash and forgets its name. Returns where it
 /// went, so it can be put back.
 pub fn remove(

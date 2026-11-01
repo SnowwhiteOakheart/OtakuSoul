@@ -673,6 +673,19 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `plainBoneName` behält Buchstaben aller Schriften), MMD-Gesichtsnamen `MMD_MORPHS` geteilt mit `MmdViewer`; Größe außerhalb 0,5–3 m wird
   auf 1,6 m gebracht; Bounds über das Skelett nach `updateMatrixWorld` (nicht `updateWorldMatrix`, sonst doppelter
   Maßstab); PBR-Materialien bekommen `useStudioEnvironment` (ohne Umgebung werden metallische Teile schwarz).
+- VRoid Hub (`modules/vroid_hub.rs`, UI `avatars/VroidHubPanel.tsx`, Plan Roadmap 3b): OAuth mit PKCE über feste
+  Loopback-Adresse `http://127.0.0.1:47823/vroidhub/callback` (bei VRoid exakt so registriert, ebenso
+  `otakusoul://vroidhub/callback`, noch ungenutzt; Rückruf-Helfer aus `openrouter_auth`), Header `X-Api-Version: 11`.
+  Client-ID im Code, Secret nur per `option_env!("VROID_CLIENT_SECRET")` (GitHub-Secret in `release.yml`; lokal
+  `VROID_CLIENT_SECRET=… npm run tauri:linux`), ohne Secret blendet sich der Bereich aus. Tokens und Cache-Schlüssel
+  nur im Schlüsselbund (`secrets::read/write/remove`). Modelle heißen `vroid:<id>` (Format `vroid` in
+  `scan_vrm_models`, `read_file_binary` entschlüsselt über `model_bytes`); Datei `<Daten>/vroid/<Nutzer-ID>/<id>.vrm.enc`
+  (AES-256-GCM per `ring`, Modell-ID als AAD) + `<id>.json`. Ohne Schlüsselbund wird nichts gespeichert, sondern je
+  Laden neu geholt. `vroid_models` und `sync()` beim Start löschen, was VRoid nicht mehr freigibt; Abmelden löscht
+  alles. Entwicklerbedingungen: Modelle nur für den angemeldeten Nutzer und nur in der App – kein Export, nicht in
+  Backups/Web-Server/Hub; App-Einstellung „sexual: Nein“ → `vroidAllowedFor` (`avatarMatch.ts`) hält VRoid-Modelle von
+  18+-markierten Karten fern (Anzeige und Zuweisung). Bedingungen je Modell unter dem festen englischen Titel
+  „Model Data Conditions of Use“ mit den Wörtern der VRoid-Richtlinien (`VroidConditions`).
 - Porträts/Emotionsbilder: `utils/characterPortraits.ts` wählt das Bild je Emotion und macht Dateipfade über
   `convertFileSrc` zu `asset://`-URLs. Unter `tauri dev` (Seite von `http://localhost:1420`) lädt WebKitGTK solche
   Bilder nicht in `<img>`, `fetch` aber schon → `loadDisplayableImage`/`assetAsBlobUrl` laden sie als Blob-URL;

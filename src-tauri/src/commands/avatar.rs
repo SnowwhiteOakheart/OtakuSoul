@@ -264,6 +264,9 @@ pub fn delete_avatar_motion(file: String) -> Result<(), String> {
 /// model by its folder, an Inochi2D puppet by its file below the puppet folders.
 fn avatar_key(kind: crate::modules::avatar_library::AvatarKind, path: &str) -> String {
     use crate::modules::avatar_library::{AvatarKind, key_for};
+    if path.starts_with(crate::modules::vroid_hub::PATH_PREFIX) {
+        return path.to_string();
+    }
     let path = std::path::Path::new(path);
     match kind {
         AvatarKind::Vrm => key_for(path, &crate::modules::paths::avatar_roots()),
@@ -314,4 +317,55 @@ pub fn delete_avatar(kind: String, path: String) -> Result<(), String> {
         &avatar_key(kind, &path),
     )
     .map(|_| ())
+}
+
+/// Whether VRoid Hub can be used and who is signed in.
+#[tauri::command]
+pub fn vroid_status() -> crate::modules::vroid_hub::VroidStatus {
+    crate::modules::vroid_hub::status()
+}
+
+/// "Sign in with VRoid Hub" in the browser; `language` is for the page shown afterwards.
+#[tauri::command]
+pub async fn vroid_login(
+    app: tauri::AppHandle,
+    language: String,
+) -> Result<crate::modules::vroid_hub::VroidAccount, String> {
+    crate::modules::vroid_hub::login(&app, &language).await
+}
+
+/// Ends a sign-in that waits for the browser.
+#[tauri::command]
+pub fn vroid_login_cancel() {
+    crate::modules::vroid_hub::cancel();
+}
+
+/// Signs out of VRoid Hub and removes all stored VRoid models.
+#[tauri::command]
+pub async fn vroid_logout() {
+    crate::modules::vroid_hub::logout().await;
+}
+
+/// The signed-in user's own and liked models.
+#[tauri::command]
+pub async fn vroid_models() -> Result<Vec<crate::modules::vroid_hub::VroidModel>, String> {
+    crate::modules::vroid_hub::models().await
+}
+
+/// Adds a VRoid Hub model to the avatars (stored encrypted).
+#[tauri::command]
+pub async fn vroid_add_model(id: String) -> Result<crate::modules::paths::ScannedVrm, String> {
+    crate::modules::vroid_hub::add(&id).await
+}
+
+/// Takes a VRoid Hub model out of the app.
+#[tauri::command(async)]
+pub fn vroid_remove_model(id: String) -> Result<(), String> {
+    crate::modules::vroid_hub::remove(&id)
+}
+
+/// Conditions of use and author of an added VRoid Hub model.
+#[tauri::command(async)]
+pub fn vroid_model_info(id: String) -> Option<crate::modules::vroid_hub::VroidModel> {
+    crate::modules::vroid_hub::added_model(&id)
 }

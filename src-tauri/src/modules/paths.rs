@@ -656,6 +656,8 @@ pub fn scan_available_vrm_models() -> Vec<ScannedVrm> {
             });
         }
     }
+    // Models added from VRoid Hub (`vroid:<id>`, stored encrypted).
+    vrms.extend(crate::modules::vroid_hub::added_vrms());
 
     label_vrms(vrms)
 }

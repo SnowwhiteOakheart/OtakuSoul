@@ -15,6 +15,12 @@ MakeHuman or another source. **How you obtain a model is up to you to figure out
 models you are allowed to use, respect licenses and terms of service, and do not share other people's characters.
 You are responsible for models you did not make yourself.
 
+**Without Blender: models from VRoid Hub.** In the avatar manager (Library → Avatars), sign in with your account
+under **VRoid Hub**. It lists your own models and the ones you liked on VRoid Hub whose creators allow avatar use.
+**Add** stores the model encrypted inside OtakuSoul; it then appears with the 3D avatars. **Conditions of use**
+shows what the creator allows. VRoid models are only for you and only inside OtakuSoul: no export, not for
+characters with 18+ content. Signing out deletes them. The sign-in is available in official releases only.
+
 ## 2. What you need
 
 - **[Blender](https://www.blender.org/) 4.2 or newer** (Linux, Windows, macOS)

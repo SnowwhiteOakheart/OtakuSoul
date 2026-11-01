@@ -99,8 +99,7 @@
 > Download und Import von Hand. Mitliefern dürfen wir solche Modelle meist nicht („Redistribution: Do not allow“).
 > Doku: <https://developer.vroid.com/en/api/quick-start.html>. Entwicklerkonto registriert und App angelegt
 > (31.10.2026, <https://hub.vroid.com/oauth/applications>). Client-ID (öffentlich, darf in den Code):
-> `f-gDzdEkE8LVgYq9Qv7j_Z2d-6-_gekmc-pzU_eYaYI`. Secret liegt als GitHub-Actions-Secret `VROID_CLIENT_SECRET`
-> (noch nicht in `release.yml` verdrahtet).
+> `f-gDzdEkE8LVgYq9Qv7j_Z2d-6-_gekmc-pzU_eYaYI`. Secret liegt als GitHub-Actions-Secret `VROID_CLIENT_SECRET`.
 
 > **App-Einstellungen bei VRoid Hub (so geplant; bei Abweichungen hier nachziehen):** Scope nur `default`; Plattformen
 > Windows/macOS/Linux; App-Altersfreigabe R-18 (wegen der optionalen 18+-Inhalte); VRM 0.0 und 1.0; Modell-Nutzung:
@@ -122,32 +121,19 @@
     Avatar-Registry aufnehmen.
   - Fertige App bei pixiv melden, danach Prüfung und ggf. „Certified App“ (Art. 7). Ohne Freigabe darf die App
     trotzdem verteilt werden, VRoid Hub kann dann aber vor ihr warnen. Immer die aktuelle API-Version nutzen (Art. 9).
-- [ ] **Zwischenspeicher, vorsichtig ausgelegt:** VRM nur im App-Datenordner, je VRoid-Konto getrennt und als
-  VRoid-Modell markiert. Vor dem Laden die Download-Lizenz prüfen bzw. neu ausstellen; ist das Modell nicht mehr
-  freigegeben, gelöscht oder der Nutzer abgemeldet, den Cache löschen. Keine Ablage im Avatar-Ordner des Nutzers.
-  Offene Frage für das VRoid-Discord: ist ein unverschlüsselter lokaler Cache in Ordnung (das Unity-SDK
-  verschlüsselt seinen)?
-- [ ] **Redirect-URI:** Die Adresse muss exakt passen, ein zufälliger Port wie bei der OpenRouter-Anmeldung
-  (`openrouter_auth.rs`) geht nicht. Eingetragen werden `otakusoul://vroidhub/callback` (braucht
-  `tauri-plugin-deep-link`, unter Linux/Windows als Protokoll registrieren) und `http://127.0.0.1:47823/vroidhub/callback`
-  (fester Port; ist er belegt, Hinweis statt Ausweichport). Beide hat VRoid Hub beim Anlegen angenommen.
-- [ ] **OAuth 2.0 mit PKCE und `state`** (`/oauth/authorize`, `/oauth/token`, `/oauth/revoke`, Header
-  `X-Api-Version: 11`), Anmeldung im System-Browser. Der Token-Tausch verlangt zusätzlich `client_secret`. Das
-  Secret kommt nie ins Repository: GitHub-Actions-Secret `VROID_CLIENT_SECRET`, im Release-Build per `option_env!`
-  eingebacken, lokal über eine gitignorte `.env`; die Client-ID darf im Code stehen. Builds ohne Secret blenden die
-  Anmeldung aus oder nehmen eigene Zugangsdaten aus den Einstellungen. Ausweichweg, falls nötig: kleiner Token-Proxy
-  (z. B. Cloudflare Worker), der das Secret anhängt. Tokens samt Refresh-Token im Schlüsselbund (`secrets.rs`).
-- [ ] **Modelle laden:** eigene und gelikte Modelle auflisten, Download-Lizenz ausstellen
-  (`POST /api/download_licenses`), VRM über `/download` holen und im Avatar-Manager wie ein lokales VRM nutzen
-  (VRM 0.0 und 1.0). Speichern nur so, wie die Entwicklerbedingungen es erlauben.
-- [ ] **Sperren in der App:** VRoid-Modelle tragen eine Herkunftsmarke. Sie sind bei aktiver 18+-Freigabe für
-  Romance-/NSFW-Inhalte gesperrt und in der Stage nicht im 5e-Kampf/auf dem Spielbrett nutzbar; keine Änderung oder
-  Weitergabe (kein Export, kein Profil-Backup der VRM-Datei, kein Ausliefern über den Web-Server an andere Geräte
-  oder Nutzer, keine Hub-Einreichung).
-- [ ] **Bei pixiv melden**, sobald die Anbindung fertig ist (Prüfung zur „Certified App“).
-- [ ] **Nutzungsbedingungen je Modell** unter dem Titel „Model Data Conditions of Use“ nach den VRoid-Richtlinien
-  anzeigen (VRM 0.0 und 1.0 getrennt, <https://developer.vroid.com/en/guidelines/conditions_of_use.html>), dazu den
-  Urheber, wenn „Attribution: Required“.
+- [x] **Umgesetzt (01.11.2026, `modules/vroid_hub.rs`, `avatars/VroidHubPanel.tsx`, Details `AI.md` Abschnitt 6):**
+  OAuth mit PKCE/`state` über `http://127.0.0.1:47823/vroidhub/callback`, Secret per `option_env!` (in `release.yml`
+  verdrahtet), Tokens im Schlüsselbund; eigene und gelikte Modelle im Avatar-Manager, „Hinzufügen“ speichert das VRM
+  **verschlüsselt** (AES-256-GCM, Schlüssel im Schlüsselbund, ohne Schlüsselbund gar nicht) unter `<Daten>/vroid/`;
+  nicht mehr freigegebene Modelle und Abmelden löschen alles; „Model Data Conditions of Use“ mit Urheber je Modell;
+  keine Nutzung für 18+-markierte Charaktere; nicht in Export, Backup, Web-Server oder Hub (die Stage zeigt ohnehin
+  keine 3D-Avatare).
+- [ ] **Mit echtem Konto testen** (nur mit Secret möglich: `VROID_CLIENT_SECRET=… npm run tauri:linux` oder
+  Release-Build): Anmeldung, Liste, Hinzufügen, Laden im Chat und im Desktop-Pet, Token-Erneuerung, Abmelden.
+- [ ] **Bei pixiv melden**, sobald das läuft (Prüfung zur „Certified App“, <https://developer.vroid.com/en/api/recognize.html>).
+  Bis dahin liefert VRoid Hub nur eigene und zum Download freigegebene Modelle, mit Ratenlimit je App.
+- [ ] **Optional:** `otakusoul://vroidhub/callback` über `tauri-plugin-deep-link`, falls der feste Port bei Nutzern
+  oft belegt ist.
 
 ## 4. Kognitives Gedächtnis (Memory 2.0 – Ausblick & Folgepunkte)
 

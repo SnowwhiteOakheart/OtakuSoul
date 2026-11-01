@@ -4,7 +4,7 @@ vi.mock('../services/soundFx', () => ({ soundFx: new Proxy({}, { get: () => vi.f
 import { api } from '../services/api';
 import { useAppStore } from '../store/useAppStore';
 import { resetApiMocks } from './mockApi';
-import { usesLive2d, usesVrm } from '../components/avatars/avatarMatch';
+import { resolveVrmPath, usesLive2d, usesVrm } from '../components/avatars/avatarMatch';
 import type { CharacterProfile } from '../types';
 
 const character = (extensions: Record<string, unknown>): CharacterProfile =>
@@ -25,6 +25,16 @@ describe('avatar manager', () => {
     const l2d = { id: 'hiyori', model_path: '/data/live2d/hiyori/hiyori.model3.json' };
     expect(usesLive2d(character({ custom_live2d: 'Hiyori' }), l2d)).toBe(true);
     expect(usesLive2d(character({ custom_live2d: 'haru' }), l2d)).toBe(false);
+  });
+
+  it('keeps VRoid Hub models away from characters marked for adults', () => {
+    const scanned = [{ path: 'vroid:42' }, { path: '/data/avatars/Own.vrm' }];
+    expect(resolveVrmPath(character({ custom_vrm: 'vroid:42' }), scanned, null)).toBe('vroid:42');
+    const adult = character({ custom_vrm: 'vroid:42', otakusoul_nsfw: true });
+    expect(resolveVrmPath(adult, scanned, '/data/avatars/Own.vrm')).toBe('/data/avatars/Own.vrm');
+    // Nor as the default avatar.
+    expect(resolveVrmPath(character({ otakusoul_nsfw: true }), scanned, 'vroid:42')).toBe('');
+    expect(resolveVrmPath(character({}), scanned, 'vroid:42')).toBe('vroid:42');
   });
 
   it('saves the model in the card and takes it back out', async () => {

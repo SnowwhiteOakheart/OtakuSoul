@@ -1,4 +1,17 @@
 import type { CharacterProfile, EmotionResult, ScannedInochi2d, ScannedLive2d, ScannedVrm } from '../../types';
+import { isAdultMarked } from '../../utils/adultContent';
+
+/** Path prefix of a model from VRoid Hub (as `vroid_hub::PATH_PREFIX`). */
+export const VROID_PREFIX = 'vroid:';
+export const isVroidPath = (path: string | null | undefined): boolean => !!path && path.startsWith(VROID_PREFIX);
+export const vroidId = (path: string): string => path.slice(VROID_PREFIX.length);
+
+/**
+ * VRoid Hub models may not be used in sexual content (our app settings there say so), so a
+ * character marked for adults never shows one.
+ */
+export const vroidAllowedFor = (character: CharacterProfile | null): boolean =>
+  !character || !isAdultMarked(character.card.data.extensions);
 
 const normalize = (path: string) => path.replace(/\\/g, '/').toLowerCase();
 
@@ -72,7 +85,9 @@ export const resolveVrmPath = (
 ): string => {
   const own = character ? characterVrm(character) : '';
   const known = !!own && (scanned.length === 0 || scanned.some((vrm) => normalize(vrm.path).endsWith(normalize(own))));
-  return (known ? own : '') || activeVrmPath || '';
+  const allowed = (path: string | null) => !!path && (!isVroidPath(path) || vroidAllowedFor(character));
+  const fallback = allowed(activeVrmPath) ? activeVrmPath : '';
+  return (known && allowed(own) ? own : '') || fallback || '';
 };
 
 /** A GoEmotions name picked by hand, with the 3D expression and Live2D motion behind it. */

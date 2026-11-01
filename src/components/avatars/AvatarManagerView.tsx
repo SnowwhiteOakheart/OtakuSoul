@@ -15,7 +15,9 @@ import { Inochi2dMappingSettings } from './Inochi2dMappingSettings';
 import { PetFramingSettings } from './PetFramingSettings';
 import type { PuppetInfo } from '../../services/inochi2d/controls';
 import { importInochi2dFromDialog, importLive2dFromDialog, importVrmFromDialog } from './avatarImport';
-import { usesInochi2d, usesLive2d, usesVrm } from './avatarMatch';
+import { isVroidPath, usesInochi2d, usesLive2d, usesVrm, vroidAllowedFor, vroidId } from './avatarMatch';
+import { VroidConditions, VroidHubPanel } from './VroidHubPanel';
+import type { VroidModel } from '../../types/generated/VroidModel';
 import type { AvatarKind, AvatarMode, CharacterProfile, Inochi2dCatalogItem } from '../../types';
 
 type Filter = 'all' | AvatarKind;
@@ -49,7 +51,7 @@ interface ManagedAvatar {
   uses: (character: CharacterProfile) => boolean;
 }
 
-const FORMAT_LABELS: Record<string, string> = { vrm: 'VRM', gltf: 'glTF', mmd: 'MMD' };
+const FORMAT_LABELS: Record<string, string> = { vrm: 'VRM', gltf: 'glTF', mmd: 'MMD', vroid: 'VRoid Hub' };
 const LIVE2D_VERSIONS: Record<string, string> = { cubism3_4: 'Cubism 3/4', cubism2: 'Cubism 2' };
 
 /**
@@ -72,6 +74,41 @@ function Thumbnail({ avatar, fresh }: { avatar: ManagedAvatar; fresh?: string })
   if (shown) return <img src={shown} alt="" className="h-full w-full object-cover object-top" data-avatar-thumbnail />;
   const Icon = avatar.kind === 'vrm' ? Box : avatar.kind === 'inochi2d' ? Feather : Sparkles;
   return <Icon className="h-10 w-10 text-accent-300/70" aria-hidden />;
+}
+
+/** Author, conditions of use and removal of a VRoid Hub model chosen in the manager. */
+function VroidDetails({ path, onRemoved }: { path: string; onRemoved: () => void }) {
+  const { t } = useTranslation();
+  const [model, setModel] = useState<VroidModel | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    api.vroidModelInfo(vroidId(path)).then((m) => !cancelled && setModel(m)).catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [path]);
+  const remove = async () => {
+    try {
+      await api.vroidRemoveModel(vroidId(path));
+      onRemoved();
+      toast.success(translate('vroid.removed', { name: model?.name ?? '' }));
+    } catch (e) {
+      toast.error(errorMessage(e));
+    }
+  };
+  return (
+    <div className="space-y-2" data-vroid-details>
+      {model && <VroidConditions model={model} />}
+      <p className="text-[11px] text-slate-400">{t('vroid.usageHint')}</p>
+      <button
+        type="button"
+        onClick={() => void remove()}
+        className="flex items-center gap-1.5 rounded-lg border border-slate-700 px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-800"
+      >
+        {t('vroid.removeFromApp')}
+      </button>
+    </div>
+  );
 }
 
 function CharacterFace({ character, language }: { character: CharacterProfile; language: string }) {
@@ -315,6 +352,16 @@ export function AvatarManagerView() {
         </section>
       )}
 
+      {(filter === 'all' || filter === 'vrm') && (
+        <VroidHubPanel
+          onAdded={(path) => {
+            setFilter((f) => (f === 'all' || f === 'vrm' ? f : 'vrm'));
+            setQuery('');
+            setSelectedPath(path);
+          }}
+        />
+      )}
+
       <div className="flex flex-wrap items-center gap-3">
         <div
           role="radiogroup"
@@ -468,13 +515,15 @@ export function AvatarManagerView() {
                   {availableCharacters.map((c) => {
                     const on = selected.uses(c);
                     const other = on ? undefined : otherModel(selected, c);
+                    // VRoid Hub models stay out of adult content.
+                    const blocked = !on && isVroidPath(selected.path) && !vroidAllowedFor(c);
                     return (
                       <li key={c.id}>
                         <label className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-slate-800/60" data-avatar-character={c.id}>
                           <input
                             type="checkbox"
                             checked={on}
-                            disabled={saving !== null}
+                            disabled={saving !== null || blocked}
                             onChange={(e) => void toggleCharacter(selected, c, e.target.checked)}
                             className="h-4 w-4 accent-accent-500"
                           />
@@ -482,7 +531,9 @@ export function AvatarManagerView() {
                           <span className="min-w-0 flex-1">
                             <span className="block truncate text-sm text-slate-200">{charName(c)}</span>
                             <span className="block truncate text-[11px] text-slate-400">
-                              {on ? t('avatars.usesThis') : other ? t('avatars.usesOther', { name: other.name }) : t('avatars.usesDefault')}
+                              {blocked
+                                ? t('vroid.adultBlocked')
+                                : on ? t('avatars.usesThis') : other ? t('avatars.usesOther', { name: other.name }) : t('avatars.usesDefault')}
                             </span>
                           </span>
                           {on && <Check className="h-4 w-4 text-emerald-300" aria-hidden />}
@@ -507,6 +558,18 @@ export function AvatarManagerView() {
                   </button>
                   <p id="avatar-retake-hint" className="text-[11px] text-slate-400">{t('avatars.retakeThumbnailHint')}</p>
                 </div>
+              )}
+
+              {isVroidPath(selected.path) && (
+                <VroidDetails
+                  key={selected.path}
+                  path={selected.path}
+                  onRemoved={() => {
+                    if (isDefault(selected)) setActiveVrmPath(null);
+                    setSelectedPath(null);
+                    void refreshVrmModels();
+                  }}
+                />
               )}
 
               {selected.kind === 'inochi2d' && (

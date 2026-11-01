@@ -50,24 +50,24 @@ pub struct OpenRouterLogin {
 }
 
 /// Random verifier and its S256 challenge (base64url without padding, RFC 7636).
-fn pkce_pair() -> (String, String) {
+pub(crate) fn pkce_pair() -> (String, String) {
     let base64 = base64::engine::general_purpose::URL_SAFE_NO_PAD;
     let verifier = base64.encode(rand::random::<[u8; 32]>());
     let challenge = base64.encode(Sha256::digest(verifier.as_bytes()));
     (verifier, challenge)
 }
 
-/// The `code` of a callback request line (`GET /callback?code=…&state=… HTTP/1.1`) when its
+/// The `code` of a callback request line (`GET <path>?code=…&state=… HTTP/1.1`) when its
 /// state matches; `Err` when the user declined or the state is foreign, `Ok(None)` for other
 /// requests (the browser's favicon).
-fn callback_code(request_line: &str, state: &str) -> Result<Option<String>, String> {
+fn callback_code(request_line: &str, path: &str, state: &str) -> Result<Option<String>, String> {
     let Some(target) = request_line.split_whitespace().nth(1) else {
         return Ok(None);
     };
     let Ok(url) = reqwest::Url::parse(&format!("http://localhost{target}")) else {
         return Ok(None);
     };
-    if url.path() != "/callback" {
+    if url.path() != path {
         return Ok(None);
     }
     let query = |name: &str| {
@@ -112,10 +112,11 @@ async fn reply(stream: &mut TcpStream, status: &str, text: &str) {
     let _ = stream.write_all(response.as_bytes()).await;
 }
 
-/// Waits on both listeners for the callback with the code; the browser page speaks `language`
-/// (the interface language).
-async fn wait_for_code(
+/// Waits on the listeners for the callback on `path` with the code; the browser page speaks
+/// `language` (the interface language). Also used by the VRoid Hub sign-in.
+pub(crate) async fn wait_for_code(
     listeners: &[TcpListener],
+    path: &str,
     state: &str,
     language: &str,
 ) -> Result<String, String> {
@@ -133,7 +134,7 @@ async fn wait_for_code(
             .unwrap_or(0);
         let request = String::from_utf8_lossy(&buffer[..read]);
         let line = request.lines().next().unwrap_or_default();
-        match callback_code(line, state) {
+        match callback_code(line, path, state) {
             Ok(Some(code)) => {
                 reply(
                     &mut stream,
@@ -205,7 +206,7 @@ pub async fn login(app: &tauri::AppHandle, language: &str) -> Result<OpenRouterL
         .map_err(|e| crate::err!("backend.openrouter.browser", error = e))?;
 
     let code = tokio::select! {
-        code = wait_for_code(&listeners, &state, language) => code?,
+        code = wait_for_code(&listeners, "/callback", &state, language) => code?,
         _ = tokio::time::sleep(LOGIN_TIMEOUT) => return Err(crate::err!("backend.openrouter.timeout")),
         _ = CANCEL.notified() => return Err(crate::err!("backend.openrouter.cancelled")),
     };
@@ -327,13 +328,32 @@ mod tests {
     #[test]
     fn the_callback_must_carry_our_state() {
         assert_eq!(
-            callback_code("GET /callback?code=abc&state=s1 HTTP/1.1", "s1").unwrap(),
+            callback_code(
+                "GET /callback?code=abc&state=s1 HTTP/1.1",
+                "/callback",
+                "s1"
+            )
+            .unwrap(),
             Some("abc".to_string())
         );
-        assert!(callback_code("GET /callback?code=abc&state=other HTTP/1.1", "s1").is_err());
-        assert!(callback_code("GET /callback?error=access_denied HTTP/1.1", "s1").is_err());
+        assert!(
+            callback_code(
+                "GET /callback?code=abc&state=other HTTP/1.1",
+                "/callback",
+                "s1"
+            )
+            .is_err()
+        );
+        assert!(
+            callback_code(
+                "GET /callback?error=access_denied HTTP/1.1",
+                "/callback",
+                "s1"
+            )
+            .is_err()
+        );
         assert_eq!(
-            callback_code("GET /favicon.ico HTTP/1.1", "s1").unwrap(),
+            callback_code("GET /favicon.ico HTTP/1.1", "/callback", "s1").unwrap(),
             None
         );
     }
@@ -357,7 +377,9 @@ mod tests {
             let done = get("/callback?code=c0de&state=s1").await;
             (favicon, done)
         });
-        let code = wait_for_code(&[listener], "s1", "de").await.unwrap();
+        let code = wait_for_code(&[listener], "/callback", "s1", "de")
+            .await
+            .unwrap();
         let (favicon, done) = browser.await.unwrap();
         assert_eq!(code, "c0de");
         assert!(favicon.starts_with("HTTP/1.1 404"));

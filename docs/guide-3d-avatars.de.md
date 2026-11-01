@@ -15,6 +15,13 @@ Mixamo, MakeHuman oder einer anderen Quelle. **Wie Du an ein Modell kommst, muss
 Achte dabei auf die Rechte: Nutze nur Modelle, die Du verwenden darfst, halte Dich an Lizenzen und AGB und gib
 fremde Figuren nicht weiter. Für Modelle, die Du nicht selbst gemacht hast, bist Du verantwortlich.
 
+**Ohne Blender: Modelle von VRoid Hub.** Im Avatar-Manager (Bibliothek → Avatare) meldest Du Dich unter
+**VRoid Hub** mit Deinem Konto an. Dort erscheinen Deine eigenen Modelle und die, die Du auf VRoid Hub gelikt hast
+und deren Urheber die Nutzung als Avatar erlauben. **Hinzufügen** legt das Modell verschlüsselt in OtakuSoul ab, es
+steht dann bei den 3D-Avataren. Unter **Nutzungsbedingungen** siehst Du, was die Urheber erlauben. VRoid-Modelle
+gibt es nur für Dich und nur in OtakuSoul: kein Export, nicht für Charaktere mit 18+-Inhalten. Beim Abmelden
+werden sie gelöscht. Die Anmeldung gibt es nur in den offiziellen Releases.
+
 ## 2. Was Du brauchst
 
 - **[Blender](https://www.blender.org/) 4.2 oder neuer** (Linux, Windows, macOS)

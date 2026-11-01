@@ -84,3 +84,41 @@ pub fn hydrate_opt(account: &str, value: &mut Option<String>) -> bool {
     *value = (!inner.is_empty()).then_some(inner);
     needs_migration
 }
+
+/// A value kept only in the credential store (no file fallback); `None` without a store or entry.
+pub fn read(account: &str) -> Option<String> {
+    match entry(account)?.get_password() {
+        Ok(secret) => Some(secret),
+        Err(keyring::Error::NoEntry) => None,
+        Err(e) => {
+            warn!(
+                "Zugangsdaten '{}' konnten nicht gelesen werden: {}",
+                account, e
+            );
+            None
+        }
+    }
+}
+
+/// Stores a value only in the credential store; `false` when there is none.
+pub fn write(account: &str, value: &str) -> bool {
+    let Some(entry) = entry(account) else {
+        return false;
+    };
+    match entry.set_password(value) {
+        Ok(()) => true,
+        Err(e) => {
+            warn!(
+                "Zugangsdaten '{}' konnten nicht im Schlüsselbund gespeichert werden: {}",
+                account, e
+            );
+            false
+        }
+    }
+}
+
+/// Removes a value from the credential store (nothing happens without one).
+pub fn remove(account: &str) {
+    let mut empty = String::new();
+    externalize(account, &mut empty);
+}
