@@ -139,7 +139,10 @@ export function createAvatarStage(container: HTMLElement, modelPath: string, opt
   controls.enableDamping = true;
   controls.dampingFactor = 0.05;
   controls.minDistance = 0.4;
-  controls.maxDistance = 2.5;
+  // The orbit limit is for the chat viewer's mouse wheel. The pet frames the whole figure from
+  // further away (about 3.6 m for 1.6 m); `controls.update()` would pull the camera in and cut
+  // off the legs.
+  controls.maxDistance = pet ? Infinity : 2.5;
   controls.maxPolarAngle = Math.PI / 2 + 0.1;
   // The pet is dragged as a whole window; the camera stays put.
   controls.enabled = !pet;

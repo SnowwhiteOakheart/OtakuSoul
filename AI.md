@@ -991,7 +991,9 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `PetBubble` sitzt über dem Kopf: Raum = `petFigureTop(framing)` (+ `SIT_DROP` im Sitzen), höchstens so hoch,
   länger scrollt; unter 52 px Raum (stark gezoomt) oben im Fenster wie früher (`data-pet-bubble-above-head`).
   `frameFullBody` stellt die Fußspitzen (10 % der Modellhöhe zur Kamera hin) auf `PET_FEET_SHARE`, nicht die
-  Fersen – sonst schneidet die Perspektive sie am Fensterrand ab.
+  Fersen – sonst schneidet die Perspektive sie am Fensterrand ab. Die Pet-Bühne hat kein `maxDistance` der
+  OrbitControls (Chat: 2,5 m): `applyView` → `controls.update()` zog die Kamera sonst heran, und jede Figur über
+  ~1,1 m verlor die Unterschenkel.
 - Pet-Physik (`petPhysics.ts`): rechnet in physischen Pixeln mit dem Fenster als Körper; Geschwindigkeiten sind logisch
   und werden mit dem Monitor-Skalierungsfaktor multipliziert. Während des Ziehens ruht sie; nach dem Ziehen liest
   `syncWindow` Position und Arbeitsbereich neu, sonst fällt das Pet vom alten Platz. Pro Schritt nur ein `setPosition`
