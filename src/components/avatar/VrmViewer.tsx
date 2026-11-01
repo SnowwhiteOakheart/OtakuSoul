@@ -50,6 +50,15 @@ export interface AvatarViewerProps {
   seat?: 'floor' | 'edge' | null;
 }
 
+/**
+ * Bones that stand calmly while an idle or talking motion plays: the pack's stand is a wide-legged
+ * game stance (knees bent, hips tilted and lowered); the legs and the pelvis follow the procedural
+ * standing pose, the rest of the body the motion.
+ */
+const CALM_BONES = new Set<string>([
+  'hips', 'leftUpperLeg', 'rightUpperLeg', 'leftLowerLeg', 'rightLowerLeg', 'leftFoot', 'rightFoot', 'leftToes', 'rightToes',
+]);
+
 /** On the ground the hip joint sits this far (share of the model height) below the ankles. */
 const SEAT_BELOW_ANKLES = 0.05;
 /**
@@ -304,12 +313,16 @@ export const VrmViewer = ({
       if (hips && hipsRestY !== null) hips.position.y = hipsRestY;
       motionPlayer?.update(delta);
       const animated = motionPlayer?.bodyWeight ?? 0;
+      // Idle and talking motions keep their upper body, but not their legs and hips (see CALM_BONES).
+      const calm = motionPlayer?.standingWeight ?? 0;
       const pose = (name: Parameters<typeof model.humanoid.getNormalizedBoneNode>[0], x: number, y: number, z: number) => {
         const bone = model.humanoid.getNormalizedBoneNode(name);
-        if (!bone || animated >= 0.999) return;
+        // The procedural share of this bone: what no motion drives, plus the calm legs of standing loops.
+        const share = CALM_BONES.has(name) ? Math.min(1, 1 - animated + calm) : 1 - animated;
+        if (!bone || share <= 0.001) return;
         poseQuaternion.setFromEuler(poseEuler.set(x, y, z));
-        if (animated <= 0.001) bone.quaternion.copy(poseQuaternion);
-        else bone.quaternion.slerp(poseQuaternion, 1 - animated);
+        if (share >= 0.999) bone.quaternion.copy(poseQuaternion);
+        else bone.quaternion.slerp(poseQuaternion, share);
       };
       lookX = THREE.MathUtils.lerp(lookX, stage.mouse.x, 0.05);
       lookY = THREE.MathUtils.lerp(lookY, stage.mouse.y, 0.05);
@@ -334,6 +347,9 @@ export const VrmViewer = ({
       // The hips dip between steps (only without a motion, which moves them itself).
       if (hips && hipsRestY !== null && animated <= 0.001) {
         hips.position.y = hipsRestY + walkBob(walking ? walkPhase : null) * modelHeight;
+      } else if (hips && hipsRestY !== null && calm > 0.001) {
+        // Straight legs again: the hips go back up from the motion's knee-bend crouch.
+        hips.position.y = THREE.MathUtils.lerp(hips.position.y, hipsRestY, calm);
       }
       // Desktop pet sitting on the ground: legs and hips go to the sitting pose over whatever
       // moved them (procedural or a motion), eased in and out.

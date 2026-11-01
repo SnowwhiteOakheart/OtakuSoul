@@ -1014,6 +1014,12 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Knie nach vorn. Fehlen Lauf-/Sitz-Animationen,
   bieten Hub (Avatare, ganz oben), Avatar-Manager (`MotionPackOffer`) und Pet-Menü das Bewegungspaket an
   (`utils/motionPacks.ts`; das Pet lädt selbst und meldet `PET_MOTIONS_EVENT`, das Hauptfenster liest neu).
+- Ruhe- und Sprech-Animation des Quaternius-Pakets sind eine breitbeinige Spiel-Bereitschaftspose (Knie gebeugt,
+  Becken gekippt und abgesenkt). `AvatarMotionPlayer.standingWeight` meldet den Anteil von Idle/Talk; in
+  `VrmViewer` folgen dann Becken und Beine (`CALM_BONES`) der ruhigen Stehhaltung aus `bodyPose`, die Hüfthöhe geht
+  zurück auf die Ruhehöhe, Arme/Rumpf/Kopf bleiben bei der Animation. Laufen, Sitzen, Fallen und Gesten behalten ihre Beine.
+  Posen prüft man echt gerendert: `xvfb-run -a node e2e/local-pet-pose.mjs` (Pet-Oberfläche mit einem VRM 0.x und
+  einem 1.0 aus `assets/vrm`, mit dem Paket aus dem Profil und ohne, stehend und sitzend; vorher `npm run e2e:build`).
 - Avatare werden nie per Frustum ausgeblendet (`neverCull`): Skinned Meshes prüfen gegen ihre Ruhepose, Schuhe
   verschwanden beim Sitzen und Laufen am Fensterrand.
 - Pet-Physik (`petPhysics.ts`): rechnet in physischen Pixeln mit dem Fenster als Körper; Geschwindigkeiten sind logisch

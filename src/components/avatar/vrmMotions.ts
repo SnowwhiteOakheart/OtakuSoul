@@ -237,6 +237,19 @@ export class AvatarMotionPlayer {
     return Math.min(1, weight);
   }
 
+  /**
+   * How much of the body the standing loops (idle, talking) drive: the part of `bodyWeight` whose
+   * legs and hips the viewer replaces by the calm standing pose (`CALM_BONES`). Game animation
+   * sets stand wide-legged with bent knees ("ready stance"), which looks wrong on a companion
+   * who just stands there; walking, sitting, falling and gestures keep their legs.
+   */
+  get standingWeight(): number {
+    let weight = 0;
+    if (this.idle?.isRunning()) weight += this.idle.getEffectiveWeight();
+    if (this.loopRole === 'talk' && this.loop?.isRunning()) weight += this.loop.getEffectiveWeight();
+    return Math.min(1, weight);
+  }
+
   dispose() {
     this.mixer.stopAllAction();
     this.mixer.uncacheRoot(this.mixer.getRoot());
