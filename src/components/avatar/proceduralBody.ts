@@ -83,8 +83,9 @@ export interface BodyInput {
  * The pose for the rig's facing. The angles here are written for a rig that faces +Z with its
  * left arm along +X (VRM 1.0). A VRM 0.x rig faces -Z inside the model (three-vrm turns only the
  * whole scene round), its left arm runs along -X: there a turn about X goes the other way, so a
- * forward step, a bent knee or a forward lean would go backwards. Turns about Y are the same;
- * sideways (Z) angles already follow `leftArm`/`rightArm` where they matter.
+ * forward step, a bent knee or a forward lean would go backwards. The rig is the other one turned
+ * half round the vertical axis: turns about X and Z go the other way, turns about Y stay. So Z
+ * angles follow `leftArm`/`rightArm`, Y angles only the side (left/right), and X is turned here.
  */
 function forFacing(pose: BodyPose, leftArm: number): BodyPose {
   if (leftArm >= 0) return pose;
@@ -118,6 +119,9 @@ export function bodyPose({ t, leftArm, rightArm, walkPhase, sway, look }: BodyIn
     ['left', leftArm, 0],
     ['right', rightArm, 1.7],
   ] as const) {
+    // Turns about the vertical axis are the same on both kinds of rig (see `forFacing`), so they
+    // follow the side only; sideways (Z) angles follow the arm's direction `dir`.
+    const across = side === 'left' ? 1 : -1;
     // A swing forward/back while walking (against the leg on the same side), otherwise a slow drift.
     const legPhase = side === 'left' ? step : step + Math.PI;
     const swing = walking ? -1.2 * WALK_THIGH * Math.sin(legPhase) : 0.05 * drift(t, seed + 5);
@@ -128,19 +132,19 @@ export function bodyPose({ t, leftArm, rightArm, walkPhase, sway, look }: BodyIn
     const lagSide = sway.x * 0.5;
     pose[`${side}UpperArm`] = [
       0.1 + swing,
-      -dir * 0.05,
+      -across * 0.05,
       -dir * (ARM_DOWN - breath * 0.015 + 0.04 * drift(t, seed + 1) - lift) + lagSide,
     ];
-    pose[`${side}LowerArm`] = [0.05, -dir * (0.3 + 0.08 * drift(t, seed + 2) + (walking ? 0.15 : 0)), 0];
-    pose[`${side}Hand`] = [0.06 * drift(t, seed + 3), -dir * 0.1, -dir * 0.08 * drift(t, seed + 4)];
+    pose[`${side}LowerArm`] = [0.05, -across * (0.3 + 0.08 * drift(t, seed + 2) + (walking ? 0.15 : 0)), 0];
+    pose[`${side}Hand`] = [0.06 * drift(t, seed + 3), -across * 0.1, -dir * 0.08 * drift(t, seed + 4)];
     // Relaxed fingers: curled towards the palm (down in the T-pose), thumbs in a little.
     for (const finger of FINGERS) {
       for (const segment of SEGMENTS) {
         pose[`${side}${finger}${segment}`] = [0, 0, -dir * FINGER_CURL[segment] * FINGER_SPREAD[finger]];
       }
     }
-    pose[`${side}ThumbMetacarpal`] = [0, -dir * 0.25, 0];
-    pose[`${side}ThumbProximal`] = [0, -dir * 0.15, 0];
+    pose[`${side}ThumbMetacarpal`] = [0, -across * 0.25, 0];
+    pose[`${side}ThumbProximal`] = [0, -across * 0.15, 0];
   }
 
   if (walking) {
@@ -222,10 +226,11 @@ export function floorSitPose(leftArm: number, legs: LegAngles = DEFAULT_SIT_LEGS
     rightLowerLeg: [knee, 0, 0],
     rightFoot: [foot, 0, 0],
     leftUpperArm: [armsForward, 0, -out * 1.25],
-    leftLowerArm: [0, -out * elbow, 0],
+    // Elbows bend forwards: a turn about the vertical axis, the same on both kinds of rig.
+    leftLowerArm: [0, -elbow, 0],
     leftHand: [0, 0, 0],
     rightUpperArm: [armsForward, 0, out * 1.25],
-    rightLowerArm: [0, out * elbow, 0],
+    rightLowerArm: [0, elbow, 0],
     rightHand: [0, 0, 0],
   };
   return forFacing(pose, out);

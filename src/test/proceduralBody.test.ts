@@ -62,6 +62,10 @@ describe('bodyPose', () => {
     expect(floorSitPose(1).leftUpperLeg![0]).toBeLessThan(-1);
     expect(floorSitPose(-1).leftUpperLeg![0]).toBeGreaterThan(1);
     expect(floorSitPose(-1).leftUpperLeg![2]).toBeCloseTo(-floorSitPose(1).leftUpperLeg![2]);
+    // Elbows (a turn about the vertical axis) bend the same way on both rigs, arms reach forward.
+    expect(floorSitPose(-1).leftLowerArm![1]).toBeCloseTo(floorSitPose(1).leftLowerArm![1]);
+    expect(floorSitPose(-1).leftUpperArm![0]).toBeCloseTo(-floorSitPose(1).leftUpperArm![0]);
+    expect(bodyPose(input({ leftArm: -1, rightArm: 1 })).leftLowerArm![1]).toBeCloseTo(bodyPose(input()).leftLowerArm![1]);
   });
 
   it('reaches the ankle where the seat needs it, with the knee up', () => {

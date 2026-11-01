@@ -1006,8 +1006,8 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Knöchelhöhe); an der Kante sitzt das Hüftgelenk auf `PET_EDGE_SEAT`, und `DesktopPet` senkt das Fenster weich um
   `PET_EDGE_SINK` (`sink`, beim Neulesen der Position wieder abgezogen), damit die Beine Platz haben.
   Haltung im Kontextmenü (`PetPrefs.pose`: `auto`/`stand`/`sit` → `PetBehavior.setPose`; `sit` bleibt auch beim
-  Sprechen, Dösen, Reagieren sitzen, nur mit `onFloorSit`). Alle X-Winkel (und Z beim Kopf) gelten für Rigs, die nach
-  +Z schauen; VRM-0.x-Rigs schauen intern nach -Z (linker Arm entlang -X) – `forFacing` dreht sie um, sonst knicken
+  Sprechen, Dösen, Reagieren sitzen, nur mit `onFloorSit`). Alle X- und Z-Winkel gelten für Rigs, die nach
+  +Z schauen; VRM-0.x-Rigs schauen intern nach -Z (linker Arm entlang -X) – `forFacing` dreht X um, Z folgt `dir`, Y (Ellbogen, Daumen) nur der Seite; sonst knicken
   Knie nach vorn. Fehlen Lauf-/Sitz-Animationen,
   bieten Hub (Avatare, ganz oben), Avatar-Manager (`MotionPackOffer`) und Pet-Menü das Bewegungspaket an
   (`utils/motionPacks.ts`; das Pet lädt selbst und meldet `PET_MOTIONS_EVENT`, das Hauptfenster liest neu).
