@@ -88,6 +88,8 @@ export interface PetFramingChange {
  * the window height (logical px).
  */
 export const PET_RESIZE_EVENT = 'pet:resize';
+/** Pet → main window: motions were loaded (the main window reads them again and sends them on). */
+export const PET_MOTIONS_EVENT = 'pet:motions';
 
 export interface PetState {
   characterName: string;

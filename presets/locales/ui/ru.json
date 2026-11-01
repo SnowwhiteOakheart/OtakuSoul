@@ -4112,5 +4112,12 @@
   "backend.vroid.rateLimited": "Слишком много запросов к VRoid Hub. Подожди несколько минут.",
   "backend.vroid.download": "Не удалось скачать модель с VRoid Hub: {{error}}",
   "backend.vroid.tooLarge": "Модель слишком большая (более 512 МБ).",
-  "backend.vroid.notFound": "Эта модель VRoid недоступна."
+  "backend.vroid.notFound": "Эта модель VRoid недоступна.",
+  "motions.offerTitle": "Загрузить движения для 3D-фигур",
+  "motions.offerText": "Без пакета движений 3D-фигуры стоят скованно, ходят деревянно и никогда не садятся как питомец на рабочем столе. «{{name}}» от {{author}} ({{license}}) добавляет ходьбу, сидение, прыжки, падение, танец и другое.",
+  "motions.offerLoad": "Загрузить ({{size}} КБ)",
+  "pet.loadMotions": "Загрузить движения (ходьба, сидение …)",
+  "pet.motionsLoading": "Загружаю пару движений …",
+  "pet.motionsLoaded": "Готово! Теперь я могу нормально ходить и садиться.",
+  "pet.motionsFailed": "Не удалось загрузить движения: {{error}}"
 }

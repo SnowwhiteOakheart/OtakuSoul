@@ -9,6 +9,8 @@ import { toast } from '../../ui/feedback';
 import { matchesQuery, useHubStore } from '../hubStore';
 import { NsfwBadge } from '../hubParts';
 import type { HubAvatar } from '../../../types/generated/HubAvatar';
+import { MotionPackOffer } from '../../avatars/MotionPackOffer';
+import { MotionPacks } from '../../settings/MotionPacks';
 
 type Kind = 'vrm' | 'live2d' | 'inochi2d';
 const KINDS: Kind[] = ['vrm', 'live2d', 'inochi2d'];
@@ -154,6 +156,8 @@ export const HubAvatarsTab = () => {
   return (
     <div className="space-y-4" data-hub-avatars>
       <p className="text-xs text-slate-400 max-w-3xl">{t('hub.avatarsIntro')}</p>
+      {/* Motions first: without them 3D figures stand stiff, walk and sit badly. */}
+      <MotionPackOffer />
       <div className="flex flex-wrap gap-1.5" role="group" aria-label={t('hub.tabAvatars')}>
         <button type="button" aria-pressed={kind === 'all'} onClick={() => setKind('all')} className={chip(kind === 'all')}>
           {t('hub.avatarsAll')}
@@ -260,6 +264,7 @@ export const HubAvatarsTab = () => {
           })}
         </div>
       )}
+      <MotionPacks onLoaded={() => useAppStore.getState().refreshAvatarMotions()} />
     </div>
   );
 };

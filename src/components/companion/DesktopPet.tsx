@@ -17,6 +17,7 @@ import type { PetFigure } from '../avatar/avatarStage';
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { useTranslation } from '../../i18n';
 import { api } from '../../services/api';
+import { errorMessage } from '../../utils/errors';
 import { NOTIFICATION_OPEN_CHAT_EVENT } from '../../services/notifications';
 import { audioPlayer } from '../../services/audioPlayer';
 import { SILENT_VISEMES } from '../../services/lipSync';
@@ -39,6 +40,8 @@ import {
 } from './petBehavior';
 import { planJump, stepBody, throwVelocity, walkArea, type Body, type Platform, type Rect } from './petPhysics';
 import type { GestureRequest, LoopRole } from '../../utils/avatarGestures';
+import { lacksPetMotions, recommendedMotionPack } from '../../utils/motionPacks';
+import type { MotionPackItem } from '../../types/generated/MotionPackItem';
 import { DEFAULT_PET_FRAMING, PET_FEET_SHARE, petFigureTop, type PetFraming } from '../../services/avatarViewState';
 import {
   clampPetHeight,
@@ -54,6 +57,7 @@ import {
   PET_FRAMING_EVENT,
   PET_HELLO_EVENT,
   PET_MOODS,
+  PET_MOTIONS_EVENT,
   PET_PICK_EMOTION_EVENT,
   PET_PLATFORMS_EVENT,
   PET_PREFS_EVENT,
@@ -93,6 +97,8 @@ const isMmdModel = (path: string) => /\.(pmx|pmd)$/i.test(path);
  * rest on the edge and the legs hang over it (the window itself keeps standing on the edge).
  */
 const SIT_DROP = 0.2;
+/** Sitting on the ground lowers the head by about this share of the window (a VRM pose). */
+const FLOOR_SIT_DROP = 0.3;
 const isGltfModel = (path: string) => /\.(glb|gltf)$/i.test(path);
 // Inochi2D puppets bring their own runtime; only loaded for them.
 const Inochi2dViewer = lazy(() => import('../avatar/Inochi2dViewer'));
@@ -162,7 +168,7 @@ function within<T>(promise: Promise<T>, ms = WINDOW_CALL_MS): Promise<T> {
  * moving drags the window, a click pats, right click opens the menu.
  */
 export const DesktopPet: React.FC = () => {
-  const { t, tEmotion, tOptional } = useTranslation();
+  const { t, tEmotion, tOptional, currentLanguage } = useTranslation();
   const { companionState, fetchCompanionState, applyHormoneInteraction, requestToolCall, toggleDesktopPet } =
     useStoreFields('companionState', 'fetchCompanionState', 'applyHormoneInteraction', 'requestToolCall', 'toggleDesktopPet');
   const [pet, setPet] = useState<PetState | null>(null);
@@ -189,6 +195,9 @@ export const DesktopPet: React.FC = () => {
   const [hop, setHop] = useState(false);
   const [walking, setWalking] = useState(false);
   const [loop, setLoop] = useState<LoopRole | null>(null);
+  /** Sitting on the ground (VRM pose of its own). */
+  const [seated, setSeated] = useState(false);
+  const seatedRef = useRef(false);
   const sittingRef = useRef(false);
   /** Desktop physics: the window (physical px), its size, the floor's work area and the scale. */
   const body = useRef<Body | null>(null);
@@ -252,7 +261,8 @@ export const DesktopPet: React.FC = () => {
 
   /** Where the head ends in the window now: from the figure, lower while it sits. */
   const headEnd = useCallback(
-    () => headZoneEnd(stageRef.current?.headLine() ?? null, sittingRef.current ? SIT_DROP : 0),
+    () =>
+      headZoneEnd(stageRef.current?.headLine() ?? null, sittingRef.current ? SIT_DROP : seatedRef.current ? FLOOR_SIT_DROP : 0),
     [],
   );
 
@@ -586,6 +596,8 @@ export const DesktopPet: React.FC = () => {
       setHop(frame.hop);
       setWalking(frame.walk !== 0);
       setLoop(frame.loop);
+      setSeated(frame.seated);
+      seatedRef.current = frame.seated;
       sittingRef.current = frame.loop === 'sit';
       walkDirection.current = frame.walk;
       gazeOverride.current = frame.gaze;
@@ -834,7 +846,24 @@ export const DesktopPet: React.FC = () => {
     }
   };
 
+  /** Loads the motion pack offered in the menu; the main window reads the motions again. */
+  const loadMotionPack = async (pack: MotionPackItem) => {
+    say(t('pet.motionsLoading'));
+    try {
+      await api.downloadMotionPack(pack.id);
+      await emitTo('main', PET_MOTIONS_EVENT);
+      say(t('pet.motionsLoaded'));
+    } catch (e) {
+      say(t('pet.motionsFailed', { error: errorMessage(e) }));
+    }
+  };
+
   const openMenu = async () => {
+    // A 3D figure without walking or sitting motions: the menu offers the motion pack.
+    const motionPack =
+      pet?.vrmPath && lacksPetMotions(pet.motions ?? [])
+        ? recommendedMotionPack((await api.getMotionPacks(currentLanguage).catch(() => [])) ?? [])
+        : null;
     const sizes: { key: PetSize; label: string }[] = [
       { key: 'small', label: t('pet.sizeSmall') },
       { key: 'medium', label: t('pet.sizeMedium') },
@@ -846,6 +875,7 @@ export const DesktopPet: React.FC = () => {
         { item: 'Separator' },
         { text: t('pet.compose'), action: openCompose },
         { text: t('pet.pat'), action: () => void pat() },
+        ...(motionPack ? [{ text: t('pet.loadMotions'), action: () => void loadMotionPack(motionPack) }] : []),
         { text: t(statusOpen ? 'pet.hideStatus' : 'pet.showStatus'), action: () => setStatusOpen((open) => !open) },
         {
           text: t('pet.mood'),
@@ -1032,9 +1062,13 @@ export const DesktopPet: React.FC = () => {
     (available: Record<LoopRole, boolean>) => behavior.setSitMotion(available.sit),
     [behavior],
   );
-  const petLink = useMemo(() => ({ onStage, onLoops }), [onStage, onLoops]);
+  // Only the VRM viewer can pose the figure sitting on the ground; it reports so once loaded.
+  const onFloorSit = useCallback((available: boolean) => behavior.setFloorSit(available), [behavior]);
+  const petLink = useMemo(() => ({ onStage, onLoops, onFloorSit }), [onStage, onLoops, onFloorSit]);
 
   const modelPath = pet ? petModelPath(pet, prefs.figure) : '';
+  // Another figure: it sits on the ground again only when its viewer says it can.
+  useEffect(() => behavior.setFloorSit(false), [behavior, modelPath]);
   // Each model comes back in the size it last had, with its own framing.
   useEffect(() => {
     modelRef.current = modelPath;
@@ -1073,6 +1107,7 @@ export const DesktopPet: React.FC = () => {
     gesture,
     pet: petLink,
     loop,
+    seated,
   };
   const hormones = companionState?.hormones;
   const thought = companionState?.scratchpad?.[0]?.thought;
@@ -1162,7 +1197,7 @@ export const DesktopPet: React.FC = () => {
           ms={shownBubble === bubble ? bubbleShowMs.current : 0}
           side={bubbleSideNow}
           // Sitting draws the figure lower: more room above the head.
-          room={petFigureTop(framingRef.current) + (loop === 'sit' ? SIT_DROP : 0)}
+          room={petFigureTop(framingRef.current) + (loop === 'sit' ? SIT_DROP : seated ? FLOOR_SIT_DROP : 0)}
           title={t('pet.compose')}
           onClick={bubbleChat ? openBubbleChat : openCompose}
         />

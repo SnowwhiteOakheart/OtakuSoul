@@ -10,6 +10,7 @@ import {
   PET_AUDIO_EVENT,
   PET_HELLO_EVENT,
   PET_LABEL,
+  PET_MOTIONS_EVENT,
   PET_PICK_EMOTION_EVENT,
   PET_READY_EVENT,
   PET_SAY_EVENT,
@@ -231,6 +232,10 @@ export function useDesktopPetBridge(enabled = true) {
             const text = translate('pet.sendFailed', { error: errorMessage(e) });
             void emitTo(PET_LABEL, PET_SAY_EVENT, { text } satisfies PetSay).catch(() => {});
           });
+      }),
+      // Motions loaded from the pet's menu: read them again (the pet gets them with the next state).
+      listen(PET_MOTIONS_EVENT, () => {
+        void useAppStore.getState().refreshAvatarMotions();
       }),
       // Tray menu and global shortcut.
       listen(PET_TOGGLE_EVENT, () => {

@@ -44,8 +44,26 @@ const FINGER_SPREAD: Record<(typeof FINGERS)[number], number> = { Index: 0.85, M
 
 /** How far the lowered arm hangs down from the T-pose (radians around the body's front axis). */
 const ARM_DOWN = 1.25;
-/** Walk cycles per second (two steps each): a calm stroll. */
+/** Thigh swing while walking (radians each way): the small steps of a calm stroll. */
+export const WALK_THIGH = 0.2;
+/** Leg length (hip to sole) as share of the model height. */
+const LEG_SHARE = 0.47;
+/** Ground covered per walk cycle (two steps), in model heights. */
+export const WALK_STRIDE = 4 * LEG_SHARE * Math.sin(WALK_THIGH);
+/**
+ * Walk cycles per second (two steps each). The desktop pet moves `WALK_PACE` window heights per
+ * second (`petPhysics`), turned `WALK_TURN` towards its way (`petBehavior`); at this rate the
+ * planted foot keeps pace with the ground instead of sliding (a test checks it).
+ */
 export const WALK_CYCLE_HZ = 1.1;
+/** How far the hips drop between two steps (share of the model height). */
+const WALK_BOB = 0.012;
+
+/**
+ * Height of the hips while walking, as share of the model height below their rest: highest
+ * while one leg passes the other, lowest when both feet are on the ground.
+ */
+export const walkBob = (walkPhase: number | null): number => (walkPhase === null ? 0 : -WALK_BOB * Math.abs(Math.sin(walkPhase)));
 
 export interface BodyInput {
   /** Seconds since the avatar appeared. */
@@ -76,7 +94,8 @@ export function bodyPose({ t, leftArm, rightArm, walkPhase, sway, look }: BodyIn
   const step = walkPhase ?? 0;
 
   const pose: BodyPose = {
-    hips: [0, twist + (walking ? 0.07 * Math.sin(step) : 0), shift],
+    // Walking: the pelvis turns with the stepping leg and dips towards the swinging one.
+    hips: [0, twist + (walking ? 0.07 * Math.sin(step) : 0), shift + (walking ? 0.035 * Math.cos(step) : 0)],
     spine: [breath * 0.012, -twist * 0.5 + look.x * 0.03 - (walking ? 0.05 * Math.sin(step) : 0), -shift * 0.6],
     chest: [breath * 0.016 - look.y * 0.02, look.x * 0.04, -shift * 0.3],
     neck: [-look.y * 0.05, look.x * 0.07, 0],
@@ -88,7 +107,7 @@ export function bodyPose({ t, leftArm, rightArm, walkPhase, sway, look }: BodyIn
   ] as const) {
     // A swing forward/back while walking (against the leg on the same side), otherwise a slow drift.
     const legPhase = side === 'left' ? step : step + Math.PI;
-    const swing = walking ? -0.28 * Math.sin(legPhase) : 0.05 * drift(t, seed + 5);
+    const swing = walking ? -1.2 * WALK_THIGH * Math.sin(legPhase) : 0.05 * drift(t, seed + 5);
     // Shoulders rise a little with each breath.
     pose[`${side}Shoulder`] = [0, 0, -dir * (0.02 + breath * 0.012)];
     // The window's movement: arms lag behind sideways and rise when it drops (or is thrown up).
@@ -114,12 +133,13 @@ export function bodyPose({ t, leftArm, rightArm, walkPhase, sway, look }: BodyIn
   if (walking) {
     for (const side of ['left', 'right'] as const) {
       const phase = side === 'left' ? step : step + Math.PI;
-      // Thigh swings back and forth, the knee bends while the leg comes forward, the foot stays level.
-      const thigh = 0.3 * Math.sin(phase);
-      const knee = 0.08 + 0.5 * Math.max(0, -Math.cos(phase));
+      // Thigh swings back and forth, the knee bends while the leg comes forward; the foot rolls:
+      // heel first in front (toes up), pushing off from the toes behind (toes down).
+      const thigh = WALK_THIGH * Math.sin(phase);
+      const knee = 0.06 + 0.55 * Math.max(0, -Math.cos(phase));
       pose[`${side}UpperLeg`] = [thigh - knee * 0.5, 0, 0];
       pose[`${side}LowerLeg`] = [knee, 0, 0];
-      pose[`${side}Foot`] = [-thigh * 0.4 - knee * 0.3, 0, 0];
+      pose[`${side}Foot`] = [-thigh * 0.4 - knee * 0.3 + 0.2 * Math.sin(phase), 0, 0];
     }
   } else {
     // Standing: the leg that carries the weight is straight, the other knee gives a little.
@@ -130,6 +150,30 @@ export function bodyPose({ t, leftArm, rightArm, walkPhase, sway, look }: BodyIn
     pose.rightLowerLeg = [relaxed * (shift > 0 ? 0.6 : 2), 0, 0];
   }
   return pose;
+}
+
+/** Height of the hips above the ground while sitting on it (share of the model height). */
+export const FLOOR_SIT_HIPS = 0.09;
+
+/**
+ * Sitting on the ground, facing the viewer: legs forward (one stretched, the other knee drawn up
+ * a little), the back leaning slightly forward; the arms keep hanging beside the body, so the
+ * hands rest near the ground. `leftArm` is the rig's X direction (VRM 0.x may flip it), which
+ * sets where "outwards" is for the legs. Laid out for the leg proportions of `LEG_SHARE` with
+ * the hips at `FLOOR_SIT_HIPS`: the feet stay just above the ground.
+ */
+export function floorSitPose(leftArm: number): BodyPose {
+  const out = Math.sign(leftArm) || 1;
+  return {
+    spine: [0.12, 0, 0],
+    chest: [0.05, 0, 0],
+    leftUpperLeg: [-1.5, 0, out * 0.12],
+    leftLowerLeg: [0.08, 0, 0],
+    leftFoot: [0.3, 0, 0],
+    rightUpperLeg: [-1.75, 0, -out * 0.1],
+    rightLowerLeg: [0.5, 0, 0],
+    rightFoot: [0.2, 0, 0],
+  };
 }
 
 /**

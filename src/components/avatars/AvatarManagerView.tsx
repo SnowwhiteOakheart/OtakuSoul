@@ -17,6 +17,7 @@ import type { PuppetInfo } from '../../services/inochi2d/controls';
 import { importInochi2dFromDialog, importLive2dFromDialog, importVrmFromDialog } from './avatarImport';
 import { isVroidPath, usesInochi2d, usesLive2d, usesVrm, vroidAllowedFor, vroidId } from './avatarMatch';
 import { VroidConditions, VroidHubPanel } from './VroidHubPanel';
+import { MotionPackOffer } from './MotionPackOffer';
 import type { VroidModel } from '../../types/generated/VroidModel';
 import type { AvatarKind, AvatarMode, CharacterProfile, Inochi2dCatalogItem } from '../../types';
 
@@ -335,6 +336,8 @@ export function AvatarManagerView() {
           ))}
         </section>
       )}
+
+      {(filter === 'all' || filter === 'vrm') && <MotionPackOffer />}
 
       {(filter === 'all' || filter === 'vrm') && (
         <VroidHubPanel

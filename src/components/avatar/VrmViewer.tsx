@@ -14,7 +14,7 @@ import type { GestureRequest, LoopRole } from '../../utils/avatarGestures';
 import { loadMotionClip, AvatarMotionPlayer } from './vrmMotions';
 import { createAvatarStage, createBlinker, type AvatarStage } from './avatarStage';
 import { AvatarViewerChrome } from './AvatarViewerChrome';
-import { bodyPose, BodySway, WALK_CYCLE_HZ, type BodyBone } from './proceduralBody';
+import { bodyPose, BodySway, floorSitPose, FLOOR_SIT_HIPS, walkBob, WALK_CYCLE_HZ, type BodyBone } from './proceduralBody';
 import { useAvatarMotions } from './useAvatarMotions';
 
 export interface AvatarViewerProps {
@@ -36,9 +36,13 @@ export interface AvatarViewerProps {
     onStage: (stage: AvatarStage | null) => void;
     /** Which state loops (walk, sit) this avatar has motions for. */
     onLoops?: (available: Record<LoopRole, boolean>) => void;
+    /** Whether this viewer can sit the figure on the ground (VRM: yes, once loaded). */
+    onFloorSit?: (available: boolean) => void;
   };
   /** State loop instead of the idle loop (desktop pet walking or sitting). */
   loop?: LoopRole | null;
+  /** Desktop pet: sitting on the ground (a pose of its own over any motion). */
+  seated?: boolean;
 }
 
 const VISEME_KEYS = Object.keys(SILENT_VISEMES) as (keyof Visemes)[];
@@ -101,6 +105,7 @@ export const VrmViewer = ({
   onPickEmotion = () => {},
   pet,
   loop = null,
+  seated = false,
 }: AvatarViewerProps) => {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -120,6 +125,10 @@ export const VrmViewer = ({
   useEffect(() => {
     loopRef.current = loop;
   }, [loop]);
+  const seatedRef = useRef(seated);
+  useEffect(() => {
+    seatedRef.current = seated;
+  }, [seated]);
 
   useEffect(() => {
     emotionRef.current = emotion;
@@ -205,9 +214,13 @@ export const VrmViewer = ({
 
         loaded.scene.updateMatrixWorld(true);
         const head = loaded.humanoid.getRawBoneNode('head');
+        modelHeight = new THREE.Box3().setFromObject(loaded.scene).max.y;
+        hipsRestY = loaded.humanoid.getNormalizedBoneNode('hips')?.position.y ?? null;
         if (head) {
-          stage.frameModel(head.getWorldPosition(new THREE.Vector3()).y, new THREE.Box3().setFromObject(loaded.scene).max.y);
+          stage.frameModel(head.getWorldPosition(new THREE.Vector3()).y, modelHeight);
         }
+        // The pet may sit this figure on the ground (the pose needs the humanoid rig).
+        petRef.current?.onFloorSit?.(!!loaded.humanoid.getNormalizedBoneNode('hips'));
         stage.setHands(
           [loaded.humanoid.getRawBoneNode('leftHand'), loaded.humanoid.getRawBoneNode('rightHand')].filter(
             (hand): hand is THREE.Object3D => !!hand,
@@ -228,6 +241,11 @@ export const VrmViewer = ({
     const blink = createBlinker();
     const sway = new BodySway();
     let walkPhase = 0;
+    /** Model height (top of its bounds) and the hips' rest height, for the dip while walking. */
+    let modelHeight = 0;
+    let hipsRestY: number | null = null;
+    /** How far the figure has sat down on the ground (0 standing … 1 sitting), eased. */
+    let seat = 0;
     /** Spring settings of hair and cloth as loaded, to add the window's wind to (and restore). */
     const springRest = new Map<object, { dir: THREE.Vector3; power: number }>();
     const wind = new THREE.Vector3();
@@ -248,6 +266,9 @@ export const VrmViewer = ({
       // The mouse look is added on top every frame, so the head starts from rest (or from
       // the motion, which overwrites it if it animates the head).
       model.humanoid.getNormalizedBoneNode('head')?.quaternion.identity();
+      // The hips start from rest too (a motion moves them itself; sitting and steps add on top).
+      const hips = model.humanoid.getNormalizedBoneNode('hips');
+      if (hips && hipsRestY !== null) hips.position.y = hipsRestY;
       motionPlayer?.update(delta);
       const animated = motionPlayer?.bodyWeight ?? 0;
       const pose = (name: Parameters<typeof model.humanoid.getNormalizedBoneNode>[0], x: number, y: number, z: number) => {
@@ -277,6 +298,21 @@ export const VrmViewer = ({
         look: { x: neckX, y: neckY },
       });
       for (const [bone, [x, y, z]] of Object.entries(body)) pose(bone as BodyBone, x, y, z);
+      // The hips dip between steps (only without a motion, which moves them itself).
+      if (hips && hipsRestY !== null && animated <= 0.001) {
+        hips.position.y = hipsRestY + walkBob(walking ? walkPhase : null) * modelHeight;
+      }
+      // Desktop pet sitting on the ground: legs and hips go to the sitting pose over whatever
+      // moved them (procedural or a motion), eased in and out.
+      seat += ((seatedRef.current ? 1 : 0) - seat) * Math.min(1, delta * 2.5);
+      if (seat > 0.001 && hips && hipsRestY !== null) {
+        for (const [bone, [x, y, z]] of Object.entries(floorSitPose(leftArmDirection))) {
+          const node = model.humanoid.getNormalizedBoneNode(bone as BodyBone);
+          if (!node) continue;
+          node.quaternion.slerp(poseQuaternion.setFromEuler(poseEuler.set(x, y, z)), seat);
+        }
+        hips.position.y = THREE.MathUtils.lerp(hips.position.y, FLOOR_SIT_HIPS * modelHeight, seat);
+      }
       model.humanoid
         .getNormalizedBoneNode('head')
         ?.quaternion.multiply(poseQuaternion.setFromEuler(poseEuler.set(-lookY * 0.12, lookX * 0.2, -lookX * 0.04)));

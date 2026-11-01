@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { bodyPose, BodySway, drift, type BodyInput } from '../components/avatar/proceduralBody';
+import { bodyPose, BodySway, drift, walkBob, WALK_CYCLE_HZ, WALK_STRIDE, type BodyInput } from '../components/avatar/proceduralBody';
+import { WALK_PACE } from '../components/companion/petPhysics';
+import { WALK_TURN } from '../components/companion/petBehavior';
 import { frameInterval } from '../components/avatar/avatarStage';
 
 const input = (over: Partial<BodyInput> = {}): BodyInput => ({
@@ -47,6 +49,24 @@ describe('bodyPose', () => {
     const swing = bodyPose(input({ walkPhase: Math.PI }));
     expect(swing.leftLowerLeg![0]).toBeGreaterThan(0.4);
     expect(swing.rightLowerLeg![0]).toBeLessThan(0.2);
+  });
+
+  it('steps as fast as the pet moves, so the planted foot does not slide', () => {
+    // The figure fills 0.8 / 1.02 of the window; seen turned by WALK_TURN, a stride covers less.
+    const figureHeightsPerSecond = WALK_PACE / (0.8 / 1.02);
+    const ground = WALK_CYCLE_HZ * WALK_STRIDE * Math.cos(WALK_TURN);
+    expect(ground / figureHeightsPerSecond).toBeGreaterThan(0.9);
+    expect(ground / figureHeightsPerSecond).toBeLessThan(1.1);
+  });
+
+  it('rolls the foot from heel to toes and lets the hips dip between steps', () => {
+    // Left leg in front (heel down, toes up) and behind (pushing off, toes down).
+    const front = bodyPose(input({ walkPhase: (3 * Math.PI) / 2 }));
+    const back = bodyPose(input({ walkPhase: Math.PI / 2 }));
+    expect(front.leftFoot![0]).toBeLessThan(back.leftFoot![0]);
+    expect(walkBob(null)).toBe(0);
+    expect(walkBob(0)).toBeCloseTo(0);
+    expect(walkBob(Math.PI / 2)).toBeLessThan(0);
   });
 
   it('lifts the arms when the body trails upwards (window dropping)', () => {

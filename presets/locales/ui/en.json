@@ -4112,5 +4112,12 @@
   "backend.vroid.rateLimited": "Too many requests to VRoid Hub. Wait a few minutes.",
   "backend.vroid.download": "Could not download the model from VRoid Hub: {{error}}",
   "backend.vroid.tooLarge": "The model is too large (over 512 MB).",
-  "backend.vroid.notFound": "This VRoid model is not available (any more)."
+  "backend.vroid.notFound": "This VRoid model is not available (any more).",
+  "motions.offerTitle": "Load motions for 3D figures",
+  "motions.offerText": "Without a motion pack, 3D figures stand stiff, walk woodenly and never sit down as desktop pet. “{{name}}” by {{author}} ({{license}}) brings walking, sitting, jumping, falling, dancing and more.",
+  "motions.offerLoad": "Load ({{size}} KB)",
+  "pet.loadMotions": "Load motions (walking, sitting …)",
+  "pet.motionsLoading": "Fetching a few moves …",
+  "pet.motionsLoaded": "Done! Now I can walk properly and sit down.",
+  "pet.motionsFailed": "Could not load the motions: {{error}}"
 }

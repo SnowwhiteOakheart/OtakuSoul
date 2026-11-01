@@ -12,7 +12,7 @@ import { withoutEmotionTag } from '../../utils/replyTags';
  */
 export type PetMode = 'idle' | 'walking' | 'sitting' | 'falling' | 'dozing' | 'reacting' | 'dragged' | 'talking';
 
-export type PetAction = 'lookAround' | 'yawn' | 'hop' | 'wave' | 'think' | 'nod' | 'walk' | 'sit' | 'jump';
+export type PetAction = 'lookAround' | 'yawn' | 'hop' | 'wave' | 'think' | 'nod' | 'walk' | 'sit' | 'sitFloor' | 'jump';
 
 export interface Gaze {
   x: number;
@@ -35,6 +35,8 @@ export interface PetFrame {
   turn: number;
   /** Motion loop instead of the idle loop (only plays when the avatar has such a motion). */
   loop: LoopRole | null;
+  /** Sitting on the ground it stands on (a pose of its own, no motion needed). */
+  seated: boolean;
 }
 
 /** Where the figure was touched: a stroke on the head or a poke elsewhere. */
@@ -120,6 +122,7 @@ const DURATION: Record<PetAction, number> = {
   nod: 1500,
   walk: WALK_MS[0],
   sit: SIT_MS[0],
+  sitFloor: SIT_MS[0],
   jump: 400,
 };
 
@@ -157,6 +160,8 @@ export class PetBehavior {
   /** Standing on another window's edge (sitting is only done there, legs over the edge). */
   private onWindow = false;
   private sitMotion = false;
+  /** The figure can sit down on the ground by itself (VRM: a pose of its own). */
+  private floorSit = false;
   /** A window's edge is within jumping reach. */
   private canJump = false;
   /** In the air by its own jump (a happy leap, not a startled fall). */
@@ -363,6 +368,12 @@ export class PetBehavior {
     if (!available && this.action?.kind === 'sit') this.action = null;
   }
 
+  /** Whether the figure can sit on the ground (a VRM pose); without it, it only sits on edges. */
+  setFloorSit(available: boolean) {
+    this.floorSit = available;
+    if (!available && this.action?.kind === 'sitFloor') this.action = null;
+  }
+
   /** The figure ran into a side wall (-1 left, 1 right): a walk that way turns around. */
   bumped(wall: -1 | 1, now = 0) {
     const action = this.action;
@@ -416,6 +427,8 @@ export class PetBehavior {
       ['nod', 10],
       ['walk', this.physics && this.grounded ? 30 * lively : 0],
       ['sit', this.physics && this.onWindow && this.sitMotion ? 25 : 0],
+      // On the ground (or an edge without a sitting motion) it sits down now and then, calmer when tired.
+      ['sitFloor', this.grounded && this.floorSit && !(this.onWindow && this.sitMotion) ? 14 * (1 + above(fatigue)) : 0],
       ['jump', this.physics && this.grounded && this.canJump ? 18 : 0],
     ];
     const total = weights.reduce((sum, [, w]) => sum + w, 0);
@@ -426,7 +439,7 @@ export class PetBehavior {
       action.direction = this.random() < 0.5 ? -1 : 1;
       action.end = now + WALK_MS[0] + this.random() * (WALK_MS[1] - WALK_MS[0]);
     }
-    if (kind === 'sit') action.end = now + SIT_MS[0] + this.random() * (SIT_MS[1] - SIT_MS[0]);
+    if (kind === 'sit' || kind === 'sitFloor') action.end = now + SIT_MS[0] + this.random() * (SIT_MS[1] - SIT_MS[0]);
     if (kind === 'lookAround') {
       const side = this.random() < 0.5 ? -1 : 1;
       action.gazes = [
@@ -482,7 +495,7 @@ export class PetBehavior {
       this.startAction(now);
     }
 
-    const still = { mouth: 0, hop: false, walk: 0 as const, turn: 0, loop: null };
+    const still = { mouth: 0, hop: false, walk: 0 as const, turn: 0, loop: null, seated: false };
     let frame: PetFrame;
     switch (this.mode) {
       case 'dozing':
@@ -505,13 +518,15 @@ export class PetBehavior {
       default: {
         const direction = this.action?.kind === 'walk' ? this.action.direction! : 0;
         const sitting = this.action?.kind === 'sit';
+        const seated = this.action?.kind === 'sitFloor';
         const swaying = this.music && !this.action && !this.saving;
         frame = {
           ...still,
           ...this.actionFrame(now),
           // Listening to music: relaxed, the head dips on each beat.
           ...(swaying ? { expression: 'relaxed', gaze: now < this.beatUntil ? { x: 0, y: -0.55 } : null } : {}),
-          mode: direction ? 'walking' : sitting ? 'sitting' : 'idle',
+          mode: direction ? 'walking' : sitting || seated ? 'sitting' : 'idle',
+          seated,
           walk: direction,
           turn: direction * WALK_TURN,
           // Music without anything else to do: it dances (with a dance motion; otherwise it nods along).

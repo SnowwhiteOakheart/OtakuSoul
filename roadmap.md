@@ -59,7 +59,8 @@
 > Ziel: Die aktive Figur (VRM / glTF / MMD) lebt als transparenter Begleiter auf dem Desktop.
 > **Stand 26.10.2026 (Windows):** eigenes Pet-Fenster mit Click-Through, Ziehen, Werfen, Kontextmenü und Status-Panel;
 > Figur, Stimmung, Gesten, Lippensync und Chat-Antworten (satzweise zur Stimme) aus dem Hauptfenster; Schnell-Chat;
-> Leerlauf-Verhalten (umschauen, gähnen, hüpfen, dösen, gehen, sitzen mit Animation), Streicheln nach Körperzone;
+> Leerlauf-Verhalten (umschauen, gähnen, hüpfen, dösen, gehen, sitzen mit Animation; seit 01.11.2026 auch auf dem
+> Boden als eigene VRM-Pose, Schrittrhythmus passend zum Tempo), Streicheln nach Körperzone;
 > Schwerkraft, Bildschirmkanten, mehrere Monitore, Stehen/Laufen/Mitfahren auf Titelleisten anderer Fenster;
 > Pause bei Vollbild und Sperre; Tray-Eintrag, Tastenkürzel Strg+Alt+Umschalt+P, Wiederkehr beim Start.
 > Details und Stolperfallen: `roadmap_abgeschlossen.md` (Abschnitt 3) und `AI.md` (Abschnitt 10).

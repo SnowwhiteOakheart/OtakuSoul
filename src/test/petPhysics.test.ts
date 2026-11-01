@@ -7,7 +7,7 @@ import {
   throwVelocity,
   usablePlatforms,
   walkArea,
-  WALK_SPEED,
+  WALK_PACE,
   type Body,
   type Platform,
 } from '../components/companion/petPhysics';
@@ -45,8 +45,8 @@ describe('petPhysics on the floor', () => {
     expect(stepBody(at(10, floor + 80), size, area, 0.1, 0, 1).body.y).toBe(floor);
   });
 
-  it('walks only on the ground, scaled to the monitor', () => {
-    expect(stepBody(at(500, floor), size, area, 1, 1, 2).body.x).toBe(500 + WALK_SPEED * 2);
+  it('walks only on the ground, at a pace that grows with the pet', () => {
+    expect(stepBody(at(500, floor), size, area, 1, 1, 2).body.x).toBeCloseTo(500 + WALK_PACE * size.height);
     expect(stepBody(at(500, 0), size, area, 0.1, 1, 1).body.x).toBe(500);
   });
 

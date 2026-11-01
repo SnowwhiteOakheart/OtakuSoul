@@ -994,6 +994,14 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Fersen – sonst schneidet die Perspektive sie am Fensterrand ab. Die Pet-Bühne hat kein `maxDistance` der
   OrbitControls (Chat: 2,5 m): `applyView` → `controls.update()` zog die Kamera sonst heran, und jede Figur über
   ~1,1 m verlor die Unterschenkel.
+- Pet-Gehen und -Sitzen: Tempo `WALK_PACE` (Fensterhöhen/s, wächst mit dem Pet); ohne Lauf-Animation passt
+  `WALK_CYCLE_HZ`/`WALK_STRIDE` (`proceduralBody.ts`) dazu, unter Berücksichtigung der Drehung `WALK_TURN` – ein Test
+  prüft, dass der Standfuß nicht rutscht; dazu Fußabrollen und `walkBob` (Hüfte über die Normal-Hüfte, die jedes Bild
+  von der Ruhehöhe startet). Sitzen am Boden: Aktion `sitFloor` → `PetFrame.seated` (ohne Schleife), nur wenn der
+  Viewer `pet.onFloorSit(true)` meldet (bisher nur `VrmViewer`); `floorSitPose` + `FLOOR_SIT_HIPS` werden über jede
+  Animation geblendet. Auf Fensterkanten mit Sitz-Animation hat `sit` Vorrang. Fehlen Lauf-/Sitz-Animationen,
+  bieten Hub (Avatare, ganz oben), Avatar-Manager (`MotionPackOffer`) und Pet-Menü das Bewegungspaket an
+  (`utils/motionPacks.ts`; das Pet lädt selbst und meldet `PET_MOTIONS_EVENT`, das Hauptfenster liest neu).
 - Pet-Physik (`petPhysics.ts`): rechnet in physischen Pixeln mit dem Fenster als Körper; Geschwindigkeiten sind logisch
   und werden mit dem Monitor-Skalierungsfaktor multipliziert. Während des Ziehens ruht sie; nach dem Ziehen liest
   `syncWindow` Position und Arbeitsbereich neu, sonst fällt das Pet vom alten Platz. Pro Schritt nur ein `setPosition`

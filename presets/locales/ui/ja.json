@@ -4113,5 +4113,12 @@
   "backend.vroid.rateLimited": "VRoid Hubへのリクエストが多すぎます。数分待ってください。",
   "backend.vroid.download": "VRoid Hubからモデルをダウンロードできませんでした: {{error}}",
   "backend.vroid.tooLarge": "モデルが大きすぎます（512MB超）。",
-  "backend.vroid.notFound": "このVRoidモデルは利用できません。"
+  "backend.vroid.notFound": "このVRoidモデルは利用できません。",
+  "motions.offerTitle": "3Dフィギュア用のモーションを読み込む",
+  "motions.offerText": "モーションパックがないと、3Dフィギュアは硬く立ち、ぎこちなく歩き、デスクトップペットとして座りません。{{author}}の「{{name}}」（{{license}}）で歩行・座り・ジャンプ・落下・ダンスなどが加わります。",
+  "motions.offerLoad": "読み込む（{{size}} KB）",
+  "pet.loadMotions": "モーションを読み込む（歩行・座り…）",
+  "pet.motionsLoading": "モーションを取ってくるね…",
+  "pet.motionsLoaded": "できた！これでちゃんと歩いたり座ったりできるよ。",
+  "pet.motionsFailed": "モーションを読み込めませんでした: {{error}}"
 }

@@ -4112,5 +4112,12 @@
   "backend.vroid.rateLimited": "Zu viele Anfragen an VRoid Hub. Warte ein paar Minuten.",
   "backend.vroid.download": "Modell nicht von VRoid Hub geladen: {{error}}",
   "backend.vroid.tooLarge": "Das Modell ist zu groß (über 512 MB).",
-  "backend.vroid.notFound": "Dieses VRoid-Modell ist nicht (mehr) verfügbar."
+  "backend.vroid.notFound": "Dieses VRoid-Modell ist nicht (mehr) verfügbar.",
+  "motions.offerTitle": "Bewegungen für 3D-Figuren laden",
+  "motions.offerText": "Ohne Bewegungspaket stehen 3D-Figuren steif, laufen hölzern und setzen sich als Desktop-Pet nie hin. „{{name}}“ von {{author}} ({{license}}) bringt Gehen, Sitzen, Springen, Fallen, Tanzen und mehr.",
+  "motions.offerLoad": "Laden ({{size}} KB)",
+  "pet.loadMotions": "Bewegungen laden (Gehen, Sitzen …)",
+  "pet.motionsLoading": "Ich hole mir ein paar Bewegungen …",
+  "pet.motionsLoaded": "Geschafft! Jetzt kann ich richtig laufen und mich hinsetzen.",
+  "pet.motionsFailed": "Die Bewegungen ließen sich nicht laden: {{error}}"
 }

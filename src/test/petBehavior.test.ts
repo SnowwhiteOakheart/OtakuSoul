@@ -291,6 +291,25 @@ describe('PetBehavior on the desktop floor', () => {
     expect(pet.tick(21_100).frame.loop).not.toBe('sit');
   });
 
+  it('sits down on the ground now and then when the figure can (VRM pose, no motion needed)', () => {
+    // Random 0.99 picks the last possible weighted action: sitting on the ground.
+    const pet = new PetBehavior(0, fixed(0.99));
+    pet.setFloorSit(true);
+    const { frame } = run(pet, 0, 21_000);
+    expect(frame).toMatchObject({ mode: 'sitting', seated: true, loop: null, walk: 0 });
+    // Another figure that cannot sit on the ground: it gets up.
+    pet.setFloorSit(false);
+    expect(pet.tick(21_100).frame.seated).toBe(false);
+  });
+
+  it('prefers the sitting motion on a window edge to sitting on the ground', () => {
+    const pet = new PetBehavior(0, fixed(0.99));
+    pet.setFloorSit(true);
+    pet.setOnWindow(true);
+    pet.setSitMotion(true);
+    expect(run(pet, 0, 21_000).frame).toMatchObject({ loop: 'sit', seated: false });
+  });
+
   it('asks for the walking loop while walking', () => {
     const pet = new PetBehavior(0, fixed(0.99));
     expect(run(pet, 0, 21_000).frame.loop).toBe('walk');

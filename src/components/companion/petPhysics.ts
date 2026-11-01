@@ -48,8 +48,11 @@ type Size = { width: number; height: number };
 
 /** Logical px/s². */
 export const GRAVITY = 2600;
-/** Logical px/s; the walk is a stroll, not a run. */
-export const WALK_SPEED = 55;
+/**
+ * Walking speed in window heights per second (a stroll, not a run): it grows with the pet, so the
+ * steps (`WALK_CYCLE_HZ` in `proceduralBody`) fit the ground at every size.
+ */
+export const WALK_PACE = 0.2;
 /** Fastest fall, logical px/s. */
 const MAX_FALL = 2400;
 /** Fastest throw, logical px/s (a flick of the mouse should not shoot it off the screen). */
@@ -308,7 +311,7 @@ export function stepBody(
   }
   const grounded = !!standing || y >= floor - 0.5;
 
-  if (grounded && walk !== 0) x += walk * WALK_SPEED * scale * dt;
+  if (grounded && walk !== 0) x += walk * WALK_PACE * size.height * dt;
   let wall: -1 | 0 | 1 = 0;
   // On a window its ends are walls too: the figure walks back instead of off it.
   const left = standing ? Math.max(minX, standing.left - size.width / 2) : minX;
