@@ -1502,7 +1502,9 @@ mod tests {
         assert_eq!(super::main_commit("0000"), None);
         assert_eq!(
             super::git_refs_url(super::HUB_BASE_URL).as_deref(),
-            Some("https://github.com/SnowwhiteOakheart/otakusoul-data.git/info/refs?service=git-upload-pack")
+            Some(
+                "https://github.com/SnowwhiteOakheart/otakusoul-data.git/info/refs?service=git-upload-pack"
+            )
         );
         assert_eq!(super::git_refs_url("http://127.0.0.1:9/hub"), None);
     }
