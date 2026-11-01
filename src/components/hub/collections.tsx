@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react';
+import { memo, useEffect, type ReactNode } from 'react';
 import { BookOpen, Dice5, Users } from 'lucide-react';
 import { CoverCard, CoverCount } from '../ui/CoverCard';
 import { useShallow } from 'zustand/react/shallow';
@@ -123,7 +123,7 @@ export const useCollectionLists = () => {
 };
 
 /** Cover card of a story collection; opens the detail dialog. */
-export const CollectionCard = ({ collection }: { collection: GatewayCollectionEntry }) => {
+export const CollectionCard = memo(({ collection }: { collection: GatewayCollectionEntry }) => {
   const { t, currentLanguage } = useTranslation();
   const lists = useCollectionLists();
   const setOpenCollection = useHubStore((s) => s.setOpenCollection);
@@ -160,7 +160,7 @@ export const CollectionCard = ({ collection }: { collection: GatewayCollectionEn
       }
     />
   );
-};
+});
 
 /** Section heading above collection cards or single entries. */
 export const HubSectionTitle = ({ children }: { children: ReactNode }) => (

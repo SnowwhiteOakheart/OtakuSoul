@@ -954,7 +954,10 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Einträge einer Sammlung erscheinen in ihrem Tab nur als Karte, der Dialog `CollectionModal` installiert einzeln oder alles
   Fehlende (Figuren → Lorebooks → Szenen). Installiert wird je Eintrag wie in den Tabs (`hubInstall.ts`); eine Sammlung selbst
   hat keinen Installationsstand. Auch der Charaktere-Tab gruppiert (virtualisiertes Raster mit `scrollMargin` unter den
-  Sammlungskarten). Gleichnamige Einträge aus beiden Repos (Jibril, Albedo, Mint) löst `collectionMembers` nach der Quelle
+  Sammlungskarten). Spaltenzahl und CSS-Raster verwenden dieselbe Containerbreite (`useGridCols`);
+  dessen ResizeObserver bleibt über Scroll-Renders erhalten. Gruppierung/Update-Liste sind memoisiert, ebenso die
+  Sammlungskarten. `e2e/hub-scroll.mjs` prüft 240 Figuren mit Sammlung bei zwei Fensterbreiten und begrenztem DOM.
+  Gleichnamige Einträge aus beiden Repos (Jibril, Albedo, Mint) löst `collectionMembers` nach der Quelle
   der Sammlung auf (`nsfw`). Die Stage-Galerie zeigt Sammlungen ebenfalls (`galleryCollections` in `StoryGallery.tsx`):
   mitgelieferte Starter-Geschichten (`story_*`) und das 5e-Abenteuer mit den Titelbildern aus `presets/stories/cover.webp`
   bzw. `presets/crypt-of-shadows/cover.webp` (Vite-Import), dazu jede Hub-Sammlung mit mindestens einer installierten Szene

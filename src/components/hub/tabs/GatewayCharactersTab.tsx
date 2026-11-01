@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useGridCols } from '../../../hooks/useGridCols';
 import { Users } from 'lucide-react';
@@ -14,6 +14,8 @@ import { CollectionCard, HubSectionTitle, collectionMembers, groupByCollection, 
 import type { GatewayCharacterEntry } from '../../../types';
 import { useScrollMargin } from '../../../hooks/useScrollMargin';
 
+const GRID_BREAKPOINTS = { 640: 3, 768: 4, 1024: 5, 1280: 6 };
+
 /** Curated characters from the Soul Gateway registry. */
 export const GatewayCharactersTab = () => {
   const { t, tPlural, currentLanguage } = useTranslation();
@@ -25,12 +27,15 @@ export const GatewayCharactersTab = () => {
 
   useEffect(() => ensureLoaded('gateway'), [ensureLoaded]);
 
-  const visible = list.items.filter((c) => matchesQuery(query, c.name, c.author));
   // Characters of a story collection show as its card; the grid holds the others.
   const lists = useCollectionLists();
-  const { groups, rest } = groupByCollection(lists.collections, (c) => collectionMembers(c, lists).characters, visible, query, currentLanguage);
+  const { collections, gateway, lorebooks, scenes } = lists;
+  const { groups, rest } = useMemo(() => {
+    const visible = list.items.filter((c) => matchesQuery(query, c.name, c.author));
+    return groupByCollection(collections, (c) => collectionMembers(c, { gateway, lorebooks, scenes }).characters, visible, query, currentLanguage);
+  }, [list.items, query, currentLanguage, collections, gateway, lorebooks, scenes]);
 
-  const { ref: gridRef, cols } = useGridCols({ 640: 3, 768: 4, 1024: 5, 1280: 6 }, 2);
+  const { ref: gridRef, cols } = useGridCols(GRID_BREAKPOINTS, 2);
   // The collection cards above the grid push it down: the virtualizer counts from the grid's top.
   const scrollMargin = useScrollMargin('hub-tabpanel', gridRef, `${groups.length > 0}|${rest.length > 0}`);
   // oxlint-disable-next-line react/incompatible-library
@@ -45,7 +50,7 @@ export const GatewayCharactersTab = () => {
 
   const handleImport = (char: GatewayCharacterEntry) => runImport(char.name, () => importCharacterTask(char, statusOf(char)));
 
-  const outdated = list.items.filter((char) => statusOf(char) === 'update');
+  const outdated = useMemo(() => list.items.filter((char) => hubStatus(installed, 'character', char.name, char.revision) === 'update'), [list.items, installed]);
   const updateAll = async () => {
     setUpdatingAll(true);
     let done = 0;
@@ -85,7 +90,7 @@ export const GatewayCharactersTab = () => {
         </section>
       )}
       {groups.length > 0 && rest.length > 0 && <HubSectionTitle>{t('hub.singleCharacters')}</HubSectionTitle>}
-      <div ref={gridRef} style={{ height: `${virtualizer.getTotalSize()}px`, width: '100%', position: 'relative' }}>
+      <div ref={gridRef} style={{ height: `${virtualizer.getTotalSize()}px`, width: '100%', position: 'relative', overflowAnchor: 'none' }}>
         {virtualizer.getVirtualItems().map((virtualRow) => {
           const startIndex = virtualRow.index * cols;
           const rowItems = rest.slice(startIndex, startIndex + cols);
@@ -95,8 +100,10 @@ export const GatewayCharactersTab = () => {
               key={virtualRow.index}
               ref={virtualizer.measureElement}
               data-index={virtualRow.index}
-              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"
+              className="grid gap-4"
               style={{
+                // Use the same column count for layout and virtual row slicing.
+                gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
                 position: 'absolute',
                 top: 0,
                 left: 0,
@@ -120,7 +127,7 @@ export const GatewayCharactersTab = () => {
                   decoding="async"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
-                <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded-md bg-black/60 backdrop-blur text-[11px] text-accent-300 font-mono border border-white/10">
+                <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded-md bg-black/80 text-[11px] text-accent-300 font-mono border border-white/10">
                   {char.author}
                 </div>
               </div>
