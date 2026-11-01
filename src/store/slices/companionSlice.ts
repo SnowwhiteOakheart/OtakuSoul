@@ -229,10 +229,13 @@ export const createCompanionSlice: SliceCreator<CompanionSlice> = (set, get) => 
   },
 
   toggleDesktopPet: async (enable) => {
+    // Remember "closed" before the call: hidden from its own menu, the pet window is destroyed
+    // by this call and would never get to the line after it (the pet then came back at start).
+    if (!enable) savePetOpen(false);
     try {
       const placement = loadPetPlacement();
       const res = await api.toggleDesktopPet(enable, { x: placement.x, y: placement.y, ...petWindowSize(placement.height) });
-      savePetOpen(enable);
+      if (enable) savePetOpen(true);
       await get().fetchCompanionState();
       return res;
     } catch (e) {
