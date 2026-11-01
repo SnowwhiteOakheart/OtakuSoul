@@ -1,4 +1,92 @@
 {
-  "version": 1,
-  "packs": []
+  "version": 2,
+  "packs": [
+    {
+      "id": "cc0-fantasy-starter",
+      "name": "Fantasy-Starterpaket (CC0)",
+      "author": "RandomMind, Indieteur, qubodup, cynicmusic, CleytonKauffman",
+      "license": "CC0 1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "description": {
+        "de": "Acht gemeinfreie Fantasy-Titel für Ruhe, Taverne, Abenteuer, Spannung, Geheimnis, Kampf, Boss und Trauer.",
+        "en": "Eight public-domain fantasy tracks for calm, tavern, adventure, tension, mystery, combat, boss and sorrow.",
+        "ru": "Восемь фэнтези-треков в общественном достоянии: покой, таверна, приключение, напряжение, тайна, бой, босс и печаль.",
+        "ja": "静けさ、酒場、冒険、緊張、神秘、戦闘、ボス、悲しみ向けのパブリックドメイン・ファンタジー曲8曲。"
+      },
+      "tracks": [
+        {
+          "mood": "calm",
+          "file": "calm-market-day.mp3",
+          "title": "Medieval: Market Day",
+          "author": "RandomMind",
+          "url": "https://opengameart.org/sites/default/files/Loop_Market_Day_0.mp3",
+          "sha256": "df4cc102d29d1167dc1f341f7e909b46b5a791edfc543ddc6b832c9c08347ff5",
+          "size_bytes": 2596640
+        },
+        {
+          "mood": "tavern",
+          "file": "tavern-kings-feast.mp3",
+          "title": "Medieval: King's Feast",
+          "author": "RandomMind",
+          "url": "https://opengameart.org/sites/default/files/Kings_Feast_0.mp3",
+          "sha256": "62be996d03d996fb72e2d395613ca3c83851b889fca1b13ecd6bba730ce72a34",
+          "size_bytes": 5206482
+        },
+        {
+          "mood": "adventure",
+          "file": "adventure-exploration.mp3",
+          "title": "Medieval: Exploration",
+          "author": "RandomMind",
+          "url": "https://opengameart.org/sites/default/files/Exploration_0.mp3",
+          "sha256": "7e412350d4f4a777981285ca36b1c1a30feb7e5e255d7774ce61480e99daa8d9",
+          "size_bytes": 9446112
+        },
+        {
+          "mood": "tension",
+          "file": "tension-darkest-hour.mp3",
+          "title": "Darkest Hour",
+          "author": "Indieteur",
+          "url": "https://opengameart.org/sites/default/files/Darkest%20Hour_0.mp3",
+          "sha256": "af0901dd86c7cf86fbfab1ae6994f551d645834aba8dc828e3aab70b4618ed77",
+          "size_bytes": 3843270
+        },
+        {
+          "mood": "mystery",
+          "file": "mystery-dark-shrine.ogg",
+          "title": "Dark Shrine Loop",
+          "author": "qubodup",
+          "url": "https://opengameart.org/sites/default/files/qubodup-yd-DarkShrineLoop-OpenGameArt.ogg",
+          "sha256": "9580618dc851f70c3a11b5ff87672867de44cd38b35dabf926d6befde20e78d0",
+          "size_bytes": 678630
+        },
+        {
+          "mood": "combat",
+          "file": "combat-battle-theme-b.mp3",
+          "title": "Battle Theme B for RPG",
+          "author": "cynicmusic",
+          "url": "https://opengameart.org/sites/default/files/battleThemeB.mp3",
+          "sha256": "8476ce29692d8d317a7d79628af967448ec09d9f66efe692a597336c5cea2629",
+          "size_bytes": 1584901
+        },
+        {
+          "mood": "boss",
+          "file": "boss-battle-theme.ogg",
+          "title": "Boss Battle Theme",
+          "author": "CleytonKauffman",
+          "url": "https://opengameart.org/sites/default/files/CleytonRX%20-%20Battle%20RPG%20Theme%20Var_0.ogg",
+          "sha256": "9a63f74305f5cbce8374a72a027a645c07c97663255aba0b817bc1f70c432ed5",
+          "size_bytes": 4630302
+        },
+        {
+          "mood": "sorrow",
+          "file": "sorrow-warriors-soul.mp3",
+          "title": "Lament for a Warrior's Soul",
+          "author": "RandomMind",
+          "url": "https://opengameart.org/sites/default/files/Lament_for_a_Warriors_Soul.mp3",
+          "sha256": "ae1b767e0162c7cad01b3efc7b55785eb4dbc7c17e4cd623cad4425266819b95",
+          "size_bytes": 3861740
+        }
+      ]
+    }
+  ]
 }
