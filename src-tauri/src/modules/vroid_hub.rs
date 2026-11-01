@@ -837,6 +837,11 @@ async fn download(id: &str) -> Result<Vec<u8>, String> {
     if !file.status().is_success() {
         return Err(crate::err!("backend.vroid.download", error = file.status()));
     }
+    let file_type = file
+        .headers()
+        .get(reqwest::header::CONTENT_TYPE)
+        .and_then(|t| t.to_str().ok())
+        .map(str::to_string);
     if file.content_length().is_some_and(|l| l > MAX_MODEL_BYTES) {
         return Err(crate::err!("backend.vroid.tooLarge"));
     }
@@ -851,14 +856,60 @@ async fn download(id: &str) -> Result<Vec<u8>, String> {
             return Err(crate::err!("backend.vroid.tooLarge"));
         }
     }
-    // VRM is binary glTF.
-    if !bytes.starts_with(b"glTF") {
-        return Err(crate::err!(
+    let content_type = file_type.unwrap_or_default();
+    unpack_vrm(bytes).map_err(|found| {
+        warn!("VRoid-Download ist kein VRM ({content_type}): {found}");
+        crate::err!(
             "backend.vroid.download",
-            error = "not a VRM file"
-        ));
+            error = format!("not a VRM file ({content_type}, {found})")
+        )
+    })
+}
+
+/// The VRM (binary glTF) in a download: as it is, gzip-compressed or inside a ZIP archive.
+/// `Err` names what arrived instead (first bytes), for the error message and the log.
+fn unpack_vrm(bytes: Vec<u8>) -> Result<Vec<u8>, String> {
+    use std::io::Read;
+    if bytes.starts_with(b"glTF") {
+        return Ok(bytes);
     }
-    Ok(bytes)
+    if bytes.starts_with(&[0x1f, 0x8b]) {
+        let mut plain = Vec::new();
+        flate2::read::GzDecoder::new(bytes.as_slice())
+            .take(MAX_MODEL_BYTES + 1)
+            .read_to_end(&mut plain)
+            .map_err(|e| format!("gzip: {e}"))?;
+        if plain.len() as u64 > MAX_MODEL_BYTES {
+            return Err("gzip: too large".into());
+        }
+        return unpack_vrm(plain);
+    }
+    if bytes.starts_with(b"PK\x03\x04") {
+        let mut archive =
+            zip::ZipArchive::new(std::io::Cursor::new(&bytes)).map_err(|e| format!("zip: {e}"))?;
+        let names: Vec<String> = archive.file_names().map(str::to_string).collect();
+        let name = names
+            .iter()
+            .find(|n| n.to_ascii_lowercase().ends_with(".vrm"))
+            .ok_or_else(|| format!("zip without .vrm: {}", names.join(", ")))?;
+        let entry = archive.by_name(name).map_err(|e| format!("zip: {e}"))?;
+        let mut plain = Vec::new();
+        entry
+            .take(MAX_MODEL_BYTES + 1)
+            .read_to_end(&mut plain)
+            .map_err(|e| format!("zip: {e}"))?;
+        return if plain.starts_with(b"glTF") {
+            Ok(plain)
+        } else {
+            Err(format!("zip entry {name} is no glTF"))
+        };
+    }
+    let head: Vec<String> = bytes.iter().take(8).map(|b| format!("{b:02x}")).collect();
+    Err(format!(
+        "{} bytes, starts with {}",
+        bytes.len(),
+        head.join(" ")
+    ))
 }
 
 /// Stores the model encrypted (when there is a key); returns the bytes for immediate use.
@@ -1092,6 +1143,32 @@ mod tests {
         assert_eq!(value("redistributionAltered"), "disallow");
         assert_eq!(value("attribution"), "notRequired");
         assert!(!parsed.credit_required);
+    }
+
+    #[test]
+    fn a_download_is_unpacked_to_its_vrm() {
+        use std::io::Write;
+        let vrm = b"glTF\x02\x00\x00\x00model".to_vec();
+        assert_eq!(unpack_vrm(vrm.clone()).unwrap(), vrm);
+
+        let mut gz = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::fast());
+        gz.write_all(&vrm).unwrap();
+        assert_eq!(unpack_vrm(gz.finish().unwrap()).unwrap(), vrm);
+
+        let mut zipped = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
+        zipped
+            .start_file("readme.txt", zip::write::SimpleFileOptions::default())
+            .unwrap();
+        zipped.write_all(b"hi").unwrap();
+        zipped
+            .start_file("Nanami.VRM", zip::write::SimpleFileOptions::default())
+            .unwrap();
+        zipped.write_all(&vrm).unwrap();
+        let zipped = zipped.finish().unwrap().into_inner();
+        assert_eq!(unpack_vrm(zipped).unwrap(), vrm);
+
+        let other = unpack_vrm(b"\x00\x01\x02\x03 rest".to_vec()).unwrap_err();
+        assert!(other.contains("00 01 02 03"), "{other}");
     }
 
     #[test]
