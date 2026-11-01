@@ -1,5 +1,16 @@
 //! Soul Hub: gateway registries and chub.ai imports.
 
+/// Reload button in the hub: newest commits of the data repositories, and the avatar and
+/// Inochi2D catalogs fetched again (otherwise only read at start).
+#[tauri::command]
+pub async fn refresh_hub_sources() {
+    crate::modules::hub::pin_latest_commits().await;
+    tokio::join!(
+        crate::modules::avatar_hub::refresh_registry(),
+        crate::modules::inochi2d::refresh_registry()
+    );
+}
+
 #[tauri::command]
 pub async fn fetch_soul_gateway_registry()
 -> Result<Vec<crate::modules::hub::GatewayCharacterEntry>, String> {

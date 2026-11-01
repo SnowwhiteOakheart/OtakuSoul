@@ -29,7 +29,106 @@ const NSFW_HUB_BASE_URL: &str =
     "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data-nsfw/main";
 
 fn nsfw_base() -> String {
-    std::env::var("OTAKUSOUL_NSFW_HUB_BASE").unwrap_or_else(|_| NSFW_HUB_BASE_URL.to_string())
+    std::env::var("OTAKUSOUL_NSFW_HUB_BASE")
+        .unwrap_or_else(|_| pinned_base(NSFW_HUB_BASE_URL, |p| p.nsfw.as_deref()))
+}
+
+/// How long a reload reads the data repositories at their newest commit: as long as
+/// raw.githubusercontent.com may still serve an older copy of `main` (`Cache-Control: max-age=300`).
+const PIN_TTL: std::time::Duration = std::time::Duration::from_secs(300);
+
+/// The newest commits a reload in the hub found (`pin_latest_commits`).
+struct PinnedCommits {
+    at: std::time::Instant,
+    main: Option<String>,
+    nsfw: Option<String>,
+}
+
+static PINNED: std::sync::Mutex<Option<PinnedCommits>> = std::sync::Mutex::new(None);
+
+/// `raw_main` (`…/owner/repo/main`) with `main` swapped for the pinned commit, while one is
+/// pinned and fresh; otherwise `raw_main` itself.
+fn pinned_base(raw_main: &str, commit: fn(&PinnedCommits) -> Option<&str>) -> String {
+    let pinned = PINNED.lock().ok();
+    let sha = pinned
+        .as_ref()
+        .and_then(|guard| guard.as_ref())
+        .filter(|p| p.at.elapsed() < PIN_TTL)
+        .and_then(commit);
+    match (sha, raw_main.strip_suffix("/main")) {
+        (Some(sha), Some(repo)) => format!("{repo}/{sha}"),
+        _ => raw_main.to_string(),
+    }
+}
+
+/// Git's ref listing of the repository behind a raw `…/owner/repo/main` address. It names the
+/// newest commit of `main` at once, without the API's rate limit.
+fn git_refs_url(raw_main: &str) -> Option<String> {
+    let repo = raw_main
+        .strip_prefix("https://raw.githubusercontent.com/")?
+        .strip_suffix("/main")?;
+    Some(format!(
+        "https://github.com/{repo}.git/info/refs?service=git-upload-pack"
+    ))
+}
+
+/// The commit of `refs/heads/main` in a ref listing (pkt-lines: `003d<sha> refs/heads/main`).
+fn main_commit(refs: &str) -> Option<String> {
+    refs.lines().find_map(|line| {
+        let head = line.strip_suffix(" refs/heads/main")?;
+        let sha = head.get(head.len().checked_sub(40)?..)?;
+        sha.chars()
+            .all(|c| c.is_ascii_hexdigit())
+            .then(|| sha.to_string())
+    })
+}
+
+async fn latest_commit(raw_main: &str) -> Option<String> {
+    let fetch = async {
+        let url = git_refs_url(raw_main).ok_or("keine GitHub-Adresse")?;
+        let text = reqwest::Client::builder()
+            .user_agent(BROWSER_USER_AGENT)
+            .timeout(std::time::Duration::from_secs(10))
+            .build()
+            .map_err(|e| e.to_string())?
+            .get(url)
+            .send()
+            .await
+            .and_then(reqwest::Response::error_for_status)
+            .map_err(|e| e.to_string())?
+            .text()
+            .await
+            .map_err(|e| e.to_string())?;
+        main_commit(&text).ok_or_else(|| "kein main-Zweig".to_string())
+    };
+    match fetch.await {
+        Ok(sha) => Some(sha),
+        Err(error) => {
+            tracing::debug!("Hub: neuester Commit von {raw_main} nicht ermittelt: {error}");
+            None
+        }
+    }
+}
+
+/// Reload button in the hub: the lists that follow come from the repositories' newest commits,
+/// not from GitHub's cached copy of `main` (up to five minutes old after an upload). Without an
+/// answer the hub keeps reading `main`.
+pub async fn pin_latest_commits() {
+    let nsfw = crate::modules::settings::nsfw_allowed();
+    let (main, nsfw) = tokio::join!(latest_commit(HUB_BASE_URL), async {
+        if nsfw {
+            latest_commit(NSFW_HUB_BASE_URL).await
+        } else {
+            None
+        }
+    });
+    if let Ok(mut pinned) = PINNED.lock() {
+        *pinned = Some(PinnedCommits {
+            at: std::time::Instant::now(),
+            main,
+            nsfw,
+        });
+    }
 }
 
 /// Address of a file in the adult content repository (`OTAKUSOUL_NSFW_HUB_BASE` for E2E).
@@ -88,7 +187,8 @@ fn is_nsfw(entry: &serde_json::Value) -> bool {
 /// Address of a file in the data repository; `OTAKUSOUL_HUB_BASE` points the hub elsewhere (E2E
 /// mock server).
 pub fn hub_url(file: &str) -> String {
-    let base = std::env::var("OTAKUSOUL_HUB_BASE").unwrap_or_else(|_| HUB_BASE_URL.to_string());
+    let base = std::env::var("OTAKUSOUL_HUB_BASE")
+        .unwrap_or_else(|_| pinned_base(HUB_BASE_URL, |p| p.main.as_deref()));
     format!("{}/{file}", base.trim_end_matches('/'))
 }
 
@@ -1392,6 +1492,21 @@ fn install_hub_scene(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn reload_reads_the_newest_commit() {
+        let refs = "001e# service=git-upload-pack\n0000015a7b6e4b442d738797e7df1b67a51eeb8411998ed7 HEAD\0multi_ack symref=HEAD:refs/heads/main\n003d7b6e4b442d738797e7df1b67a51eeb8411998ed7 refs/heads/main\n004db21037ecb0ce0d71b387f551b0a744774ba3ba0c refs/tags/v1\n0000";
+        assert_eq!(
+            super::main_commit(refs).as_deref(),
+            Some("7b6e4b442d738797e7df1b67a51eeb8411998ed7")
+        );
+        assert_eq!(super::main_commit("0000"), None);
+        assert_eq!(
+            super::git_refs_url(super::HUB_BASE_URL).as_deref(),
+            Some("https://github.com/SnowwhiteOakheart/otakusoul-data.git/info/refs?service=git-upload-pack")
+        );
+        assert_eq!(super::git_refs_url("http://127.0.0.1:9/hub"), None);
+    }
+
     use super::*;
 
     #[test]

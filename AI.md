@@ -904,6 +904,11 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
 
 ### 9. Hub-Synchronisation, Registries & Daten-Pakete
 
+- Neu laden im Hub: raw.githubusercontent.com liefert `main` bis zu 5 Minuten aus dem Cache (`max-age=300`, Query-Parameter
+  umgehen das nicht). Der Knopf ruft deshalb zuerst `refresh_hub_sources`: `hub::pin_latest_commits` liest den neuesten
+  Commit beider Daten-Repos über `info/refs` (kein API-Limit) und `hub_url`/`nsfw_base` lesen 5 Minuten lang von
+  `…/<sha>/` statt `…/main/`; ohne Antwort bleibt es bei `main`. Dazu lädt er die Avatar- und Inochi2D-Registry neu
+  (sonst nur beim Start) und den Avatare-Tab über `hubStore.avatarsReload`.
 - Hub-Listen: Szenen-/Lorebook-Einträge der Registry können `translations.<sprache>.<feld>` tragen (`hub::entry_translations`,
   Anzeige über `components/hub/registryText.ts`; Name/Titel bleiben Update-Schlüssel), gepflegt im Daten-Repo mit
   `tools/validate_content.py --sync-registry`. Stage findet Karten über `characters::find_by_name` bzw. `findCharacterByName`

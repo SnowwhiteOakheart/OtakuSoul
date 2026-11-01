@@ -1650,6 +1650,10 @@ export const api = {
     await invoke<void>('set_inochi2d_mapping', { modelPath, mapping }),
 
   // Soul Hub (Soul Gateway, Chub AI, World Lorebooks, Stage Scenarios)
+  /** Reload button in the hub: lists then come from the data repositories' newest commits. */
+  refreshHubSources: async (): Promise<void> => {
+    return await invoke<void>('refresh_hub_sources');
+  },
   fetchSoulGatewayRegistry: async (): Promise<GatewayCharacterEntry[]> => {
     return await invoke<GatewayCharacterEntry[]>('fetch_soul_gateway_registry');
   },

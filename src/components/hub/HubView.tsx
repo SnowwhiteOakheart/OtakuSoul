@@ -5,6 +5,7 @@ import { BookOpen, Compass, Dice5, Globe, Link as LinkIcon, RotateCcw, Search, S
 import { useStoreFields } from '../../store/useAppStore';
 import { useTranslation, type TranslationKey } from '../../i18n';
 import { useHubStore } from './hubStore';
+import { api } from '../../services/api';
 import { GatewayCharactersTab } from './tabs/GatewayCharactersTab';
 import { ChubFilters, ChubTab } from './tabs/ChubTab';
 import { GatewayLorebooksTab } from './tabs/GatewayLorebooksTab';
@@ -23,11 +24,15 @@ const TABS: { id: HubTab; label: string | TranslationKey; translate: boolean; ic
   { id: 'avatars', label: 'hub.tabAvatars', translate: true, icon: Shirt, iconClass: 'text-pink-400', search: 'hub.searchAvatars' },
 ];
 
-const reloadTab = (tab: HubTab) => {
+const reloadTab = async (tab: HubTab) => {
+  // The registries then come from the data repositories' newest commits: GitHub's copy of
+  // `main` can be minutes old right after an upload.
+  if (tab !== 'chub_ai') await api.refreshHubSources().catch(() => {});
   const hub = useHubStore.getState();
+  void hub.loadInstalled();
+  // The avatars tab reads its lists itself; the counter makes it read them again.
+  if (tab === 'avatars') return hub.reloadAvatars();
   if (tab === 'lorebooks' || tab === 'scenes') void hub.loadCollections();
-  // The avatars tab reads its lists itself when it opens.
-  if (tab === 'avatars') return undefined;
   return { soul_gateway: hub.loadGateway, chub_ai: () => hub.loadChub(1, false), lorebooks: hub.loadLorebooks, scenes: hub.loadScenes }[tab]();
 };
 
@@ -72,6 +77,12 @@ export const HubView = () => {
     }))
   );
   const [isUrlModalOpen, setIsUrlModalOpen] = useState(false);
+  const [reloading, setReloading] = useState(false);
+  const reload = () => {
+    if (reloading) return;
+    setReloading(true);
+    void reloadTab(activeTab.id).finally(() => setReloading(false));
+  };
   const panelRef = useRef<HTMLDivElement>(null);
   useDragScroll(panelRef);
   useScrollingFlag(panelRef);
@@ -129,12 +140,14 @@ export const HubView = () => {
           </button>
 
           <button
-            onClick={() => void reloadTab(activeTab.id)}
+            onClick={reload}
+            disabled={reloading}
+            aria-busy={reloading}
             title={t('hub.reload')}
             aria-label={t('hub.reload')}
-            className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+            className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors disabled:opacity-60"
           >
-            <RotateCcw className="w-4 h-4" />
+            <RotateCcw className={`w-4 h-4 ${reloading ? 'animate-spin [animation-direction:reverse]' : ''}`} />
           </button>
         </div>
       </div>

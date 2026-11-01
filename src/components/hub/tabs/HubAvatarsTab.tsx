@@ -58,6 +58,7 @@ const fromHub = (a: HubAvatar): AvatarCard => ({
 export const HubAvatarsTab = () => {
   const { t, currentLanguage } = useTranslation();
   const query = useHubStore((s) => s.query);
+  const avatarsReload = useHubStore((s) => s.avatarsReload);
   const [cards, setCards] = useState<AvatarCard[] | null>(null);
   const [kind, setKind] = useState<Kind | 'all'>('all');
   const [busy, setBusy] = useState<string | null>(null);
@@ -89,7 +90,8 @@ export const HubAvatarsTab = () => {
   }, [currentLanguage]);
   const load = useCallback(async () => setCards(await fetchCards()), [fetchCards]);
 
-  // A list for an earlier language that arrives late does not replace the current one.
+  // A list for an earlier language that arrives late does not replace the current one. The
+  // reload button in the hub header reads it again (`avatarsReload`).
   useEffect(() => {
     let current = true;
     void fetchCards().then((loaded) => {
@@ -98,7 +100,7 @@ export const HubAvatarsTab = () => {
     return () => {
       current = false;
     };
-  }, [fetchCards]);
+  }, [fetchCards, avatarsReload]);
 
   /** Loads the figure (again a no-op when it is there) and returns what to select. */
   const fetchFigure = async (card: AvatarCard): Promise<{ kind: Kind; path: string }> => {

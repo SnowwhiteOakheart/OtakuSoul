@@ -54,6 +54,9 @@ interface HubState {
   loadScenes: () => Promise<void>;
   loadCollections: () => Promise<void>;
   loadChub: (page?: number, append?: boolean) => Promise<void>;
+  /** Counts reloads of the avatars tab, which reads its lists itself. */
+  avatarsReload: number;
+  reloadAvatars: () => void;
 
   /** Installed hub contents with their revisions (for "update available"). */
   installed: InstalledHubItem[];
@@ -114,6 +117,9 @@ export const useHubStore = create<HubState>()((set, get) => {
       if (!nsfwChanged && (list.loaded || list.loading || list.error)) return;
       void { gateway: get().loadGateway, lorebooks: get().loadLorebooks, scenes: get().loadScenes, collections: get().loadCollections }[key]();
     },
+
+    avatarsReload: 0,
+    reloadAvatars: () => set((state) => ({ avatarsReload: state.avatarsReload + 1 })),
 
     loadGateway: () => loadList('gateway', () => api.fetchSoulGatewayRegistry()),
     loadLorebooks: () => loadList('lorebooks', () => api.fetchLorebooksGatewayRegistry()),

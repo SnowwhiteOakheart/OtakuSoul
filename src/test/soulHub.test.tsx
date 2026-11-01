@@ -59,6 +59,27 @@ describe('HubView', () => {
     expect(api.fetchSoulGatewayRegistry).toHaveBeenCalledTimes(1);
   });
 
+  it('the reload button reads the newest upload, also in the avatars tab', async () => {
+    const user = userEvent.setup();
+    renderHub();
+    await screen.findByText('Sakura');
+    vi.mocked(api.fetchSoulGatewayRegistry).mockResolvedValue([
+      { name: 'Neu', author: 'snow', download_url: 'https://example.invalid/neu.png', revision: 1, updated: '', nsfw: false },
+    ]);
+    await user.click(screen.getByRole('button', { name: 'Reload' }));
+    expect(await screen.findByRole('heading', { name: 'Neu' })).toBeInTheDocument();
+    expect(api.refreshHubSources).toHaveBeenCalledTimes(1);
+    // The newest commit is pinned before the list is read again.
+    expect(vi.mocked(api.refreshHubSources).mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(api.fetchSoulGatewayRegistry).mock.invocationCallOrder[1]!
+    );
+
+    await user.click(screen.getByRole('tab', { name: /Avatars/ }));
+    await vi.waitFor(() => expect(api.getHubAvatars).toHaveBeenCalledTimes(1));
+    await user.click(screen.getByRole('button', { name: 'Reload' }));
+    await vi.waitFor(() => expect(api.getHubAvatars).toHaveBeenCalledTimes(2));
+  });
+
   it('marks adult entries and reloads the lists when adult content is switched', async () => {
     renderHub();
     const sakura = (await screen.findByText('Sakura')).closest('article, li, div') as HTMLElement;
