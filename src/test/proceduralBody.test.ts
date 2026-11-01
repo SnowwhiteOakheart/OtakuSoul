@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bodyPose, BodySway, drift, walkBob, WALK_CYCLE_HZ, WALK_STRIDE, type BodyInput } from '../components/avatar/proceduralBody';
+import { bodyPose, BodySway, drift, floorSitPose, walkBob, WALK_CYCLE_HZ, WALK_STRIDE, type BodyInput } from '../components/avatar/proceduralBody';
 import { WALK_PACE } from '../components/companion/petPhysics';
 import { WALK_TURN } from '../components/companion/petBehavior';
 import { frameInterval } from '../components/avatar/avatarStage';
@@ -49,6 +49,19 @@ describe('bodyPose', () => {
     const swing = bodyPose(input({ walkPhase: Math.PI }));
     expect(swing.leftLowerLeg![0]).toBeGreaterThan(0.4);
     expect(swing.rightLowerLeg![0]).toBeLessThan(0.2);
+  });
+
+  it('bends knees and steps forwards on VRM 0.x rigs too (they face the other way inside)', () => {
+    const vrm1 = bodyPose(input({ walkPhase: Math.PI }));
+    const vrm0 = bodyPose(input({ leftArm: -1, rightArm: 1, walkPhase: Math.PI }));
+    expect(vrm0.leftLowerLeg![0]).toBeCloseTo(-vrm1.leftLowerLeg![0]);
+    expect(vrm0.leftUpperLeg![0]).toBeCloseTo(-vrm1.leftUpperLeg![0]);
+    // Turns about the vertical axis stay as they are.
+    expect(vrm0.hips![1]).toBeCloseTo(vrm1.hips![1]);
+    // Sitting: thighs forward on both, legs apart to each side.
+    expect(floorSitPose(1).leftUpperLeg![0]).toBeLessThan(-1);
+    expect(floorSitPose(-1).leftUpperLeg![0]).toBeGreaterThan(1);
+    expect(floorSitPose(-1).leftUpperLeg![2]).toBeCloseTo(-floorSitPose(1).leftUpperLeg![2]);
   });
 
   it('steps as fast as the pet moves, so the planted foot does not slide', () => {

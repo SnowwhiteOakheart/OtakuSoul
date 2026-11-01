@@ -315,7 +315,10 @@ export const VrmViewer = ({
       }
       model.humanoid
         .getNormalizedBoneNode('head')
-        ?.quaternion.multiply(poseQuaternion.setFromEuler(poseEuler.set(-lookY * 0.12, lookX * 0.2, -lookX * 0.04)));
+        // Up and down turn the other way on VRM 0.x rigs (see `forFacing` in proceduralBody).
+        ?.quaternion.multiply(
+          poseQuaternion.setFromEuler(poseEuler.set(-lookY * 0.12 * leftArmDirection, lookX * 0.2, -lookX * 0.04 * leftArmDirection)),
+        );
       if (model.lookAt) {
         // Eyes ahead of the head (degrees).
         model.lookAt.yaw = THREE.MathUtils.clamp(stage.mouse.x * 18, -18, 18);

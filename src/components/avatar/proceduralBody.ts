@@ -79,6 +79,19 @@ export interface BodyInput {
   look: { x: number; y: number };
 }
 
+/**
+ * The pose for the rig's facing. The angles here are written for a rig that faces +Z with its
+ * left arm along +X (VRM 1.0). A VRM 0.x rig faces -Z inside the model (three-vrm turns only the
+ * whole scene round), its left arm runs along -X: there a turn about X goes the other way, so a
+ * forward step, a bent knee or a forward lean would go backwards. Turns about Y are the same;
+ * sideways (Z) angles already follow `leftArm`/`rightArm` where they matter.
+ */
+function forFacing(pose: BodyPose, leftArm: number): BodyPose {
+  if (leftArm >= 0) return pose;
+  for (const angles of Object.values(pose)) if (angles) angles[0] = -angles[0];
+  return pose;
+}
+
 /** Smooth pseudo-noise from incommensurate sines: never repeats visibly, stays within ±1. */
 export function drift(t: number, seed: number): number {
   return 0.55 * Math.sin(t * 0.31 + seed) + 0.3 * Math.sin(t * 0.73 + seed * 2.1) + 0.15 * Math.sin(t * 1.37 + seed * 3.7);
@@ -149,7 +162,7 @@ export function bodyPose({ t, leftArm, rightArm, walkPhase, sway, look }: BodyIn
     pose.leftLowerLeg = [relaxed * (shift > 0 ? 2 : 0.6), 0, 0];
     pose.rightLowerLeg = [relaxed * (shift > 0 ? 0.6 : 2), 0, 0];
   }
-  return pose;
+  return forFacing(pose, leftArm);
 }
 
 /** Height of the hips above the ground while sitting on it (share of the model height). */
@@ -159,12 +172,12 @@ export const FLOOR_SIT_HIPS = 0.09;
  * Sitting on the ground, facing the viewer: legs forward (one stretched, the other knee drawn up
  * a little), the back leaning slightly forward; the arms keep hanging beside the body, so the
  * hands rest near the ground. `leftArm` is the rig's X direction (VRM 0.x may flip it), which
- * sets where "outwards" is for the legs. Laid out for the leg proportions of `LEG_SHARE` with
+ * sets where "outwards" and "forwards" are for the legs. Laid out for the leg proportions of `LEG_SHARE` with
  * the hips at `FLOOR_SIT_HIPS`: the feet stay just above the ground.
  */
 export function floorSitPose(leftArm: number): BodyPose {
   const out = Math.sign(leftArm) || 1;
-  return {
+  const pose: BodyPose = {
     spine: [0.12, 0, 0],
     chest: [0.05, 0, 0],
     leftUpperLeg: [-1.5, 0, out * 0.12],
@@ -174,6 +187,7 @@ export function floorSitPose(leftArm: number): BodyPose {
     rightLowerLeg: [0.5, 0, 0],
     rightFoot: [0.2, 0, 0],
   };
+  return forFacing(pose, out);
 }
 
 /**
