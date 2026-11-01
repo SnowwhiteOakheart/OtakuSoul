@@ -990,7 +990,8 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   für neue Antworten der offenen Unterhaltung (Schlüssel `id:swipe_index`, beim Chatwechsel neu gesetzt).
   `PetBubble` sitzt über dem Kopf: Raum = `petFigureTop(framing)` (+ `SIT_DROP` im Sitzen), höchstens so hoch,
   länger scrollt; unter 52 px Raum (stark gezoomt) oben im Fenster wie früher (`data-pet-bubble-above-head`).
-  `frameFullBody` stellt die Fußspitzen (10 % der Modellhöhe zur Kamera hin) auf `PET_FEET_SHARE`, nicht die
+  `frameFullBody` stellt die Fußspitzen (5 % der Modellhöhe zur Kamera hin; die volle Reichweite ließ die seitlich
+  sitzende Figur schweben) auf `PET_FEET_SHARE`, nicht die
   Fersen – sonst schneidet die Perspektive sie am Fensterrand ab. Die Pet-Bühne hat kein `maxDistance` der
   OrbitControls (Chat: 2,5 m): `applyView` → `controls.update()` zog die Kamera sonst heran, und jede Figur über
   ~1,1 m verlor die Unterschenkel.
@@ -1002,8 +1003,8 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   bzw. auf den Oberschenkeln – gespreizte Beine zeigten zur Kamera unter den Rock) wird über jede Animation geblendet. `PetFrame.seat`: `floor` (Knie angezogen) oder `edge`
   (Fensterkante, Beine hängen; ohne VRM-Pose spielt wie früher die `sit`-Animation mit CSS-`SIT_DROP`). Sitzend dreht
   sich die Figur zur Seite (`SIT_TURN`, Seite je Hinsetzen zufällig). `VrmViewer` misst Ober-/Unterschenkel und die
-  Ruhehöhen von Hüftgelenk und Knöchel (Raw-Bones) und rechnet die Bodenbeine per `legReach` (Hüftgelenk auf
-  Knöchelhöhe); an der Kante sitzt das Hüftgelenk auf `PET_EDGE_SEAT`, und `DesktopPet` senkt das Fenster weich um
+  Ruhehöhen von Hüftgelenk und Knöchel (Raw-Bones) und rechnet die Bodenbeine per `legReach` (Hüftgelenk
+  `SEAT_BELOW_ANKLES` unter Knöchelhöhe – auf gleicher Höhe schwebte der Sitz, weil sich die Oberschenkel mit heben); an der Kante sitzt das Hüftgelenk auf `PET_EDGE_SEAT`, und `DesktopPet` senkt das Fenster weich um
   `PET_EDGE_SINK` (`sink`, beim Neulesen der Position wieder abgezogen), damit die Beine Platz haben. Die Hände
   setzt `armReach.ts` (`reachWithArm`, CCD über Ober-/Unterarm, rig-unabhängig) ans Schienbein unter dem Knie bzw. auf
   den Oberschenkel – feste Armwinkel trafen bei anderen Proportionen daneben.

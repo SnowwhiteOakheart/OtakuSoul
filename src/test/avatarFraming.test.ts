@@ -29,11 +29,11 @@ describe('frameFullBody (desktop pet)', () => {
   const ASPECT = 300 / 440;
   const half = (view: ReturnType<typeof frameFullBody>) => view.camera[2] * Math.tan((FOV * Math.PI) / 360);
   /**
-   * Where the toes show (y = 0, a tenth of the model height towards the camera), as share of the
+   * Where the toes show (y = 0, a twentieth of the model height towards the camera), as share of the
    * window height from the bottom – in perspective, like the stage draws them.
    */
   const feetShare = (view: ReturnType<typeof frameFullBody>, height = 1.6) => {
-    const depth = view.camera[2] - 0.1 * height;
+    const depth = view.camera[2] - 0.05 * height;
     const ndc = (0 - view.camera[1]) / (depth * Math.tan((FOV * Math.PI) / 360));
     return (ndc + 1) / 2;
   };

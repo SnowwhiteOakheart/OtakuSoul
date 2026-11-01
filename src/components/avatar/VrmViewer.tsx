@@ -50,6 +50,8 @@ export interface AvatarViewerProps {
   seat?: 'floor' | 'edge' | null;
 }
 
+/** On the ground the hip joint sits this far (share of the model height) below the ankles. */
+const SEAT_BELOW_ANKLES = 0.05;
 const VISEME_KEYS = Object.keys(SILENT_VISEMES) as (keyof Visemes)[];
 const EXPRESSION_WEIGHTS: Record<string, number> = { happy: 0.9, angry: 0.8, sad: 0.7, surprised: 0.8, relaxed: 0.6 };
 
@@ -335,9 +337,14 @@ export const VrmViewer = ({
       seat += ((wanted ? 1 : 0) - seat) * Math.min(1, delta * 2.5);
       if (seat > 0.001 && hips && hipsRestY !== null) {
         const edge = seatKind === 'edge';
-        // The hip joint sits on the seat line: the ground (level with the ankles, as the soles and the
-        // seat are about equally thick) or the window's edge (plus the seat's own thickness).
-        const hipTarget = edge ? (PET_EDGE_SEAT + 0.04) * modelHeight : legs ? legs.ankleY + 0.005 * modelHeight : 0.09 * modelHeight;
+        // The hip joint sits on the seat line: on the ground a little below the ankles (with the
+        // knees drawn up the backs of the thighs lift; level with the ankles the seat floated), on
+        // a window's edge the seat's own thickness above it.
+        const hipTarget = edge
+          ? (PET_EDGE_SEAT + 0.04) * modelHeight
+          : legs
+            ? legs.ankleY - SEAT_BELOW_ANKLES * modelHeight
+            : 0.09 * modelHeight;
         const angles = edge
           ? EDGE_SIT_LEGS
           : legs

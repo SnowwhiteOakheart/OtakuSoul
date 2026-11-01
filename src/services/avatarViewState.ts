@@ -137,8 +137,12 @@ const PET_FIGURE_FILL = 0.8 / 1.02;
 export const PET_EDGE_SINK = 0.2;
 /** Where that edge is in the figure (share of the model height above its feet), at default framing. */
 export const PET_EDGE_SEAT = (PET_EDGE_SINK - PET_FEET_SHARE) / PET_FIGURE_FILL;
-/** How far the toes reach towards the camera, as share of the model height. */
-const PET_FOOT_REACH = 0.1;
+/**
+ * How far the toes reach towards the camera, as share of the model height. Half the real reach:
+ * enough that the window edge does not cut the toes from the front, small enough that the figure
+ * does not float when it turns to the side (sitting) and the toes no longer point at the camera.
+ */
+const PET_FOOT_REACH = 0.05;
 
 /**
  * Where the top of the pet figure shows (share of the window height from the top) with this
