@@ -4090,7 +4090,6 @@
   "vroid.add": "Add",
   "vroid.isAdded": "Added",
   "vroid.remove": "Remove",
-  "vroid.removeFromApp": "Remove from OtakuSoul",
   "vroid.conditions": "Conditions of use",
   "vroid.conditionsHint": "What the creator allows for this model (as set on VRoid Hub).",
   "vroid.conditionsUnknown": "VRoid Hub did not send any conditions of use.",

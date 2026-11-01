@@ -673,7 +673,9 @@ pub fn label_vrms(mut vrms: Vec<ScannedVrm>) -> Vec<ScannedVrm> {
         if let Some(name) = custom_name(&data_dir, AvatarKind::Vrm, &key) {
             vrm.name = name;
         }
-        vrm.removable = removable(&data_dir, AvatarKind::Vrm, path);
+        // VRoid Hub models leave through `vroid_hub::remove` (see `delete_avatar`).
+        vrm.removable = vrm.path.starts_with(crate::modules::vroid_hub::PATH_PREFIX)
+            || removable(&data_dir, AvatarKind::Vrm, path);
         vrm.thumbnail = thumbnail(&data_dir, AvatarKind::Vrm, &key);
     }
     vrms

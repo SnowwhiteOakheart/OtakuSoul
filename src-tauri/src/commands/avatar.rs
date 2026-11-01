@@ -308,6 +308,10 @@ pub fn save_avatar_thumbnail(
 #[tauri::command]
 pub fn delete_avatar(kind: String, path: String) -> Result<(), String> {
     let kind = crate::modules::avatar_library::AvatarKind::parse(&kind)?;
+    // A VRoid Hub model: its encrypted file and details go (VRoid Hub keeps it).
+    if let Some(id) = crate::modules::vroid_hub::model_id_of(&path) {
+        return crate::modules::vroid_hub::remove(id);
+    }
     let paths = crate::modules::paths::resolve_app_paths();
     crate::modules::avatar_library::remove(
         std::path::Path::new(&paths.data_dir),

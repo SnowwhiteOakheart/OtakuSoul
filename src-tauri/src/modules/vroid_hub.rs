@@ -974,7 +974,7 @@ fn scanned(model: &VroidModel) -> crate::modules::paths::ScannedVrm {
         size_mb: model.size_mb,
         format: "vroid".into(),
         triangles: 0,
-        removable: false,
+        removable: true,
         thumbnail: None,
     }
 }

@@ -76,8 +76,8 @@ function Thumbnail({ avatar, fresh }: { avatar: ManagedAvatar; fresh?: string })
   return <Icon className="h-10 w-10 text-accent-300/70" aria-hidden />;
 }
 
-/** Author, conditions of use and removal of a VRoid Hub model chosen in the manager. */
-function VroidDetails({ path, onRemoved }: { path: string; onRemoved: () => void }) {
+/** Author and conditions of use of a VRoid Hub model chosen in the manager. */
+function VroidDetails({ path }: { path: string }) {
   const { t } = useTranslation();
   const [model, setModel] = useState<VroidModel | null>(null);
   useEffect(() => {
@@ -87,26 +87,10 @@ function VroidDetails({ path, onRemoved }: { path: string; onRemoved: () => void
       cancelled = true;
     };
   }, [path]);
-  const remove = async () => {
-    try {
-      await api.vroidRemoveModel(vroidId(path));
-      onRemoved();
-      toast.success(translate('vroid.removed', { name: model?.name ?? '' }));
-    } catch (e) {
-      toast.error(errorMessage(e));
-    }
-  };
   return (
     <div className="space-y-2" data-vroid-details>
       {model && <VroidConditions model={model} />}
       <p className="text-[11px] text-slate-400">{t('vroid.usageHint')}</p>
-      <button
-        type="button"
-        onClick={() => void remove()}
-        className="flex items-center gap-1.5 rounded-lg border border-slate-700 px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-800"
-      >
-        {t('vroid.removeFromApp')}
-      </button>
     </div>
   );
 }
@@ -561,15 +545,7 @@ export function AvatarManagerView() {
               )}
 
               {isVroidPath(selected.path) && (
-                <VroidDetails
-                  key={selected.path}
-                  path={selected.path}
-                  onRemoved={() => {
-                    if (isDefault(selected)) setActiveVrmPath(null);
-                    setSelectedPath(null);
-                    void refreshVrmModels();
-                  }}
-                />
+                <VroidDetails key={selected.path} path={selected.path} />
               )}
 
               {selected.kind === 'inochi2d' && (

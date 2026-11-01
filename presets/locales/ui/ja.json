@@ -4091,7 +4091,6 @@
   "vroid.add": "追加",
   "vroid.isAdded": "追加済み",
   "vroid.remove": "削除",
-  "vroid.removeFromApp": "OtakuSoulから削除",
   "vroid.conditions": "利用条件",
   "vroid.conditionsHint": "作者がこのモデルに許可している内容（VRoid Hubの設定）。",
   "vroid.conditionsUnknown": "VRoid Hubから利用条件が送られませんでした。",
