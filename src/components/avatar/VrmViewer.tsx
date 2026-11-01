@@ -16,6 +16,7 @@ import { createAvatarStage, createBlinker, neverCull, type AvatarStage } from '.
 import { AvatarViewerChrome } from './AvatarViewerChrome';
 import { bodyPose, BodySway, EDGE_SIT_LEGS, floorSitPose, legReach, walkBob, WALK_CYCLE_HZ, type BodyBone, type LegLengths } from './proceduralBody';
 import { PET_EDGE_SEAT } from '../../services/avatarViewState';
+import { reachWithArm } from './armReach';
 import { useAvatarMotions } from './useAvatarMotions';
 
 export interface AvatarViewerProps {
@@ -262,6 +263,15 @@ export const VrmViewer = ({
     let seatKind: 'floor' | 'edge' = 'floor';
     /** Leg lengths and the rest heights of hip joint and ankle (world), measured once loaded. */
     let legs: (LegLengths & { hipY: number; ankleY: number }) | null = null;
+    // Scratch values for placing the hands while seated.
+    const reachKnee = new THREE.Vector3();
+    const reachHip = new THREE.Vector3();
+    const reachAnkle = new THREE.Vector3();
+    const reachFront = new THREE.Vector3();
+    const reachTarget = new THREE.Vector3();
+    const reachUpper = new THREE.Quaternion();
+    const reachLower = new THREE.Quaternion();
+    const upAxis = new THREE.Vector3(0, 1, 0);
     /** Spring settings of hair and cloth as loaded, to add the window's wind to (and restore). */
     const springRest = new Map<object, { dir: THREE.Vector3; power: number }>();
     const wind = new THREE.Vector3();
@@ -340,6 +350,31 @@ export const VrmViewer = ({
         }
         const hipsTarget = legs ? hipsRestY + (hipTarget - legs.hipY) : hipTarget;
         hips.position.y = THREE.MathUtils.lerp(hips.position.y, hipsTarget, seat);
+        // The hands go where they belong on this body: round the shins below the knees on the
+        // ground, on the thighs on an edge (fixed arm angles missed on other proportions).
+        hips.updateWorldMatrix(true, true);
+        for (const side of ['left', 'right'] as const) {
+          const node = (bone: string) => model.humanoid.getNormalizedBoneNode(`${side}${bone}` as BodyBone);
+          const [upper, lower, hand, hipJoint, knee, ankle] = [
+            node('UpperArm'), node('LowerArm'), node('Hand'), node('UpperLeg'), node('LowerLeg'), node('Foot'),
+          ];
+          if (!upper || !lower || !hand || !hipJoint || !knee || !ankle) continue;
+          const kneeAt = knee.getWorldPosition(reachKnee);
+          const hipAt = hipJoint.getWorldPosition(reachHip);
+          // The legs point forwards while seated: that is the body's front.
+          const front = reachFront.subVectors(kneeAt, hipAt).setY(0).normalize();
+          const target = edge
+            ? reachTarget.lerpVectors(hipAt, kneeAt, 0.65).addScaledVector(upAxis, 0.035 * modelHeight)
+            : reachTarget
+                .lerpVectors(kneeAt, ankle.getWorldPosition(reachAnkle), 0.3)
+                .addScaledVector(front, 0.045 * modelHeight);
+          reachUpper.copy(upper.quaternion);
+          reachLower.copy(lower.quaternion);
+          reachWithArm(upper, lower, hand, target);
+          // Eased in and out with the seat.
+          upper.quaternion.copy(reachUpper.slerp(upper.quaternion, seat));
+          lower.quaternion.copy(reachLower.slerp(lower.quaternion, seat));
+        }
       }
       model.humanoid
         .getNormalizedBoneNode('head')

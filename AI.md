@@ -1004,7 +1004,9 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   sich die Figur zur Seite (`SIT_TURN`, Seite je Hinsetzen zufällig). `VrmViewer` misst Ober-/Unterschenkel und die
   Ruhehöhen von Hüftgelenk und Knöchel (Raw-Bones) und rechnet die Bodenbeine per `legReach` (Hüftgelenk auf
   Knöchelhöhe); an der Kante sitzt das Hüftgelenk auf `PET_EDGE_SEAT`, und `DesktopPet` senkt das Fenster weich um
-  `PET_EDGE_SINK` (`sink`, beim Neulesen der Position wieder abgezogen), damit die Beine Platz haben.
+  `PET_EDGE_SINK` (`sink`, beim Neulesen der Position wieder abgezogen), damit die Beine Platz haben. Die Hände
+  setzt `armReach.ts` (`reachWithArm`, CCD über Ober-/Unterarm, rig-unabhängig) ans Schienbein unter dem Knie bzw. auf
+  den Oberschenkel – feste Armwinkel trafen bei anderen Proportionen daneben.
   Haltung im Kontextmenü (`PetPrefs.pose`: `auto`/`stand`/`sit` → `PetBehavior.setPose`; `sit` bleibt auch beim
   Sprechen, Dösen, Reagieren sitzen, nur mit `onFloorSit`). Alle X- und Z-Winkel gelten für Rigs, die nach
   +Z schauen; VRM-0.x-Rigs schauen intern nach -Z (linker Arm entlang -X) – `forFacing` dreht X um, Z folgt `dir`, Y (Ellbogen, Daumen) nur der Seite; sonst knicken
