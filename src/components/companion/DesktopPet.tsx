@@ -36,13 +36,14 @@ import {
   type Gaze,
   type PetDrive,
   type PetMode,
+  type PetSeat,
   type TouchZone,
 } from './petBehavior';
 import { planJump, stepBody, throwVelocity, walkArea, type Body, type Platform, type Rect } from './petPhysics';
 import type { GestureRequest, LoopRole } from '../../utils/avatarGestures';
 import { lacksPetMotions, recommendedMotionPack } from '../../utils/motionPacks';
 import type { MotionPackItem } from '../../types/generated/MotionPackItem';
-import { DEFAULT_PET_FRAMING, PET_FEET_SHARE, petFigureTop, type PetFraming } from '../../services/avatarViewState';
+import { DEFAULT_PET_FRAMING, PET_EDGE_SINK, PET_FEET_SHARE, petFigureTop, type PetFraming } from '../../services/avatarViewState';
 import {
   clampPetHeight,
   loadPetFraming,
@@ -99,6 +100,10 @@ const isMmdModel = (path: string) => /\.(pmx|pmd)$/i.test(path);
 const SIT_DROP = 0.2;
 /** Sitting on the ground lowers the head by about this share of the window (a VRM pose). */
 const FLOOR_SIT_DROP = 0.3;
+/** How much lower the head shows in the window while seated (the edge seat sinks the window). */
+const seatDrop = (seat: PetSeat | null) => (seat === 'floor' ? FLOOR_SIT_DROP : seat === 'edge' ? PET_EDGE_SINK : 0);
+/** Share of the remaining sink the window moves per physics step (eases with the sitting pose). */
+const SINK_EASE = 0.25;
 const isGltfModel = (path: string) => /\.(glb|gltf)$/i.test(path);
 // Inochi2D puppets bring their own runtime; only loaded for them.
 const Inochi2dViewer = lazy(() => import('../avatar/Inochi2dViewer'));
@@ -196,8 +201,12 @@ export const DesktopPet: React.FC = () => {
   const [walking, setWalking] = useState(false);
   const [loop, setLoop] = useState<LoopRole | null>(null);
   /** Sitting on the ground (VRM pose of its own). */
-  const [seated, setSeated] = useState(false);
-  const seatedRef = useRef(false);
+  const [seat, setSeat] = useState<PetSeat | null>(null);
+  const seatRef = useRef<PetSeat | null>(null);
+  /** How far the window has sunk below where the figure stands (physical px): legs hanging off an edge. */
+  const sink = useRef(0);
+  /** Where the physics last put the window (physical px). */
+  const placed = useRef({ x: Number.NaN, y: Number.NaN });
   const sittingRef = useRef(false);
   /** Desktop physics: the window (physical px), its size, the floor's work area and the scale. */
   const body = useRef<Body | null>(null);
@@ -262,7 +271,7 @@ export const DesktopPet: React.FC = () => {
   /** Where the head ends in the window now: from the figure, lower while it sits. */
   const headEnd = useCallback(
     () =>
-      headZoneEnd(stageRef.current?.headLine() ?? null, sittingRef.current ? SIT_DROP : seatedRef.current ? FLOOR_SIT_DROP : 0),
+      headZoneEnd(stageRef.current?.headLine() ?? null, sittingRef.current ? SIT_DROP : seatDrop(seatRef.current)),
     [],
   );
 
@@ -358,7 +367,9 @@ export const DesktopPet: React.FC = () => {
     const monitor =
       (await within(monitorFromPoint(position.x + size.width / 2, position.y + size.height - 1)).catch(() => null)) ??
       (await within(currentMonitor()).catch(() => null));
-    body.current = { x: position.x, y: position.y, vy: 0, support: null, edge: null };
+    // The window may have sunk below the figure's feet (sitting on an edge).
+    body.current = { x: position.x, y: position.y - sink.current, vy: 0, support: null, edge: null };
+    placed.current = { x: position.x, y: position.y };
     windowSize.current = { width: size.width, height: size.height };
     monitorScale.current = factor;
     if (monitor) {
@@ -426,7 +437,10 @@ export const DesktopPet: React.FC = () => {
         behavior.setCanJump(planJump(result.body, windowSize.current, walkArea(monitors.current, result.body.x + windowSize.current.width / 2, area.current), monitorScale.current, platforms.current) !== null);
       }
       if (result.wall) behavior.bumped(result.wall, now);
-      const [x, y] = [Math.round(result.body.x), Math.round(result.body.y)];
+      // Sitting on an edge: the window sinks below it so the hanging legs show (eased like the pose).
+      const sinkGoal = seatRef.current === 'edge' ? PET_EDGE_SINK * windowSize.current.height : 0;
+      sink.current = Math.abs(sinkGoal - sink.current) < 1 ? sinkGoal : sink.current + (sinkGoal - sink.current) * SINK_EASE;
+      const [x, y] = [Math.round(result.body.x), Math.round(result.body.y + sink.current)];
       // Arms and hair swing with the window's moves.
       stageRef.current?.addWindowMove(result.body.x - current.x, result.body.y - current.y);
       body.current = result.body;
@@ -440,7 +454,8 @@ export const DesktopPet: React.FC = () => {
           behavior.arrived(now);
         }
       }
-      if (x === Math.round(current.x) && y === Math.round(current.y)) return;
+      if (x === placed.current.x && y === placed.current.y) return;
+      placed.current = { x, y };
       // One move at a time; the next step waits for it.
       moving = true;
       void within(getCurrentWindow().setPosition(new PhysicalPosition(x, y)))
@@ -597,8 +612,8 @@ export const DesktopPet: React.FC = () => {
       setHop(frame.hop);
       setWalking(frame.walk !== 0);
       setLoop(frame.loop);
-      setSeated(frame.seated);
-      seatedRef.current = frame.seated;
+      setSeat(frame.seat);
+      seatRef.current = frame.seat;
       sittingRef.current = frame.loop === 'sit';
       walkDirection.current = frame.walk;
       gazeOverride.current = frame.gaze;
@@ -1132,7 +1147,7 @@ export const DesktopPet: React.FC = () => {
     gesture,
     pet: petLink,
     loop,
-    seated,
+    seat,
   };
   const hormones = companionState?.hormones;
   const thought = companionState?.scratchpad?.[0]?.thought;
@@ -1222,7 +1237,7 @@ export const DesktopPet: React.FC = () => {
           ms={shownBubble === bubble ? bubbleShowMs.current : 0}
           side={bubbleSideNow}
           // Sitting draws the figure lower: more room above the head.
-          room={petFigureTop(framingRef.current) + (loop === 'sit' ? SIT_DROP : seated ? FLOOR_SIT_DROP : 0)}
+          room={petFigureTop(framingRef.current) + (loop === 'sit' ? SIT_DROP : seatDrop(seat))}
           title={t('pet.compose')}
           onClick={bubbleChat ? openBubbleChat : openCompose}
         />

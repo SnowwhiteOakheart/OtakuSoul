@@ -12,9 +12,10 @@ import { mouthTarget, SILENT_VISEMES, type Visemes } from '../../services/lipSyn
 import type { AvatarMotion } from '../../types';
 import type { GestureRequest, LoopRole } from '../../utils/avatarGestures';
 import { loadMotionClip, AvatarMotionPlayer } from './vrmMotions';
-import { createAvatarStage, createBlinker, type AvatarStage } from './avatarStage';
+import { createAvatarStage, createBlinker, neverCull, type AvatarStage } from './avatarStage';
 import { AvatarViewerChrome } from './AvatarViewerChrome';
-import { bodyPose, BodySway, floorSitPose, FLOOR_SIT_HIPS, walkBob, WALK_CYCLE_HZ, type BodyBone } from './proceduralBody';
+import { bodyPose, BodySway, EDGE_SIT_LEGS, floorSitPose, legReach, walkBob, WALK_CYCLE_HZ, type BodyBone, type LegLengths } from './proceduralBody';
+import { PET_EDGE_SEAT } from '../../services/avatarViewState';
 import { useAvatarMotions } from './useAvatarMotions';
 
 export interface AvatarViewerProps {
@@ -41,8 +42,11 @@ export interface AvatarViewerProps {
   };
   /** State loop instead of the idle loop (desktop pet walking or sitting). */
   loop?: LoopRole | null;
-  /** Desktop pet: sitting on the ground (a pose of its own over any motion). */
-  seated?: boolean;
+  /**
+   * Desktop pet: sitting with a pose of its own over any motion – on the ground (knees drawn up)
+   * or on a window's edge (legs hanging; the pet window sinks `PET_EDGE_SINK` for them).
+   */
+  seat?: 'floor' | 'edge' | null;
 }
 
 const VISEME_KEYS = Object.keys(SILENT_VISEMES) as (keyof Visemes)[];
@@ -105,7 +109,7 @@ export const VrmViewer = ({
   onPickEmotion = () => {},
   pet,
   loop = null,
-  seated = false,
+  seat: seatMode = null,
 }: AvatarViewerProps) => {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -125,10 +129,10 @@ export const VrmViewer = ({
   useEffect(() => {
     loopRef.current = loop;
   }, [loop]);
-  const seatedRef = useRef(seated);
+  const seatRef = useRef(seatMode);
   useEffect(() => {
-    seatedRef.current = seated;
-  }, [seated]);
+    seatRef.current = seatMode;
+  }, [seatMode]);
 
   useEffect(() => {
     emotionRef.current = emotion;
@@ -208,6 +212,7 @@ export const VrmViewer = ({
 
         vrm = loaded;
         morphBinds = findMorphBinds(loaded.scene);
+        neverCull(loaded.scene);
         stage.scene.add(loaded.scene);
         motionPlayerRef.current = new AvatarMotionPlayer(loaded.scene, () => setPlayingGesture(''));
         setLoadedVrm(loaded);
@@ -216,6 +221,14 @@ export const VrmViewer = ({
         const head = loaded.humanoid.getRawBoneNode('head');
         modelHeight = new THREE.Box3().setFromObject(loaded.scene).max.y;
         hipsRestY = loaded.humanoid.getNormalizedBoneNode('hips')?.position.y ?? null;
+        // The legs as built (rest pose): sitting fits them to the ground instead of guessing.
+        const at = (bone: 'leftUpperLeg' | 'leftLowerLeg' | 'leftFoot') =>
+          loaded.humanoid.getRawBoneNode(bone)?.getWorldPosition(new THREE.Vector3());
+        const [hipJoint, kneeJoint, ankle] = [at('leftUpperLeg'), at('leftLowerLeg'), at('leftFoot')];
+        legs =
+          hipJoint && kneeJoint && ankle
+            ? { thigh: hipJoint.distanceTo(kneeJoint), shin: kneeJoint.distanceTo(ankle), hipY: hipJoint.y, ankleY: ankle.y }
+            : null;
         if (head) {
           stage.frameModel(head.getWorldPosition(new THREE.Vector3()).y, modelHeight);
         }
@@ -244,8 +257,11 @@ export const VrmViewer = ({
     /** Model height (top of its bounds) and the hips' rest height, for the dip while walking. */
     let modelHeight = 0;
     let hipsRestY: number | null = null;
-    /** How far the figure has sat down on the ground (0 standing … 1 sitting), eased. */
+    /** How far the figure has sat down (0 standing … 1 sitting), eased; and where (kept while it gets up). */
     let seat = 0;
+    let seatKind: 'floor' | 'edge' = 'floor';
+    /** Leg lengths and the rest heights of hip joint and ankle (world), measured once loaded. */
+    let legs: (LegLengths & { hipY: number; ankleY: number }) | null = null;
     /** Spring settings of hair and cloth as loaded, to add the window's wind to (and restore). */
     const springRest = new Map<object, { dir: THREE.Vector3; power: number }>();
     const wind = new THREE.Vector3();
@@ -304,14 +320,26 @@ export const VrmViewer = ({
       }
       // Desktop pet sitting on the ground: legs and hips go to the sitting pose over whatever
       // moved them (procedural or a motion), eased in and out.
-      seat += ((seatedRef.current ? 1 : 0) - seat) * Math.min(1, delta * 2.5);
+      const wanted = seatRef.current;
+      if (wanted) seatKind = wanted;
+      seat += ((wanted ? 1 : 0) - seat) * Math.min(1, delta * 2.5);
       if (seat > 0.001 && hips && hipsRestY !== null) {
-        for (const [bone, [x, y, z]] of Object.entries(floorSitPose(leftArmDirection))) {
+        const edge = seatKind === 'edge';
+        // The hip joint sits on the seat line: the ground (level with the ankles, as the soles and the
+        // seat are about equally thick) or the window's edge (plus the seat's own thickness).
+        const hipTarget = edge ? (PET_EDGE_SEAT + 0.04) * modelHeight : legs ? legs.ankleY + 0.005 * modelHeight : 0.09 * modelHeight;
+        const angles = edge
+          ? EDGE_SIT_LEGS
+          : legs
+            ? legReach(legs, 0.55 * (legs.thigh + legs.shin), hipTarget - legs.ankleY)
+            : undefined;
+        for (const [bone, [x, y, z]] of Object.entries(floorSitPose(leftArmDirection, angles, edge))) {
           const node = model.humanoid.getNormalizedBoneNode(bone as BodyBone);
           if (!node) continue;
           node.quaternion.slerp(poseQuaternion.setFromEuler(poseEuler.set(x, y, z)), seat);
         }
-        hips.position.y = THREE.MathUtils.lerp(hips.position.y, FLOOR_SIT_HIPS * modelHeight, seat);
+        const hipsTarget = legs ? hipsRestY + (hipTarget - legs.hipY) : hipTarget;
+        hips.position.y = THREE.MathUtils.lerp(hips.position.y, hipsTarget, seat);
       }
       model.humanoid
         .getNormalizedBoneNode('head')

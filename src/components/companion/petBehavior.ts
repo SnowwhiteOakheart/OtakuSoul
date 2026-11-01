@@ -36,9 +36,14 @@ export interface PetFrame {
   turn: number;
   /** Motion loop instead of the idle loop (only plays when the avatar has such a motion). */
   loop: LoopRole | null;
-  /** Sitting on the ground it stands on (a pose of its own, no motion needed). */
-  seated: boolean;
+  /**
+   * Sitting with a pose of its own (VRM, no motion needed): on the ground, knees drawn up, or on a
+   * window's edge with the legs hanging down; null when not (or when a sitting motion plays).
+   */
+  seat: PetSeat | null;
 }
+
+export type PetSeat = 'floor' | 'edge';
 
 /** Where the figure was touched: a stroke on the head or a poke elsewhere. */
 export type TouchZone = 'head' | 'body';
@@ -108,6 +113,8 @@ const WALK_MS: [number, number] = [3000, 7000];
 const SIT_MS: [number, number] = [12_000, 30_000];
 /** How far the figure turns into its walking direction (about 50°, the face stays visible). */
 export const WALK_TURN = 0.9;
+/** Seated, the figure turns to the side (about 75°): seen in profile, the face still a little. */
+export const SIT_TURN = 1.3;
 /** A glance after a window switch lasts this long; the next one waits this long. */
 const GLANCE_MS = 900;
 const GLANCE_GAP_MS = 8000;
@@ -165,6 +172,8 @@ export class PetBehavior {
   private floorSit = false;
   /** Posture chosen in the menu: `auto` decides itself, `stand` never walks or sits, `sit` stays seated. */
   private pose: PetPose = 'auto';
+  /** Which way it turns while seated (chosen anew each time it sits down). */
+  private sitSide: -1 | 1 = 1;
   /** A window's edge is within jumping reach. */
   private canJump = false;
   /** In the air by its own jump (a happy leap, not a startled fall). */
@@ -350,6 +359,8 @@ export class PetBehavior {
   setOnWindow(onWindow: boolean) {
     this.onWindow = onWindow;
     if (!onWindow && this.action?.kind === 'sit') this.action = null;
+    // From the ground onto a window (or back): a seat of the other kind starts over.
+    if (onWindow && this.action?.kind === 'sitFloor') this.action = null;
   }
 
   /** Whether a window's edge is within jumping reach (from the physics). */
@@ -368,25 +379,33 @@ export class PetBehavior {
   /** Whether the avatar has a sitting motion; without one it never sits. */
   setSitMotion(available: boolean) {
     this.sitMotion = available;
-    if (!available && this.action?.kind === 'sit') this.action = null;
+    if (!available && !this.floorSit && this.action?.kind === 'sit') this.action = null;
   }
 
   /** Posture from the menu; a chosen one ends what the figure was doing by itself. */
   setPose(pose: PetPose) {
+    if (pose === 'sit' && this.pose !== 'sit') this.sitSide = this.random() < 0.5 ? -1 : 1;
     this.pose = pose;
     const own = this.action?.kind;
     if (pose !== 'auto' && (own === 'walk' || own === 'sit' || own === 'sitFloor') && !this.action?.come) this.action = null;
   }
 
-  /** Sits on the ground because the menu says so (and the figure can). */
-  private get keptSeated(): boolean {
-    return this.pose === 'sit' && this.floorSit && this.grounded && this.action?.kind !== 'walk';
+  /** Seated because the menu says so (and the figure can): on a window's edge or the ground. */
+  private get keptSeat(): PetSeat | null {
+    if (this.pose !== 'sit' || !this.floorSit || !this.grounded || this.action?.kind === 'walk') return null;
+    return this.onWindow ? 'edge' : 'floor';
+  }
+
+  /** Turn of a seated figure: to its side. */
+  private seatTurn(seat: PetSeat | null): number {
+    return seat ? this.sitSide * SIT_TURN : 0;
   }
 
   /** Whether the figure can sit on the ground (a VRM pose); without it, it only sits on edges. */
   setFloorSit(available: boolean) {
     this.floorSit = available;
     if (!available && this.action?.kind === 'sitFloor') this.action = null;
+    if (!available && !this.sitMotion && this.action?.kind === 'sit') this.action = null;
   }
 
   /** The figure ran into a side wall (-1 left, 1 right): a walk that way turns around. */
@@ -443,9 +462,10 @@ export class PetBehavior {
       ['think', 15],
       ['nod', 10],
       ['walk', free && this.physics && this.grounded ? 30 * lively : 0],
-      ['sit', free && this.physics && this.onWindow && this.sitMotion ? 25 : 0],
-      // On the ground (or an edge without a sitting motion) it sits down now and then, calmer when tired.
-      ['sitFloor', free && this.grounded && this.floorSit && !(this.onWindow && this.sitMotion) ? 14 * (1 + above(fatigue)) : 0],
+      // On a window's edge it sits with the legs hanging (own pose, or a sitting motion) …
+      ['sit', free && this.physics && this.onWindow && (this.sitMotion || this.floorSit) ? 25 : 0],
+      // … on the ground with the knees drawn up (own pose), more often when tired.
+      ['sitFloor', free && this.grounded && this.floorSit && !this.onWindow ? 14 * (1 + above(fatigue)) : 0],
       ['jump', free && this.physics && this.grounded && this.canJump ? 18 : 0],
     ];
     const total = weights.reduce((sum, [, w]) => sum + w, 0);
@@ -456,7 +476,10 @@ export class PetBehavior {
       action.direction = this.random() < 0.5 ? -1 : 1;
       action.end = now + WALK_MS[0] + this.random() * (WALK_MS[1] - WALK_MS[0]);
     }
-    if (kind === 'sit' || kind === 'sitFloor') action.end = now + SIT_MS[0] + this.random() * (SIT_MS[1] - SIT_MS[0]);
+    if (kind === 'sit' || kind === 'sitFloor') {
+      action.end = now + SIT_MS[0] + this.random() * (SIT_MS[1] - SIT_MS[0]);
+      this.sitSide = this.random() < 0.5 ? -1 : 1;
+    }
     if (kind === 'lookAround') {
       const side = this.random() < 0.5 ? -1 : 1;
       action.gazes = [
@@ -512,11 +535,12 @@ export class PetBehavior {
       this.startAction(now);
     }
 
-    const still = { mouth: 0, hop: false, walk: 0 as const, turn: 0, loop: null, seated: false };
+    const still = { mouth: 0, hop: false, walk: 0 as const, turn: 0, loop: null, seat: null };
+    const kept = this.keptSeat;
     let frame: PetFrame;
     switch (this.mode) {
       case 'dozing':
-        frame = { ...still, mode: 'dozing', expression: 'relaxed', gaze: { x: 0, y: -0.8 }, loop: 'sleep', seated: this.keptSeated };
+        frame = { ...still, mode: 'dozing', expression: 'relaxed', gaze: { x: 0, y: -0.8 }, loop: 'sleep', seat: kept, turn: this.seatTurn(kept) };
         break;
       case 'dragged':
         frame = { ...still, mode: 'dragged', expression: 'surprised', gaze: { x: 0, y: -0.6 }, loop: 'fall' };
@@ -527,25 +551,27 @@ export class PetBehavior {
           : { ...still, mode: 'falling', expression: 'surprised', gaze: { x: 0, y: -0.7 }, loop: 'fall' };
         break;
       case 'reacting':
-        frame = { ...still, mode: 'reacting', expression: this.reactExpression, gaze: this.reactGaze, seated: this.keptSeated };
+        frame = { ...still, mode: 'reacting', expression: this.reactExpression, gaze: this.reactGaze, seat: kept, turn: this.seatTurn(kept) };
         break;
       case 'talking':
-        frame = { ...still, mode: 'talking', expression: null, gaze: null, loop: 'talk', seated: this.keptSeated };
+        frame = { ...still, mode: 'talking', expression: null, gaze: null, loop: 'talk', seat: kept, turn: this.seatTurn(kept) };
         break;
       default: {
         const direction = this.action?.kind === 'walk' ? this.action.direction! : 0;
-        const sitting = this.action?.kind === 'sit';
-        const seated = this.action?.kind === 'sitFloor' || this.keptSeated;
+        // On an edge a VRM figure sits with its own pose; others play their sitting motion.
+        const edge = this.action?.kind === 'sit';
+        const sitting = edge && !this.floorSit;
+        const seat: PetSeat | null = this.action?.kind === 'sitFloor' ? 'floor' : edge && this.floorSit ? 'edge' : kept;
         const swaying = this.music && !this.action && !this.saving;
         frame = {
           ...still,
           ...this.actionFrame(now),
           // Listening to music: relaxed, the head dips on each beat.
           ...(swaying ? { expression: 'relaxed', gaze: now < this.beatUntil ? { x: 0, y: -0.55 } : null } : {}),
-          mode: direction ? 'walking' : sitting || seated ? 'sitting' : 'idle',
-          seated,
+          mode: direction ? 'walking' : sitting || seat ? 'sitting' : 'idle',
+          seat,
           walk: direction,
-          turn: direction * WALK_TURN,
+          turn: direction ? direction * WALK_TURN : this.seatTurn(seat),
           // Music without anything else to do: it dances (with a dance motion; otherwise it nods along).
           loop: direction ? 'walk' : sitting ? 'sit' : swaying ? 'dance' : null,
         };

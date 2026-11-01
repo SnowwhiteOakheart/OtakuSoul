@@ -130,6 +130,13 @@ export const PET_LIFT_RANGE: [number, number] = [-0.3, 0.3];
 export const PET_FEET_SHARE = 0.02 / 1.275;
 /** Share of the pet window the whole figure fills at zoom 1 (the rest: bubble room on top). */
 const PET_FIGURE_FILL = 0.8 / 1.02;
+/**
+ * Sitting on a window's edge with the legs hanging, the pet window sinks this share of its height
+ * below the edge, so the legs have room; the seat is then this high above the window's bottom.
+ */
+export const PET_EDGE_SINK = 0.2;
+/** Where that edge is in the figure (share of the model height above its feet), at default framing. */
+export const PET_EDGE_SEAT = (PET_EDGE_SINK - PET_FEET_SHARE) / PET_FIGURE_FILL;
 /** How far the toes reach towards the camera, as share of the model height. */
 const PET_FOOT_REACH = 0.1;
 

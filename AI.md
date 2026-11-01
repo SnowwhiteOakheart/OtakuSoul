@@ -997,14 +997,22 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
 - Pet-Gehen und -Sitzen: Tempo `WALK_PACE` (Fensterhöhen/s, wächst mit dem Pet); ohne Lauf-Animation passt
   `WALK_CYCLE_HZ`/`WALK_STRIDE` (`proceduralBody.ts`) dazu, unter Berücksichtigung der Drehung `WALK_TURN` – ein Test
   prüft, dass der Standfuß nicht rutscht; dazu Fußabrollen und `walkBob` (Hüfte über die Normal-Hüfte, die jedes Bild
-  von der Ruhehöhe startet). Sitzen am Boden: Aktion `sitFloor` → `PetFrame.seated` (ohne Schleife), nur wenn der
-  Viewer `pet.onFloorSit(true)` meldet (bisher nur `VrmViewer`); `floorSitPose` (Knie angezogen und geschlossen, Arme darum – gespreizte Beine zeigten zur Kamera unter den Rock) + `FLOOR_SIT_HIPS` werden über jede
-  Animation geblendet. Auf Fensterkanten mit Sitz-Animation hat `sit` Vorrang. Haltung im Kontextmenü
-  (`PetPrefs.pose`: `auto`/`stand`/`sit` → `PetBehavior.setPose`; `sit` bleibt auch beim Sprechen, Dösen, Reagieren
-  sitzen, nur mit `onFloorSit`). Alle X-Winkel (und Z beim Kopf) gelten für Rigs, die nach +Z schauen; VRM-0.x-Rigs
-  schauen intern nach -Z (linker Arm entlang -X) – `forFacing` dreht sie um, sonst knicken Knie nach vorn. Fehlen Lauf-/Sitz-Animationen,
+  von der Ruhehöhe startet). Eigene Sitzpose (Aktion `sitFloor` am Boden, `sit` auf Fensterkanten) nur, wenn der
+  Viewer `pet.onFloorSit(true)` meldet (bisher nur `VrmViewer`); `floorSitPose` (Knie geschlossen, Arme um die Knie
+  bzw. auf den Oberschenkeln – gespreizte Beine zeigten zur Kamera unter den Rock) wird über jede Animation geblendet. `PetFrame.seat`: `floor` (Knie angezogen) oder `edge`
+  (Fensterkante, Beine hängen; ohne VRM-Pose spielt wie früher die `sit`-Animation mit CSS-`SIT_DROP`). Sitzend dreht
+  sich die Figur zur Seite (`SIT_TURN`, Seite je Hinsetzen zufällig). `VrmViewer` misst Ober-/Unterschenkel und die
+  Ruhehöhen von Hüftgelenk und Knöchel (Raw-Bones) und rechnet die Bodenbeine per `legReach` (Hüftgelenk auf
+  Knöchelhöhe); an der Kante sitzt das Hüftgelenk auf `PET_EDGE_SEAT`, und `DesktopPet` senkt das Fenster weich um
+  `PET_EDGE_SINK` (`sink`, beim Neulesen der Position wieder abgezogen), damit die Beine Platz haben.
+  Haltung im Kontextmenü (`PetPrefs.pose`: `auto`/`stand`/`sit` → `PetBehavior.setPose`; `sit` bleibt auch beim
+  Sprechen, Dösen, Reagieren sitzen, nur mit `onFloorSit`). Alle X-Winkel (und Z beim Kopf) gelten für Rigs, die nach
+  +Z schauen; VRM-0.x-Rigs schauen intern nach -Z (linker Arm entlang -X) – `forFacing` dreht sie um, sonst knicken
+  Knie nach vorn. Fehlen Lauf-/Sitz-Animationen,
   bieten Hub (Avatare, ganz oben), Avatar-Manager (`MotionPackOffer`) und Pet-Menü das Bewegungspaket an
   (`utils/motionPacks.ts`; das Pet lädt selbst und meldet `PET_MOTIONS_EVENT`, das Hauptfenster liest neu).
+- Avatare werden nie per Frustum ausgeblendet (`neverCull`): Skinned Meshes prüfen gegen ihre Ruhepose, Schuhe
+  verschwanden beim Sitzen und Laufen am Fensterrand.
 - Pet-Physik (`petPhysics.ts`): rechnet in physischen Pixeln mit dem Fenster als Körper; Geschwindigkeiten sind logisch
   und werden mit dem Monitor-Skalierungsfaktor multipliziert. Während des Ziehens ruht sie; nach dem Ziehen liest
   `syncWindow` Position und Arbeitsbereich neu, sonst fällt das Pet vom alten Platz. Pro Schritt nur ein `setPosition`

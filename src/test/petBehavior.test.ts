@@ -10,6 +10,7 @@ import {
   isNightHour,
   NEUTRAL_DRIVE,
   PetBehavior,
+  SIT_TURN,
   touchZoneAt,
   type PetDrive,
 } from '../components/companion/petBehavior';
@@ -296,10 +297,12 @@ describe('PetBehavior on the desktop floor', () => {
     const pet = new PetBehavior(0, fixed(0.99));
     pet.setFloorSit(true);
     const { frame } = run(pet, 0, 21_000);
-    expect(frame).toMatchObject({ mode: 'sitting', seated: true, loop: null, walk: 0 });
-    // Another figure that cannot sit on the ground: it gets up.
+    expect(frame).toMatchObject({ mode: 'sitting', seat: 'floor', loop: null, walk: 0 });
+    // Seated it turns to one side (seen in profile).
+    expect(Math.abs(frame.turn)).toBeCloseTo(SIT_TURN);
+    // Another figure that cannot sit on the ground: it gets up (and goes on with something else).
     pet.setFloorSit(false);
-    expect(pet.tick(21_100).frame.seated).toBe(false);
+    expect(pet.tick(21_100).frame.seat).toBeNull();
   });
 
   it('follows the posture chosen in the menu', () => {
@@ -307,27 +310,29 @@ describe('PetBehavior on the desktop floor', () => {
     const seated = new PetBehavior(0, fixed(0.99));
     seated.setFloorSit(true);
     seated.setPose('sit');
-    expect(run(seated, 0, 21_000).frame).toMatchObject({ seated: true, walk: 0 });
+    expect(run(seated, 0, 21_000).frame).toMatchObject({ seat: 'floor', walk: 0 });
     seated.setSpeaking(true);
-    expect(seated.tick(21_100).frame).toMatchObject({ mode: 'talking', seated: true });
+    expect(seated.tick(21_100).frame).toMatchObject({ mode: 'talking', seat: 'floor' });
 
     const standing = new PetBehavior(0, fixed(0.99));
     standing.setFloorSit(true);
     standing.setPose('stand');
     const frames = Array.from({ length: 60 }, (_, i) => standing.tick(i * 1000).frame);
-    expect(frames.some((f) => f.seated || f.walk !== 0)).toBe(false);
+    expect(frames.some((f) => f.seat || f.walk !== 0)).toBe(false);
 
     // Back to "by itself": it may sit down again.
     standing.setPose('auto');
-    expect(run(standing, 60_000, 90_000).frame.seated).toBe(true);
+    expect(run(standing, 60_000, 90_000).frame.seat).toBe('floor');
   });
 
-  it('prefers the sitting motion on a window edge to sitting on the ground', () => {
+  it('sits on a window edge with the legs hanging (own pose), also without a sitting motion', () => {
     const pet = new PetBehavior(0, fixed(0.99));
     pet.setFloorSit(true);
     pet.setOnWindow(true);
-    pet.setSitMotion(true);
-    expect(run(pet, 0, 21_000).frame).toMatchObject({ loop: 'sit', seated: false });
+    expect(run(pet, 0, 21_000).frame).toMatchObject({ mode: 'sitting', seat: 'edge', loop: null });
+    // Its window goes away: no longer on an edge (on the ground it may sit down anew).
+    pet.setOnWindow(false);
+    expect(pet.tick(21_100).frame.seat).not.toBe('edge');
   });
 
   it('asks for the walking loop while walking', () => {

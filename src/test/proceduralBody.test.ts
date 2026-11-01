@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bodyPose, BodySway, drift, floorSitPose, walkBob, WALK_CYCLE_HZ, WALK_STRIDE, type BodyInput } from '../components/avatar/proceduralBody';
+import { bodyPose, BodySway, drift, floorSitPose, legReach, walkBob, WALK_CYCLE_HZ, WALK_STRIDE, type BodyInput } from '../components/avatar/proceduralBody';
 import { WALK_PACE } from '../components/companion/petPhysics';
 import { WALK_TURN } from '../components/companion/petBehavior';
 import { frameInterval } from '../components/avatar/avatarStage';
@@ -62,6 +62,26 @@ describe('bodyPose', () => {
     expect(floorSitPose(1).leftUpperLeg![0]).toBeLessThan(-1);
     expect(floorSitPose(-1).leftUpperLeg![0]).toBeGreaterThan(1);
     expect(floorSitPose(-1).leftUpperLeg![2]).toBeCloseTo(-floorSitPose(1).leftUpperLeg![2]);
+  });
+
+  it('reaches the ankle where the seat needs it, with the knee up', () => {
+    const legs = { thigh: 0.4, shin: 0.38 };
+    for (const [reach, drop] of [
+      [0.42, 0.02],
+      [0.3, -0.03],
+      [0.5, 0.1],
+    ] as const) {
+      const { flex, bend } = legReach(legs, reach, drop);
+      // Forward kinematics in the leg's plane: angles from hanging straight down.
+      const kneeX = legs.thigh * Math.sin(flex);
+      const kneeY = -legs.thigh * Math.cos(flex);
+      const ankleX = kneeX + legs.shin * Math.sin(flex - bend);
+      const ankleY = kneeY - legs.shin * Math.cos(flex - bend);
+      expect(ankleX).toBeCloseTo(reach, 4);
+      expect(ankleY).toBeCloseTo(-drop, 4);
+      // The knee is above the hip line (drawn up), not below it.
+      expect(kneeY).toBeGreaterThan(0);
+    }
   });
 
   it('steps as fast as the pet moves, so the planted foot does not slide', () => {

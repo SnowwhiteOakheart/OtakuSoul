@@ -165,39 +165,67 @@ export function bodyPose({ t, leftArm, rightArm, walkPhase, sway, look }: BodyIn
   return forFacing(pose, leftArm);
 }
 
-/** Height of the hips above the ground while sitting on it (share of the model height). */
-export const FLOOR_SIT_HIPS = 0.09;
+/** A leg as measured on the model: thigh (hip joint to knee) and shin (knee to ankle). */
+export interface LegLengths {
+  thigh: number;
+  shin: number;
+}
+
+/** A leg's angles: flexion at the hip (forward, from hanging down) and bend at the knee (radians). */
+export interface LegAngles {
+  flex: number;
+  bend: number;
+}
 
 /**
- * Sitting on the ground, facing the viewer, knees drawn up and closed with the arms around them:
- * a calm pose that keeps the lap covered and stays compact towards the camera (legs stretched
- * forward came at the viewer and got cut off by the window edge). The back leans forward, the
- * head looks up again. `leftArm` is the rig's X direction (VRM 0.x may flip it), which sets where
- * "inwards" and "forwards" are. Laid out for the leg proportions of `LEG_SHARE` with the hips at
- * `FLOOR_SIT_HIPS`: thighs rise to the knees, the shins come down so the feet stand flat just
- * in front of the hips.
+ * Two-joint leg reaching the ankle `reach` in front of the hip joint and `drop` below it, knee up:
+ * the sitting legs follow the model's own proportions, so feet and seat end on the same ground.
  */
-export function floorSitPose(leftArm: number): BodyPose {
+export function legReach({ thigh, shin }: LegLengths, reach: number, drop: number): LegAngles {
+  const longest = thigh + shin - 1e-4;
+  const shortest = Math.abs(thigh - shin) + 1e-4;
+  const dist = Math.min(longest, Math.max(shortest, Math.hypot(reach, drop)));
+  const atHip = Math.acos(Math.min(1, Math.max(-1, (thigh * thigh + dist * dist - shin * shin) / (2 * thigh * dist))));
+  const atKnee = Math.acos(Math.min(1, Math.max(-1, (thigh * thigh + shin * shin - dist * dist) / (2 * thigh * shin))));
+  const below = Math.atan2(drop, reach);
+  return { flex: Math.PI / 2 - below + atHip, bend: Math.PI - atKnee };
+}
+
+/** Sitting on the ground with knees drawn up, when the legs were not measured. */
+const DEFAULT_SIT_LEGS: LegAngles = { flex: 2.2, bend: 2.6 };
+/** Sitting on an edge: thighs level, shins hanging down a little forward. */
+export const EDGE_SIT_LEGS: LegAngles = { flex: Math.PI / 2, bend: 1.35 };
+
+/**
+ * Sitting, knees closed. On the ground the knees are drawn up with the arms around them (a calm
+ * pose that keeps the lap covered and stays compact); on an edge the legs hang down and the
+ * hands rest on the thighs. `legs` gives the leg angles (`legReach` with the model's own
+ * lengths); the foot stays level with the ground or hangs relaxed. `leftArm` is the rig's X
+ * direction (VRM 0.x may flip it), which sets where "inwards" and "forwards" are.
+ */
+export function floorSitPose(leftArm: number, legs: LegAngles = DEFAULT_SIT_LEGS, edge = false): BodyPose {
   const out = Math.sign(leftArm) || 1;
-  const thigh = -2.2;
-  const knee = 2.6;
+  const thigh = -legs.flex;
+  const knee = legs.bend;
+  // On the ground the soles stay flat; hanging feet point down a little.
+  const foot = edge ? 0.35 : legs.flex - legs.bend;
+  const armsForward = edge ? -0.45 : -0.8;
+  const elbow = edge ? 0.7 : 1.1;
   const pose: BodyPose = {
-    spine: [0.22, 0, 0],
-    chest: [0.1, 0, 0],
-    neck: [-0.2, 0, 0],
-    // Knees together (a little inwards), feet flat on the ground.
+    spine: [edge ? 0.08 : 0.22, 0, 0],
+    chest: [edge ? 0.04 : 0.1, 0, 0],
+    neck: [edge ? -0.06 : -0.2, 0, 0],
     leftUpperLeg: [thigh, 0, -out * 0.04],
     leftLowerLeg: [knee, 0, 0],
-    leftFoot: [-(thigh + knee), 0, 0],
+    leftFoot: [foot, 0, 0],
     rightUpperLeg: [thigh, 0, out * 0.04],
     rightLowerLeg: [knee, 0, 0],
-    rightFoot: [-(thigh + knee), 0, 0],
-    // Arms forward and down to the knees, elbows bent round them.
-    leftUpperArm: [-0.8, 0, -out * 1.25],
-    leftLowerArm: [0, -out * 1.1, 0],
+    rightFoot: [foot, 0, 0],
+    leftUpperArm: [armsForward, 0, -out * 1.25],
+    leftLowerArm: [0, -out * elbow, 0],
     leftHand: [0, 0, 0],
-    rightUpperArm: [-0.8, 0, out * 1.25],
-    rightLowerArm: [0, out * 1.1, 0],
+    rightUpperArm: [armsForward, 0, out * 1.25],
+    rightLowerArm: [0, out * elbow, 0],
     rightHand: [0, 0, 0],
   };
   return forFacing(pose, out);
