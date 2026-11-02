@@ -113,6 +113,7 @@ export function VoiceCallControls({
         inputDeviceId: config.stt.input_device_id,
         vadThreshold: config.stt.vad_threshold,
         silenceMs: config.stt.vad_silence_ms,
+        speechModel: config.stt.speech_model !== false,
         autoStopOnSilence: continuous,
         maxDurationMs: 60_000,
         bargeIn: listenAlong ? { ...BARGE_IN_DEFAULTS, onBargeIn: interrupt } : undefined,

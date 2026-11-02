@@ -1894,6 +1894,20 @@ export const api = {
     return await invoke<void>('delete_sync_snapshot', { deviceId, filename });
   },
 
+  /** Speech detection (Silero VAD) for one recording; loads the small model on first use. */
+  vadOpen: async (stream: string): Promise<void> => {
+    return await invoke<void>('vad_open', { stream });
+  },
+
+  /** Speech probability (0–1) of new 16 kHz samples; `null` while a block is incomplete. */
+  vadProcess: async (stream: string, samples: number[]): Promise<number | null> => {
+    return await invoke<number | null>('vad_process', { stream, samples });
+  },
+
+  vadClose: async (stream: string): Promise<void> => {
+    return await invoke<void>('vad_close', { stream });
+  },
+
   // Phase 17: Image Generation
   getImageGenConfig: async (): Promise<ImageGenConfig> => {
     return await invoke<ImageGenConfig>('get_image_gen_config');

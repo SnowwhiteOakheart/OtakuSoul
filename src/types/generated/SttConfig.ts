@@ -5,4 +5,9 @@ export type SttConfig = { engine: SttEngine, whisper_model_path: string, endpoin
 /**
  * Voice call: speaking while the character talks stops her (barge-in).
  */
-barge_in: boolean, };
+barge_in: boolean, 
+/**
+ * Tell speech from typing, breathing and noise with Silero VAD (`modules::vad`) on top of
+ * the level; without the model the level alone decides.
+ */
+speech_model: boolean, };

@@ -125,3 +125,21 @@ pub fn save_character_voice_config(
 ) -> Result<(), String> {
     crate::modules::voice::save_character_voice_config(&char_id, &config)
 }
+
+/// Starts speech detection (Silero VAD) for a recording; loads the small model on first use.
+/// An error means: no model (offline) – the recording then judges by level alone.
+#[tauri::command]
+pub async fn vad_open(stream: String) -> Result<(), String> {
+    crate::modules::vad::open(&stream).await
+}
+
+/// Speech probability (0–1) of the new 16 kHz samples; `None` while a block is incomplete.
+#[tauri::command(async)]
+pub fn vad_process(stream: String, samples: Vec<f32>) -> Result<Option<f32>, String> {
+    crate::modules::vad::process(&stream, &samples)
+}
+
+#[tauri::command(async)]
+pub fn vad_close(stream: String) {
+    crate::modules::vad::close(&stream);
+}

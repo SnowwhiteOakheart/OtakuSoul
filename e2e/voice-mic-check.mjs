@@ -41,7 +41,7 @@ try {
       engine: 'openai',
       openai_endpoint: `${base}/audio/speech`,
       openai_model: 'pruefstand',
-      stt: { ...config.stt, engine: 'openai', endpoint: `${base}/audio/transcriptions`, vad_threshold: 0.025, vad_silence_ms: 600 },
+      stt: { ...config.stt, engine: 'openai', endpoint: `${base}/audio/transcriptions`, vad_threshold: 0.025, vad_silence_ms: 600, speech_model: false },
     },
   });
 

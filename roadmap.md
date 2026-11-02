@@ -23,8 +23,6 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 | A4 | Nutzertests mit 2–3 Einsteigern | ★★★ | S | Testpersonen |
 | A5 | Signierte Installer (Windows, macOS) | ★★★ | S–M | Zertifikat bzw. Apple-Konto (Kosten) |
 | **B** | **Als Nächstes – baut auf Vorhandenem auf** | | | |
-| B1 | Hörbuch-Export | ★★ | M | – |
-| B2 | Silero-VAD für Sprachanruf und Unterbrechen | ★★ | M | – |
 | B3 | Touch-Reaktionen im Hauptfenster | ★★ | M | – |
 | B4 | Eigene Figuren und Geschichten teilen | ★★★ | L | Prüfablauf im Daten-Repo |
 | B5 | Light-Novel- und Webtoon-Export | ★★ | M–L | – |
@@ -53,6 +51,7 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 | E4 | Fehlende Inochi2D-Funktionen | – | M | Modell, das sie nutzt |
 | E5 | Lokale Embeddings fürs Gedächtnis | – | M | Messung, dass FTS5 nicht reicht |
 | E6 | VRoid-Anmeldung über `otakusoul://`-Link | – | S | Berichte über belegten Port |
+| E7 | Hörbuch-Export (vorerst gestrichen, 02.11.2026) | ★ | M | – |
 
 ## Leitlinien für neue Oberflächen
 
@@ -107,12 +106,6 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 
 ## B. Als Nächstes – baut auf Vorhandenem auf
 
-- [ ] **B1 · Hörbuch-Export:** Fügt die Sprachclips eines Kapitels (Erzähler- und Charakterstimmen) zu einer
-  durchgängigen Audiodatei mit Kapitelmarken zusammen, auf Wunsch mit leiser Stimmungsmusik darunter. *Baut auf:*
-  `stageVoice.ts`, Musik-Sets. Gut ohne GPU testbar (Zusammensetzen, Marken).
-- [ ] **B2 · Silero-VAD für Sprachanruf und Unterbrechen:** Silero-VAD (ONNX/WASM) statt reinem RMS-Pegel
-  (`voiceCapture.ts`), damit Tastaturklappern, Atemgeräusche und die eigene Stimme der Figur aus Lautsprechern nicht als
-  Sprache zählen. Bis dahin gilt die 2,5-fache Schwelle für 300 ms. *Nutzen:* weniger Fehlunterbrechungen im Sprachanruf.
 - [ ] **B3 · Touch-Reaktionen im Hauptfenster:** Im Desktop-Pet erledigt (Kopf/Körper, Hormone `headpat`/`poke`);
   offen für den Avatar im Chat: Live2D (`hitTest` auf `Head`, `Face`, `Body`) und 3D per Raycasting, mit denselben
   Reaktionen. *Baut auf:* Pet-Verhalten, Körperzonen.
@@ -190,6 +183,9 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
   über llama-server (`--embedding`), Vektoren als BLOB in SQLite, Brute-Force-Kosinus, Fusion mit BM25 per RRF.
 - [ ] **E6 · VRoid-Anmeldung über `otakusoul://vroidhub/callback`** (`tauri-plugin-deep-link`), falls der feste Port
   47823 bei Nutzern oft belegt ist.
+
+- [ ] **E7 · Hörbuch-Export** – vorerst gestrichen (Entscheidung 02.11.2026), niedrigste Priorität: Sprachclips eines
+  Kapitels (Erzähler- und Charakterstimmen) zu einer Audiodatei mit Kapitelmarken zusammenfügen.
 
 ---
 

@@ -123,6 +123,7 @@ export function MicCheck({ config, speakerName, onThreshold }: MicCheckProps) {
         inputDeviceId: config.stt.input_device_id,
         vadThreshold: threshold,
         silenceMs: config.stt.vad_silence_ms,
+        speechModel: config.stt.speech_model !== false,
         autoStopOnSilence: true,
         maxDurationMs: MAX_TEST_MS,
         onLevel: (reported, speech) => {

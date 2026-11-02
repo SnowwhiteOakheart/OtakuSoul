@@ -50,6 +50,7 @@ pub mod openrouter_auth;
 pub mod paths;
 pub mod profile_backup;
 pub mod device_sync;
+pub mod vad;
 pub mod prompt_builder;
 pub mod prompt_log;
 pub mod providers;

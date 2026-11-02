@@ -140,6 +140,10 @@ pub struct SttConfig {
     /// Voice call: speaking while the character talks stops her (barge-in).
     #[serde(default = "default_barge_in")]
     pub barge_in: bool,
+    /// Tell speech from typing, breathing and noise with Silero VAD (`modules::vad`) on top of
+    /// the level; without the model the level alone decides.
+    #[serde(default = "default_barge_in")]
+    pub speech_model: bool,
 }
 
 impl Default for SttConfig {
@@ -156,6 +160,7 @@ impl Default for SttConfig {
             vad_silence_ms: default_vad_silence_ms(),
             input_device_id: String::new(),
             barge_in: default_barge_in(),
+            speech_model: default_barge_in(),
         }
     }
 }

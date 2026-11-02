@@ -523,6 +523,9 @@ pub fn run() {
             commands::llm::get_model_defaults,
             // Voice / TTS
             commands::voice::list_available_voices,
+            commands::voice::vad_open,
+            commands::voice::vad_process,
+            commands::voice::vad_close,
             commands::voice::get_kokoro_installation,
             commands::voice::install_kokoro_model,
             commands::voice::synthesize_speech,

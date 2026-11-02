@@ -861,6 +861,14 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   E2E `voice-barge-in.mjs`: `getUserMedia` auf `MediaDevices.prototype` ersetzen (WebKit tauscht `navigator.mediaDevices`
   aus) und `browser.refresh()` statt `location.reload()` (sonst läuft `execute` in einem anderen Kontext; die App nutzt
   dann WebKits piepsendes Mock-Mikrofon). Mock: `stats.ttsToneSeconds` liefert hörbare Clips fester Länge.
+- Spracherkennung per KI (`modules/vad.rs`, `SttConfig.speech_model`, Standard an, Schalter `#setting-speech-model`):
+  Silero VAD v6.2.3 (MIT, 2,3 MB, festgelegter Commit + SHA-256) lädt beim ersten `vad_open` nach
+  `<Daten>/models/vad/`. 16 kHz, Blöcke zu 512 Samples mit den 64 davor als Kontext (`Framer`), Zustand `[2,1,128]`
+  je Aufnahme (`stream`). `VoiceCapture` schickt jeden Chunk (`vad_process`) und zählt einen lauten Chunk nur als Sprache,
+  wenn das letzte Urteil (≤ 600 ms alt) ≥ 0,5 ist (`sounds`); ohne Modell oder Urteil entscheidet der Pegel wie früher.
+  Beim Mithören bleibt die 2,5-fache Schwelle, denn Silero hört auch die Stimme der Figur aus dem Lautsprecher als Sprache.
+  E2E mit Piep-Mikrofon setzen `speech_model: false` (Silero wertet Töne zu Recht nicht als Sprache). Echter Test:
+  `OTAKUSOUL_TEST_SILERO=<Pfad zu silero_vad.onnx> cargo test --lib modules::vad -- --ignored` (braucht ONNX Runtime ≥ 1.27).
 - Stimmeffekte: `VoiceConfig.effects` (`VoiceEffects`), gerendert in `services/voiceEffects.ts` (OfflineAudioContext, Tonhöhe per
   WSOLA) über `audioPlayer.enqueue(…, effects)`; jeder neue Abspielweg muss `config.effects` mitgeben.
 

@@ -75,6 +75,7 @@ const DEFAULT_CONFIG: VoiceConfig = {
     vad_silence_ms: 900,
     input_device_id: '',
     barge_in: true,
+    speech_model: true,
   },
   narrator_for_actions: false,
   local_style: '',
@@ -672,6 +673,19 @@ export function CharacterVoiceModal({ onClose, target, embedded = false, autoSav
                       type="checkbox"
                       checked={draft.stt.barge_in !== false}
                       onChange={(event) => updateStt('barge_in', event.target.checked)}
+                      className="w-4 h-4 accent-cyan-500"
+                    />
+                  </label>
+                  <label className="flex items-center justify-between gap-3 rounded-lg border border-slate-800 bg-app/50 p-3">
+                    <span>
+                      <span className="block text-sm text-slate-200">{t('voiceCfg.speechModel')}</span>
+                      <span className="block text-xs text-slate-400">{t('voiceCfg.speechModelText')}</span>
+                    </span>
+                    <input
+                      id="setting-speech-model"
+                      type="checkbox"
+                      checked={draft.stt.speech_model !== false}
+                      onChange={(event) => updateStt('speech_model', event.target.checked)}
                       className="w-4 h-4 accent-cyan-500"
                     />
                   </label>

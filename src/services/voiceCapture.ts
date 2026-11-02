@@ -1,4 +1,5 @@
 import { translate } from '../i18n';
+import { api } from './api';
 export interface VoiceCaptureResult {
   audioBase64: string;
   durationMs: number;
@@ -23,7 +24,18 @@ export interface VoiceCaptureOptions {
    * `disarm()` switches to normal listening without waiting.
    */
   bargeIn?: BargeInOptions;
+  /**
+   * Also ask Silero VAD whether a sound is speech (typing, breathing and noise are not). Only
+   * when it agrees does a loud sound count; while the model loads or is missing, the level
+   * alone decides as before.
+   */
+  speechModel?: boolean;
 }
+
+/** Silero's verdict from at least this probability on counts as speech. */
+export const SPEECH_PROBABILITY = 0.5;
+/** A verdict older than this (ms) no longer counts – the level decides alone again. */
+const VERDICT_MAX_AGE_MS = 600;
 
 export interface BargeInOptions {
   thresholdFactor: number;
@@ -79,6 +91,11 @@ export class VoiceCapture {
   private armed = false;
   /** How long the voice has been above the barge-in threshold (ms, decays in pauses). */
   private loudMs = 0;
+  /** Silero for this recording (`null` while off, loading or missing). */
+  private vadStream: string | null = null;
+  private vadReady = false;
+  private speechProbability = 0;
+  private verdictAt = 0;
 
   public async start(options: VoiceCaptureOptions = {}) {
     if (this.active) throw new Error(translate('errors.recordingActive'));
@@ -117,7 +134,57 @@ export class VoiceCapture {
     this.armed = Boolean(options.bargeIn);
     this.loudMs = 0;
     this.active = true;
+    this.vadReady = false;
+    this.verdictAt = 0;
     this.processor.onaudioprocess = (event) => this.handleAudio(event);
+    if (options.speechModel) this.openSpeechModel();
+  }
+
+  /** Starts Silero in the background; until it answers the level decides. */
+  private openSpeechModel() {
+    const stream = `capture-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    this.vadStream = stream;
+    api
+      .vadOpen(stream)
+      .then(() => {
+        if (this.vadStream === stream && this.active) this.vadReady = true;
+        else void api.vadClose(stream).catch(() => {});
+      })
+      .catch((error: unknown) => {
+        console.warn('Speech model unavailable, deciding by level:', error);
+        if (this.vadStream === stream) this.vadStream = null;
+      });
+  }
+
+  /** Sends a chunk to Silero; its verdict arrives a moment later and counts for the next chunks. */
+  private askSpeechModel(samples: Float32Array) {
+    const stream = this.vadStream;
+    if (!stream || !this.vadReady) return;
+    const audio = Array.from(resampleMono(samples, this.sourceRate, 16_000));
+    api
+      .vadProcess(stream, audio)
+      .then((probability) => {
+        if (probability === null || probability === undefined || this.vadStream !== stream) return;
+        this.speechProbability = probability;
+        this.verdictAt = performance.now();
+      })
+      .catch(() => {
+        // One failed block: the level decides until the next verdict.
+      });
+  }
+
+  /** Whether a sound at this level is speech: loud enough and (with Silero) really a voice. */
+  public sounds(level: number, threshold: number, now = performance.now()) {
+    if (level < threshold) return false;
+    if (!this.vadReady || now - this.verdictAt > VERDICT_MAX_AGE_MS) return true;
+    return this.speechProbability >= SPEECH_PROBABILITY;
+  }
+
+  private closeSpeechModel() {
+    const stream = this.vadStream;
+    this.vadStream = null;
+    this.vadReady = false;
+    if (stream) void api.vadClose(stream).catch(() => {});
   }
 
   private handleAudio(event: AudioProcessingEvent) {
@@ -130,6 +197,7 @@ export class VoiceCapture {
     for (const sample of copy) energy += sample * sample;
     const level = Math.sqrt(energy / copy.length);
     const now = performance.now();
+    this.askSpeechModel(copy);
     const threshold = this.options.vadThreshold ?? 0.025;
     const bargeIn = this.options.bargeIn;
     if (this.armed && bargeIn) {
@@ -137,7 +205,7 @@ export class VoiceCapture {
       return;
     }
     this.peakLevel = Math.max(this.peakLevel, level);
-    if (level >= threshold) {
+    if (this.sounds(level, threshold, now)) {
       this.speechDetected = true;
       this.lastSpeechAt = now;
     }
@@ -156,7 +224,9 @@ export class VoiceCapture {
   private listenAlong(level: number, threshold: number, bargeIn: BargeInOptions, frameMs: number, now: number) {
     const keep = Math.max(1, Math.ceil(bargeIn.preRollMs / frameMs));
     if (this.chunks.length > keep) this.chunks.splice(0, this.chunks.length - keep);
-    const loud = level >= threshold * bargeIn.thresholdFactor;
+    // Silero also hears the character's own voice from the speakers as speech, so the higher
+    // level threshold stays; it only keeps typing and noise from cutting her off.
+    const loud = this.sounds(level, threshold * bargeIn.thresholdFactor, now);
     this.loudMs = loud ? this.loudMs + frameMs : Math.max(0, this.loudMs - frameMs);
     this.options.onLevel?.(Math.min(1, level / Math.max(threshold * 4, 0.01)), false);
     if (this.loudMs < bargeIn.minSpeechMs) return;
@@ -187,6 +257,7 @@ export class VoiceCapture {
   public async stop(): Promise<VoiceCaptureResult | null> {
     if (!this.active) return null;
     this.active = false;
+    this.closeSpeechModel();
     const durationMs = performance.now() - this.startedAt;
 
     if (this.processor) {

@@ -53,7 +53,7 @@ try {
       engine: 'openai',
       openai_endpoint: `${base}/audio/speech`,
       openai_model: 'figur',
-      stt: { ...config.stt, engine: 'openai', endpoint: `${base}/audio/transcriptions`, vad_threshold: 0.02, vad_silence_ms: 600, barge_in: true },
+      stt: { ...config.stt, engine: 'openai', endpoint: `${base}/audio/transcriptions`, vad_threshold: 0.02, vad_silence_ms: 600, barge_in: true, speech_model: false },
     },
   });
   // The chat loads the character's voice on start.
