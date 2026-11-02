@@ -1,7 +1,18 @@
 import React, { useState } from 'react';
 import { radioGroupKeyDown, radioTabIndex } from '../../utils/radioGroup';
-import { ArrowLeft, ArrowRight, Check, Dices, Loader2, Play, Settings2, User, Users, X } from 'lucide-react';
-import { useStoreFields } from '../../store/useAppStore';
+import { ArrowLeft, ArrowRight, Check, Dices, Loader2, Music, Play, Settings2, User, Users, Wand2, X } from 'lucide-react';
+import { useAppStore, useStoreFields } from '../../store/useAppStore';
+import { llmTarget } from '../../store/helpers';
+import { api } from '../../services/api';
+import { MUSIC_MOODS, type MusicMood } from '../../services/stageMusic';
+import {
+  GENRE_MUSIC,
+  genreMusic,
+  musicPrompt,
+  musicSection,
+  parseMusicSuggestion,
+  type StoryMusicDraft,
+} from '../../services/storyMusicDraft';
 import { translate, useTranslation, type TranslationKey } from '../../i18n';
 import type { SceneDefinition } from '../../types';
 import { ModalOverlay } from '../ui/ModalOverlay';
@@ -14,7 +25,7 @@ export type WizardGenre = (typeof WIZARD_GENRES)[number];
 /** Number of ready-made situations per genre (`storyWizard.premise.<genre>.<n>.*`). */
 export const PREMISES_PER_GENRE = 2;
 const MAX_COMPANIONS = 4;
-const STEPS = ['genre', 'you', 'companions', 'start'] as const;
+const STEPS = ['genre', 'you', 'companions', 'start', 'music'] as const;
 
 const premiseKey = (genre: WizardGenre, index: number, field: 'title' | 'hook' | 'location' | 'opening') =>
   `storyWizard.premise.${genre}.${index}.${field}` as TranslationKey;
@@ -28,20 +39,37 @@ interface StoryDraft {
   premise: number | null;
   ownIdea: string;
   ownLocation: string;
+  /** Music of the story (`otakusoul_music`); without it the Stage plays the general pool. */
+  music?: StoryMusicDraft;
+  musicOff?: boolean;
+}
+
+/** Title, place and situation of the story (also the chat model's context for music). */
+export function storyBasics(draft: StoryDraft) {
+  const t = translate;
+  const premise = draft.premise;
+  return {
+    title:
+      premise !== null
+        ? t(premiseKey(draft.genre, premise, 'title'))
+        : t('storyWizard.ownTitle', { genre: t(`gallery.filter.${draft.genre}` as TranslationKey) }),
+    location: premise !== null ? t(premiseKey(draft.genre, premise, 'location')) : draft.ownLocation.trim() || t('sceneNew.startLocationDefault'),
+    situation: premise !== null ? t(premiseKey(draft.genre, premise, 'hook')) : draft.ownIdea.trim(),
+  };
 }
 
 /** The scene the wizard creates (story texts in the interface language, which is the player's). */
 export function buildStoryDefinition(draft: StoryDraft): SceneDefinition {
   const t = translate;
   const premise = draft.premise;
-  const title =
-    premise !== null ? t(premiseKey(draft.genre, premise, 'title')) : t('storyWizard.ownTitle', { genre: t(`gallery.filter.${draft.genre}` as TranslationKey) });
-  const location = premise !== null ? t(premiseKey(draft.genre, premise, 'location')) : draft.ownLocation.trim() || t('sceneNew.startLocationDefault');
-  const situation = premise !== null ? t(premiseKey(draft.genre, premise, 'hook')) : draft.ownIdea.trim();
+  const { title, location, situation } = storyBasics(draft);
+  const id = `story_own_${Date.now()}`;
+  // One set per story: its id names the music folder.
+  const music = draft.music && !draft.musicOff ? musicSection(draft.music, id) : null;
   const player = draft.playerName.trim() || t('sceneNew.personaDefault');
   const who = draft.playerDescription.trim();
   return {
-    id: `story_own_${Date.now()}`,
+    id,
     title,
     description: situation,
     world_context: [situation, who ? t('storyWizard.playerContext', { name: player, description: who }) : ''].filter(Boolean).join('\n\n'),
@@ -64,7 +92,10 @@ export function buildStoryDefinition(draft: StoryDraft): SceneDefinition {
     folder: '',
     created_at: '',
     last_played: null,
-    extensions: { otakusoul_story: { genre: draft.genre, minutes: 30, difficulty: 'easy', notes: [], beginner: false, choices: {} } },
+    extensions: {
+      otakusoul_story: { genre: draft.genre, minutes: 30, difficulty: 'easy', notes: [], beginner: false, choices: {} },
+      ...(music ? { otakusoul_music: music } : {}),
+    },
     rules: null,
   } as SceneDefinition;
 }
@@ -79,7 +110,8 @@ interface StoryWizardProps {
 
 /**
  * Own story in four steps for beginners: genre, who you are, who comes along, how it starts
- * (ready-made situation, dice or an own idea). Rules and technical options stay in the editor.
+ * (ready-made situation, dice or an own idea), how it sounds (music captions, suggested by the
+ * chat model on request). Rules and technical options stay in the editor.
  */
 export const StoryWizard: React.FC<StoryWizardProps> = ({ onClose, onCreated, onAdvanced }) => {
   const { t } = useTranslation();
@@ -93,12 +125,16 @@ export const StoryWizard: React.FC<StoryWizardProps> = ({ onClose, onCreated, on
     premise: 0,
     ownIdea: '',
     ownLocation: '',
+    music: genreMusic('fantasy'),
   }));
+  const [suggesting, setSuggesting] = useState(false);
+  const [musicError, setMusicError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const update = (patch: Partial<StoryDraft>) => setDraft((current) => ({ ...current, ...patch }));
   const stepId = STEPS[step]!;
   const canContinue = stepId !== 'start' || draft.premise !== null || draft.ownIdea.trim().length > 0;
+  const canCreate = draft.premise !== null || draft.ownIdea.trim().length > 0;
 
   const toggleCompanion = (name: string) =>
     update({
@@ -108,6 +144,43 @@ export const StoryWizard: React.FC<StoryWizardProps> = ({ onClose, onCreated, on
           ? [...draft.party, name]
           : draft.party,
     });
+
+  const music = draft.music ?? genreMusic(draft.genre);
+  const updateMusic = (patch: Partial<StoryMusicDraft>) => update({ music: { ...music, ...patch } });
+  const toggleMood = (mood: MusicMood) => {
+    const moods = { ...music.moods };
+    if (mood in moods) delete moods[mood];
+    else moods[mood] = GENRE_MUSIC[draft.genre].moods[mood] ?? '';
+    updateMusic({ moods });
+  };
+
+  /** Asks the chat model for the sound and the captions of the chosen moods. */
+  const suggestMusic = async () => {
+    setSuggesting(true);
+    setMusicError(null);
+    const chosen = MUSIC_MOODS.filter((mood) => mood in music.moods);
+    const moods = chosen.length > 0 ? chosen : MUSIC_MOODS.filter((mood) => mood in GENRE_MUSIC[draft.genre].moods);
+    const basics = storyBasics(draft);
+    try {
+      const text = await api.quickReply({
+        ...llmTarget(useAppStore.getState()),
+        ...musicPrompt({ genre: draft.genre.replace(/_/g, ' '), party: draft.party, ...basics }, moods),
+        max_tokens: 800,
+      });
+      const suggestion = parseMusicSuggestion(text);
+      if (!suggestion) {
+        setMusicError(t('storyWizard.music.unusable'));
+        return;
+      }
+      const next: Partial<Record<MusicMood, string>> = {};
+      for (const mood of moods) next[mood] = suggestion.moods[mood] ?? music.moods[mood] ?? '';
+      update({ music: { ...music, style: suggestion.style || music.style, moods: next } });
+    } catch (e) {
+      setMusicError(t('storyWizard.music.failed', { error: errorMessage(e) }));
+    } finally {
+      setSuggesting(false);
+    }
+  };
 
   const create = async () => {
     setBusy(true);
@@ -165,7 +238,7 @@ export const StoryWizard: React.FC<StoryWizardProps> = ({ onClose, onCreated, on
                 tabIndex={-1}
                 className="grid grid-cols-2 sm:grid-cols-4 gap-3"
                 onKeyDown={(event) =>
-                  radioGroupKeyDown(event, WIZARD_GENRES, draft.genre, (genre) => update({ genre, premise: draft.premise === null ? null : 0 }))
+                  radioGroupKeyDown(event, WIZARD_GENRES, draft.genre, (genre) => update({ genre, premise: draft.premise === null ? null : 0, music: genreMusic(genre) }))
                 }
               >
                 {WIZARD_GENRES.map((genre) => {
@@ -181,7 +254,7 @@ export const StoryWizard: React.FC<StoryWizardProps> = ({ onClose, onCreated, on
                       data-genre={genre}
                       data-radio-value={genre}
                       aria-label={t(`gallery.filter.${genre}` as TranslationKey)}
-                      onClick={() => update({ genre, premise: draft.premise === null ? null : 0 })}
+                      onClick={() => update({ genre, premise: draft.premise === null ? null : 0, music: genreMusic(genre) })}
                       className={`rounded-xl overflow-hidden border text-left transition ${selected ? 'border-accent-400 ring-2 ring-accent-500/40' : 'border-slate-700 hover:border-slate-500'}`}
                     >
                       <span className={`flex h-16 items-center justify-center bg-linear-to-br ${kind.cover}`}>
@@ -320,6 +393,98 @@ export const StoryWizard: React.FC<StoryWizardProps> = ({ onClose, onCreated, on
               )}
             </>
           )}
+          {stepId === 'music' && (
+            <>
+              <p className="text-sm text-slate-300">{t('storyWizard.music.question')}</p>
+              <label className="flex items-center gap-2 text-sm text-slate-200">
+                <input
+                  type="checkbox"
+                  checked={!draft.musicOff}
+                  onChange={(e) => update({ musicOff: !e.target.checked })}
+                  className="accent-accent-500"
+                />
+                {t('storyWizard.music.enable')}
+              </label>
+              {!draft.musicOff && (
+                <div className="space-y-4" data-testid="wizard-music">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={suggesting}
+                      onClick={() => void suggestMusic()}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-accent-500/50 bg-accent-600/10 px-3 py-1.5 text-xs font-semibold text-accent-200 hover:bg-accent-600/20 disabled:opacity-60"
+                    >
+                      {suggesting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+                      {suggesting ? t('storyWizard.music.suggesting') : t('storyWizard.music.suggest')}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={suggesting}
+                      onClick={() => update({ music: { ...genreMusic(draft.genre), vocals: music.vocals } })}
+                      className="text-xs text-slate-400 underline hover:text-slate-200 disabled:opacity-60"
+                    >
+                      {t('storyWizard.music.reset')}
+                    </button>
+                  </div>
+                  {musicError && <p role="alert" className="text-xs text-rose-300">{musicError}</p>}
+                  <label className="block space-y-1">
+                    <span className="text-xs font-medium text-slate-300">{t('storyWizard.music.style')}</span>
+                    <input
+                      value={music.style}
+                      onChange={(e) => updateMusic({ style: e.target.value })}
+                      className="w-full rounded-lg border border-slate-700 bg-app px-3 py-2 text-sm text-slate-100"
+                    />
+                  </label>
+                  <div className="space-y-2">
+                    <span className="block text-xs font-medium text-slate-300">{t('storyWizard.music.moods')}</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {MUSIC_MOODS.map((mood) => {
+                        const selected = mood in music.moods;
+                        return (
+                          <button
+                            key={mood}
+                            type="button"
+                            aria-pressed={selected}
+                            onClick={() => toggleMood(mood)}
+                            className={`rounded-full border px-2.5 py-0.5 text-xs ${selected ? 'border-accent-400 bg-accent-600/20 text-accent-100' : 'border-slate-700 text-slate-400 hover:border-slate-500'}`}
+                          >
+                            {t(`stageMusic.mood.${mood}` as TranslationKey)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {MUSIC_MOODS.filter((mood) => mood in music.moods).map((mood) => (
+                      <label key={mood} className="block space-y-1">
+                        <span className="text-[11px] font-medium uppercase tracking-wide text-slate-400">{t(`stageMusic.mood.${mood}` as TranslationKey)}</span>
+                        <input
+                          value={music.moods[mood] ?? ''}
+                          onChange={(e) => updateMusic({ moods: { ...music.moods, [mood]: e.target.value } })}
+                          aria-label={t('storyWizard.music.caption', { mood: t(`stageMusic.mood.${mood}` as TranslationKey) })}
+                          className="w-full rounded-lg border border-slate-700 bg-app px-3 py-1.5 text-xs text-slate-100"
+                        />
+                      </label>
+                    ))}
+                  </div>
+                  <label className="flex items-start gap-2 text-sm text-slate-200">
+                    <input
+                      type="checkbox"
+                      checked={music.vocals}
+                      onChange={(e) => updateMusic({ vocals: e.target.checked })}
+                      className="mt-1 accent-accent-500"
+                    />
+                    <span>
+                      {t('storyWizard.music.vocals')}
+                      <span className="block text-[11px] text-slate-500">{t('storyWizard.music.vocalsHint')}</span>
+                    </span>
+                  </label>
+                </div>
+              )}
+              <p className="text-xs text-slate-500 inline-flex items-start gap-1.5">
+                <Music className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                {t('storyWizard.music.hint')}
+              </p>
+            </>
+          )}
           {error && <p role="alert" className="text-sm text-rose-300">{error}</p>}
         </div>
 
@@ -342,8 +507,9 @@ export const StoryWizard: React.FC<StoryWizardProps> = ({ onClose, onCreated, on
             {step < STEPS.length - 1 ? (
               <button
                 type="button"
+                disabled={!canContinue}
                 onClick={() => setStep(step + 1)}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-accent-600 px-4 py-2 text-sm font-semibold text-white hover:bg-accent-500"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-accent-600 px-4 py-2 text-sm font-semibold text-white hover:bg-accent-500 disabled:opacity-50"
               >
                 {t('storyWizard.next')}
                 <ArrowRight className="w-4 h-4" />
@@ -351,7 +517,7 @@ export const StoryWizard: React.FC<StoryWizardProps> = ({ onClose, onCreated, on
             ) : (
               <button
                 type="button"
-                disabled={!canContinue || busy}
+                disabled={!canCreate || busy || suggesting}
                 onClick={() => void create()}
                 className="inline-flex items-center gap-1.5 rounded-xl bg-accent-600 px-4 py-2 text-sm font-semibold text-white hover:bg-accent-500 disabled:opacity-50"
               >

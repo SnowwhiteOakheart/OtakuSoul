@@ -452,7 +452,9 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `fetchServerStatus`; Bild-/LoRA-/TTS-Downloads laufen über `services/downloadTasks.ts`. Neue lange Vorgänge dort eintragen.
 - Chat-Gestaltung: `ChatSession.style` (`ChatStyle`, Spalte `style_json`, Migration v5; leer = Standard) über
   `update_chat_style`; Panel `components/chat/ChatStylePanel.tsx` (Stage-Bibliothek für Bilder/Klänge), Anzeige in `ChatView`
-  (`data-text-size`, `data-bubbles`, CSS in `App.css`), Klang über `hooks/useAmbientSound.ts`.
+  (`data-text-size`, `data-bubbles`, CSS in `App.css`), Klang über `hooks/useAmbientSound.ts`
+  (`services/ambientLoop.ts`: blendet 2 s ein/aus, neuer Klang überblendet den alten, an der Loop-Naht übernimmt ein
+  zweites Element 2 s vor Schluss; Klänge unter 6 s laufen mit `loop`; Fader `services/audioFade.ts` teilt sich das mit der Stimmungsmusik).
 - Chat-Werkzeuge (`chat_tools.rs`, Schalter `chatTools`): Text-Protokoll `<tool_call>{name, arguments}</tool_call>` statt
   nativer Tool-Calls; `InferenceClient::stream_chat_with_tools` filtert die Tags (`ToolCallFilter`), führt aus und fragt mit
   `[TOOL RESULT]` erneut (max. 3 Runden). Anbieter fassen System-Nachrichten zusammen; das Mock erkennt „# Tools“ im Text.
@@ -509,7 +511,10 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Geschichte, fester Ort `<Daten>/music/sets/<set>/<stimmung>/` (nie Pfade im JSON); der Player nimmt Set-Titel vor dem Pool
   (`moodTracks`). `ensure_scene_music` lädt beim Öffnen fehlende Titel aus `otakusoul-data` (nur `music/`/`presets/`,
   `nsfw` nur mit Freigabe) und schreibt `<datei>.json` mit der Herkunft. `plan_for_scene` setzt Caption = Stil + Stimmung
-  + Leitmotive zusammen (für den späteren ACE-Step-Generator; Gesang braucht dessen 5Hz-LM).
+  + Leitmotive zusammen (für den ACE-Step-Generator; Gesang braucht dessen 5Hz-LM).
+  Story-Assistent, Schritt „Musik“ (`services/storyMusicDraft.ts`): Vorlage je Genre (`GENRE_MUSIC`, englische Captions),
+  „Vorschlag vom Chatmodell“ über `quick_reply` + `llmTarget` (JSON `{style, moods}`, `parseMusicSuggestion` nimmt das erste
+  Objekt, verwirft unbekannte Stimmungen), Gesangs-Schalter = Summ-Lyrics nur für calm/mystery/romance/sorrow. Set = Szenen-ID.
 - Stage streamt über `stage-stream` (`InferenceClient::stream_text`), nicht über `llm-token` (das hört der Chat).
   `stage/history.rs` passt alle Sprecher-Anfragen ins Kontextfenster ein und speichert Zusammenfassungen getrennt
   nach Publikum (`history_summaries`); Änderungen am Verlauf müssen diese verwerfen.

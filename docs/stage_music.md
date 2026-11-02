@@ -62,6 +62,15 @@ wie der Gesang klingt („soft wordless female choir far away“, „distant hum
 werden mitgesungen, also knapp halten. Solche Titel brauchen beim Erzeugen das Sprachmodell von
 ACE-Step (5Hz-LM); reine Instrumentaltitel kommen ohne aus.
 
+## Eigene Geschichten: Schritt „Musik“ im Story-Assistenten
+
+Der Assistent füllt den Abschnitt für neue Geschichten: Er schlägt je Genre einen Klang und vier bis
+fünf Stimmungen mit Captions vor, die Du ändern, ergänzen oder abwählen kannst. „Vorschlag vom
+Chatmodell“ schickt Genre, Titel, Ort, Ausgangslage und Gefährten an das eingestellte Chatmodell und
+übernimmt dessen Klang und Captions (nur für die gewählten Stimmungen). „Leiser Gesang im Hintergrund“
+setzt Summ-Lyrics für `calm`, `mystery`, `romance` und `sorrow`. Das Set ist die ID der Geschichte;
+die Titel entstehen danach im Musik-Fenster der Stage.
+
 ## Lorebook: `extensions.otakusoul_music.style`
 
 Die Klangwelt einer Welt. Szenen ohne eigenen `style`, die das Lorebook binden, erben sie.
