@@ -257,6 +257,13 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
 
 ### 2. Hardware, GPU-Auswahl & Lokale Modell-Server
 
+- acestep.cpp (Musikerzeugung, ACE-Step 1.5) hat keine eigenen Releases: `.github/workflows/acestep.yml` baut einen festen
+  Commit (Eingabe `rev`, Standard `6013134`, hat `--device`) für Linux/Windows (CPU, Vulkan, CUDA 12.8) und macOS (Metal) und
+  veröffentlicht `acestep-<kurz>` mit `SHA256SUMS.txt` in diesem Repo, **nie als „Latest“** (der Updater liest
+  `releases/latest/download/latest.json`). Namen `acestep-<kurz>-<linux|win|macos>-<cpu|vulkan|cuda-12.8|metal>-<x64|arm64>`;
+  Inhalt `ace-server`/`ace-lm`/`ace-synth`/`ace-understand`/`mp3-codec`, ggml-Bibliotheken daneben (Linux/Windows: Backends
+  ladbar, alle CPU-Varianten, `$ORIGIN`; macOS: `@loader_path`, Metal eingebettet), Windows-CUDA mit cudart/cuBLAS. Die
+  Laufzeitverwaltung soll das Release fest per Tag ansprechen (nicht `/latest`).
 - Vision-Dateien der Startmodelle: Katalogeintrag `mmproj` (Datei, Größe, SHA-256, gleiches Repo; geprüft in `usable`).
   Gespeichert als `<Modelldatei ohne .gguf>-mmproj-F16.gguf` (`CatalogModel::mmproj_target`), weil Repos dieselben Namen
   nutzen; der Scan erkennt sie am „mmproj“. `StarterModel.mmproj`/`mmproj_installed`; Assistent lädt sie standardmäßig mit

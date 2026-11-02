@@ -1,0 +1,348 @@
+# Builds acestep.cpp (ACE-Step 1.5 music generation, MIT) at a fixed commit for every platform the
+# app supports and publishes the archives as a release of this repository. acestep.cpp has no
+# releases of its own; the app downloads these (runtime manager, SHA-256 from SHA256SUMS.txt).
+#
+# The release is never marked "latest": the app's updater reads releases/latest/download/latest.json.
+#
+# Archive names: acestep-<short>-<os>-<backend>-<arch>.<zip|tar.gz>
+#   os: linux | win | macos, backend: cpu | vulkan | cuda-12.8 | metal, arch: x64 | arm64
+# Every archive holds ace-server, ace-lm, ace-synth, ace-understand, mp3-codec, the ggml libraries
+# (backends as loadable modules next to the programs), the licences and BUILD_INFO.txt.
+name: acestep.cpp Builds
+
+on:
+  workflow_dispatch:
+    inputs:
+      rev:
+        description: 'acestep.cpp-Commit (voller Hash)'
+        required: true
+        default: '6013134c136d9fb4e970cf690e76925be9553da0'
+      publish:
+        description: 'Als Release acestep-<kurz> veröffentlichen'
+        required: false
+        default: true
+        type: boolean
+
+concurrency:
+  group: acestep-${{ inputs.rev }}
+  cancel-in-progress: false
+
+env:
+  ACESTEP_REPO: https://github.com/ServeurpersoCom/acestep.cpp
+  ACESTEP_REV: ${{ inputs.rev }}
+  CUDA_VERSION: '12.8'
+
+jobs:
+  prepare:
+    name: Stand festlegen
+    runs-on: ubuntu-24.04
+    outputs:
+      short: ${{ steps.rev.outputs.short }}
+    steps:
+      - id: rev
+        shell: bash
+        run: |
+          if ! [[ "$ACESTEP_REV" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::rev muss ein voller Commit-Hash sein"
+            exit 1
+          fi
+          echo "short=${ACESTEP_REV:0:7}" >> "$GITHUB_OUTPUT"
+
+  linux:
+    name: Linux ${{ matrix.backend }}
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - backend: cpu
+            flags: ''
+          - backend: vulkan
+            flags: '-DGGML_VULKAN=ON'
+          - backend: cuda-12.8
+            flags: '-DGGML_CUDA=ON -DCMAKE_CUDA_COMPILER=/usr/local/cuda-12.8/bin/nvcc'
+    env:
+      ASSET: acestep-${{ needs.prepare.outputs.short }}-linux-${{ matrix.backend }}-x64
+    steps:
+      - name: Quellen holen
+        run: |
+          git clone --filter=blob:none "$ACESTEP_REPO" src
+          git -C src checkout "$ACESTEP_REV"
+          git -C src submodule update --init --depth 1
+
+      - name: Werkzeuge
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build
+          case "${{ matrix.backend }}" in
+            vulkan)
+              sudo apt-get install -y libvulkan-dev glslc spirv-headers ;;
+            cuda-*)
+              wget -q https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
+              sudo dpkg -i cuda-keyring_1.1-1_all.deb
+              sudo apt-get update
+              sudo apt-get install -y cuda-nvcc-12-8 cuda-cudart-dev-12-8 libcublas-dev-12-8 cuda-cccl-12-8 ;;
+          esac
+
+      - name: Bauen
+        run: |
+          cmake -S src -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DGGML_NATIVE=OFF -DGGML_BACKEND_DL=ON -DGGML_CPU_ALL_VARIANTS=ON \
+            -DCMAKE_BUILD_RPATH_USE_ORIGIN=ON ${{ matrix.flags }}
+          cmake --build build -j "$(nproc)"
+
+      - name: Packen
+        run: |
+          mkdir -p "$ASSET"
+          for exe in ace-server ace-lm ace-synth ace-understand mp3-codec; do cp build/$exe "$ASSET/"; done
+          # The programs link these two by their soname; the backends are loaded at runtime.
+          cp -L build/libggml.so.0 build/libggml-base.so.0 "$ASSET/"
+          find build -maxdepth 1 -type f -name 'libggml-*.so' -exec cp {} "$ASSET/" \;
+          cp src/LICENSE "$ASSET/LICENSE-acestep.cpp.txt"
+          cp src/ggml/LICENSE "$ASSET/LICENSE-ggml.txt"
+          {
+            echo "acestep.cpp $ACESTEP_REV ($ACESTEP_REPO)"
+            echo "ggml $(git -C src/ggml rev-parse HEAD)"
+            echo "Backend: ${{ matrix.backend }}, Linux x64 (Ubuntu 24.04)"
+            echo "CMake: -DGGML_NATIVE=OFF -DGGML_BACKEND_DL=ON -DGGML_CPU_ALL_VARIANTS=ON ${{ matrix.flags }}"
+            echo "Built by $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            [[ "${{ matrix.backend }}" == cuda-* ]] && echo "Needs the CUDA $CUDA_VERSION runtime (libcudart, libcublas) and an NVIDIA driver."
+            true
+          } > "$ASSET/BUILD_INFO.txt"
+          tar -czf "$ASSET.tar.gz" "$ASSET"
+
+      # Without the build folder, so the archive's own libraries are what loads.
+      - name: Prüfen
+        run: |
+          mv build build-done
+          if ldd "$ASSET/ace-server" | grep 'not found'; then exit 1; fi
+          "$ASSET/ace-server" 2>&1 | tee usage.txt || true
+          grep -q "acestep.cpp ${ACESTEP_REV:0:7}" usage.txt
+          ls "$ASSET"/libggml-cpu-*.so > /dev/null
+          case "${{ matrix.backend }}" in
+            vulkan) test -f "$ASSET/libggml-vulkan.so" ;;
+            cuda-*) test -f "$ASSET/libggml-cuda.so" ;;
+          esac
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ASSET }}
+          path: ${{ env.ASSET }}.tar.gz
+          if-no-files-found: error
+
+  windows:
+    name: Windows ${{ matrix.backend }}
+    needs: prepare
+    runs-on: windows-2022
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - backend: cpu
+            flags: ''
+          - backend: vulkan
+            flags: '-DGGML_VULKAN=ON'
+          - backend: cuda-12.8
+            flags: '-DGGML_CUDA=ON'
+    env:
+      ASSET: acestep-${{ needs.prepare.outputs.short }}-win-${{ matrix.backend }}-x64
+    steps:
+      - name: Quellen holen
+        shell: bash
+        run: |
+          git clone --filter=blob:none "$ACESTEP_REPO" src
+          git -C src checkout "$ACESTEP_REV"
+          git -C src submodule update --init --depth 1
+
+      - name: Ninja
+        run: choco install ninja -y --no-progress
+
+      - name: MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Vulkan-SDK
+        if: matrix.backend == 'vulkan'
+        uses: jakoch/install-vulkan-sdk-action@v1
+        with:
+          vulkan_version: latest
+          install_runtime: false
+          cache: true
+
+      - name: CUDA-Toolkit
+        if: startsWith(matrix.backend, 'cuda')
+        uses: Jimver/cuda-toolkit@v0.2.21
+        with:
+          cuda: '12.8.0'
+          method: network
+          sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "thrust", "visual_studio_integration"]'
+
+      # The same generator acestep.cpp's own buildall.cmd uses (MSVC, Ninja Multi-Config).
+      - name: Bauen
+        shell: pwsh
+        run: |
+          cmake -S src -B build -G "Ninja Multi-Config" `
+            -DGGML_NATIVE=OFF -DGGML_BACKEND_DL=ON -DGGML_CPU_ALL_VARIANTS=ON ${{ matrix.flags }}
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          cmake --build build --config Release -j $env:NUMBER_OF_PROCESSORS
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+      - name: Packen
+        shell: pwsh
+        run: |
+          $out = if (Test-Path build/Release/ace-server.exe) { 'build/Release' } else { 'build' }
+          New-Item -ItemType Directory $env:ASSET | Out-Null
+          foreach ($exe in 'ace-server','ace-lm','ace-synth','ace-understand','mp3-codec') {
+            Copy-Item "$out/$exe.exe" $env:ASSET
+          }
+          Copy-Item "$out/*.dll" $env:ASSET
+          if ('${{ matrix.backend }}' -like 'cuda*') {
+            # CUDA runtime and cuBLAS (redistributable under the CUDA EULA), so no toolkit is needed.
+            foreach ($dll in 'cudart64_12.dll','cublas64_12.dll','cublasLt64_12.dll') {
+              Copy-Item "$env:CUDA_PATH/bin/$dll" $env:ASSET
+            }
+          }
+          Copy-Item src/LICENSE "$env:ASSET/LICENSE-acestep.cpp.txt"
+          Copy-Item src/ggml/LICENSE "$env:ASSET/LICENSE-ggml.txt"
+          $ggml = git -C src/ggml rev-parse HEAD
+          $info = @(
+            "acestep.cpp $env:ACESTEP_REV ($env:ACESTEP_REPO)",
+            "ggml $ggml",
+            "Backend: ${{ matrix.backend }}, Windows x64 (MSVC)",
+            "CMake: -DGGML_NATIVE=OFF -DGGML_BACKEND_DL=ON -DGGML_CPU_ALL_VARIANTS=ON ${{ matrix.flags }}",
+            "Built by $env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID"
+          )
+          if ('${{ matrix.backend }}' -like 'cuda*') {
+            $info += "Includes the CUDA $env:CUDA_VERSION runtime and cuBLAS (NVIDIA CUDA EULA); needs an NVIDIA driver for CUDA $env:CUDA_VERSION."
+          }
+          if ('${{ matrix.backend }}' -eq 'vulkan') { $info += "Vulkan SDK: $env:VULKAN_VERSION" }
+          $info | Set-Content "$env:ASSET/BUILD_INFO.txt"
+          Compress-Archive -Path $env:ASSET -DestinationPath "$env:ASSET.zip"
+
+      - name: Prüfen
+        shell: pwsh
+        run: |
+          Rename-Item build build-done
+          $usage = (& "$env:ASSET/ace-server.exe" 2>&1 | Out-String)
+          Write-Output $usage
+          if ($usage -notmatch "acestep.cpp $($env:ACESTEP_REV.Substring(0,7))") { throw 'ace-server startet nicht' }
+          if (-not (Get-ChildItem "$env:ASSET/ggml-cpu-*.dll")) { throw 'CPU-Backends fehlen' }
+          switch -Wildcard ('${{ matrix.backend }}') {
+            'vulkan' { if (-not (Test-Path "$env:ASSET/ggml-vulkan.dll")) { throw 'ggml-vulkan.dll fehlt' } }
+            'cuda*' { if (-not (Test-Path "$env:ASSET/ggml-cuda.dll")) { throw 'ggml-cuda.dll fehlt' } }
+          }
+          $global:LASTEXITCODE = 0
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ASSET }}
+          path: ${{ env.ASSET }}.zip
+          if-no-files-found: error
+
+  macos:
+    name: macOS metal
+    needs: prepare
+    runs-on: macos-14
+    timeout-minutes: 120
+    env:
+      ASSET: acestep-${{ needs.prepare.outputs.short }}-macos-metal-arm64
+      MACOSX_DEPLOYMENT_TARGET: '13.3'
+    steps:
+      - name: Quellen holen
+        run: |
+          git clone --filter=blob:none "$ACESTEP_REPO" src
+          git -C src checkout "$ACESTEP_REV"
+          git -C src submodule update --init --depth 1
+
+      - name: Werkzeuge
+        run: brew install ninja
+
+      # Metal shaders are embedded, so the programs need no .metal file next to them; the
+      # libraries are found next to the programs (@loader_path, macOS has no $ORIGIN).
+      - name: Bauen
+        run: |
+          cmake -S src -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DGGML_NATIVE=OFF -DGGML_METAL=ON -DGGML_METAL_EMBED_LIBRARY=ON \
+            -DCMAKE_BUILD_RPATH=@loader_path
+          cmake --build build -j "$(sysctl -n hw.ncpu)"
+
+      - name: Packen
+        run: |
+          mkdir -p "$ASSET"
+          for exe in ace-server ace-lm ace-synth ace-understand mp3-codec; do cp build/$exe "$ASSET/"; done
+          # Metal and CPU are linked (no loadable backends here); real files under every name the
+          # libraries are linked by, since symlinks get lost in some unpackers.
+          cp -L build/libggml*.dylib "$ASSET/"
+          cp src/LICENSE "$ASSET/LICENSE-acestep.cpp.txt"
+          cp src/ggml/LICENSE "$ASSET/LICENSE-ggml.txt"
+          {
+            echo "acestep.cpp $ACESTEP_REV ($ACESTEP_REPO)"
+            echo "ggml $(git -C src/ggml rev-parse HEAD)"
+            echo "Backend: metal, macOS arm64 (from $MACOSX_DEPLOYMENT_TARGET)"
+            echo "CMake: -DGGML_NATIVE=OFF -DGGML_METAL=ON -DGGML_METAL_EMBED_LIBRARY=ON -DCMAKE_BUILD_RPATH=@loader_path"
+            echo "Built by $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          } > "$ASSET/BUILD_INFO.txt"
+          tar -czf "$ASSET.tar.gz" "$ASSET"
+
+      - name: Prüfen
+        run: |
+          mv build build-done
+          otool -L "$ASSET/ace-server"
+          otool -l "$ASSET/ace-server" | grep -A2 LC_RPATH
+          "$ASSET/ace-server" 2>&1 | tee usage.txt || true
+          grep -q "acestep.cpp ${ACESTEP_REV:0:7}" usage.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ASSET }}
+          path: ${{ env.ASSET }}.tar.gz
+          if-no-files-found: error
+
+  release:
+    name: Release veröffentlichen
+    needs: [prepare, linux, windows, macos]
+    if: ${{ inputs.publish }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      TAG: acestep-${{ needs.prepare.outputs.short }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Prüfsummen und Hinweise
+        run: |
+          cd dist
+          sha256sum acestep-* > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+          cat > ../notes.md <<EOF
+          Programmdateien von [acestep.cpp](${ACESTEP_REPO}) (MIT) für die Musikerzeugung in OtakuSoul,
+          gebaut aus Commit [\`${ACESTEP_REV:0:7}\`](${ACESTEP_REPO}/commit/${ACESTEP_REV}) ohne Änderungen am Quelltext.
+          Die App lädt sie selbst herunter und prüft sie gegen \`SHA256SUMS.txt\`.
+
+          | Datei | System |
+          |---|---|
+          | \`*-linux-{cpu,vulkan,cuda-12.8}-x64.tar.gz\` | Linux x64 (Ubuntu 24.04 und neuer) |
+          | \`*-win-{cpu,vulkan,cuda-12.8}-x64.zip\` | Windows x64 (CUDA mit Laufzeit und cuBLAS) |
+          | \`*-macos-metal-arm64.tar.gz\` | macOS mit Apple Silicon (ab 13.3) |
+
+          Kein App-Release. Gebaut von ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}.
+          EOF
+
+      - name: Veröffentlichen
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --clobber
+            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --notes-file notes.md --latest=false
+          else
+            gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+              --title "acestep.cpp ${TAG#acestep-} (Musikerzeugung)" --notes-file notes.md --latest=false
+          fi
