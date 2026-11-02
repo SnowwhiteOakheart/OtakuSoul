@@ -103,6 +103,13 @@
       "custom_avatar": "thorin.png",
       "otakusoul_voice": {
         "description": "A seasoned dwarven warrior with a deep, gravelly, resonant bass voice; gruff and blunt, speaks slowly and tersely with dry, sardonic humor, unyielding and protective beneath the rough edge."
+      },
+      "otakusoul_music": {
+        "theme": "stout dwarven low brass and anvil beats",
+        "moods": [
+          "combat",
+          "tavern"
+        ]
       }
     }
   }

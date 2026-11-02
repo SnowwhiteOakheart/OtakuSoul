@@ -103,6 +103,13 @@
       "custom_avatar": "althea.png",
       "otakusoul_voice": {
         "description": "A woman in her late twenties with a warm, steady, melodic contralto voice; comforting and resolute, speaks with calm authority and cheerful reassurance, turning firm and unyielding when protecting others."
+      },
+      "otakusoul_music": {
+        "theme": "radiant hymn on soft organ and harp",
+        "moods": [
+          "calm",
+          "sorrow"
+        ]
       }
     }
   }

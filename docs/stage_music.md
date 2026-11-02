@@ -79,6 +79,13 @@ Stimmungen angehängt (ohne `moods`: `calm`, `romance`, `sorrow`).
 "otakusoul_music": { "theme": "tender solo violin", "moods": ["romance", "sorrow"] }
 ```
 
+## Pflege in den Daten-Repos
+
+`otakusoul-data` und `otakusoul-data-nsfw` halten die Musik-Angaben aller Szenen, Lorebooks und Karten in
+`tools/music_settings.json` (eine Klangwelt je Sammlung, ein Leitmotiv je Figur) und schreiben sie mit
+`tools/set_music.py` in Gateway- und Preset-Dateien samt PNG-Karten; das Werkzeug erhöht die Registry-Revisionen.
+Die Karten der App selbst (`presets/characters`, `presets/crypt-of-shadows`) haben ihr Leitmotiv direkt im JSON.
+
 ## Titel ausliefern (Daten-Repo)
 
 1. Titel erzeugen (Caption aus dem Musik-Fenster der Stage: „Musik dieser Geschichte“ zeigt die

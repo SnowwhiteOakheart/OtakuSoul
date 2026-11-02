@@ -107,6 +107,14 @@
       "custom_avatar": "faelion.png",
       "otakusoul_voice": {
         "description": "A seasoned elven warrior with a low, calm, quiet baritone; speaks tersely and deliberately with long pauses, guarded and dry, a faint softness beneath the restraint."
+      },
+      "otakusoul_music": {
+        "theme": "solemn elven horn and harp, a border warden's vigil",
+        "moods": [
+          "tension",
+          "sorrow",
+          "calm"
+        ]
       }
     }
   }

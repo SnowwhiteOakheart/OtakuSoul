@@ -107,6 +107,9 @@
       "custom_avatar": "shiori_amane.png",
       "otakusoul_voice": {
         "description": "A soft-spoken 18-year-old girl with a gentle, slightly breathy mid-high voice; speaks quietly and a little hesitantly, but warms up and speeds up with dry humor when talking about books."
+      },
+      "otakusoul_music": {
+        "theme": "gentle piano like turning book pages, thoughtful"
       }
     }
   }
