@@ -188,6 +188,19 @@
 
 ### 🎭 „Puppenspieler & Regisseur“: Dynamische Musik-Dramaturgie & Kartenbau für die Stage
 - [ ] **Musik der Geschichten erzeugen (ACE-Step 1.5):** Schema `otakusoul_music`, Set-Ordner und Download aus `otakusoul-data` stehen (2.11.2026, `docs/stage_music.md`; Starter-Geschichten und Gruft-Abenteuer haben Captions, noch keine Titel). (2) CI-Builds: `.github/workflows/acestep.yml` (2.11.2026, Release `acestep-<kurz>`, nie „Latest“). (3) Laufzeit, Modellstufen und Erzeugung im Musik-Fenster (2.11.2026, `music_gen.rs`; noch nicht mit echter GPU getestet). Offen: (4) Musik-Schritt im Story-Assistenten mit Caption-Vorschlägen durch das Chat-Modell. Dazu die Titel der Starter-Geschichten erzeugen und unter `otakusoul-data/music/<set>/` ausliefern.
+  - Prüfstand 02.11.2026 (RTX 5090 Laptop, 24 GB): `npm run check` (744 TS-, 795 Rust-Tests) und `types:gen` grün. Release
+    `acestep-6013134` ist veröffentlicht (7 Archive + `SHA256SUMS.txt`, nicht Latest). Die Laufzeit-Auswahl empfiehlt
+    „CUDA 12.8 (NVIDIA) · 649 MB“ – `pick_backend` stimmt. Der Musik-Dialog zeigt den Plan der Geschichte (5 Stimmungen,
+    „Mit ACE-Step erzeugen (6 fehlen)“); empfohlen ist dort XL (7,8 GB, ~12 GB VRAM).
+  - Gefunden und behoben: Eine vor der Musikfunktion begonnene Geschichte behielt ihre gespeicherte Definition ohne
+    `otakusoul_music`; auch „Von vorn beginnen“ holte sie nicht nach. `reset_stage_scene` übernimmt jetzt fehlende
+    `extensions`-Schlüssel aus dem mitgelieferten Preset (Test `a_restart_adopts_music_…`).
+  - Lokal nur: Vitest 5 hält einen Modul-Cache (`node_modules/.vitest-cache`); nach neuen Rust-Dateien meldet
+    `commandCheck` sonst fälschlich fehlende Befehle → `npx vitest --clearCache`.
+  - **Noch offen (wegen langsamer Leitung verschoben):** Laufzeit-Installation abschließen (238 von 649 MB lagen
+    in `runtimes/acestep/.downloads`), Modell „Standard“ und danach „XL“ laden, „Fehlende Titel erzeugen“, Dauer pro
+    Titel, VRAM-Höchstwert, Rückkehr des Chat-Modells, Abbrechen mitten im Titel, Klang (Elfengesang bei `mystery`),
+    Überblenden in der Stage.
 - [ ] **Ambient-Loops weich überblenden** wie die Stimmungsmusik.
 - [ ] **1-Klick-Battlemap-Generierung aus Text:** Wenn der Spielleiter einen neuen Ort improvisiert, erzeugt `stable-diffusion.cpp` eine Top-Down-Karte, aus deren Helligkeits-/Strukturwerten automatisch Wände, Hindernisse und Sichtlinien für die 5e-Engine abgeleitet werden.
 
