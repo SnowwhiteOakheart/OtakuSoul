@@ -1,6 +1,6 @@
 [package]
 name = "otakusoul"
-version = "0.7.1"
+version = "0.7.2"
 license = "GPL-3.0-only"
 description = "OtakuSoul - AI Companion, Tabletop RPG & Soul Memory Platform"
 authors = ["SnowwhiteOakheart"]
