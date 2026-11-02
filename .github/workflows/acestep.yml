@@ -27,6 +27,8 @@ concurrency:
   group: acestep-${{ inputs.rev }}
   cancel-in-progress: false
 
+# CUDA architectures: acestep.cpp's own list for CUDA 12.8+ without 121a (GB10/DGX Spark), which
+# nvcc only knows from CUDA 12.9. Turing to Blackwell desktop (RTX 50, 120a) stay covered.
 env:
   ACESTEP_REPO: https://github.com/ServeurpersoCom/acestep.cpp
   ACESTEP_REV: ${{ inputs.rev }}
@@ -63,8 +65,10 @@ jobs:
             flags: '-DGGML_VULKAN=ON'
           - backend: cuda-12.8
             flags: '-DGGML_CUDA=ON -DCMAKE_CUDA_COMPILER=/usr/local/cuda-12.8/bin/nvcc'
+            archs: '75-virtual;80-virtual;86-real;89-real;120a-real'
     env:
       ASSET: acestep-${{ needs.prepare.outputs.short }}-linux-${{ matrix.backend }}-x64
+      CUDA_ARCHS: ${{ matrix.archs }}
     steps:
       - name: Quellen holen
         run: |
@@ -90,7 +94,8 @@ jobs:
         run: |
           cmake -S src -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
             -DGGML_NATIVE=OFF -DGGML_BACKEND_DL=ON -DGGML_CPU_ALL_VARIANTS=ON \
-            -DCMAKE_BUILD_RPATH_USE_ORIGIN=ON ${{ matrix.flags }}
+            -DCMAKE_BUILD_RPATH_USE_ORIGIN=ON ${{ matrix.flags }} \
+            ${CUDA_ARCHS:+"-DCMAKE_CUDA_ARCHITECTURES=$CUDA_ARCHS"}
           cmake --build build -j "$(nproc)"
 
       - name: Packen
@@ -106,6 +111,7 @@ jobs:
             echo "acestep.cpp $ACESTEP_REV ($ACESTEP_REPO)"
             echo "ggml $(git -C src/ggml rev-parse HEAD)"
             echo "Backend: ${{ matrix.backend }}, Linux x64 (Ubuntu 24.04)"
+            [ -n "$CUDA_ARCHS" ] && echo "CUDA architectures: $CUDA_ARCHS"
             echo "CMake: -DGGML_NATIVE=OFF -DGGML_BACKEND_DL=ON -DGGML_CPU_ALL_VARIANTS=ON ${{ matrix.flags }}"
             echo "Built by $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
             [[ "${{ matrix.backend }}" == cuda-* ]] && echo "Needs the CUDA $CUDA_VERSION runtime (libcudart, libcublas) and an NVIDIA driver."
@@ -147,8 +153,10 @@ jobs:
             flags: '-DGGML_VULKAN=ON'
           - backend: cuda-12.8
             flags: '-DGGML_CUDA=ON'
+            archs: '75-virtual;80-virtual;86-real;89-real;120a-real'
     env:
       ASSET: acestep-${{ needs.prepare.outputs.short }}-win-${{ matrix.backend }}-x64
+      CUDA_ARCHS: ${{ matrix.archs }}
     steps:
       - name: Quellen holen
         shell: bash
@@ -185,8 +193,10 @@ jobs:
       - name: Bauen
         shell: pwsh
         run: |
+          $extra = @()
+          if ($env:CUDA_ARCHS) { $extra += "-DCMAKE_CUDA_ARCHITECTURES=$env:CUDA_ARCHS" }
           cmake -S src -B build -G "Ninja Multi-Config" `
-            -DGGML_NATIVE=OFF -DGGML_BACKEND_DL=ON -DGGML_CPU_ALL_VARIANTS=ON ${{ matrix.flags }}
+            -DGGML_NATIVE=OFF -DGGML_BACKEND_DL=ON -DGGML_CPU_ALL_VARIANTS=ON ${{ matrix.flags }} @extra
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           cmake --build build --config Release -j $env:NUMBER_OF_PROCESSORS
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
@@ -216,6 +226,7 @@ jobs:
             "CMake: -DGGML_NATIVE=OFF -DGGML_BACKEND_DL=ON -DGGML_CPU_ALL_VARIANTS=ON ${{ matrix.flags }}",
             "Built by $env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID"
           )
+          if ($env:CUDA_ARCHS) { $info += "CUDA architectures: $env:CUDA_ARCHS" }
           if ('${{ matrix.backend }}' -like 'cuda*') {
             $info += "Includes the CUDA $env:CUDA_VERSION runtime and cuBLAS (NVIDIA CUDA EULA); needs an NVIDIA driver for CUDA $env:CUDA_VERSION."
           }

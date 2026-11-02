@@ -262,7 +262,8 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   veröffentlicht `acestep-<kurz>` mit `SHA256SUMS.txt` in diesem Repo, **nie als „Latest“** (der Updater liest
   `releases/latest/download/latest.json`). Namen `acestep-<kurz>-<linux|win|macos>-<cpu|vulkan|cuda-12.8|metal>-<x64|arm64>`;
   Inhalt `ace-server`/`ace-lm`/`ace-synth`/`ace-understand`/`mp3-codec`, ggml-Bibliotheken daneben (Linux/Windows: Backends
-  ladbar, alle CPU-Varianten, `$ORIGIN`; macOS: `@loader_path`, Metal eingebettet), Windows-CUDA mit cudart/cuBLAS. Die
+  ladbar, alle CPU-Varianten, `$ORIGIN`; macOS: `@loader_path`, Metal eingebettet), Windows-CUDA mit cudart/cuBLAS. CUDA-Architekturen werden fest gesetzt (`CUDA_ARCHS`, ohne `121a`: acestep.cpp
+  nimmt sie ab CUDA 12.8 auf, nvcc kennt sie erst ab 12.9); die Liste nie direkt in `flags`, das `;` trennt Shell-Befehle. Die
   Laufzeitverwaltung soll das Release fest per Tag ansprechen (nicht `/latest`).
 - Vision-Dateien der Startmodelle: Katalogeintrag `mmproj` (Datei, Größe, SHA-256, gleiches Repo; geprüft in `usable`).
   Gespeichert als `<Modelldatei ohne .gguf>-mmproj-F16.gguf` (`CatalogModel::mmproj_target`), weil Repos dieselben Namen
