@@ -1,7 +1,8 @@
 //! Stage music: tracks per mood in `<data>/music/<mood>/` that the Stage cross-fades between as
 //! the scene's mood changes (the game master's pick, a fight, a boss). Users drop their own files
 //! there; music packs from the data repository (`music_registry.json`) are downloaded from their
-//! source and checked (SHA-256), never bundled.
+//! source and checked (SHA-256), never bundled. A story's own tracks are in
+//! `<data>/music/sets/<set>/<mood>/` (`story_music`); the Stage prefers them over the general pool.
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -36,6 +37,9 @@ const REGISTRY_FILE: &str = "music_registry.json";
 #[ts(export)]
 pub struct StageMusicTrack {
     pub mood: String,
+    /// Set of a story the track belongs to; `None` for the general pool.
+    #[serde(default)]
+    pub set: Option<String>,
     /// File name without folder.
     pub name: String,
     /// Absolute path (played through the asset protocol).
@@ -106,7 +110,7 @@ fn is_music_file(path: &Path) -> bool {
 }
 
 /// A plain file name: no folders, not hidden, a playable format.
-fn plain_music_name(name: &str) -> bool {
+pub fn is_music_name(name: &str) -> bool {
     !name.is_empty()
         && !name.contains(['/', '\\'])
         && !name.starts_with('.')
@@ -114,7 +118,7 @@ fn plain_music_name(name: &str) -> bool {
 }
 
 /// All music files below `dir`, per mood folder, sorted by name.
-fn tracks_in(dir: &Path) -> Vec<StageMusicTrack> {
+fn tracks_in(dir: &Path, set: Option<&str>) -> Vec<StageMusicTrack> {
     let mut tracks = Vec::new();
     for mood in MOODS {
         let Ok(entries) = fs::read_dir(dir.join(mood)) else {
@@ -128,13 +132,14 @@ fn tracks_in(dir: &Path) -> Vec<StageMusicTrack> {
                     && path
                         .file_name()
                         .and_then(|n| n.to_str())
-                        .is_some_and(plain_music_name)
+                        .is_some_and(is_music_name)
             })
             .collect();
         files.sort();
         tracks.extend(files.into_iter().map(|path| {
             StageMusicTrack {
                 mood: mood.to_string(),
+                set: set.map(str::to_string),
                 name: path
                     .file_name()
                     .map(|n| n.to_string_lossy().into_owned())
@@ -146,9 +151,21 @@ fn tracks_in(dir: &Path) -> Vec<StageMusicTrack> {
     tracks
 }
 
-/// The user's music files for the Stage.
-pub fn list_tracks() -> Vec<StageMusicTrack> {
-    tracks_in(&music_dir(Path::new(&resolve_app_paths().data_dir)))
+/// The music files for the Stage: those of the story's set (if it names a valid one) first, then
+/// the general pool.
+pub fn list_tracks(set: Option<&str>) -> Vec<StageMusicTrack> {
+    let data_dir = PathBuf::from(resolve_app_paths().data_dir);
+    let mut tracks = set
+        .filter(|set| crate::modules::story_music::valid_set_id(set))
+        .map(|set| {
+            tracks_in(
+                &crate::modules::story_music::set_dir(&data_dir, set),
+                Some(set),
+            )
+        })
+        .unwrap_or_default();
+    tracks.extend(tracks_in(&music_dir(&data_dir), None));
+    tracks
 }
 
 /// Creates the music folder with one subfolder per mood (for "open folder").
@@ -163,7 +180,7 @@ pub fn prepare_dir() -> Result<PathBuf, String> {
 
 fn valid_track(t: &RegistryTrack) -> bool {
     MOODS.contains(&t.mood.as_str())
-        && plain_music_name(&t.file)
+        && is_music_name(&t.file)
         && t.url.starts_with("https://")
         && t.sha256.len() == 64
         && t.sha256
@@ -420,7 +437,7 @@ mod tests {
         fs::write(dir.join("combat").join("notes.txt"), b"x").unwrap();
         fs::write(dir.join("combat").join("c.ogg.part"), b"x").unwrap();
         fs::write(dir.join("unknown").join("d.ogg"), b"x").unwrap();
-        let names: Vec<(String, String)> = tracks_in(&dir)
+        let names: Vec<(String, String)> = tracks_in(&dir, None)
             .into_iter()
             .map(|t| (t.mood, t.name))
             .collect();

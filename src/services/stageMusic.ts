@@ -1,9 +1,25 @@
 import { convertFileSrc } from '@tauri-apps/api/core';
-import type { SceneState, StageMusicTrack } from '../types';
+import type { SceneDefinition, SceneState, StageMusicTrack } from '../types';
 
 /** Moods the Stage plays music for; also the folder names under `<data>/music/` (Rust `stage_music::MOODS`). */
 export const MUSIC_MOODS = ['calm', 'tavern', 'adventure', 'tension', 'mystery', 'combat', 'boss', 'romance', 'sorrow'] as const;
 export type MusicMood = (typeof MUSIC_MOODS)[number];
+
+/** Folder name of a story's music: `[a-z0-9_-]`, at most 64 characters (Rust `story_music::valid_set_id`). */
+const SET_ID = /^[a-z0-9_-]{1,64}$/;
+
+/**
+ * The music set of a scene (`extensions.otakusoul_music.set`, else its id); null for scenes
+ * without a music section, which play the general pool.
+ */
+export function musicSetOf(definition: Pick<SceneDefinition, 'id' | 'extensions'> | null | undefined): string | null {
+  const music = (definition?.extensions as Record<string, unknown> | undefined)?.otakusoul_music;
+  if (!music || typeof music !== 'object') return null;
+  const named = (music as { set?: unknown }).set;
+  return [typeof named === 'string' ? named : '', definition?.id ?? '']
+    .map((id) => id.trim().toLowerCase())
+    .find((id) => SET_ID.test(id)) ?? null;
+}
 
 export const isMusicMood = (value: unknown): value is MusicMood =>
   typeof value === 'string' && (MUSIC_MOODS as readonly string[]).includes(value);
@@ -42,6 +58,13 @@ export function playableMood(wanted: MusicMood, tracks: StageMusicTrack[]): Musi
   return [wanted, ...RELATED[wanted]].find((mood) => moods.has(mood)) ?? null;
 }
 
+/** The tracks that play for a mood: the story's own (its set) if it has any, else the general pool. */
+export function moodTracks(tracks: StageMusicTrack[], mood: MusicMood): StageMusicTrack[] {
+  const all = tracks.filter((t) => t.mood === mood);
+  const story = all.filter((t) => t.set);
+  return story.length > 0 ? story : all;
+}
+
 /** A random track of the mood, not the one that just played (when there are others). */
 export function pickTrack(
   tracks: StageMusicTrack[],
@@ -49,7 +72,7 @@ export function pickTrack(
   last: string | null,
   random: () => number = Math.random,
 ): StageMusicTrack | null {
-  const own = tracks.filter((t) => t.mood === mood);
+  const own = moodTracks(tracks, mood);
   const fresh = own.length > 1 ? own.filter((t) => t.path !== last) : own;
   return fresh[Math.floor(random() * fresh.length)] ?? null;
 }
@@ -107,7 +130,9 @@ export class StageMusicPlayer {
     this.tracks = tracks;
     const target = playableMood(mood, tracks);
     if (!target) return this.stop();
-    if (this.current?.mood === target) return;
+    // Same mood and the track still belongs to it (another story's set changes it).
+    const current = this.current;
+    if (current?.mood === target && moodTracks(tracks, target).some((t) => t.path === current.path)) return;
     this.start(target, MOOD_FADE_MS);
   }
 

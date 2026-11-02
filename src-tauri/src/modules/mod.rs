@@ -57,6 +57,7 @@ pub mod segmented_download;
 pub mod settings;
 pub mod stage;
 pub mod stage_music;
+pub mod story_music;
 pub mod talking_portrait;
 pub use hub as soul_hub;
 pub use memory_pipeline as soul_memory_pipeline;

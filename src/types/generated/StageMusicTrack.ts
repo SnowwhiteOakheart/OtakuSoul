@@ -5,6 +5,10 @@
  */
 export type StageMusicTrack = { mood: string, 
 /**
+ * Set of a story the track belongs to; `None` for the general pool.
+ */
+set: string | null, 
+/**
  * File name without folder.
  */
 name: string, 

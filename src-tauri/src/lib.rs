@@ -382,6 +382,8 @@ pub fn run() {
             commands::stage::import_stage_asset,
             commands::stage::get_stage_ambient_audio,
             commands::stage::list_stage_music,
+            commands::stage::get_scene_music_plan,
+            commands::stage::ensure_scene_music,
             commands::stage::open_stage_music_folder,
             commands::stage::get_music_packs,
             commands::stage::download_music_pack,

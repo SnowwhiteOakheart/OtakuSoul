@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@tauri-apps/api/core', () => ({ convertFileSrc: (path: string) => `asset://${path}` }));
-import { pickTrack, playableMood, sceneMood, StageMusicPlayer } from '../services/stageMusic';
+import { moodTracks, musicSetOf, pickTrack, playableMood, sceneMood, StageMusicPlayer } from '../services/stageMusic';
 import type { Combatant, SceneState, StageMusicTrack } from '../types';
 
-const track = (mood: string, name: string): StageMusicTrack => ({ mood, name, path: `/music/${mood}/${name}` });
+const track = (mood: string, name: string, set: string | null = null): StageMusicTrack => ({ mood, name, set, path: set ? `/music/sets/${set}/${mood}/${name}` : `/music/${mood}/${name}` });
 const fighter = (role: string, hp: number) => ({ id: role, name: role, role, hp }) as unknown as Combatant;
 const scene = (active: boolean, combatants: Combatant[], current_music_mood: string | null = null) =>
   ({ combat: { is_active: active, combatants }, current_music_mood }) as unknown as SceneState;
@@ -55,6 +55,25 @@ class FakeAudio extends EventTarget {
   removeAttribute() {}
 }
 
+describe('story music sets', () => {
+  const def = (id: string, extensions: Record<string, unknown>) => ({ id, extensions }) as never;
+
+  it('a scene with a music section has a set, its id by default', () => {
+    expect(musicSetOf(def('story_frozen_bells', {}))).toBeNull();
+    expect(musicSetOf(def('story_frozen_bells', { otakusoul_music: {} }))).toBe('story_frozen_bells');
+    expect(musicSetOf(def('x', { otakusoul_music: { set: 'Frostweiler' } }))).toBe('frostweiler');
+    expect(musicSetOf(def('scene-1', { otakusoul_music: { set: '../evil' } }))).toBe('scene-1');
+    expect(musicSetOf(null)).toBeNull();
+  });
+
+  it('own tracks of the story play before the general pool', () => {
+    const tracks = [track('calm', 'pool.ogg'), track('calm', 'story.ogg', 'frostweiler'), track('combat', 'fight.ogg')];
+    expect(moodTracks(tracks, 'calm').map((t) => t.name)).toEqual(['story.ogg']);
+    expect(moodTracks(tracks, 'combat').map((t) => t.name)).toEqual(['fight.ogg']);
+    expect(pickTrack(tracks, 'calm', null, () => 0.9)?.name).toBe('story.ogg');
+  });
+});
+
 describe('StageMusicPlayer', () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -92,9 +111,16 @@ describe('StageMusicPlayer', () => {
     expect(created).toHaveLength(3);
     expect(created[2]!.src).toBe('asset:///music/combat/b.ogg');
 
+    // Another story with its own fight music: same mood, other tracks.
+    player.play('combat', [track('combat', 'boss.ogg', 'other')]);
+    expect(created).toHaveLength(4);
+    expect(created[3]!.src).toBe('asset:///music/sets/other/combat/boss.ogg');
+    player.play('combat', [track('combat', 'boss.ogg', 'other')]);
+    expect(created).toHaveLength(4);
+
     player.stop();
     vi.advanceTimersByTime(3100);
-    expect(created[2]!.paused).toBe(true);
+    expect(created[3]!.paused).toBe(true);
     expect(player.mood).toBeNull();
   });
 });

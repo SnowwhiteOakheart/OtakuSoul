@@ -825,6 +825,7 @@ export const StageView: React.FC = () => {
           mood={music.mood}
           trackCount={music.trackCount}
           onReload={music.reload}
+          definition={stageState?.definition ?? null}
         />
       )}
       {showClockModal && (

@@ -142,10 +142,27 @@ pub fn get_stage_ambient_audio(name: String) -> Result<String, String> {
     crate::modules::stage::stage_ambient_data_url(&name)
 }
 
-/// The Stage's music files per mood (`<data>/music/<mood>/`).
+/// The Stage's music files per mood: the story's set first (`<data>/music/sets/<set>/<mood>/`),
+/// then the general pool (`<data>/music/<mood>/`).
 #[tauri::command(async)]
-pub fn list_stage_music() -> Vec<crate::modules::stage_music::StageMusicTrack> {
-    crate::modules::stage_music::list_tracks()
+pub fn list_stage_music(set: Option<String>) -> Vec<crate::modules::stage_music::StageMusicTrack> {
+    crate::modules::stage_music::list_tracks(set.as_deref())
+}
+
+/// The music a scene asks for (moods, captions, vocals) with what is already downloaded.
+#[tauri::command(async)]
+pub fn get_scene_music_plan(
+    definition: crate::modules::stage::SceneDefinition,
+) -> crate::modules::story_music::SceneMusicPlan {
+    crate::modules::story_music::plan_for_scene(&definition)
+}
+
+/// Downloads the tracks the data repository ships for the scene's story; returns how many.
+#[tauri::command]
+pub async fn ensure_scene_music(
+    definition: crate::modules::stage::SceneDefinition,
+) -> Result<u32, String> {
+    crate::modules::story_music::ensure_scene_music(&definition).await
 }
 
 /// Opens the music folder (created with one subfolder per mood).

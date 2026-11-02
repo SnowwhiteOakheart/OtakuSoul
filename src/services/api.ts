@@ -102,6 +102,7 @@ import {
   Inochi2dCatalogItem,
   MusicPackInfo,
   StageMusicTrack,
+  SceneMusicPlan,
   Inochi2dMapping,
   AvatarKind,
   EmotionResult,
@@ -552,9 +553,19 @@ export const api = {
     return await invoke<string>('get_stage_ambient_audio', { name });
   },
 
-  /** The Stage's music files per mood (`<data>/music/<mood>/`). */
-  listStageMusic: async (): Promise<StageMusicTrack[]> => {
-    return await invoke<StageMusicTrack[]>('list_stage_music');
+  /** The Stage's music files per mood: the story's set first, then the general pool. */
+  listStageMusic: async (set?: string | null): Promise<StageMusicTrack[]> => {
+    return await invoke<StageMusicTrack[]>('list_stage_music', { set: set ?? null });
+  },
+
+  /** The music a scene asks for (moods, captions, vocals) and what is downloaded of it. */
+  getSceneMusicPlan: async (definition: SceneDefinition): Promise<SceneMusicPlan> => {
+    return await invoke<SceneMusicPlan>('get_scene_music_plan', { definition });
+  },
+
+  /** Downloads the tracks `otakusoul-data` ships for the scene's story; returns how many. */
+  ensureSceneMusic: async (definition: SceneDefinition): Promise<number> => {
+    return await invoke<number>('ensure_scene_music', { definition });
   },
 
   /** Opens the music folder (with one subfolder per mood). */

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Check, Download, FolderOpen, Loader2, Music, RefreshCw } from 'lucide-react';
+import { Check, Download, FolderOpen, Loader2, Mic, Music, RefreshCw } from 'lucide-react';
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { Toggle } from '../ui/Toggle';
 import { Slider } from '../ui/Slider';
@@ -8,7 +8,7 @@ import { api } from '../../services/api';
 import { MUSIC_MOODS, stageMusic, type MusicMood } from '../../services/stageMusic';
 import { useTranslation } from '../../i18n';
 import { errorMessage } from '../../utils/errors';
-import type { MusicPackInfo } from '../../types';
+import type { MusicPackInfo, SceneDefinition, SceneMusicPlan } from '../../types';
 
 interface StageMusicModalProps {
   onClose: () => void;
@@ -20,10 +20,12 @@ interface StageMusicModalProps {
   trackCount: number;
   /** Reads the music folder again. */
   onReload: () => Promise<void>;
+  /** The open scene: its own music (`otakusoul_music`) is shown when it has some. */
+  definition?: SceneDefinition | null;
 }
 
 /** Stage music: on/off, volume, the mood folders and music packs from the hub. */
-export const StageMusicModal = ({ onClose, enabled, onEnabledChange, wanted, mood, trackCount, onReload }: StageMusicModalProps) => {
+export const StageMusicModal = ({ onClose, enabled, onEnabledChange, wanted, mood, trackCount, onReload, definition }: StageMusicModalProps) => {
   const { t, currentLanguage } = useTranslation();
   const [volume, setVolume] = useState(() => Math.round(stageMusic.getVolume() * 100));
   const [packs, setPacks] = useState<MusicPackInfo[] | null>(null);
@@ -34,6 +36,32 @@ export const StageMusicModal = ({ onClose, enabled, onEnabledChange, wanted, moo
     void loadPacks();
     // oxlint-disable-next-line react-hooks/exhaustive-deps -- read again only when the language changes
   }, [currentLanguage]);
+
+  // The story's own music: what it asks for and what of it is downloaded.
+  const [plan, setPlan] = useState<SceneMusicPlan | null>(null);
+  const [fetchingStory, setFetchingStory] = useState(false);
+  const loadPlan = () =>
+    definition
+      ? api.getSceneMusicPlan(definition).then((p) => setPlan(p ?? null)).catch(() => setPlan(null))
+      : Promise.resolve();
+  useEffect(() => {
+    void loadPlan();
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- once per scene
+  }, [definition?.id]);
+  const fetchStory = async () => {
+    if (!definition) return;
+    setFetchingStory(true);
+    try {
+      const count = await api.ensureSceneMusic(definition);
+      toast.success(t('stageMusic.storyFetched', { count }));
+      await onReload();
+      await loadPlan();
+    } catch (error) {
+      toast.error(t('stageMusic.downloadFailed', { error: errorMessage(error) }));
+    } finally {
+      setFetchingStory(false);
+    }
+  };
 
   const moodLabel = (m: MusicMood) => t(`stageMusic.mood.${m}` as 'stageMusic.mood.calm');
 
@@ -85,6 +113,54 @@ export const StageMusicModal = ({ onClose, enabled, onEnabledChange, wanted, moo
             stageMusic.setVolume(next / 100);
           }}
         />
+
+        {plan?.set && (
+          <section className="space-y-2" data-testid="story-music">
+            <h3 className="text-xs font-semibold uppercase text-slate-400">
+              {t('stageMusic.storyTitle')} <span className="ml-1 font-mono normal-case text-slate-500">{plan.set}</span>
+            </h3>
+            {plan.style && (
+              <p className="text-xs text-slate-300">
+                {t(plan.style_source === 'lorebook' ? 'stageMusic.styleFromLorebook' : 'stageMusic.style', { style: plan.style })}
+              </p>
+            )}
+            {plan.shipped > 0 && (
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-800 bg-app px-3 py-2">
+                <p className="text-xs text-slate-300">{t('stageMusic.storyShipped', { installed: plan.shipped_installed, total: plan.shipped })}</p>
+                {plan.shipped_installed < plan.shipped && (
+                  <button
+                    type="button"
+                    disabled={fetchingStory}
+                    onClick={() => void fetchStory()}
+                    className="flex items-center gap-1.5 rounded-xl bg-accent-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-500 disabled:opacity-60"
+                  >
+                    {fetchingStory ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                    {t('stageMusic.storyFetch')}
+                  </button>
+                )}
+              </div>
+            )}
+            {plan.moods.length > 0 && (
+              <ul className="space-y-1">
+                {plan.moods.map((planned) => (
+                  <li key={planned.mood} data-story-mood={planned.mood} className="flex items-start gap-2 text-xs">
+                    <span className={`mt-0.5 shrink-0 rounded-md px-1.5 py-0.5 text-[11px] font-semibold ${planned.installed > 0 ? 'bg-emerald-900/40 text-emerald-200' : 'bg-slate-800 text-slate-400'}`}>
+                      {moodLabel(planned.mood as MusicMood)} · {planned.installed}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-slate-400" title={planned.caption}>{planned.caption}</span>
+                    {planned.has_vocals && (
+                      <span className="shrink-0 inline-flex items-center gap-1 rounded-md bg-accent-900/40 px-1.5 py-0.5 text-[11px] text-accent-200" title={planned.lyrics}>
+                        <Mic className="w-3 h-3" />
+                        {planned.vocal_language ? t('stageMusic.vocalsIn', { language: planned.vocal_language }) : t('stageMusic.vocals')}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {plan.moods.some((m) => m.installed === 0) && <p className="text-xs text-slate-500">{t('stageMusic.storyMissing')}</p>}
+          </section>
+        )}
 
         <section className="space-y-2">
           <h3 className="text-xs font-semibold uppercase text-slate-400">{t('stageMusic.folderTitle')}</h3>

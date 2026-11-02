@@ -89,6 +89,11 @@ import type { Live2dCatalogItem } from './generated/Live2dCatalogItem';
 import type { Inochi2dCatalogItem } from './generated/Inochi2dCatalogItem';
 import type { MusicPackInfo } from './generated/MusicPackInfo';
 import type { StageMusicTrack } from './generated/StageMusicTrack';
+import type { SceneMusicPlan } from './generated/SceneMusicPlan';
+import type { PlannedMood } from './generated/PlannedMood';
+import type { StoryMusic } from './generated/StoryMusic';
+import type { MoodMusic } from './generated/MoodMusic';
+import type { MusicAsset } from './generated/MusicAsset';
 import type { ScannedInochi2d } from './generated/ScannedInochi2d';
 import type { Inochi2dMapping } from './generated/Inochi2dMapping';
 import type { Inochi2dChannel } from './generated/Inochi2dChannel';
@@ -228,6 +233,11 @@ export type {
   Inochi2dCatalogItem,
   MusicPackInfo,
   StageMusicTrack,
+  SceneMusicPlan,
+  PlannedMood,
+  StoryMusic,
+  MoodMusic,
+  MusicAsset,
   ScannedInochi2d,
   Inochi2dMapping,
   Inochi2dChannel,
