@@ -562,8 +562,51 @@ pub fn save_scene_state(state: &SceneState) -> Result<(), String> {
     Ok(())
 }
 
+/// Adds the `extensions` keys the bundled preset has but a saved copy lacks (a story started
+/// before a feature like `otakusoul_music` existed); everything the copy has stays as it is.
+fn adopt_missing_extensions(definition: &mut SceneDefinition, bundled: &serde_json::Value) {
+    let Some(bundled) = bundled.as_object() else {
+        return;
+    };
+    if definition.extensions.is_null() {
+        definition.extensions = serde_json::Value::Object(Default::default());
+    }
+    if let Some(own) = definition.extensions.as_object_mut() {
+        for (key, value) in bundled {
+            own.entry(key.clone()).or_insert_with(|| value.clone());
+        }
+    }
+}
+
+/// The bundled preset (adventure or story) of the same id, if the app ships one.
+fn bundled_definition(scene_id: &str) -> Option<SceneDefinition> {
+    let paths = resolve_app_paths();
+    let search_roots = [
+        PathBuf::from(&paths.bundled_presets_dir),
+        PathBuf::from("presets"),
+        PathBuf::from("../presets"),
+    ];
+    for root in &search_roots {
+        for folder in [ADVENTURE_PACK, STORY_PACK] {
+            let candidate = root
+                .join(folder)
+                .join("scenes")
+                .join(format!("{scene_id}.json"));
+            if let Ok(content) = fs::read_to_string(&candidate)
+                && let Ok(def) = serde_json::from_str::<SceneDefinition>(&content)
+            {
+                return Some(def);
+            }
+        }
+    }
+    None
+}
+
 pub fn reset_stage_scene(scene_id: &str) -> Result<SceneState, String> {
-    let current_state = load_scene_by_id(scene_id)?;
+    let mut current_state = load_scene_by_id(scene_id)?;
+    if let Some(bundled) = bundled_definition(scene_id) {
+        adopt_missing_extensions(&mut current_state.definition, &bundled.extensions);
+    }
     let fresh_state = build_initial_scene_state(&current_state.definition);
     save_scene_state(&fresh_state)?;
     Ok(fresh_state)
@@ -1143,6 +1186,25 @@ mod tests {
         include_str!("../../../../presets/stories/scenes/story_silent_station.json"),
         include_str!("../../../../presets/stories/scenes/story_ryokan_night.json"),
     ];
+
+    #[test]
+    fn a_restart_adopts_music_a_saved_story_lacks_but_keeps_its_own_keys() {
+        let bundled: SceneDefinition = serde_json::from_str(STORIES[0]).unwrap();
+        assert!(bundled.extensions.get("otakusoul_music").is_some());
+
+        let mut saved = bundled.clone();
+        let story = saved.extensions["otakusoul_story"].clone();
+        saved.extensions = serde_json::json!({ "otakusoul_story": { "minutes": 99 } });
+        adopt_missing_extensions(&mut saved, &bundled.extensions);
+        assert_eq!(saved.extensions["otakusoul_music"], bundled.extensions["otakusoul_music"]);
+        assert_eq!(saved.extensions["otakusoul_story"]["minutes"], 99);
+        assert_ne!(saved.extensions["otakusoul_story"], story);
+
+        let mut empty = bundled.clone();
+        empty.extensions = serde_json::Value::Null;
+        adopt_missing_extensions(&mut empty, &bundled.extensions);
+        assert_eq!(empty.extensions, bundled.extensions);
+    }
 
     #[test]
     fn bundled_stories_are_complete_in_every_language() {
