@@ -243,7 +243,9 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
 - Bei gesperrter Desktop-Sitzung können WebKit-Screenshots und Animationsabfragen hängen. E2E dann unter
   einem separaten Xvfb-Display ausführen (`xvfb-run npm run e2e`); die Desktop-Sperre nicht verändern.
 - Befehlsaufrufe: `src/test/commandCheck.test.ts` gleicht jedes `invoke('…', {…})` mit den Rust-Signaturen und
-  `generate_handler!` ab (camelCase-Argumente, Pflichtargumente) – neue Befehle immer registrieren.
+  `generate_handler!` ab (camelCase-Argumente, Pflichtargumente) – neue Befehle immer registrieren. Vitest 5 hält einen
+  Modul-Cache (`node_modules/.vitest-cache`): nach neuen Rust-Dateien meldet `commandCheck` sonst fälschlich fehlende
+  Befehle → `npx vitest --clearCache`.
 - Neue Rust-Felder in Typen, die auch handgeschrieben in `src/types/index.ts` stehen: `src/types/wireCheck.ts` meldet
   Abweichungen; dort und in `index.ts` nachziehen.
 - Tauri-Listener mit `isSubscribed`-Guard (StrictMode), sonst doppelte Tokens.
@@ -510,7 +512,8 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Pfad im Daten-Repo + SHA-256), Lorebooks (`style`, vererbt) und Karten (`theme`, Leitmotiv der Gruppe). Ein Set pro
   Geschichte, fester Ort `<Daten>/music/sets/<set>/<stimmung>/` (nie Pfade im JSON); der Player nimmt Set-Titel vor dem Pool
   (`moodTracks`). `ensure_scene_music` lädt beim Öffnen fehlende Titel aus `otakusoul-data` (nur `music/`/`presets/`,
-  `nsfw` nur mit Freigabe) und schreibt `<datei>.json` mit der Herkunft. `plan_for_scene` setzt Caption = Stil + Stimmung
+  `nsfw` nur mit Freigabe) und schreibt `<datei>.json` mit der Herkunft. Eine vor der Musikfunktion begonnene Geschichte
+  behält ihre gespeicherte Definition; `reset_stage_scene` übernimmt fehlende `extensions`-Schlüssel aus dem Preset. `plan_for_scene` setzt Caption = Stil + Stimmung
   + Leitmotive zusammen (für den ACE-Step-Generator; Gesang braucht dessen 5Hz-LM).
   Story-Assistent, Schritt „Musik“ (`services/storyMusicDraft.ts`): Vorlage je Genre (`GENRE_MUSIC`, englische Captions),
   „Vorschlag vom Chatmodell“ über `quick_reply` + `llmTarget` (JSON `{style, moods}`, `parseMusicSuggestion` nimmt das erste

@@ -1,12 +1,58 @@
 # 🗺️ OtakuSoul – Roadmap (offen)
 
-> Stand: 21.10.2026. Diese Datei ist die **einzige** Liste offener Punkte; `roadmap_abgeschlossen.md` (nur lokal, nicht im
-> Repository) enthält alles Erledigte (Portierung Phasen 1–18, Verbesserungen, Sprachausgabe, Neutralisierung, optionale Inhalte, Qualität &
-> Bedienung, 5e-Regeln, 3D-Figuren aus Spielen, Bedienbarkeit & Story-Einstieg, Avatar-Manager, Oberflächensprachen, Chat-Erweiterungen,
-> Kognitives Gedächtnis 2.0 sowie FSK18/NSFW-Grundintegration). Sie ersetzt alle früheren separaten Roadmap-Dateien.
->
-> Offene Punkte sind Vorschläge, keine zugesagten Features. Erledigtes wird hier abgehakt und beim nächsten
-> Aufräumen nach `roadmap_abgeschlossen.md` verschoben.
+> Stand: 02.11.2026 (nach 0.7.2). Diese Datei ist die **einzige** Liste offener Punkte; `roadmap_abgeschlossen.md`
+> (nur lokal, nicht im Repository) enthält alles Erledigte. Offene Punkte sind Vorschläge, keine zugesagten Features.
+> Erledigtes wird abgehakt und beim nächsten Aufräumen nach `roadmap_abgeschlossen.md` verschoben.
+
+## So ist priorisiert
+
+Jeder Punkt hat drei Angaben:
+- **Nutzen:** ★★★ viele Nutzer merken es sofort · ★★ spürbar für eine Gruppe · ★ Feinschliff oder Nische.
+- **Aufwand:** S (Tage) · M (1–2 Wochen) · L (mehrere Wochen) · XL (eigenes Projekt).
+- **Braucht:** was außer Code nötig ist (Hardware, Konto, Geld, andere Personen).
+
+Reihenfolge innerhalb einer Stufe = vorgeschlagene Reihenfolge. Leitfrage: *Was macht die App für neue Nutzer
+zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
+
+| # | Punkt | Nutzen | Aufwand | Braucht |
+|---|---|---|---|---|
+| **A** | **Jetzt – Ausgeliefertes absichern** | | | |
+| A1 | VRoid Hub mit echtem Konto testen, dann bei pixiv melden | ★★★ | S | Release-Build, VRoid-Konto |
+| A2 | Musik: Prüfstand mit echter GPU, Titel der Starter-Geschichten ausliefern | ★★★ | S–M | GPU, Zeit zum Anhören |
+| A3 | Sync zwischen Geräten und Sprechblasen im Alltag prüfen | ★★ | S | zwei Geräte, Nextcloud o. Ä. |
+| A4 | Nutzertests mit 2–3 Einsteigern | ★★★ | S | Testpersonen |
+| A5 | Signierte Installer (Windows, macOS) | ★★★ | S–M | Zertifikat bzw. Apple-Konto (Kosten) |
+| **B** | **Als Nächstes – baut auf Vorhandenem auf** | | | |
+| B1 | Hörbuch-Export | ★★ | M | – |
+| B2 | Silero-VAD für Sprachanruf und Unterbrechen | ★★ | M | – |
+| B3 | Touch-Reaktionen im Hauptfenster | ★★ | M | – |
+| B4 | Eigene Figuren und Geschichten teilen | ★★★ | L | Prüfablauf im Daten-Repo |
+| B5 | Light-Novel- und Webtoon-Export | ★★ | M–L | – |
+| B6 | OBS-/Streaming-Overlay | ★★ | M | – |
+| B7 | Benachrichtigungsklick unter Linux und macOS | ★ | S (Linux) / M (macOS) | Mac für macOS |
+| **C** | **Später – größere Vorhaben** | | | |
+| C1 | Zugriff von unterwegs (Relay), danach Handy-App | ★★★ | XL | Relay-Dienst, Sicherheitskonzept |
+| C2 | Beziehungs-Atlas (Gedächtnis als Graph) | ★★ | L | – |
+| C3 | Zeitreise-Checkpoints (Verzweigung samt Gedächtnisstand) | ★★ | L | – |
+| C4 | Abend-Reflexion und Monatsrückblick | ★★ | M | – |
+| C5 | Fokus-/Pomodoro-Modus mit Avatar | ★ | M | – |
+| C6 | Mehrere Pets gleichzeitig | ★ | L | – |
+| C7 | Mitguck-Modus (Bildschirm/Webcam) | ★★ | L | Vision-Modell, Datenschutzkonzept |
+| C8 | Battlemap aus Text erzeugen | ★ | L | Bildmodell, ungewisse Qualität |
+| C9 | Skript-Hook für eigenen Code | ★ | L | echte Sandbox |
+| **D** | **Plattformen & Technik – nur mit Hardware oder bei Gelegenheit** | | | |
+| D1 | Desktop-Pet unter macOS | ★★ | M | Mac |
+| D2 | Apple Metal: richtiger GPU-Speicher | ★★ | S | Mac |
+| D3 | Desktop-Pet unter Linux – Folgestufe | ★ | M | X11-, GNOME-, KDE-Systeme |
+| D4 | E2E-Test fürs Pet-Fenster, Speicher des Pet-Webviews | ★ | M | – |
+| D5 | Wackelige E2E-Tests beobachten | ★ | – | – |
+| **E** | **Geparkt – wartet auf andere oder nur bei Bedarf** | | | |
+| E1 | `tauri-specta` (wartet auf stabile 2.0) | – | L | – |
+| E2 | TADA 3B Deutsch (wartet auf CrispASR) | – | S | – |
+| E3 | HIP/ROCm, SYCL | – | M | AMD-/Intel-GPU, Nachfrage |
+| E4 | Fehlende Inochi2D-Funktionen | – | M | Modell, das sie nutzt |
+| E5 | Lokale Embeddings fürs Gedächtnis | – | M | Messung, dass FTS5 nicht reicht |
+| E6 | VRoid-Anmeldung über `otakusoul://`-Link | – | S | Berichte über belegten Port |
 
 ## Leitlinien für neue Oberflächen
 
@@ -18,15 +64,35 @@
    (mit Knopf, wenn möglich).
 4. **Sinnvolle Vorgaben.** Was der Nutzer nicht einstellt, funktioniert trotzdem gut (Hardware-Erkennung, empfohlene
    Modelle, Vorlagen).
-5. **Eine Sprache.** Oberfläche, mitgelieferte Inhalte und Antworten folgen der gewählten App-Sprache (de/en/ru mitgeliefert, weitere als JSON-Datei in `<Daten>/locales/ui/` ohne neuen Build).
+5. **Eine Sprache.** Oberfläche, mitgelieferte Inhalte und Antworten folgen der gewählten App-Sprache (de/en/ru/ja
+   mitgeliefert, weitere als JSON-Datei in `<Daten>/locales/ui/` ohne neuen Build).
 6. **Prüfbar.** Jeder Schritt endet mit einem E2E-Durchlauf aus Einsteigersicht und Screenshots in
    `e2e/screenshots/`, die vor dem Abhaken angesehen werden.
 
-## 0. Bedienbarkeit & Nutzertests
+---
 
-- [ ] Kurze Nutzertests mit 2–3 Einsteigern anhand einer Aufgabenliste; Befunde hier als neue Punkte eintragen
-  (alles Übrige aus dem Bedienbarkeitsplan ist erledigt, siehe `roadmap_abgeschlossen.md`, Abschnitt 10).
-  Aufgabenliste (ohne Hilfe vorlesen, beobachten, wo gezögert wird; Zeit pro Aufgabe notieren):
+## A. Jetzt – Ausgeliefertes absichern
+
+> Diese Funktionen sind in 0.7.2 enthalten, aber noch nicht unter echten Bedingungen geprüft. Ein Fehler hier trifft
+> sofort Nutzer, deshalb zuerst.
+
+- [ ] **A1 · VRoid Hub mit echtem Konto testen, dann bei pixiv melden.** Nur mit Secret möglich
+  (`VROID_CLIENT_SECRET=… npm run tauri:linux` oder Release-Build): Anmeldung, Liste, Hinzufügen, Laden im Chat und im
+  Desktop-Pet, Token-Erneuerung, Abmelden. Danach bei pixiv melden (Prüfung zur „Certified App“,
+  <https://developer.vroid.com/en/api/recognize.html>); bis dahin liefert VRoid Hub nur eigene und zum Download
+  freigegebene Modelle, mit Ratenlimit je App. Rahmen und Pflichten: siehe [Referenz: VRoid Hub](#referenz-vroid-hub).
+- [ ] **A2 · Musik: Prüfstand mit echter GPU, Titel der Starter-Geschichten ausliefern.** Laufzeit installieren, Modell
+  „Standard“ und „XL“ laden, „Fehlende Titel erzeugen“; dabei notieren: Dauer pro Titel, VRAM-Höchstwert, Rückkehr des
+  Chat-Modells, Abbrechen mitten im Titel, Klang (z. B. Elfengesang bei `mystery`), Überblenden in der Stage. Danach die
+  Titel der Starter-Geschichten und des Gruft-Abenteuers erzeugen, anhören und unter `otakusoul-data/music/<set>/`
+  ausliefern (Ablauf: `docs/stage_music.md`, „Titel ausliefern“). *Nutzen:* Ohne mitgelieferte Titel bleibt die Stage für
+  Nutzer ohne starke GPU stumm.
+- [ ] **A3 · Sync zwischen Geräten und Sprechblasen im Alltag prüfen.** Sync: zwei Geräte gegen Nextcloud und einen
+  geteilten Ordner, Hinweis beim Start, Wiederherstellen mit Sicherheitskopie (Protokoll-Test gegen eigene Nextcloud:
+  `cargo test --lib real_webdav_server -- --ignored`, siehe `AI.md`). Sprechblasen: passt die Satzaufteilung nach
+  Textlänge zur echten Stimme, auch bei Erzählerstimme für Aktionen?
+- [ ] **A4 · Nutzertests mit 2–3 Einsteigern** anhand einer Aufgabenliste; Befunde hier als neue Punkte eintragen.
+  Ohne Hilfe vorlesen, beobachten, wo gezögert wird, Zeit pro Aufgabe notieren:
   1. „Richte die App so ein, dass eine Figur dir antworten kann.“
   2. „Unterhalte dich mit einer Figur, die dir gefällt, und lass eine Antwort neu schreiben.“
   3. „Starte eine kurze Geschichte und spiele drei Züge – einmal mit einem Vorschlag.“
@@ -34,186 +100,119 @@
   5. „Lass die Figur ihre Antworten vorlesen.“
   6. „Finde heraus, was ‚Kontext‘ bedeutet.“
   7. „Hol dir eine neue Figur aus dem Hub.“
+  8. „Lass Musik für deine Geschichte erzeugen.“ (neu seit 0.7.2)
+- [ ] **A5 · Signierte Installer:** Windows-Code-Signierung (gegen die SmartScreen-Warnung) und macOS-Notarisierung (statt
+  Rechtsklick → Öffnen bzw. `xattr`) im Release-Workflow. *Nutzen:* Die Warnungen sind die größte Hürde beim ersten Start.
+  *Kosten:* Zertifikat bzw. Apple Developer Account (~99 $/Jahr) – Entscheidung des Nutzers.
 
-## 1. Lokale Modelle, Hardware & Laufzeiten
+## B. Als Nächstes – baut auf Vorhandenem auf
 
-- [ ] **Apple Metal:** `recommendedMaxWorkingSetSize` statt des gesamten Arbeitsspeichers als GPU-Speicher.
-- [ ] **TADA 3B Deutsch (GPU-Test 17.10.2026):** Vorgabestimme in CrispASR v0.8.43 nur noch 8 % verständlich (v0.8.41: 92 %);
-  der deutsche Klon spricht mit vorgesprochenem KI-Hinweis nur den Hinweis (0 %), ohne Hinweis 75 %. Vorschlag: Fehler liegt bei
-  CrispASR (neuere Version abwarten); Hinweis bei TADA als eigenen Clip vorweg erzeugen statt im selben Durchlauf (Entscheidung des Nutzers). Englisch ist unbetroffen.
-- [ ] **Weitere Laufzeit-Backends** (HIP/ROCm, SYCL) neben CUDA, Vulkan, Metal und CPU – nur bei Bedarf.
+- [ ] **B1 · Hörbuch-Export:** Fügt die Sprachclips eines Kapitels (Erzähler- und Charakterstimmen) zu einer
+  durchgängigen Audiodatei mit Kapitelmarken zusammen, auf Wunsch mit leiser Stimmungsmusik darunter. *Baut auf:*
+  `stageVoice.ts`, Musik-Sets. Gut ohne GPU testbar (Zusammensetzen, Marken).
+- [ ] **B2 · Silero-VAD für Sprachanruf und Unterbrechen:** Silero-VAD (ONNX/WASM) statt reinem RMS-Pegel
+  (`voiceCapture.ts`), damit Tastaturklappern, Atemgeräusche und die eigene Stimme der Figur aus Lautsprechern nicht als
+  Sprache zählen. Bis dahin gilt die 2,5-fache Schwelle für 300 ms. *Nutzen:* weniger Fehlunterbrechungen im Sprachanruf.
+- [ ] **B3 · Touch-Reaktionen im Hauptfenster:** Im Desktop-Pet erledigt (Kopf/Körper, Hormone `headpat`/`poke`);
+  offen für den Avatar im Chat: Live2D (`hitTest` auf `Head`, `Face`, `Body`) und 3D per Raycasting, mit denselben
+  Reaktionen. *Baut auf:* Pet-Verhalten, Körperzonen.
+- [ ] **B4 · Eigene Figuren und Geschichten teilen:** Einreichen in den Hub aus der App (Pull Request an `otakusoul-data`
+  oder Formular), mit Prüfung vor der Aufnahme (Validator, Lizenz- und Altersangaben, NSFW-Trennung). *Nutzen:* mehr
+  Inhalte ohne eigenen Aufwand; *Risiko:* Prüfaufwand und Moderation.
+- [ ] **B5 · Light-Novel- und Webtoon-Export:** Ein gespielter Akt oder Chat wird auf Knopfdruck zum Kapitel (PDF/EPUB/
+  HTML-Replay) bzw. Webtoon-Strip, mit Szenenbildern und Emotionsporträts. Zuerst HTML-Replay (am einfachsten), dann EPUB.
+- [ ] **B6 · OBS-/Streaming-Overlay:** Die transparente Pet-Ansicht (`index.html?pet=true`, `DesktopPet.tsx`) über den
+  eingebauten Web-Server (`web_server.rs`) als Browser-Source für OBS – ohne Tauri-Fensteraufrufe, Zustand per WebSocket.
+  *Nutzen:* erreicht Streamer und sorgt für Sichtbarkeit.
+- [ ] **B7 · Klick auf die Benachrichtigung öffnet den Chat – Linux und macOS:** Unter Windows erledigt (`notify_chat`).
+  Linux: `notify-rust` mit `wait_for_action` (klein); macOS: `UNUserNotificationCenter`-Delegate (braucht einen Mac).
 
-## 2. Technik & Tests
+## C. Später – größere Vorhaben
 
-- [ ] Umstieg auf erzeugte Command-Wrapper (`tauri-specta`), falls es eine stabile 2.0 gibt (bis dahin prüft
-  `src/test/commandCheck.test.ts` die Aufrufe; Stand 20.10.2026: weiterhin 2.0.0-rc.25 vom 08.05.2026,
-  verlangt exakte specta-Pins; Umstieg betrifft 257 Befehle und 232 Typen → abwarten).
-- [ ] Wackeligen E2E-Test beobachten: `chat-sidebar-errors` scheiterte einmal an einem Entwurfsvergleich und bestand
-  danach wiederholt.
-- [ ] Wackeligen E2E-Test beobachten: `stage-5e` scheiterte einmal an einem veralteten Element (`button[aria-label*="gegen"]`
-  im Kampfpanel, 16.10.2026) und bestand danach.
-  17.10.2026: zweite Ursache behoben – der Test übersah Heilung durch „Zweiter Atem“ (zählt jetzt Heal-Ereignisse).
+- [ ] **C1 · Zugriff von unterwegs:** Web-Client außerhalb des WLANs über eine verschlüsselte Relay-Verbindung ohne
+  Portfreigabe, mit Push-Benachrichtigungen; danach eine eigene Handy-App über Tauri 2 (Android/iOS) prüfen. *Nutzen:*
+  größte Lücke gegenüber Character.AI, Kindroid und Replika; *aber:* braucht einen Relay-Dienst und ein Sicherheitskonzept.
+- [ ] **C2 · Beziehungs-Atlas:** Interaktive Knotenansicht des SQLite-Gedächtnisses (`psyche`, `relationship`,
+  `episodes`, `diary`, `plans`), in der Verbindungen zeigen, welche Erlebnisse welche Überzeugungen geformt haben.
+- [ ] **C3 · Zeitreise-Checkpoints:** Von einem Punkt der Beziehungs-Chronik aus einen neuen Zweig starten („Was wäre,
+  wenn …?“) – mit eigenem Gedächtnisstand. Braucht Gedächtnis-Snapshots je Zweig; sinnvoll nach C2.
+- [ ] **C4 · Abend-Reflexion und Monatsrückblick:** Optionaler Journaling-Modus; die Figur reflektiert den Tag, begleitet
+  `habits`/`plans` und schreibt am Monatsende einen Rückblick. *Baut auf:* Tagebuch und proaktiven Nachrichten.
+- [ ] **C5 · Fokus-/Pomodoro-Modus:** Fokus-Timer, bei dem der Avatar mitarbeitet, Pausen ankündigt und erledigte
+  Aufgaben feiert (inspiriert von *Spirit City: Lofi Sessions*).
+- [ ] **C6 · Mehrere Pets:** Bei Gruppenchats mehrere Figuren gleichzeitig, die sich anschauen und nacheinander sprechen
+  (eigene Fenster, gemeinsame Physik). Erst nach D4 (Speicherbedarf des Pet-Webviews).
+- [ ] **C7 · Mitguck-Modus:** Optionaler Live-Blick bei Sprachanrufen oder fürs Pet: ein verkleinerter Schnappschuss
+  des aktiven Fensters oder der Webcam für Vision-Modelle. Nur mit deutlicher Anzeige und Freigabe je Sitzung.
+- [ ] **C8 · Battlemap aus Text:** Improvisiert der Spielleiter einen Ort, erzeugt `stable-diffusion.cpp` eine
+  Draufsicht, aus der Wände, Hindernisse und Sichtlinien für die 5e-Engine abgeleitet werden. Ungewiss, ob die
+  Erkennung zuverlässig genug wird – zuerst einen kleinen Versuch.
+- [ ] **C9 · Skript-Hook für eigenen Code:** Regex-Skripte und Quick-Replies gibt es; offen ist ein Hook, der eigenen
+  Code (z. B. JavaScript) auf Ein-/Ausgabe anwendet. Nur in einer echten Sandbox ohne Netz und ohne Zugriff auf die App
+  (z. B. QuickJS als WebAssembly im Worker), weil importierte Skripte fremder Herkunft sein können.
 
-## 3. 3D Desktop Pet (Mascot Companion)
+> Alleinstellungsmerkmal: Das Desktop-Pet zusammen mit Gedächtnis und proaktiven Nachrichten –
+> „Deine Figur lebt auf deinem PC.“ Punkte, die das stärken (B3, B6, C4), haben bei gleicher Bewertung Vorrang.
 
-> Ziel: Die aktive Figur (VRM / glTF / MMD) lebt als transparenter Begleiter auf dem Desktop.
-> **Stand 26.10.2026 (Windows):** eigenes Pet-Fenster mit Click-Through, Ziehen, Werfen, Kontextmenü und Status-Panel;
-> Figur, Stimmung, Gesten, Lippensync und Chat-Antworten (satzweise zur Stimme) aus dem Hauptfenster; Schnell-Chat;
-> Leerlauf-Verhalten (umschauen, gähnen, hüpfen, dösen, gehen, sitzen mit Animation; seit 01.11.2026 auch auf dem
-> Boden als eigene VRM-Pose, Schrittrhythmus passend zum Tempo), Streicheln nach Körperzone;
-> Schwerkraft, Bildschirmkanten, mehrere Monitore, Stehen/Laufen/Mitfahren auf Titelleisten anderer Fenster;
-> Pause bei Vollbild und Sperre; Tray-Eintrag, Tastenkürzel Strg+Alt+Umschalt+P, Wiederkehr beim Start.
-> Details und Stolperfallen: `roadmap_abgeschlossen.md` (Abschnitt 3) und `AI.md` (Abschnitt 10).
+## D. Plattformen & Technik – nur mit Hardware oder bei Gelegenheit
 
-### Plattformen
-- [ ] **macOS-Integration:** Fenster-Scanner über `CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly |
-  kCGWindowListExcludeDesktopElements)` (`kCGWindowBounds`, Ebene 0, eigene PID ausnehmen), Berechtigung „Bildschirm-
-  aufnahme“ für Fenstertitel prüfen und erklären; Maustastenstatus (`NSEvent.pressedMouseButtons`) für sofortiges
-  Drag-Ende und Werfen; Vollbild/Sperre (`CGSessionCopyCurrentDictionary`). Braucht einen Mac zum Bauen und Testen.
-- [ ] **Linux – Folgestufe:** Grundstufe erledigt (30.10.2026: transparent, immer oben, verschiebbar, Maustaste über
-  X11, Vollbild in X11-Sitzungen, Sperre per D-Bus), unter KDE Wayland per KWin-Skript auch Zeiger, Click-Through,
-  Vollbild und Fensterkanten (30.10.2026). Offen: Fensterkanten in X11-Sitzungen über `_NET_CLIENT_LIST_STACKING`;
-  GNOME-Wayland (bleibt ohne Click-Through und Kanten); Musik/Takt über den PipeWire-Monitor; Stehen auf Fenstern und
-  Werfen von Hand unter KDE prüfen (Daten kommen nachweislich an, Verhalten nicht beobachtet).
+> Desktop-Pet, Stand 01.11.2026 (Windows): eigenes Fenster mit Click-Through, Ziehen, Werfen, Kontextmenü; Figur,
+> Stimmung, Gesten, Lippensync und satzweise Chat-Antworten aus dem Hauptfenster; Leerlauf-Verhalten, Sitzen auf dem
+> Boden und auf Fensterkanten, Streicheln nach Körperzone; Schwerkraft, mehrere Monitore; Pause bei Vollbild und
+> Sperre; Tray-Eintrag, Tastenkürzel, Schalter „Beim Start öffnen“. Details: `AI.md` Abschnitt 10.
 
-### Bedienung & Einstellungen
-- [ ] **Mehrere Pets:** Bei Gruppenchats auf Wunsch mehrere Figuren gleichzeitig, die sich gegenseitig anschauen und
-  nacheinander sprechen (eigene Fenster, gemeinsame Physik).
+- [ ] **D1 · Desktop-Pet unter macOS:** Fenster-Scanner über `CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly |
+  kCGWindowListExcludeDesktopElements)` (`kCGWindowBounds`, Ebene 0, eigene PID ausnehmen), Berechtigung
+  „Bildschirmaufnahme“ für Fenstertitel prüfen und erklären; Maustastenstatus (`NSEvent.pressedMouseButtons`) für
+  sofortiges Drag-Ende und Werfen; Vollbild/Sperre (`CGSessionCopyCurrentDictionary`).
+- [ ] **D2 · Apple Metal:** `recommendedMaxWorkingSetSize` statt des gesamten Arbeitsspeichers als GPU-Speicher
+  (falsche Modellempfehlungen auf Macs).
+- [ ] **D3 · Desktop-Pet unter Linux – Folgestufe:** Grundstufe und KDE Wayland erledigt (30.10.2026). Offen:
+  Fensterkanten in X11-Sitzungen über `_NET_CLIENT_LIST_STACKING`; GNOME-Wayland (bleibt ohne Click-Through und Kanten);
+  Musik/Takt über den PipeWire-Monitor; Stehen auf Fenstern und Werfen von Hand unter KDE prüfen.
+- [ ] **D4 · Pet-Fenster absichern:** E2E-Test mit tauri-driver und zweitem Fenster (Öffnen, Zustand vom Hauptfenster,
+  Ausblenden, Wiederkehr beim Start); Speicher des zweiten Webviews messen und ggf. Modelldaten aus dem Hauptfenster
+  übergeben statt erneut zu lesen.
+- [ ] **D5 · Wackelige E2E-Tests beobachten:** `chat-sidebar-errors` (einmal Entwurfsvergleich) und `stage-5e` (einmal
+  veraltetes Element `button[aria-label*="gegen"]`, 16.10.2026). Bei erneutem Auftreten Ursache suchen.
 
-### Darstellung
-- [ ] **E2E-Test fürs Pet-Fenster:** tauri-driver mit zweitem Fenster (Öffnen, Zustand vom Hauptfenster, Ausblenden,
-  Wiederkehr beim Start); Physik und Verhalten sind bereits per Vitest abgedeckt.
-- [ ] **Speicher des Pet-Webviews messen** (zweiter WebView2-Prozess, Modell doppelt geladen) und ggf. Modelldaten aus
-  dem Hauptfenster übergeben statt erneut zu lesen.
+## E. Geparkt – wartet auf andere oder nur bei Bedarf
 
-## 3a. Inochi2D-Puppen – Folgepunkte
-
-> Grundintegration, Animationen, Mundformen, Einstellungen je Puppe, Desktop-Pet und Hub-Registry fertig (26./27.10.2026,
-> Details in `roadmap_abgeschlossen.md` Abschnitt 26 und `AI.md` Abschnitt 6).
-
-- [ ] **Fehlende Inochi2D-Funktionen:** Emission/Bump-Licht, BC7-Texturen, `translate_children` und verschachtelte
+- [ ] **E1 · `tauri-specta`:** Erzeugte Command-Wrapper, sobald es eine stabile 2.0 gibt (Stand 20.10.2026:
+  2.0.0-rc.25, verlangt exakte specta-Pins; betrifft über 250 Befehle). Bis dahin prüft `commandCheck.test.ts`.
+- [ ] **E2 · TADA 3B Deutsch:** Vorgabestimme in CrispASR v0.8.43 nur noch 8 % verständlich (v0.8.41: 92 %); der deutsche
+  Klon spricht mit vorgesprochenem KI-Hinweis nur den Hinweis. Neuere CrispASR-Version abwarten; alternativ den Hinweis
+  als eigenen Clip vorweg erzeugen (Entscheidung des Nutzers). Englisch ist unbetroffen.
+- [ ] **E3 · Weitere Laufzeit-Backends** (HIP/ROCm, SYCL) neben CUDA, Vulkan, Metal und CPU – nur bei Nachfrage.
+- [ ] **E4 · Fehlende Inochi2D-Funktionen:** Emission/Bump-Licht, BC7-Texturen, `translate_children`, verschachtelte
   Mesh-Gruppen – erst mit einem Modell, das sie nutzt (Aka, Midori und Nagatoro brauchen sie nicht).
+- [ ] **E5 · Lokale Embeddings fürs Gedächtnis** – nur falls FTS5 messbar nicht reicht: kleines GGUF-Embedding-Modell
+  über llama-server (`--embedding`), Vektoren als BLOB in SQLite, Brute-Force-Kosinus, Fusion mit BM25 per RRF.
+- [ ] **E6 · VRoid-Anmeldung über `otakusoul://vroidhub/callback`** (`tauri-plugin-deep-link`), falls der feste Port
+  47823 bei Nutzern oft belegt ist.
 
-## 3b. VRoid-Hub-Anbindung (VRM-Modelle per Anmeldung)
+---
 
-> Ziel: Nutzer melden sich in der App bei VRoid Hub an und verwenden dort freigegebene VRM-Modelle direkt, ohne
-> Download und Import von Hand. Mitliefern dürfen wir solche Modelle meist nicht („Redistribution: Do not allow“).
-> Doku: <https://developer.vroid.com/en/api/quick-start.html>. Entwicklerkonto registriert und App angelegt
-> (31.10.2026, <https://hub.vroid.com/oauth/applications>). Client-ID (öffentlich, darf in den Code):
-> `f-gDzdEkE8LVgYq9Qv7j_Z2d-6-_gekmc-pzU_eYaYI`. Secret liegt als GitHub-Actions-Secret `VROID_CLIENT_SECRET`.
+## Referenz: VRoid Hub
 
-> **App-Einstellungen bei VRoid Hub (so geplant; bei Abweichungen hier nachziehen):** Scope nur `default`; Plattformen
-> Windows/macOS/Linux; App-Altersfreigabe R-18 (wegen der optionalen 18+-Inhalte); VRM 0.0 und 1.0; Modell-Nutzung:
-> Änderung Nein, Weitergabe Nein, Avatar Ja, sexuelle Darstellung Nein, Gewalt Nein, Namensnennung Ja; für
-> Einzelpersonen, nicht kommerziell; nur Modelle „für alle Altersstufen“. **Diese Angaben filtern serverseitig**,
-> welche Modelle die API liefert. Mit „Nein“ bei Sex/Gewalt kommen alle Modelle, dafür gilt für die App dauerhaft:
-> VRoid-Modelle nie in sexuellen Inhalten und nie in Kampfszenen – unabhängig davon, was ein einzelnes Modell erlaubt.
+> Doku: <https://developer.vroid.com/en/api/quick-start.html>. App angelegt am 31.10.2026
+> (<https://hub.vroid.com/oauth/applications>). Client-ID (öffentlich): `f-gDzdEkE8LVgYq9Qv7j_Z2d-6-_gekmc-pzU_eYaYI`.
+> Secret als GitHub-Actions-Secret `VROID_CLIENT_SECRET`. Umsetzung: `modules/vroid_hub.rs`, `avatars/VroidHubPanel.tsx`,
+> `AI.md` Abschnitt 6.
 
-- [x] **Entwicklerbedingungen gelesen** (01.11.2026, <https://policies.pixiv.net/en.html#vroidhubdeveloper>).
-  Kein ausdrückliches Verbot, Modelle zwischenzuspeichern, aber verbindlich:
-  - Nur der angemeldete Nutzer, dem VRoid Hub das Modell freigibt, darf es benutzen (Art. 4 Abs. 2 Nr. 1).
-  - Die App muss den bei VRoid hinterlegten App-Einstellungen entsprechen (Art. 4 Abs. 2 Nr. 2) und darf die
-    API nur für den angegebenen Zweck nutzen (Art. 4 Abs. 3). Ändert sich etwas, zuerst die Einstellungen bei
-    VRoid anpassen.
-  - Modelldaten nicht außerhalb der App nutzen, keine Funktion zum Teilen mit Dritten; Bilder und Texte von
-    VRoid Hub (Icons, Nutzernamen) nur in der App (Art. 6 Nr. 8, 9).
-  - Keine Nutzung für obszöne Inhalte (Art. 6 Nr. 10); Werk und Ansehen der Urheber wahren (Art. 4 Abs. 2 Nr. 3).
-  - Nichts bauen, was VRoid Hub nachbildet (Art. 6 Nr. 2): VRoid-Modelle nicht in den eigenen Hub oder die
-    Avatar-Registry aufnehmen.
-  - Fertige App bei pixiv melden, danach Prüfung und ggf. „Certified App“ (Art. 7). Ohne Freigabe darf die App
-    trotzdem verteilt werden, VRoid Hub kann dann aber vor ihr warnen. Immer die aktuelle API-Version nutzen (Art. 9).
-- [x] **Umgesetzt (01.11.2026, `modules/vroid_hub.rs`, `avatars/VroidHubPanel.tsx`, Details `AI.md` Abschnitt 6):**
-  OAuth mit PKCE/`state` über `http://127.0.0.1:47823/vroidhub/callback`, Secret per `option_env!` (in `release.yml`
-  verdrahtet), Tokens im Schlüsselbund; eigene und gelikte Modelle im Avatar-Manager, „Hinzufügen“ speichert das VRM
-  **verschlüsselt** (AES-256-GCM, Schlüssel im Schlüsselbund, ohne Schlüsselbund gar nicht) unter `<Daten>/vroid/`;
-  nicht mehr freigegebene Modelle und Abmelden löschen alles; „Model Data Conditions of Use“ mit Urheber je Modell;
-  keine Nutzung für 18+-markierte Charaktere; nicht in Export, Backup, Web-Server oder Hub (die Stage zeigt ohnehin
-  keine 3D-Avatare).
-- [ ] **Mit echtem Konto testen** (nur mit Secret möglich: `VROID_CLIENT_SECRET=… npm run tauri:linux` oder
-  Release-Build): Anmeldung, Liste, Hinzufügen, Laden im Chat und im Desktop-Pet, Token-Erneuerung, Abmelden.
-- [ ] **Bei pixiv melden**, sobald das läuft (Prüfung zur „Certified App“, <https://developer.vroid.com/en/api/recognize.html>).
-  Bis dahin liefert VRoid Hub nur eigene und zum Download freigegebene Modelle, mit Ratenlimit je App.
-- [ ] **Optional:** `otakusoul://vroidhub/callback` über `tauri-plugin-deep-link`, falls der feste Port bei Nutzern
-  oft belegt ist.
+**App-Einstellungen bei VRoid Hub** (bei Abweichungen hier nachziehen): Scope nur `default`; Plattformen
+Windows/macOS/Linux; App-Altersfreigabe R-18 (wegen der optionalen 18+-Inhalte); VRM 0.0 und 1.0; Modell-Nutzung:
+Änderung Nein, Weitergabe Nein, Avatar Ja, sexuelle Darstellung Nein, Gewalt Nein, Namensnennung Ja; für
+Einzelpersonen, nicht kommerziell; nur Modelle „für alle Altersstufen“. Diese Angaben filtern serverseitig, welche
+Modelle die API liefert. Für die App gilt dauerhaft: **VRoid-Modelle nie in sexuellen Inhalten und nie in Kampfszenen.**
 
-## 4. Kognitives Gedächtnis (Memory 2.0 – Ausblick & Folgepunkte)
-
-- [ ] **Lokale Embeddings (nur falls FTS5 nicht reicht):**
-  - Kleines GGUF-Embedding-Modell über den vorhandenen llama-server (`--embedding`).
-  - Vektoren als BLOB in SQLite, Kosinus-Ähnlichkeit in Rust (bei < 10.000 Erinnerungen pro Figur reicht Brute Force).
-  - Fusion mit BM25 per Reciprocal Rank Fusion (RRF). Erst messen, dann bauen.
-
-
-## 5. Wettbewerbsfähigkeit (Vorschläge vom 20.10.2026)
-
-> Abgleich mit Character.AI, Kindroid, Nomi, Replika, SillyTavern und Backyard AI. Beim Funktionsumfang liegt OtakuSoul vorn;
-> die Lücken liegen bei Zugang, Vertrauen, proaktiver Bindung und Mobilität. Reihenfolge = vorgeschlagene Priorität.
-
-### Zugang & Vertrauen
-- [ ] **Signierte Installer:** Windows-Code-Signierung (gegen SmartScreen-Warnung) und macOS-Notarisierung (statt
-  Rechtsklick → Öffnen bzw. `xattr`) im Release-Workflow. Kosten: Zertifikat bzw. Apple Developer Account (~99 $/Jahr) –
-  Entscheidung des Nutzers.
-
-### Die Figur meldet sich von selbst
-- [ ] **Klick auf die Benachrichtigung öffnet den Chat – macOS/Linux:** Unter Windows erledigt (27.10.2026, `notify_chat`);
-  `tauri-plugin-notification` bietet dort weiter keine Klick-Aktion (macOS: `UNUserNotificationCenter`-Delegate,
-  Linux: `notify-rust` mit `wait_for_action`).
-
-### Mobil
-- [ ] **Zugriff von unterwegs:** Web-Client außerhalb des WLANs über eine verschlüsselte Relay-Verbindung ohne Portfreigabe,
-  mit Push-Benachrichtigungen. Danach prüfen: eigene Handy-App über Tauri 2 (Android/iOS) mit Cloud-KI oder dem PC als Server.
-
-### Für erfahrene Nutzer
-- [ ] **Skript-Hook für eigenen Code:** Regex-Skripte und Quick-Replies gibt es seit 20.10.2026; offen ist nur ein Hook, der
-  eigenen Code (z. B. JavaScript) auf Ein-/Ausgabe anwendet. Nur in einer echten Sandbox ohne Netz und ohne Zugriff auf die
-  App (z. B. QuickJS als WebAssembly im Worker), weil importierte Skripte fremder Herkunft sein können.
-
-### Gemeinschaft
-- [ ] **Eigene Figuren und Geschichten aus der App teilen:** Einreichen in den Hub (z. B. als Pull Request an `otakusoul-data`
-  oder über ein Formular), mit Prüfung vor der Aufnahme.
-
-> Alleinstellungsmerkmal: Das Desktop-Pet (Abschnitt 3) zusammen mit Gedächtnis und proaktiven Nachrichten –
-> „Deine Figur lebt auf deinem PC.“
-
-## 6. Weitere Alleinstellungsmerkmale (Immersion, Storytelling & Alltag)
-
-### 🕸️ Interaktiver „Seelen- & Beziehungs-Atlas“ (Visual Memory Graph)
-- [ ] **Visuelle Sternenkarte der Erinnerungen:** Interaktive 2D/3D-Knotenansicht (Force-Graph) für das SQLite-Gedächtnis (`psyche`, `relationship`, `episodes`, `diary`, `plans`), in der leuchtende Verbindungen zeigen, welche Erlebnisse welche Überzeugungen geformt haben.
-- [ ] **Zeitreise-Checkpoints (Parallelwelt-Zeitlinien):** Klick auf einen historischen Knoten in der Beziehungs-Chronik startet von diesem Gedächtnis-Snapshot + Chat-Zeitpunkt aus einen neuen Branch („Was wäre, wenn ich mich damals anders entschieden hätte?“) mit eigenem Gedächtnisstand.
-
-### 🎬 Visual-Novel-, Light-Novel- & Hörbuch-Export („Verewige deine Geschichte“)
-- [ ] **Illustrierter Buch- & Webtoon-Export:** Verwandelt einen gespielten Story-Akt aus der Stage oder einen Chat-Verlauf auf Knopfdruck in ein flüssig geschriebenes Light-Novel-Kapitel (PDF/EPUB/HTML-Replay) oder einen Webtoon-Strip – inklusive eingebetteter Szenenbilder und passender Emotionsporträts.
-- [ ] **Hörbuch-Kapitel-Export:** Fügt die generierten Sprachdateien (Erzählerstimme + Charakterstimmen) eines Kapitels automatisch zu einer durchgängigen Audiodatei zusammen.
-
-### 🎭 „Puppenspieler & Regisseur“: Dynamische Musik-Dramaturgie & Kartenbau für die Stage
-- [ ] **Musik der Geschichten erzeugen (ACE-Step 1.5):** Schema `otakusoul_music`, Set-Ordner und Download aus `otakusoul-data` stehen (2.11.2026, `docs/stage_music.md`; Starter-Geschichten und Gruft-Abenteuer haben Captions, noch keine Titel). (2) CI-Builds: `.github/workflows/acestep.yml` (2.11.2026, Release `acestep-<kurz>`, nie „Latest“). (3) Laufzeit, Modellstufen und Erzeugung im Musik-Fenster (2.11.2026, `music_gen.rs`; noch nicht mit echter GPU getestet). (4) Musik-Schritt im Story-Assistenten mit Genre-Vorlagen und Vorschlag vom Chatmodell (2.11.2026, `storyMusicDraft.ts`). Offen: die Titel der Starter-Geschichten erzeugen und unter `otakusoul-data/music/<set>/` ausliefern.
-  - Prüfstand 02.11.2026 (RTX 5090 Laptop, 24 GB): `npm run check` (744 TS-, 795 Rust-Tests) und `types:gen` grün. Release
-    `acestep-6013134` ist veröffentlicht (7 Archive + `SHA256SUMS.txt`, nicht Latest). Die Laufzeit-Auswahl empfiehlt
-    „CUDA 12.8 (NVIDIA) · 649 MB“ – `pick_backend` stimmt. Der Musik-Dialog zeigt den Plan der Geschichte (5 Stimmungen,
-    „Mit ACE-Step erzeugen (6 fehlen)“); empfohlen ist dort XL (7,8 GB, ~12 GB VRAM).
-  - Gefunden und behoben: Eine vor der Musikfunktion begonnene Geschichte behielt ihre gespeicherte Definition ohne
-    `otakusoul_music`; auch „Von vorn beginnen“ holte sie nicht nach. `reset_stage_scene` übernimmt jetzt fehlende
-    `extensions`-Schlüssel aus dem mitgelieferten Preset (Test `a_restart_adopts_music_…`).
-  - Lokal nur: Vitest 5 hält einen Modul-Cache (`node_modules/.vitest-cache`); nach neuen Rust-Dateien meldet
-    `commandCheck` sonst fälschlich fehlende Befehle → `npx vitest --clearCache`.
-  - **Noch offen (wegen langsamer Leitung verschoben):** Laufzeit-Installation abschließen (238 von 649 MB lagen
-    in `runtimes/acestep/.downloads`), Modell „Standard“ und danach „XL“ laden, „Fehlende Titel erzeugen“, Dauer pro
-    Titel, VRAM-Höchstwert, Rückkehr des Chat-Modells, Abbrechen mitten im Titel, Klang (Elfengesang bei `mystery`),
-    Überblenden in der Stage.
-- [ ] **1-Klick-Battlemap-Generierung aus Text:** Wenn der Spielleiter einen neuen Ort improvisiert, erzeugt `stable-diffusion.cpp` eine Top-Down-Karte, aus deren Helligkeits-/Strukturwerten automatisch Wände, Hindernisse und Sichtlinien für die 5e-Engine abgeleitet werden.
-
-### 💌 Tagebuch-Synchronisation & Cozy-Lebensbegleiter (Real-Life Companion)
-- [ ] **Cozy Focus- & Pomodoro-Modus:** Fokus-Timer (inspiriert von *Spirit City: Lofi Sessions*), bei dem der 3D/2D-Avatar am Schreibtisch mitarbeitet, liest oder Musik hört, Pausen ankündigt und erledigte Aufgaben feiert.
-- [ ] **Abend-Reflexion & Monatsrückblick:** Optionaler Journaling-Modus, in dem die Figur den Tag mit dem Nutzer reflektiert, Gewohnheiten (`habits` / `plans`) spielerisch begleitet und am Monatsende einen persönlichen Rückblick verfasst.
-
-### 🎙️ Echtzeit-Sprachdialog, Berührung & Visuelle Wahrnehmung (Ideen aus *Open-LLM-VTuber*)
-- [ ] **Silero-VAD für Sprachanruf und Unterbrechen:** Silero-VAD (ONNX/WASM) statt reinem RMS-Pegel (`voiceCapture.ts`), damit Tastaturklappern, Atemgeräusche und die eigene Stimme der Figur aus Lautsprechern nicht als Sprache zählen. Das Unterbrechen selbst ist erledigt (25.10.2026); bis dahin gilt dort die 2,5-fache Schwelle für 300 ms.
-- [ ] **Visuelle Wahrnehmung („Mitguck-Modus“ für Bildschirm & Webcam):** Optionaler Live-Blick bei Sprachanrufen oder für das Desktop-Pet, der bei Vision-fähigen Modellen einen heruntergerechneten Snapshot des aktiven Fensters oder der Webcam mitschickt, damit die Figur auf das aktuelle Geschehen reagieren kann.
-- [ ] **Körperzonen-abhängige Touch-Reaktionen im Hauptfenster:** Im Desktop-Pet erledigt (Kopf/Körper, Hormone
-  `headpat`/`poke`, 26.10.2026); offen für den Avatar im Chat: Live2D (`hitTest` auf `Head`, `Face`, `Body`) und 3D per
-  Raycasting, mit denselben Reaktionen.
-- [ ] **OBS- / Streaming-Overlay-Modus:** Die transparente Pet-Ansicht (`index.html?pet=true`, `DesktopPet.tsx`) über den
-  eingebauten Web-Server (`web_server.rs`) als Browser-Source für OBS anbieten – ohne Tauri-Fensteraufrufe, Zustand
-  per WebSocket statt Tauri-Events.
-
-
+**Pflichten aus den Entwicklerbedingungen** (<https://policies.pixiv.net/en.html#vroidhubdeveloper>, gelesen 01.11.2026):
+- Nur der angemeldete Nutzer, dem VRoid Hub das Modell freigibt, darf es benutzen (Art. 4 Abs. 2 Nr. 1).
+- Die App muss den hinterlegten App-Einstellungen entsprechen und die API nur für den angegebenen Zweck nutzen
+  (Art. 4 Abs. 2 Nr. 2, Abs. 3). Ändert sich etwas, zuerst die Einstellungen bei VRoid anpassen.
+- Modelldaten nicht außerhalb der App nutzen, keine Funktion zum Teilen mit Dritten; Bilder und Texte von VRoid Hub
+  (Icons, Nutzernamen) nur in der App (Art. 6 Nr. 8, 9).
+- Keine Nutzung für obszöne Inhalte (Art. 6 Nr. 10); Werk und Ansehen der Urheber wahren (Art. 4 Abs. 2 Nr. 3).
+- Nichts bauen, was VRoid Hub nachbildet (Art. 6 Nr. 2): VRoid-Modelle nicht in den eigenen Hub oder die
+  Avatar-Registry aufnehmen (betrifft auch B4).
+- Fertige App bei pixiv melden (Art. 7, siehe A1); immer die aktuelle API-Version nutzen (Art. 9).
