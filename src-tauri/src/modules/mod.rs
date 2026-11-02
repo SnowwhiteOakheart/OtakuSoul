@@ -43,6 +43,7 @@ pub mod model_catalog;
 pub mod model_files;
 pub mod models_hub;
 pub mod motion_packs;
+pub mod music_gen;
 pub mod nsfw;
 pub mod ooc;
 pub mod openrouter_auth;

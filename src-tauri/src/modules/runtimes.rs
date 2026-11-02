@@ -1,6 +1,6 @@
 //! Downloads prebuilt server runtimes from GitHub: official llama.cpp, the PrismML llama.cpp
 //! fork (needed for Ternary Bonsai's PQ2_0/PTQ1_0 files), stable-diffusion.cpp for local
-//! image generation and CrispASR for local speech synthesis.
+//! image generation, CrispASR for local speech synthesis and acestep.cpp for music.
 //!
 //! llama.cpp follows its latest *stable* release (e.g. `v0.5.0`), which points to the build it
 //! was cut from through its `nightly-tag.txt` asset; the other two use their latest release.
@@ -28,14 +28,21 @@ pub enum RuntimeKind {
     Sd,
     /// CrispASR (ggml speech engine) with its `--server` mode for text-to-speech.
     Crisp,
+    /// acestep.cpp (`ace-server`) for music with ACE-Step 1.5. It has no releases of its own: the
+    /// app's repository builds it (`.github/workflows/acestep.yml`) under a fixed tag.
+    Ace,
 }
 
+/// Release of this repository with the acestep.cpp builds (never "latest", that is the app).
+pub const ACESTEP_RELEASE: &str = "acestep-6013134";
+
 impl RuntimeKind {
-    const ALL: [RuntimeKind; 4] = [
+    const ALL: [RuntimeKind; 5] = [
         RuntimeKind::Llama,
         RuntimeKind::Prism,
         RuntimeKind::Sd,
         RuntimeKind::Crisp,
+        RuntimeKind::Ace,
     ];
 
     fn repo(self) -> &'static str {
@@ -44,6 +51,7 @@ impl RuntimeKind {
             Self::Prism => "PrismML-Eng/llama.cpp",
             Self::Sd => "leejet/stable-diffusion.cpp",
             Self::Crisp => "CrispStrobe/CrispASR",
+            Self::Ace => "SnowwhiteOakheart/OtakuSoul",
         }
     }
 
@@ -53,6 +61,7 @@ impl RuntimeKind {
             Self::Prism => "prism",
             Self::Sd => "sd.cpp",
             Self::Crisp => "crispasr",
+            Self::Ace => "acestep",
         }
     }
 
@@ -62,6 +71,8 @@ impl RuntimeKind {
             (Self::Sd, false) => "sd-server",
             (Self::Crisp, true) => "crispasr.exe",
             (Self::Crisp, false) => "crispasr",
+            (Self::Ace, true) => "ace-server.exe",
+            (Self::Ace, false) => "ace-server",
             (_, true) => "llama-server.exe",
             (_, false) => "llama-server",
         }
@@ -313,6 +324,19 @@ fn backend_of(kind: RuntimeKind, name: &str, build: &str, platform: Platform) ->
                 _ => return None,
             }
         }
+        RuntimeKind::Ace => {
+            // acestep-6013134-linux-vulkan-x64.tar.gz, acestep-6013134-win-cuda-12.8-x64.zip,
+            // acestep-6013134-macos-metal-arm64.tar.gz (`build` is the release tag).
+            let (os, ext) = match platform.os {
+                Os::Linux => ("linux", ".tar.gz"),
+                Os::Windows => ("win", ".zip"),
+                Os::Mac => ("macos", ".tar.gz"),
+            };
+            let arch = if platform.arm64 { "arm64" } else { "x64" };
+            name.strip_prefix(&format!("{build}-{os}-"))?
+                .strip_suffix(&format!("-{arch}{ext}"))?
+                .to_string()
+        }
         RuntimeKind::Sd => {
             if !name.starts_with("sd-") || !name.ends_with(".zip") {
                 return None;
@@ -361,8 +385,8 @@ fn cudart_asset<'a>(
             version.replace('.', "")
         )],
         (RuntimeKind::Sd, _) => return None,
-        // CrispASR's CUDA archives are self-contained.
-        (RuntimeKind::Crisp, _) => return None,
+        // CrispASR's and the acestep.cpp CUDA archives are self-contained.
+        (RuntimeKind::Crisp | RuntimeKind::Ace, _) => return None,
         (_, os) => {
             let (os, ext) = match os {
                 Os::Windows => ("win", ".zip"),
@@ -437,6 +461,9 @@ async fn build_release(client: &reqwest::Client, kind: RuntimeKind) -> Result<Re
         }
         RuntimeKind::Prism | RuntimeKind::Sd | RuntimeKind::Crisp => {
             fetch_release(client, format!("{}/latest", kind.api())).await
+        }
+        RuntimeKind::Ace => {
+            fetch_release(client, format!("{}/tags/{ACESTEP_RELEASE}", kind.api())).await
         }
     }
 }
@@ -1154,6 +1181,33 @@ mod tests {
         assert_eq!(version_of("12.0"), Some((12, 0)));
         assert_eq!(cuda_version("cuda-13"), Some((13, 0)));
         assert_eq!(cuda_version("vulkan"), None);
+    }
+
+    #[test]
+    fn recognizes_acestep_builds() {
+        let of =
+            |name: &str, platform| backend_of(RuntimeKind::Ace, name, ACESTEP_RELEASE, platform);
+        assert_eq!(
+            of("acestep-6013134-linux-vulkan-x64.tar.gz", LINUX).as_deref(),
+            Some("vulkan")
+        );
+        assert_eq!(
+            of("acestep-6013134-linux-cuda-12.8-x64.tar.gz", LINUX).as_deref(),
+            Some("cuda-12.8")
+        );
+        assert_eq!(
+            of("acestep-6013134-win-cpu-x64.zip", WINDOWS).as_deref(),
+            Some("cpu")
+        );
+        assert_eq!(
+            of("acestep-6013134-macos-metal-arm64.tar.gz", MAC).as_deref(),
+            Some("metal")
+        );
+        // Other systems' archives, the checksum list and other builds are not offered.
+        assert_eq!(of("acestep-6013134-win-cpu-x64.zip", LINUX), None);
+        assert_eq!(of("SHA256SUMS.txt", LINUX), None);
+        assert_eq!(of("acestep-1234567-linux-cpu-x64.tar.gz", LINUX), None);
+        assert_eq!(of("acestep-6013134-linux-sycl-x64.tar.gz", LINUX), None);
     }
 
     #[test]

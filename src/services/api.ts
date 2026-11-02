@@ -103,6 +103,9 @@ import {
   MusicPackInfo,
   StageMusicTrack,
   SceneMusicPlan,
+  MusicModelInfo,
+  MusicModelProgress,
+  MusicGenProgress,
   Inochi2dMapping,
   AvatarKind,
   EmotionResult,
@@ -561,6 +564,40 @@ export const api = {
   /** The music a scene asks for (moods, captions, vocals) and what is downloaded of it. */
   getSceneMusicPlan: async (definition: SceneDefinition): Promise<SceneMusicPlan> => {
     return await invoke<SceneMusicPlan>('get_scene_music_plan', { definition });
+  },
+
+  /** ACE-Step model sets for music generation with their download state. */
+  listMusicModels: async (): Promise<MusicModelInfo[]> => {
+    return await invoke<MusicModelInfo[]>('list_music_models');
+  },
+
+  downloadMusicModel: async (modelId: string): Promise<void> => {
+    return await invoke<void>('download_music_model', { modelId });
+  },
+
+  cancelMusicModelDownload: async (): Promise<void> => {
+    return await invoke<void>('cancel_music_model_download');
+  },
+
+  deleteMusicModel: async (modelId: string): Promise<void> => {
+    return await invoke<void>('delete_music_model', { modelId });
+  },
+
+  onMusicModelProgress: async (callback: (data: MusicModelProgress) => void): Promise<UnlistenFn> => {
+    return await listen<MusicModelProgress>('music-model-progress', (event) => callback(event.payload));
+  },
+
+  /** Generates the missing tracks of the scene's music plan (`moods`: only these); returns how many. */
+  generateSceneMusic: async (definition: SceneDefinition, modelId: string, moods?: string[]): Promise<number> => {
+    return await invoke<number>('generate_scene_music', { definition, modelId, moods: moods ?? null });
+  },
+
+  cancelMusicGeneration: async (): Promise<void> => {
+    return await invoke<void>('cancel_music_generation');
+  },
+
+  onMusicGenProgress: async (callback: (data: MusicGenProgress) => void): Promise<UnlistenFn> => {
+    return await listen<MusicGenProgress>('music-gen-progress', (event) => callback(event.payload));
   },
 
   /** Downloads the tracks `otakusoul-data` ships for the scene's story; returns how many. */

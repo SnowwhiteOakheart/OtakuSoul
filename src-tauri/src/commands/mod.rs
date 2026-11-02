@@ -11,5 +11,6 @@ pub mod hub;
 pub mod llm;
 pub mod lorebook;
 pub mod memory;
+pub mod music;
 pub mod stage;
 pub mod voice;

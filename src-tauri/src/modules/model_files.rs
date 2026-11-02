@@ -81,6 +81,19 @@ pub async fn download_file_as(
     download_from(client, &file.url(), file, target, cancel, emit).await
 }
 
+/// [`download_file_as`] from another address than `main` of the repository, e.g. a pinned
+/// revision (`…/resolve/<commit>/…`), so the checksum keeps matching when the repository moves on.
+pub async fn download_file_from(
+    client: &reqwest::Client,
+    url: &str,
+    file: &RemoteFile,
+    target: &Path,
+    cancel: &AtomicBool,
+    emit: &(impl Fn(u64) + Sync),
+) -> Result<(), String> {
+    download_from(client, url, file, target, cancel, emit).await
+}
+
 /// How often a dropped connection is resumed in a row before a download gives up.
 pub(crate) const MAX_RESUMES: u32 = 8;
 

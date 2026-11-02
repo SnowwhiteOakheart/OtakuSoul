@@ -264,7 +264,18 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Inhalt `ace-server`/`ace-lm`/`ace-synth`/`ace-understand`/`mp3-codec`, ggml-Bibliotheken daneben (Linux/Windows: Backends
   ladbar, alle CPU-Varianten, `$ORIGIN`; macOS: `@loader_path`, Metal eingebettet), Windows-CUDA mit cudart/cuBLAS. CUDA-Architekturen werden fest gesetzt (`CUDA_ARCHS`, ohne `121a`: acestep.cpp
   nimmt sie ab CUDA 12.8 auf, nvcc kennt sie erst ab 12.9); die Liste nie direkt in `flags`, das `;` trennt Shell-Befehle. Die
-  Laufzeitverwaltung soll das Release fest per Tag ansprechen (nicht `/latest`).
+  Laufzeitverwaltung spricht das Release fest per Tag an (`RuntimeKind::Ace`, `runtimes::ACESTEP_RELEASE`, nicht `/latest`).
+- Musikerzeugung (`modules/music_gen.rs`, Oberfläche `stage/StoryMusicGenerator.tsx` im Musik-Fenster): `ace-server` auf Port
+  48598 mit `--models <Daten>/music-models`. Modellstufen `standard` (2B + LM 0.6B), `quality` (2B + LM 1.7B), `xl` (XL 4B +
+  LM 1.7B) aus `Serveurperso/ACE-Step-1.5-GGUF` an fester Revision (`HF_REVISION`, Größe + SHA-256 aus dem Katalog von
+  music-generator-desktop; geladen über `model_files::download_file_from`, fertig = Datei existiert). Je Titel `/lm` (Caption
+  und Lyrics wörtlich, `use_cot_caption: false`, `vocal_language` als Sprachname) und `/synth` (Audio-Codes auf Dauer × 5
+  gekürzt, MP3 192 kbit/s, `peak_clip: 0` gegen Knacken); Jobs per `/job?id=…` gepollt, Ergebnis `multipart/mixed`
+  (`extract_audio`). Grafikspeicher wie bei Bildern über `local_image::plan` (Strategie Auto): sd-server geht immer, das
+  Chat-Modell bei Bedarf und startet danach neu. Erzeugt werden nur fehlende Titel (`installed..count` je Stimmung) als
+  `<stimmung>_NN.mp3` plus Herkunfts-JSON; Fortschritt `music-gen-progress`, Abbruch über `cancel_music_generation`.
+  Prüfen ohne ONNX-Download: `ORT_SKIP_DOWNLOAD=1 cargo clippy`; Tests linken gegen eine `libonnxruntime.so`
+  (`ORT_LIB_LOCATION` + `ORT_PREFER_DYNAMIC_LINK=1`).
 - Vision-Dateien der Startmodelle: Katalogeintrag `mmproj` (Datei, Größe, SHA-256, gleiches Repo; geprüft in `usable`).
   Gespeichert als `<Modelldatei ohne .gguf>-mmproj-F16.gguf` (`CatalogModel::mmproj_target`), weil Repos dieselben Namen
   nutzen; der Scan erkennt sie am „mmproj“. `StarterModel.mmproj`/`mmproj_installed`; Assistent lädt sie standardmäßig mit

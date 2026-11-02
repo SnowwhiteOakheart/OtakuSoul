@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Check, Download, FolderOpen, Loader2, Mic, Music, RefreshCw } from 'lucide-react';
+import { Check, Download, FolderOpen, Loader2, Mic, Music, RefreshCw, Wand2 } from 'lucide-react';
+import { StoryMusicGenerator, missingTracks } from './StoryMusicGenerator';
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { Toggle } from '../ui/Toggle';
 import { Slider } from '../ui/Slider';
@@ -40,6 +41,7 @@ export const StageMusicModal = ({ onClose, enabled, onEnabledChange, wanted, moo
   // The story's own music: what it asks for and what of it is downloaded.
   const [plan, setPlan] = useState<SceneMusicPlan | null>(null);
   const [fetchingStory, setFetchingStory] = useState(false);
+  const [showGenerator, setShowGenerator] = useState(false);
   const loadPlan = () =>
     definition
       ? api.getSceneMusicPlan(definition).then((p) => setPlan(p ?? null)).catch(() => setPlan(null))
@@ -159,6 +161,27 @@ export const StageMusicModal = ({ onClose, enabled, onEnabledChange, wanted, moo
               </ul>
             )}
             {plan.moods.some((m) => m.installed === 0) && <p className="text-xs text-slate-500">{t('stageMusic.storyMissing')}</p>}
+            {definition && plan.moods.length > 0 && !showGenerator && (
+              <button
+                type="button"
+                data-testid="music-generator-open"
+                onClick={() => setShowGenerator(true)}
+                className="flex items-center gap-1.5 rounded-xl bg-slate-800 px-3 py-1.5 text-xs font-semibold hover:bg-slate-700"
+              >
+                <Wand2 className="w-3.5 h-3.5 text-accent-300" />
+                {missingTracks(plan) > 0 ? t('musicGen.open', { count: missingTracks(plan) }) : t('musicGen.openAgain')}
+              </button>
+            )}
+            {definition && showGenerator && (
+              <StoryMusicGenerator
+                definition={definition}
+                plan={plan}
+                onGenerated={async () => {
+                  await onReload();
+                  await loadPlan();
+                }}
+              />
+            )}
           </section>
         )}
 

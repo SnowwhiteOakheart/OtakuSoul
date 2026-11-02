@@ -94,6 +94,9 @@ import type { PlannedMood } from './generated/PlannedMood';
 import type { StoryMusic } from './generated/StoryMusic';
 import type { MoodMusic } from './generated/MoodMusic';
 import type { MusicAsset } from './generated/MusicAsset';
+import type { MusicModelInfo } from './generated/MusicModelInfo';
+import type { MusicModelProgress } from './generated/MusicModelProgress';
+import type { MusicGenProgress } from './generated/MusicGenProgress';
 import type { ScannedInochi2d } from './generated/ScannedInochi2d';
 import type { Inochi2dMapping } from './generated/Inochi2dMapping';
 import type { Inochi2dChannel } from './generated/Inochi2dChannel';
@@ -238,6 +241,9 @@ export type {
   StoryMusic,
   MoodMusic,
   MusicAsset,
+  MusicModelInfo,
+  MusicModelProgress,
+  MusicGenProgress,
   ScannedInochi2d,
   Inochi2dMapping,
   Inochi2dChannel,
