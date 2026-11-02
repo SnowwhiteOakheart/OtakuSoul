@@ -132,7 +132,7 @@ jobs:
             cuda-*) test -f "$ASSET/libggml-cuda.so" ;;
           esac
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ env.ASSET }}
           path: ${{ env.ASSET }}.tar.gz
@@ -168,10 +168,22 @@ jobs:
       - name: Ninja
         run: choco install ninja -y --no-progress
 
+      # The x64 developer environment of the newest Visual Studio, for the following steps
+      # (instead of ilammy/msvc-dev-cmd, which still runs on the retired Node 20).
       - name: MSVC
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x64
+        shell: pwsh
+        run: |
+          $vs = & "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe" -latest -products * `
+            -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vs) { throw 'Visual Studio mit C++-Werkzeugen nicht gefunden' }
+          $vars = cmd /c "`"$vs\VC\Auxiliary\Build\vcvars64.bat`" >nul && set"
+          if ($LASTEXITCODE) { throw 'vcvars64.bat fehlgeschlagen' }
+          # Only what vcvars changes (PATH, INCLUDE, LIB …): GitHub refuses some variables such as NODE_OPTIONS.
+          foreach ($line in $vars) {
+            if ($line -match '^([^=]+)=(.*)$' -and [Environment]::GetEnvironmentVariable($Matches[1]) -ne $Matches[2]) {
+              "$($Matches[1])=$($Matches[2])" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+            }
+          }
 
       - name: Vulkan-SDK
         if: matrix.backend == 'vulkan'
@@ -183,7 +195,7 @@ jobs:
 
       - name: CUDA-Toolkit
         if: startsWith(matrix.backend, 'cuda')
-        uses: Jimver/cuda-toolkit@v0.2.21
+        uses: Jimver/cuda-toolkit@v0.2.36
         with:
           cuda: '12.8.0'
           method: network
@@ -248,7 +260,7 @@ jobs:
           }
           $global:LASTEXITCODE = 0
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ env.ASSET }}
           path: ${{ env.ASSET }}.zip
@@ -307,7 +319,7 @@ jobs:
           "$ASSET/ace-server" 2>&1 | tee usage.txt || true
           grep -q "acestep.cpp ${ACESTEP_REV:0:7}" usage.txt
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ env.ASSET }}
           path: ${{ env.ASSET }}.tar.gz
@@ -324,7 +336,7 @@ jobs:
       TAG: acestep-${{ needs.prepare.outputs.short }}
       GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: dist
           merge-multiple: true
