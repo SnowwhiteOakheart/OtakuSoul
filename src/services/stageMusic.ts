@@ -1,5 +1,6 @@
 import { convertFileSrc } from '@tauri-apps/api/core';
 import type { SceneDefinition, SceneState, StageMusicTrack } from '../types';
+import { AudioFader } from './audioFade';
 
 /** Moods the Stage plays music for; also the folder names under `<data>/music/` (Rust `stage_music::MOODS`). */
 export const MUSIC_MOODS = ['calm', 'tavern', 'adventure', 'tension', 'mystery', 'combat', 'boss', 'romance', 'sorrow'] as const;
@@ -80,7 +81,6 @@ export function pickTrack(
 /** Cross-fade length when the mood changes; a new track of the same mood fades in faster. */
 const MOOD_FADE_MS = 3000;
 const TRACK_FADE_MS = 1500;
-const FADE_STEP_MS = 50;
 
 const VOLUME_KEY = 'otakusoul.stageMusicVolume';
 const DEFAULT_VOLUME = 0.4;
@@ -116,7 +116,7 @@ export class StageMusicPlayer {
   private current: Playing | null = null;
   private tracks: StageMusicTrack[] = [];
   private volume = loadMusicVolume();
-  private fades = new Map<HTMLAudioElement, ReturnType<typeof setInterval>>();
+  private fader = new AudioFader();
 
   constructor(private readonly createAudio: (src: string) => HTMLAudioElement = (src) => new Audio(src)) {}
 
@@ -138,15 +138,15 @@ export class StageMusicPlayer {
 
   stop() {
     if (!this.current) return;
-    this.fadeOut(this.current.audio, MOOD_FADE_MS);
+    this.fader.fadeOut(this.current.audio, MOOD_FADE_MS);
     this.current = null;
   }
 
   setVolume(volume: number) {
     this.volume = Math.min(1, Math.max(0, volume));
     saveMusicVolume(this.volume);
-    if (this.current && !this.fades.has(this.current.audio)) this.current.audio.volume = this.volume;
-    else if (this.current) this.fadeTo(this.current.audio, this.volume, TRACK_FADE_MS);
+    if (this.current && !this.fader.isFading(this.current.audio)) this.current.audio.volume = this.volume;
+    else if (this.current) this.fader.fadeTo(this.current.audio, this.volume, TRACK_FADE_MS);
   }
 
   getVolume() {
@@ -156,7 +156,7 @@ export class StageMusicPlayer {
   private start(mood: MusicMood, fadeMs: number) {
     const track = pickTrack(this.tracks, mood, this.current?.path ?? null);
     if (!track) return this.stop();
-    if (this.current) this.fadeOut(this.current.audio, fadeMs);
+    if (this.current) this.fader.fadeOut(this.current.audio, fadeMs);
     const audio = this.createAudio(convertFileSrc(track.path));
     audio.volume = 0;
     audio.loop = false;
@@ -171,32 +171,7 @@ export class StageMusicPlayer {
     });
     this.current = playing;
     void audio.play().catch((error: unknown) => console.warn('Stage music playback failed:', error));
-    this.fadeTo(audio, this.volume, fadeMs);
-  }
-
-  private fadeOut(audio: HTMLAudioElement, ms: number) {
-    this.fadeTo(audio, 0, ms, () => {
-      audio.pause();
-      audio.removeAttribute('src');
-    });
-  }
-
-  private fadeTo(audio: HTMLAudioElement, target: number, ms: number, done?: () => void) {
-    const running = this.fades.get(audio);
-    if (running) clearInterval(running);
-    const from = audio.volume;
-    const steps = Math.max(1, Math.round(ms / FADE_STEP_MS));
-    let step = 0;
-    const timer = setInterval(() => {
-      step += 1;
-      audio.volume = Math.min(1, Math.max(0, from + ((target - from) * step) / steps));
-      if (step >= steps) {
-        clearInterval(timer);
-        this.fades.delete(audio);
-        done?.();
-      }
-    }, FADE_STEP_MS);
-    this.fades.set(audio, timer);
+    this.fader.fadeTo(audio, this.volume, fadeMs);
   }
 }
 
