@@ -34,4 +34,4 @@ count: number | null,
 /**
  * Fixed seed so a good result can be made again.
  */
-seed: bigint | null, };
+seed: number | null, };

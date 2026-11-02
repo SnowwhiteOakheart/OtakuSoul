@@ -19,4 +19,4 @@ nsfw: boolean,
 /**
  * Origin, written next to the file: what made it and with which input.
  */
-generator: string, model: string, caption: string, lyrics: string, seed: bigint | null, generated: string, license: string, };
+generator: string, model: string, caption: string, lyrics: string, seed: number | null, generated: string, license: string, };

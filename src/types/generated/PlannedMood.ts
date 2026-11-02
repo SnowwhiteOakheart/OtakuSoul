@@ -3,7 +3,7 @@
 /**
  * One mood as a generator gets it: the complete caption and lyrics.
  */
-export type PlannedMood = { mood: string, caption: string, lyrics: string, vocal_language: string, has_vocals: boolean, bpm: number | null, keyscale: string, duration: number, count: number, seed: bigint | null, 
+export type PlannedMood = { mood: string, caption: string, lyrics: string, vocal_language: string, has_vocals: boolean, bpm: number | null, keyscale: string, duration: number, count: number, seed: number | null, 
 /**
  * Finished tracks of this mood in the set folder.
  */
