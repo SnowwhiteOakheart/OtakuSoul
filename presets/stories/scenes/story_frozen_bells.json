@@ -135,6 +135,41 @@
      }
     ]
    }
+  },
+  "otakusoul_music": {
+   "set": "frozen_bells",
+   "style": "fairytale celtic folk, harp, fiddle, wooden flute, glockenspiel, warm and wintry, cinematic",
+   "moods": {
+    "calm": {
+     "caption": "gentle harp and flute, snowy mountain village at dusk, slow tempo",
+     "bpm": 72,
+     "duration": 150,
+     "count": 2
+    },
+    "adventure": {
+     "caption": "lilting fiddle melody, frame drum, hopeful journey through a snowy forest",
+     "bpm": 118,
+     "duration": 120
+    },
+    "mystery": {
+     "caption": "celesta and distant frozen bells, soft wordless female choir far away, airy, eerie shimmer, sparse",
+     "lyrics": "[Intro]\n[Verse]\nooh, aah\nooh, aah\n[Outro]",
+     "vocal_language": "en",
+     "bpm": 66,
+     "duration": 120
+    },
+    "tension": {
+     "caption": "low pulsing strings, ticking glockenspiel, rising unease",
+     "bpm": 104,
+     "duration": 100
+    },
+    "sorrow": {
+     "caption": "solo cello and harp, quiet grief, very slow",
+     "bpm": 60,
+     "duration": 110
+    }
+   },
+   "tracks": []
   }
  }
 }

@@ -133,6 +133,29 @@
      }
     ]
    }
+  },
+  "otakusoul_music": {
+   "set": "missing_mic",
+   "style": "cozy mystery, lo-fi hip hop, jazzy electric piano, soft chiptune accents",
+   "moods": {
+    "calm": {
+     "caption": "mellow lo-fi beat, warm vinyl crackle, after-school computer room",
+     "bpm": 84,
+     "duration": 150,
+     "count": 2
+    },
+    "mystery": {
+     "caption": "walking upright bass, brushed drums, sneaky detective jazz",
+     "bpm": 100,
+     "duration": 120
+    },
+    "tension": {
+     "caption": "ticking clock, pulsing synth bass, chiptune arpeggio, rising pressure",
+     "bpm": 118,
+     "duration": 100
+    }
+   },
+   "tracks": []
   }
  }
 }

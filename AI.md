@@ -484,6 +484,13 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   der Schalter (`otakusoul.stageMusic`, Lautstärke `otakusoul.stageMusicVolume`) stoppen sie. Pakete: `music_registry.json`
   (mitgeliefert leer, Hub-Kopie nur bei höherer `version`), Titel per Quelle + SHA-256, nach dem Download
   `<Daten>/music/<paket>-lizenz.txt`.
+- Musik der Geschichten (`modules/story_music.rs`, Doku `docs/stage_music.md`): `extensions.otakusoul_music` an Szenen
+  (`set`, `style`, `moods.<stimmung>` mit ACE-Step-`caption`, optional `lyrics`/`vocal_language` für Gesang, `tracks` mit
+  Pfad im Daten-Repo + SHA-256), Lorebooks (`style`, vererbt) und Karten (`theme`, Leitmotiv der Gruppe). Ein Set pro
+  Geschichte, fester Ort `<Daten>/music/sets/<set>/<stimmung>/` (nie Pfade im JSON); der Player nimmt Set-Titel vor dem Pool
+  (`moodTracks`). `ensure_scene_music` lädt beim Öffnen fehlende Titel aus `otakusoul-data` (nur `music/`/`presets/`,
+  `nsfw` nur mit Freigabe) und schreibt `<datei>.json` mit der Herkunft. `plan_for_scene` setzt Caption = Stil + Stimmung
+  + Leitmotive zusammen (für den späteren ACE-Step-Generator; Gesang braucht dessen 5Hz-LM).
 - Stage streamt über `stage-stream` (`InferenceClient::stream_text`), nicht über `llm-token` (das hört der Chat).
   `stage/history.rs` passt alle Sprecher-Anfragen ins Kontextfenster ein und speichert Zusammenfassungen getrennt
   nach Publikum (`history_summaries`); Änderungen am Verlauf müssen diese verwerfen.

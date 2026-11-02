@@ -133,6 +133,34 @@
      }
     ]
    }
+  },
+  "otakusoul_music": {
+   "set": "hanami_live",
+   "style": "bright j-pop school festival, acoustic guitar, glockenspiel, light drums, playful",
+   "moods": {
+    "calm": {
+     "caption": "relaxed acoustic guitar and piano, sunny afternoon under cherry blossoms",
+     "bpm": 92,
+     "duration": 150,
+     "count": 2
+    },
+    "adventure": {
+     "caption": "upbeat brass and handclaps, busy festival rush, cheerful",
+     "bpm": 128,
+     "duration": 110
+    },
+    "tension": {
+     "caption": "comic suspense, pizzicato strings, ticking woodblock, sneaky",
+     "bpm": 112,
+     "duration": 90
+    },
+    "romance": {
+     "caption": "tender piano and soft strings, shy warm feeling",
+     "bpm": 78,
+     "duration": 120
+    }
+   },
+   "tracks": []
   }
  }
 }

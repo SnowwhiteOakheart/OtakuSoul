@@ -132,6 +132,34 @@
      }
     ]
    }
+  },
+  "otakusoul_music": {
+   "set": "silent_station",
+   "style": "dark ambient science fiction, analog synth pads, deep drones, cinematic",
+   "moods": {
+    "calm": {
+     "caption": "slow evolving pads, lonely research station, soft hum of machines",
+     "bpm": 60,
+     "duration": 180,
+     "count": 2
+    },
+    "mystery": {
+     "caption": "glitching synth textures, sonar pings, distant metallic echoes, eerie",
+     "bpm": 70,
+     "duration": 120
+    },
+    "tension": {
+     "caption": "pulsing low synth, metallic percussion, rising dread",
+     "bpm": 100,
+     "duration": 100
+    },
+    "sorrow": {
+     "caption": "melancholic synth piano, isolation in deep space, very slow",
+     "bpm": 58,
+     "duration": 120
+    }
+   },
+   "tracks": []
   }
  }
 }

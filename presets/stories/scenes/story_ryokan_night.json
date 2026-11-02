@@ -135,6 +135,34 @@
      }
     ]
    }
+  },
+  "otakusoul_music": {
+   "set": "ryokan_night",
+   "style": "traditional japanese, koto, shakuhachi, soft taiko, cozy but eerie",
+   "moods": {
+    "calm": {
+     "caption": "warm koto and shakuhachi, quiet mountain inn, snow falling outside",
+     "bpm": 68,
+     "duration": 150,
+     "count": 2
+    },
+    "tavern": {
+     "caption": "gentle shamisen and koto, cozy evening meal, soft laughter in the next room",
+     "bpm": 88,
+     "duration": 120
+    },
+    "mystery": {
+     "caption": "sparse koto plucks, distant wind chimes, creaking wood, unsettling silence",
+     "bpm": 60,
+     "duration": 120
+    },
+    "tension": {
+     "caption": "low taiko heartbeat, dissonant shakuhachi, slowly rising suspense",
+     "bpm": 96,
+     "duration": 100
+    }
+   },
+   "tracks": []
   }
  }
 }

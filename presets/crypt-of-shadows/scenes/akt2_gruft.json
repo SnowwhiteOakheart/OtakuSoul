@@ -90,6 +90,47 @@
      "gm_tone": "壮大なファンタジー"
     }
    }
+  },
+  "otakusoul_music": {
+   "set": "crypt_of_shadows",
+   "style": "epic dark fantasy orchestral, low brass, strings, war drums",
+   "moods": {
+    "calm": {
+     "caption": "campfire lute and soft strings, resting party under the stars",
+     "bpm": 72,
+     "duration": 150
+    },
+    "adventure": {
+     "caption": "heroic strings and horns, journey along a forest road",
+     "bpm": 112,
+     "duration": 120,
+     "count": 2
+    },
+    "mystery": {
+     "caption": "ancient sanctuary, sparse echoing harp, low choir pad",
+     "bpm": 64,
+     "duration": 120
+    },
+    "tension": {
+     "caption": "low string tremolo, dark crypt, distant hollow percussion",
+     "bpm": 90,
+     "duration": 100
+    },
+    "combat": {
+     "caption": "driving war drums, staccato strings, brass hits, fast and fierce",
+     "bpm": 150,
+     "duration": 120,
+     "count": 2
+    },
+    "boss": {
+     "caption": "massive orchestra, dark male choir chanting, relentless war drums, climactic",
+     "lyrics": "[Intro]\n[Chorus]\nah, ah, oh\nah, ah, oh\n[Instrumental Break]\n[Chorus]\nah, ah, oh",
+     "vocal_language": "en",
+     "bpm": 160,
+     "duration": 150
+    }
+   },
+   "tracks": []
   }
  }
 }

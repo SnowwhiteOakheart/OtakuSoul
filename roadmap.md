@@ -187,7 +187,8 @@
 - [ ] **Hörbuch-Kapitel-Export:** Fügt die generierten Sprachdateien (Erzählerstimme + Charakterstimmen) eines Kapitels automatisch zu einer durchgängigen Audiodatei zusammen.
 
 ### 🎭 „Puppenspieler & Regisseur“: Dynamische Musik-Dramaturgie & Kartenbau für die Stage
-- [ ] **Musikpaket für die Stimmungsmusik:** Die Stimmungsmusik der Stage ist eingebaut (1.11.2026: Ordner je Stimmung, Planer + Kampf/Boss, Überblenden, Paket-Download). Offen: ein CC0-/CC-BY-Paket in `otakusoul-data/music_registry.json` eintragen (Quelle, SHA-256, `size_bytes`, Lizenz; mindestens calm, tavern, tension, combat, boss) und die Ambient-Loops ebenfalls weich überblenden.
+- [ ] **Musik der Geschichten erzeugen (ACE-Step 1.5):** Schema `otakusoul_music`, Set-Ordner und Download aus `otakusoul-data` stehen (2.11.2026, `docs/stage_music.md`; Starter-Geschichten und Gruft-Abenteuer haben Captions, noch keine Titel). Offen: (2) CI-Builds von acestep.cpp für Windows/Linux/macOS, (3) Laufzeit + Modelle (Turbo-/SFT-DiT, VAE, Text-Encoder, 5Hz-LM für Gesang) in der Modellverwaltung und Erzeugung im Hintergrund mit VRAM-Tausch wie bei sd.cpp, (4) Musik-Schritt im Story-Assistenten mit Caption-Vorschlägen durch das Chat-Modell. Dazu die Titel der Starter-Geschichten erzeugen und unter `otakusoul-data/music/<set>/` ausliefern.
+- [ ] **Ambient-Loops weich überblenden** wie die Stimmungsmusik.
 - [ ] **1-Klick-Battlemap-Generierung aus Text:** Wenn der Spielleiter einen neuen Ort improvisiert, erzeugt `stable-diffusion.cpp` eine Top-Down-Karte, aus deren Helligkeits-/Strukturwerten automatisch Wände, Hindernisse und Sichtlinien für die 5e-Engine abgeleitet werden.
 
 ### 💌 Tagebuch-Synchronisation & Cozy-Lebensbegleiter (Real-Life Companion)
