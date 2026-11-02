@@ -6,6 +6,7 @@ import { EncounterTracker } from './EncounterTracker';
 import { Combat5ePanel } from './Combat5ePanel';
 import { StageBoardView } from './StageBoardView';
 import { PartyHeader } from './PartyHeader';
+import { StageSpeakerBubble } from './StageSpeakerBubble';
 import { StageChatLog } from './StageChatLog';
 import { TurnControlBar } from './TurnControlBar';
 import { SceneLobbyModal, type LobbyRules } from './SceneLobbyModal';
@@ -608,8 +609,11 @@ export const StageView: React.FC = () => {
           {/* Party Header Bar with HP & Stress */}
           <PartyHeader />
 
-          {/* Interactive Chat Log */}
-          <StageChatLog />
+          {/* Interactive Chat Log; the speaker's current sentence floats over its end while the voice reads */}
+          <div className="relative flex-1 flex flex-col min-h-0">
+            <StageChatLog />
+            <StageSpeakerBubble />
+          </div>
 
           {/* 5e fight: order, actions and log (engine-driven) */}
           <Combat5ePanel />

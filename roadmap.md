@@ -212,8 +212,6 @@
 - [ ] **Körperzonen-abhängige Touch-Reaktionen im Hauptfenster:** Im Desktop-Pet erledigt (Kopf/Körper, Hormone
   `headpat`/`poke`, 26.10.2026); offen für den Avatar im Chat: Live2D (`hitTest` auf `Head`, `Face`, `Body`) und 3D per
   Raycasting, mit denselben Reaktionen.
-- [ ] **Satzweiser „Bubble-Sync“ in der Stage:** Im Desktop-Pet erledigt (`streamingTts.onSentence`, 26.10.2026); offen
-  für den Stage-Modus (Sprecher-Porträt zeigt den gerade gesprochenen Satz samt Ausdruck).
 - [ ] **OBS- / Streaming-Overlay-Modus:** Die transparente Pet-Ansicht (`index.html?pet=true`, `DesktopPet.tsx`) über den
   eingebauten Web-Server (`web_server.rs`) als Browser-Source für OBS anbieten – ohne Tauri-Fensteraufrufe, Zustand
   per WebSocket statt Tauri-Events.

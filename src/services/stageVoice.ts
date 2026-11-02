@@ -4,6 +4,7 @@ import type { CharacterProfile, SceneTurnMessage, VoiceConfig } from '../types';
 import { findCharacterByName } from '../utils/characterName';
 import { STAGE_NARRATOR_VOICE_ID, voiceParts } from './narratorVoice';
 import { loadCharacterVoiceConfig } from './characterVoice';
+import { clearStageSpeech, scheduleSpeech } from './stageSpeech';
 
 export { STAGE_NARRATOR_VOICE_ID };
 
@@ -30,7 +31,7 @@ export async function speakStageMessages(
   characters: CharacterProfile[],
   interrupt = false,
 ): Promise<void> {
-  if (interrupt) audioPlayer.stop();
+  if (interrupt) stopStageVoice();
   for (const message of messages.filter(isSpoken)) {
     const config = await voiceFor(message, characters);
     if (!config) continue;
@@ -38,7 +39,10 @@ export async function speakStageMessages(
       // A companion may leave their *actions* to the narrator.
       for (const part of await voiceParts(message.content, config)) {
         const url = await api.synthesizeSpeech(part.text, part.voice);
-        audioPlayer.enqueue(url, gainFromVoiceVolume(part.voice.volume), part.voice.output_device_id, part.voice.effects);
+        // The sentence bubble follows the clip once it has its place on the audio clock.
+        audioPlayer.enqueue(url, gainFromVoiceVolume(part.voice.volume), part.voice.output_device_id, part.voice.effects, (start, end) =>
+          scheduleSpeech(message, part.text, start, end),
+        );
       }
     } catch (error) {
       console.warn('Stage voice failed:', error);
@@ -48,4 +52,5 @@ export async function speakStageMessages(
 
 export function stopStageVoice() {
   audioPlayer.stop();
+  clearStageSpeech();
 }

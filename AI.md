@@ -526,7 +526,9 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `list_stage_assets`/`import_stage_asset` verwalten Startbilder und Ambient-Dateien. Ein dynamischer
   Hintergrund gehört in `current_bg`, niemals in `definition.starting_bg`; ebenso Ambient in `current_ambient`.
   Vorlesen: `services/stageVoice.ts` (Gefährte = Charakterstimme, GM/NPC = Profil `stage_narrator`), Ambient-Schleife
-  `components/stage/useStageAmbient.ts`. E2E-Mock bietet `/v1/audio/speech` (stille WAV).
+  `components/stage/useStageAmbient.ts`. Satzweise Blase (`services/stageSpeech.ts`, `StageSpeakerBubble.tsx`): jeder Clip
+  meldet beim Einplanen Start/Ende auf der Audio-Uhr, seine Sätze teilen sich die Zeit nach Länge; Gefühl je Satz per
+  `classify_text_emotion` → Porträt-Ausdruck (Gefährten), Spielleiter/NPC zeigen das Buch. `stopStageVoice` räumt sie ab. E2E-Mock bietet `/v1/audio/speech` (stille WAV).
   `stage/world.rs`: Fakten (`fact_updates`, Schlüssel normalisiert) und Chronik gehen in den Planer-Kontext;
   Weltzustand-Editor `StageWorldEditor.tsx` speichert per `save_stage_scene` (in den neuesten Zustand gemischt).
   Rundenende: `archive_resolved_arcs` und `audit_facts` (alle `AUDIT_INTERVAL` Runden); Mock erkennt

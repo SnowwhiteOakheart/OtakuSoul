@@ -364,6 +364,21 @@
     60% { transform: translate(-50%, 50%) scale(1); opacity: 1; }
     75% { transform: translate(-50%, 50%) scale(0.92); opacity: 0.9; }
   }
+  /* Stage speech bubble: the speaker slides in, each new sentence fades in. */
+  .stage-speaker-in {
+    animation: stage-speaker-in 0.3s ease-out;
+  }
+  .stage-sentence-in {
+    animation: stage-sentence-in 0.2s ease-out;
+  }
+  @keyframes stage-speaker-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes stage-sentence-in {
+    from { opacity: 0.2; }
+    to { opacity: 1; }
+  }
   @media (prefers-reduced-motion: reduce) {
     .pet-hop,
     .pet-walk,
