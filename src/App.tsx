@@ -6,6 +6,7 @@ import { SafetyCountdownBanner } from './components/companion/SafetyCountdownBan
 import { useAppStore } from './store/useAppStore';
 import { useTabHistory } from './hooks/useTabHistory';
 import { useCloseToTray } from './hooks/useCloseToTray';
+import { useSyncUpdateCheck } from './hooks/useSyncUpdateCheck';
 import { useProactiveMessages } from './hooks/useProactiveMessages';
 import { useDesktopPetBridge } from './hooks/useDesktopPetBridge';
 import { isPetWindow } from './services/desktopPet';
@@ -44,6 +45,7 @@ export function App() {
   useCloseToTray(!isPet);
   useProactiveMessages(!isPet);
   useDesktopPetBridge(!isPet);
+  useSyncUpdateCheck(!isPet && onboardingCompleted);
 
   if (isPet) {
     return (

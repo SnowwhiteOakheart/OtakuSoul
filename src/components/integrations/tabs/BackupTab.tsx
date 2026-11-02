@@ -11,15 +11,9 @@ import {
   Download,
   Database,
   Clock,
-  BookOpen,
-  Bot,
-  Brain,
-  Settings,
-  Swords,
-  User,
-  Users,
-  type LucideIcon,
 } from 'lucide-react';
+import { BACKUP_GROUPS } from './backupGroups';
+import { SyncPanel } from './SyncPanel';
 import type { BackupGroupSelection } from '../../../types';
 
 export const BackupTab: React.FC = () => {
@@ -87,6 +81,8 @@ export const BackupTab: React.FC = () => {
   };
 
   return (
+    <div className="space-y-6">
+    <SyncPanel onRestored={fetchBackups} />
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Create Backup Box */}
       <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-5">
@@ -119,15 +115,7 @@ export const BackupTab: React.FC = () => {
           <span className="block text-xs font-semibold text-slate-300">
             {t('int.backupGroups')}
           </span>
-          {([
-            { key: 'characters', label: t('int.group.characters'), icon: Users },
-            { key: 'lorebooks', label: t('int.group.lorebooks'), icon: BookOpen },
-            { key: 'personas', label: t('int.group.personas'), icon: User },
-            { key: 'memory', label: t('int.group.memory'), icon: Brain },
-            { key: 'stage', label: t('int.group.stage'), icon: Swords },
-            { key: 'companion', label: t('int.group.companion'), icon: Bot },
-            { key: 'settings', label: t('int.group.settings'), icon: Settings },
-          ] satisfies { key: keyof BackupGroupSelection; label: string; icon: LucideIcon }[]).map((item) => (
+          {BACKUP_GROUPS.map((item) => (
             <label
               key={item.key}
               className="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer select-none"
@@ -141,7 +129,7 @@ export const BackupTab: React.FC = () => {
                 className="rounded bg-app border-slate-700 text-emerald-600 focus:ring-0"
               />
               <item.icon className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
-              <span>{item.label}</span>
+              <span>{t(item.label)}</span>
             </label>
           ))}
         </div>
@@ -259,6 +247,7 @@ export const BackupTab: React.FC = () => {
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 };

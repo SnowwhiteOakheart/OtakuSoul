@@ -47,7 +47,7 @@ Backend `src-tauri/src/`: `lib.rs` (Plugins, Command-Registrierung), `state.rs` 
 |---|---|
 | Chat-Pipeline | `inference.rs` (SSE-Streaming, `<think>`-Filter), `providers.rs` (OpenAI-Format/llama-server, Anthropic, …), `prompt_builder.rs` (System-Prompt, `PromptTemplate`), `context_window.rs`, `chat_summary.rs`, `attachments.rs`, `translate.rs` |
 | Lokale Server | `runtimes.rs` (Download/Prüfung llama.cpp, PrismML, sd.cpp, CrispASR; vorheriger Build für Rollback), `llama_manager.rs` (llama-server), `local_image.rs` (sd-server + VRAM-Planer, LoRAs in `image_loras.rs`), `tts_local.rs` (crispasr --server), `model_files.rs` (HF-Downloads), `segmented_download.rs` (parallele Range-Abschnitte), `gguf.rs`, `hardware.rs` (GPU-Probe) |
-| Daten | `memory/` (SQLite: Kognitives Gedächtnis, `chats.rs`, Snapshots), `settings.rs` (`settings.json`), `paths.rs`, `secrets.rs` (Schlüsselbund), `characters.rs` (V2-Karten PNG/JSON, Personas), `lorebook.rs`, `profile_backup.rs` |
+| Daten | `memory/` (SQLite: Kognitives Gedächtnis, `chats.rs`, Snapshots), `settings.rs` (`settings.json`), `paths.rs`, `secrets.rs` (Schlüsselbund), `characters.rs` (V2-Karten PNG/JSON, Personas), `lorebook.rs`, `profile_backup.rs`, `device_sync.rs` (Sync über Ordner/WebDAV) |
 | Features | `memory_pipeline.rs` (Router/Archivist/Diary), `stage/` (Game-Master; `stage/rules5e/` = 5e-Regel-Engine, SRD-Daten in `presets/srd5/`), `companion.rs` + `companion_tools.rs` + `mcp_client.rs`, `voice.rs`/`kokoro.rs` (TTS/STT), `image_generator.rs`, `models_hub.rs`, `hub.rs`, `web_server.rs`, `discord.rs`, `updater.rs`, `logger.rs` |
 
 Frontend `src/`: `services/api.ts` (ein Wrapper je Command), `store/slices/*.ts` (Zustand, Zugriff per
@@ -882,6 +882,14 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Import liest alle Dateien vor der Transaktion; fehlende optionale Dateien sind erlaubt, Lesefehler nicht.
   `restore_memory_backup` erhält `char_id` und löst einzelne Dateinamen im Backup-Verzeichnis dieser Figur auf.
   Snapshot-Erstellung bricht bei Lesefehlern ab und schreibt kein unvollständiges Backup.
+- Sync zwischen Geräten (`modules/device_sync.rs`, UI `integrations/tabs/SyncPanel.tsx`, Start-Hinweis
+  `hooks/useSyncUpdateCheck.ts`): ganze Stände, kein Zusammenführen. Ziel geteilter Ordner oder WebDAV (MKCOL/PUT/GET/
+  DELETE/PROPFIND Depth 1, Basic-Auth, Passwort im Schlüsselbund `sync_webdav_password`). Ablage
+  `OtakuSoul-Sync/<Geräte-ID>/<backup>.zip` + `.json` (`SyncSnapshot`, nach dem ZIP geschrieben; Ordner schreibt über
+  `.part` + Umbenennen). Konfiguration `<Konfig>/sync.json` liegt in keiner Backup-Gruppe (Geräte-ID bleibt). Standard
+  ohne Gruppe „settings“ (Pfade/GPU des Geräts). Namen vom Ziel werden geprüft (`valid_filename`, `valid_device_id`).
+  `last_sync_at` = neuester hochgeladener/wiederhergestellter Stand; neuere Stände anderer Geräte meldet `check`.
+  Echter Server: `OTAKUSOUL_TEST_WEBDAV_URL` (+ `_USER`, `_PASSWORD`) und `cargo test --lib real_webdav_server -- --ignored`.
   `memoryOperation` sperrt Import, Wiederherstellung, Snapshot-Erstellung und Reflexion gegenseitig, auch nach
   Schließen/Reiterwechsel. Reflexionsfehler werden weitergegeben und in `memoryReflectionError` angezeigt.
   Die Reflexion holt erst alle Modellantworten (Router, Archivar, Tagebuch) und schreibt dann alles in einer

@@ -118,6 +118,8 @@ import {
   ChubCharacterDetail,
   CharacterImportResult,
   BackupGroupSelection,
+  SyncConfig,
+  SyncSnapshot,
   BackupEntryInfo,
   ImageGenConfig,
   GeneratedImageResult,
@@ -1854,6 +1856,42 @@ export const api = {
 
   deleteProfileBackup: async (filename: string): Promise<boolean> => {
     return await invoke<boolean>('delete_profile_backup', { filename });
+  },
+
+  /** Sync between devices (shared folder or WebDAV): settings of this device. */
+  getSyncConfig: async (): Promise<SyncConfig> => {
+    return await invoke<SyncConfig>('get_sync_config');
+  },
+
+  saveSyncConfig: async (config: SyncConfig): Promise<SyncConfig> => {
+    return await invoke<SyncConfig>('save_sync_config', { config });
+  },
+
+  /** Checks a target before saving it; the number of states found there. */
+  testSyncTarget: async (config: SyncConfig): Promise<number> => {
+    return await invoke<number>('test_sync_target', { config });
+  },
+
+  listSyncSnapshots: async (): Promise<SyncSnapshot[]> => {
+    return await invoke<SyncSnapshot[]>('list_sync_snapshots');
+  },
+
+  /** The newest state of another device not uploaded or restored here yet. */
+  checkSyncUpdates: async (): Promise<SyncSnapshot | null> => {
+    return await invoke<SyncSnapshot | null>('check_sync_updates');
+  },
+
+  /** Backs up the chosen groups and uploads them as this device's newest state. */
+  uploadSyncSnapshot: async (): Promise<SyncSnapshot> => {
+    return await invoke<SyncSnapshot>('upload_sync_snapshot');
+  },
+
+  restoreSyncSnapshot: async (deviceId: string, filename: string, groups?: BackupGroupSelection): Promise<string> => {
+    return await invoke<string>('restore_sync_snapshot', { deviceId, filename, groups });
+  },
+
+  deleteSyncSnapshot: async (deviceId: string, filename: string): Promise<void> => {
+    return await invoke<void>('delete_sync_snapshot', { deviceId, filename });
   },
 
   // Phase 17: Image Generation

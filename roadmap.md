@@ -171,7 +171,6 @@
 ### Gemeinschaft
 - [ ] **Eigene Figuren und Geschichten aus der App teilen:** Einreichen in den Hub (z. B. als Pull Request an `otakusoul-data`
   oder über ein Formular), mit Prüfung vor der Aufnahme.
-- [ ] **Sync bzw. Backup zwischen Geräten** über Ordner-Sync oder WebDAV, ohne eigenen Server.
 
 > Alleinstellungsmerkmal: Das Desktop-Pet (Abschnitt 3) zusammen mit Gedächtnis und proaktiven Nachrichten –
 > „Deine Figur lebt auf deinem PC.“

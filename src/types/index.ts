@@ -1,3 +1,6 @@
+export type { SyncConfig } from './generated/SyncConfig';
+export type { SyncSnapshot } from './generated/SyncSnapshot';
+export type { SyncTargetKind } from './generated/SyncTargetKind';
 export type { StageNpc } from './generated/StageNpc';
 export type { StageNpcDraft } from './generated/StageNpcDraft';
 export interface StageNpcPromotion { scene: SceneState; character: CharacterProfile; }

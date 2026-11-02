@@ -34,6 +34,61 @@ pub fn delete_profile_backup(filename: String) -> Result<bool, String> {
     crate::modules::profile_backup::ProfileBackupManager::delete_backup(&filename)
 }
 
+/// Sync between devices (shared folder or WebDAV): settings of this device.
+#[tauri::command(async)]
+pub fn get_sync_config() -> crate::modules::device_sync::SyncConfig {
+    crate::modules::device_sync::load_config()
+}
+
+#[tauri::command(async)]
+pub fn save_sync_config(
+    config: crate::modules::device_sync::SyncConfig,
+) -> Result<crate::modules::device_sync::SyncConfig, String> {
+    crate::modules::device_sync::save_config(&config)
+}
+
+/// Checks a (not yet saved) target; returns the number of states there.
+#[tauri::command]
+pub async fn test_sync_target(
+    config: crate::modules::device_sync::SyncConfig,
+) -> Result<usize, String> {
+    crate::modules::device_sync::test(&config).await
+}
+
+#[tauri::command]
+pub async fn list_sync_snapshots() -> Result<Vec<crate::modules::device_sync::SyncSnapshot>, String>
+{
+    let config = crate::modules::device_sync::load_config();
+    crate::modules::device_sync::list(&config).await
+}
+
+/// The newest state of another device that this one hasn't uploaded or restored yet.
+#[tauri::command]
+pub async fn check_sync_updates()
+-> Result<Option<crate::modules::device_sync::SyncSnapshot>, String> {
+    let config = crate::modules::device_sync::load_config();
+    crate::modules::device_sync::check(&config).await
+}
+
+#[tauri::command]
+pub async fn upload_sync_snapshot() -> Result<crate::modules::device_sync::SyncSnapshot, String> {
+    crate::modules::device_sync::upload().await
+}
+
+#[tauri::command]
+pub async fn restore_sync_snapshot(
+    device_id: String,
+    filename: String,
+    groups: Option<crate::modules::profile_backup::BackupGroupSelection>,
+) -> Result<String, String> {
+    crate::modules::device_sync::restore(&device_id, &filename, groups).await
+}
+
+#[tauri::command]
+pub async fn delete_sync_snapshot(device_id: String, filename: String) -> Result<(), String> {
+    crate::modules::device_sync::delete(&device_id, &filename).await
+}
+
 #[tauri::command]
 pub fn get_image_gen_config() -> Result<crate::modules::image_generator::ImageGenConfig, String> {
     Ok(crate::modules::image_generator::ImageGenerator::load_config())
