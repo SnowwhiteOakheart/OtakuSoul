@@ -502,6 +502,12 @@ pub fn load_scene_by_id(scene_id: &str) -> Result<SceneState, String> {
             // A hidden adult story does not open (e.g. the remembered last scene).
             crate::modules::nsfw::ensure_visible(&state.definition.extensions)?;
             ensure_party_vitals(&mut state);
+            // A story begun before a feature (music) existed gets its section quietly.
+            if let Some(bundled) = bundled_definition(scene_id)
+                && adopt_missing_extensions(&mut state.definition, &bundled.extensions)
+            {
+                let _ = save_scene_state(&state);
+            }
             return Ok(state);
         }
         if let Ok(def) = serde_json::from_str::<SceneDefinition>(&content) {
@@ -562,20 +568,59 @@ pub fn save_scene_state(state: &SceneState) -> Result<(), String> {
     Ok(())
 }
 
+/// Whether a saved value says nothing (missing, `null`, `""`, `[]` or `{}`).
+fn is_blank(value: &serde_json::Value) -> bool {
+    match value {
+        serde_json::Value::Null => true,
+        serde_json::Value::String(s) => s.trim().is_empty(),
+        serde_json::Value::Array(a) => a.is_empty(),
+        serde_json::Value::Object(o) => o.is_empty(),
+        _ => false,
+    }
+}
+
+/// Adds the keys of `bundled` that `own` lacks or leaves blank; objects are merged one level
+/// deeper (a saved `otakusoul_music` without the shipped `tracks`). Returns whether `own` changed.
+fn fill_missing(
+    own: &mut serde_json::Map<String, serde_json::Value>,
+    bundled: &serde_json::Map<String, serde_json::Value>,
+    depth: u32,
+) -> bool {
+    let mut changed = false;
+    for (key, value) in bundled {
+        match own.get_mut(key) {
+            Some(existing) if !is_blank(existing) => {
+                if depth > 0
+                    && let (Some(existing), Some(value)) =
+                        (existing.as_object_mut(), value.as_object())
+                {
+                    changed |= fill_missing(existing, value, depth - 1);
+                }
+            }
+            _ if is_blank(value) => {}
+            _ => {
+                own.insert(key.clone(), value.clone());
+                changed = true;
+            }
+        }
+    }
+    changed
+}
+
 /// Adds the `extensions` keys the bundled preset has but a saved copy lacks (a story started
 /// before a feature like `otakusoul_music` existed); everything the copy has stays as it is.
-fn adopt_missing_extensions(definition: &mut SceneDefinition, bundled: &serde_json::Value) {
+/// Returns whether the copy changed.
+fn adopt_missing_extensions(definition: &mut SceneDefinition, bundled: &serde_json::Value) -> bool {
     let Some(bundled) = bundled.as_object() else {
-        return;
+        return false;
     };
     if definition.extensions.is_null() {
         definition.extensions = serde_json::Value::Object(Default::default());
     }
-    if let Some(own) = definition.extensions.as_object_mut() {
-        for (key, value) in bundled {
-            own.entry(key.clone()).or_insert_with(|| value.clone());
-        }
-    }
+    definition
+        .extensions
+        .as_object_mut()
+        .is_some_and(|own| fill_missing(own, bundled, 1))
 }
 
 /// The bundled preset (adventure or story) of the same id, if the app ships one.
@@ -1196,7 +1241,10 @@ mod tests {
         let story = saved.extensions["otakusoul_story"].clone();
         saved.extensions = serde_json::json!({ "otakusoul_story": { "minutes": 99 } });
         adopt_missing_extensions(&mut saved, &bundled.extensions);
-        assert_eq!(saved.extensions["otakusoul_music"], bundled.extensions["otakusoul_music"]);
+        assert_eq!(
+            saved.extensions["otakusoul_music"],
+            bundled.extensions["otakusoul_music"]
+        );
         assert_eq!(saved.extensions["otakusoul_story"]["minutes"], 99);
         assert_ne!(saved.extensions["otakusoul_story"], story);
 
@@ -1204,6 +1252,38 @@ mod tests {
         empty.extensions = serde_json::Value::Null;
         adopt_missing_extensions(&mut empty, &bundled.extensions);
         assert_eq!(empty.extensions, bundled.extensions);
+    }
+
+    #[test]
+    fn resuming_adds_shipped_tracks_to_a_saved_music_section_only_when_blank() {
+        let mut bundled: SceneDefinition = serde_json::from_str(STORIES[0]).unwrap();
+        bundled.extensions["otakusoul_music"]["tracks"] = serde_json::json!([{ "file": "a.ogg" }]);
+
+        let mut saved = bundled.clone();
+        saved.extensions["otakusoul_music"]["tracks"] = serde_json::json!([]);
+        saved.extensions["otakusoul_music"]["style"] = "my own sound".into();
+        assert!(adopt_missing_extensions(&mut saved, &bundled.extensions));
+        assert_eq!(
+            saved.extensions["otakusoul_music"]["tracks"][0]["file"],
+            "a.ogg"
+        );
+        assert_eq!(saved.extensions["otakusoul_music"]["style"], "my own sound");
+
+        assert!(
+            !adopt_missing_extensions(&mut saved, &bundled.extensions),
+            "a second pass changes nothing"
+        );
+        let mut saved_tracks = saved.clone();
+        saved_tracks.extensions["otakusoul_music"]["tracks"] =
+            serde_json::json!([{ "file": "b.ogg" }]);
+        assert!(!adopt_missing_extensions(
+            &mut saved_tracks,
+            &bundled.extensions
+        ));
+        assert_eq!(
+            saved_tracks.extensions["otakusoul_music"]["tracks"][0]["file"],
+            "b.ogg"
+        );
     }
 
     #[test]
