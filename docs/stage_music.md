@@ -17,7 +17,7 @@ ACE-Step 1.5, bis dahin außerhalb) und für mitgelieferte Geschichten aus `otak
 `<set>` besteht aus `a–z`, `0–9`, `-` und `_` (höchstens 64 Zeichen). **Ein Set pro Geschichte:**
 Alle Szenen einer Geschichte nennen dasselbe Set (z. B. die drei Akte von `crypt_of_shadows`).
 Ohne `set` gilt die Szenen-ID. Stimmungen: `calm`, `tavern`, `adventure`, `tension`, `mystery`,
-`combat`, `boss`, `romance`, `sorrow`. Formate: OGG (empfohlen), OPUS, MP3, WAV, FLAC.
+`combat`, `boss`, `romance`, `sorrow`. Formate: MP3 (so erzeugt und ausgeliefert), OGG, OPUS, WAV, FLAC.
 
 ## Szene: `extensions.otakusoul_music`
 
@@ -35,7 +35,7 @@ Ohne `set` gilt die Szenen-ID. Stimmungen: `calm`, `tavern`, `adventure`, `tensi
   },
   "tracks": [
     {
-      "mood": "calm", "file": "calm_01.ogg", "path": "music/frozen_bells/calm/calm_01.ogg",
+      "mood": "calm", "file": "calm_01.mp3", "path": "music/frozen_bells/calm/calm_01.mp3",
       "sha256": "…64 Kleinbuchstaben-Hex…",
       "generator": "ACE-Step 1.5 (acestep.cpp)", "model": "acestep-v15-sft-Q8_0",
       "caption": "…vollständige Caption…", "lyrics": "[Instrumental]", "seed": 1234,
@@ -98,8 +98,8 @@ Die Karten der App selbst (`presets/characters`, `presets/crypt-of-shadows`) hab
 ## Script `tools/story_music.py`: Titel ohne die App erzeugen und ausliefern
 
 Wenn eine neue Geschichte dazukommt, geht es ohne Klicken in der App. Voraussetzungen: ACE-Step-Laufzeit
-und Modelle sind einmal in der App geladen (Stage → Musik), `ffmpeg` mit libvorbis für `ship`
-(Windows: `winget install Gyan.FFmpeg`). Nur die Python-Standardbibliothek.
+und Modelle sind einmal in der App geladen (Stage → Musik). Nur die Python-Standardbibliothek; `ffmpeg`
+(Windows: `winget install Gyan.FFmpeg`) braucht nur `ship --format ogg`.
 
 ```bash
 python tools/story_music.py plan     presets/stories/scenes/story_neu.json
@@ -112,7 +112,7 @@ python tools/story_music.py ship     presets/stories/scenes/story_neu.json
 |---|---|
 | `plan` | Zeigt je Set die Klangwelt, die fertige Caption je Stimmung (mit Lorebook-Stil und Leitmotiven der Gruppe, wie im Musik-Fenster) und wie viele Titel fehlen |
 | `generate` | Startet den `ace-server` der Laufzeit (Port 48600, die App darf weiterlaufen), erzeugt die fehlenden Titel nach `<Daten>/music/sets/<set>/<stimmung>/` und schreibt die Herkunft daneben; `--dry-run` zeigt nur den Umfang |
-| `ship` | Wandelt die Titel eines Sets in OGG (Vorbis, `--quality 5`), legt sie nach `otakusoul-data/music/<set>/<stimmung>/`, trägt `tracks` mit SHA-256 und Herkunft in alle genannten Szenen ein und erhöht bei Hub-Szenen (`stages_gateway/`) `revision` und `updated` in `stages_registry.json` |
+| `ship` | Kopiert die Titel eines Sets unverändert als MP3 (`--format ogg` wandelt mit ffmpeg um), legt sie nach `otakusoul-data/music/<set>/<stimmung>/`, trägt `tracks` mit SHA-256 und Herkunft in alle genannten Szenen ein und erhöht bei Hub-Szenen (`stages_gateway/`) `revision` und `updated` in `stages_registry.json` |
 
 Mehrere Szenen derselben Geschichte dürfen zusammen übergeben werden (ein Set wird einmal bearbeitet,
 `ship` schreibt die Titel in jede Szene). Wichtige Schalter: `--data-dir` (Datenordner der App, Standard
@@ -127,11 +127,11 @@ Modellstufen von `music_gen.rs`: Wer dort etwas ändert, zieht das Script nach.
 
 1. Titel erzeugen: im Musik-Fenster der Stage oder mit `generate`. Anhören; was nicht passt, aus dem
    Set-Ordner löschen und neu erzeugen.
-2. `python tools/story_music.py ship <Szenen>` legt die OGG-Dateien nach
-   `otakusoul-data/music/<set>/<stimmung>/<datei>.ogg`, bildet die Prüfsummen und trägt `tracks` in die
+2. `python tools/story_music.py ship <Szenen>` legt die Titel nach
+   `otakusoul-data/music/<set>/<stimmung>/<datei>.mp3`, bildet die Prüfsummen und trägt `tracks` in die
    Szenen ein (bei Hub-Szenen in `stages_gateway/…`, bei mitgelieferten Geschichten in
    `presets/…/scenes/*.json` der App) und erhöht bei Hub-Szenen die `revision`. Von Hand geht es genauso:
-   OGG ablegen, `sha256sum` bilden, `tracks` ergänzen, `revision` der Szene erhöhen.
+   Datei ablegen, `sha256sum` bilden, `tracks` ergänzen, `revision` der Szene erhöhen.
 3. In beiden Repos committen und pushen (Daten-Repo zuerst, damit die Dateien erreichbar sind).
 4. Beim Öffnen der Szene lädt die App fehlende Titel nach (`story_music::ensure_scene_music`),
    prüft die Prüfsumme und legt die Herkunft daneben; im Musik-Fenster geht es auch von Hand.

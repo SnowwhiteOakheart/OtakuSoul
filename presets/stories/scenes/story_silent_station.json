@@ -159,7 +159,73 @@
      "duration": 120
     }
    },
-   "tracks": []
+   "tracks": [
+    {
+     "mood": "calm",
+     "file": "calm_01.mp3",
+     "path": "music/silent_station/calm/calm_01.mp3",
+     "sha256": "014542f718d257058f6f1a36bd75164fbd9ac15b50be94af50ca3cf4c74f0315",
+     "generator": "ACE-Step 1.5 (acestep.cpp, acestep-6013134)",
+     "model": "acestep-v15-xl-sft-Q8_0.gguf",
+     "caption": "dark ambient science fiction, analog synth pads, deep drones, cinematic, slow evolving pads, lonely research station, soft hum of machines",
+     "lyrics": "[Instrumental]",
+     "seed": 900265516,
+     "generated": "2026-11-03",
+     "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt"
+    },
+    {
+     "mood": "calm",
+     "file": "calm_02.mp3",
+     "path": "music/silent_station/calm/calm_02.mp3",
+     "sha256": "8d445d60a29966096ea9193b0b60b458c4d0c82908254dec967b284fd14b11b3",
+     "generator": "ACE-Step 1.5 (acestep.cpp, acestep-6013134)",
+     "model": "acestep-v15-xl-sft-Q8_0.gguf",
+     "caption": "dark ambient science fiction, analog synth pads, deep drones, cinematic, slow evolving pads, lonely research station, soft hum of machines",
+     "lyrics": "[Instrumental]",
+     "seed": 1775133646,
+     "generated": "2026-11-03",
+     "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt"
+    },
+    {
+     "mood": "tension",
+     "file": "tension_01.mp3",
+     "path": "music/silent_station/tension/tension_01.mp3",
+     "sha256": "4c434d9326e2aa5c53fe94038aa2afa36f64e0c4709e2dbe46f4e6ae53f2882c",
+     "generator": "ACE-Step 1.5 (acestep.cpp, acestep-6013134)",
+     "model": "acestep-v15-xl-sft-Q8_0.gguf",
+     "caption": "dark ambient science fiction, analog synth pads, deep drones, cinematic, pulsing low synth, metallic percussion, rising dread",
+     "lyrics": "[Instrumental]",
+     "seed": 1122454904,
+     "generated": "2026-11-03",
+     "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt"
+    },
+    {
+     "mood": "mystery",
+     "file": "mystery_01.mp3",
+     "path": "music/silent_station/mystery/mystery_01.mp3",
+     "sha256": "376200da65bc01c645e9235e785b65e5b25708d342df5fbab46737f5ae795dcd",
+     "generator": "ACE-Step 1.5 (acestep.cpp, acestep-6013134)",
+     "model": "acestep-v15-xl-sft-Q8_0.gguf",
+     "caption": "dark ambient science fiction, analog synth pads, deep drones, cinematic, glitching synth textures, sonar pings, distant metallic echoes, eerie",
+     "lyrics": "[Instrumental]",
+     "seed": 1867874944,
+     "generated": "2026-11-03",
+     "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt"
+    },
+    {
+     "mood": "sorrow",
+     "file": "sorrow_01.mp3",
+     "path": "music/silent_station/sorrow/sorrow_01.mp3",
+     "sha256": "b9bdbf265edf3ae187ddfefe877ff26dd0bf39ad58362f20682e9dc4694de080",
+     "generator": "ACE-Step 1.5 (acestep.cpp, acestep-6013134)",
+     "model": "acestep-v15-xl-sft-Q8_0.gguf",
+     "caption": "dark ambient science fiction, analog synth pads, deep drones, cinematic, melancholic synth piano, isolation in deep space, very slow",
+     "lyrics": "[Instrumental]",
+     "seed": 1937922968,
+     "generated": "2026-11-03",
+     "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt"
+    }
+   ]
   }
  }
 }

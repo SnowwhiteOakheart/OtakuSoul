@@ -169,7 +169,86 @@
      "duration": 110
     }
    },
-   "tracks": []
+   "tracks": [
+    {
+     "mood": "calm",
+     "file": "calm_01.mp3",
+     "path": "music/frozen_bells/calm/calm_01.mp3",
+     "sha256": "0e5b9c5dcc8ac04d14ad3ff8b6fc5c364fa594ddd5c7ac2feed9e430aee135d2",
+     "generator": "ACE-Step 1.5 (acestep.cpp, acestep-6013134)",
+     "model": "acestep-v15-xl-sft-Q8_0.gguf",
+     "caption": "fairytale celtic folk, harp, fiddle, wooden flute, glockenspiel, warm and wintry, cinematic, gentle harp and flute, snowy mountain village at dusk, slow tempo, young elven flute, curious and kind, solemn elven horn and harp, a border warden's vigil",
+     "lyrics": "[Instrumental]",
+     "seed": 1448279844,
+     "generated": "2026-11-03",
+     "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt"
+    },
+    {
+     "mood": "calm",
+     "file": "calm_02.mp3",
+     "path": "music/frozen_bells/calm/calm_02.mp3",
+     "sha256": "837da174df1f63cc9a99acd412837cd69d9e4a323afea244eaf01451df4ef63f",
+     "generator": "ACE-Step 1.5 (acestep.cpp, acestep-6013134)",
+     "model": "acestep-v15-xl-sft-Q8_0.gguf",
+     "caption": "fairytale celtic folk, harp, fiddle, wooden flute, glockenspiel, warm and wintry, cinematic, gentle harp and flute, snowy mountain village at dusk, slow tempo, young elven flute, curious and kind, solemn elven horn and harp, a border warden's vigil",
+     "lyrics": "[Instrumental]",
+     "seed": 1011682221,
+     "generated": "2026-11-03",
+     "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt"
+    },
+    {
+     "mood": "adventure",
+     "file": "adventure_01.mp3",
+     "path": "music/frozen_bells/adventure/adventure_01.mp3",
+     "sha256": "c740cd96df1dac8b524a2a5a500c795b70187473206097320c9a1772144fc0aa",
+     "generator": "ACE-Step 1.5 (acestep.cpp, acestep-6013134)",
+     "model": "acestep-v15-xl-sft-Q8_0.gguf",
+     "caption": "fairytale celtic folk, harp, fiddle, wooden flute, glockenspiel, warm and wintry, cinematic, lilting fiddle melody, frame drum, hopeful journey through a snowy forest",
+     "lyrics": "[Instrumental]",
+     "seed": 1807662132,
+     "generated": "2026-11-03",
+     "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt"
+    },
+    {
+     "mood": "tension",
+     "file": "tension_01.mp3",
+     "path": "music/frozen_bells/tension/tension_01.mp3",
+     "sha256": "5c50f9e3ab4cc0fc8b21c5d452a03fc3730e9fa75a3569264d5b763431cec886",
+     "generator": "ACE-Step 1.5 (acestep.cpp, acestep-6013134)",
+     "model": "acestep-v15-xl-sft-Q8_0.gguf",
+     "caption": "fairytale celtic folk, harp, fiddle, wooden flute, glockenspiel, warm and wintry, cinematic, low pulsing strings, ticking glockenspiel, rising unease, solemn elven horn and harp, a border warden's vigil",
+     "lyrics": "[Instrumental]",
+     "seed": 1818061396,
+     "generated": "2026-11-03",
+     "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt"
+    },
+    {
+     "mood": "mystery",
+     "file": "mystery_01.mp3",
+     "path": "music/frozen_bells/mystery/mystery_01.mp3",
+     "sha256": "74a325f2a107cfc450d3cc93e604e8b4686ff910059dece67bd84ba9ce2c0576",
+     "generator": "ACE-Step 1.5 (acestep.cpp, acestep-6013134)",
+     "model": "acestep-v15-xl-sft-Q8_0.gguf",
+     "caption": "fairytale celtic folk, harp, fiddle, wooden flute, glockenspiel, warm and wintry, cinematic, celesta and distant frozen bells, soft wordless female choir far away, airy, eerie shimmer, sparse, young elven flute, curious and kind",
+     "lyrics": "[Intro]\n[Verse]\nooh, aah\nooh, aah\n[Outro]",
+     "seed": 1705955119,
+     "generated": "2026-11-03",
+     "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt"
+    },
+    {
+     "mood": "sorrow",
+     "file": "sorrow_01.mp3",
+     "path": "music/frozen_bells/sorrow/sorrow_01.mp3",
+     "sha256": "7a21b99cb9c99e57bc7dfdf3046d7935f94a4c1b4d270dc444a45385577b5af9",
+     "generator": "ACE-Step 1.5 (acestep.cpp, acestep-6013134)",
+     "model": "acestep-v15-xl-sft-Q8_0.gguf",
+     "caption": "fairytale celtic folk, harp, fiddle, wooden flute, glockenspiel, warm and wintry, cinematic, solo cello and harp, quiet grief, very slow, young elven flute, curious and kind, solemn elven horn and harp, a border warden's vigil",
+     "lyrics": "[Instrumental]",
+     "seed": 1066422133,
+     "generated": "2026-11-03",
+     "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt"
+    }
+   ]
   }
  }
 }

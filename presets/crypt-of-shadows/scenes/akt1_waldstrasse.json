@@ -130,7 +130,112 @@
      "duration": 150
     }
    },
-   "tracks": []
+   "tracks": [
+    {
+     "mood": "calm",
+     "file": "calm_01.mp3",
+     "path": "music/crypt_of_shadows/calm/calm_01.mp3",
+     "sha256": "47137bf4ef43dbd6137564f44a9d1ccfc8e3415680a9feea93a429ad83984af6",
+     "generator": "ACE-Step 1.5 (acestep.cpp, acestep-6013134)",
+     "model": "acestep-v15-xl-sft-Q8_0.gguf",
+     "caption": "epic dark fantasy orchestral, low brass, strings, war drums, campfire lute and soft strings, resting party under the stars, starlit celesta and an arcane harp arpeggio, radiant hymn on soft organ and harp",
+     "lyrics": "[Instrumental]",
+     "seed": 1973355402,
+     "generated": "2026-11-03",
+     "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt"
+    },
+    {
+     "mood": "adventure",
+     "file": "adventure_01.mp3",
+     "path": "music/crypt_of_shadows/adventure/adventure_01.mp3",
+     "sha256": "bde2f790eee1f888d7625eb37498f16a784c01a0afa0218acf492e765c384c61",
+     "generator": "ACE-Step 1.5 (acestep.cpp, acestep-6013134)",
+     "model": "acestep-v15-xl-sft-Q8_0.gguf",
+     "caption": "epic dark fantasy orchestral, low brass, strings, war drums, heroic strings and horns, journey along a forest road",
+     "lyrics": "[Instrumental]",
+     "seed": 711351402,
+     "generated": "2026-11-03",
+     "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt"
+    },
+    {
+     "mood": "adventure",
+     "file": "adventure_02.mp3",
+     "path": "music/crypt_of_shadows/adventure/adventure_02.mp3",
+     "sha256": "79c884df65be1a69f0b06ebf092846421e9245760cf1e68e95e2fe75c18446c3",
+     "generator": "ACE-Step 1.5 (acestep.cpp, acestep-6013134)",
+     "model": "acestep-v15-xl-sft-Q8_0.gguf",
+     "caption": "epic dark fantasy orchestral, low brass, strings, war drums, heroic strings and horns, journey along a forest road",
+     "lyrics": "[Instrumental]",
+     "seed": 1972164782,
+     "generated": "2026-11-03",
+     "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt"
+    },
+    {
+     "mood": "tension",
+     "file": "tension_01.mp3",
+     "path": "music/crypt_of_shadows/tension/tension_01.mp3",
+     "sha256": "ee43ad8968b8b34edcbd91994f133c883e215b9afed251eb9f5ccd96b611c3a5",
+     "generator": "ACE-Step 1.5 (acestep.cpp, acestep-6013134)",
+     "model": "acestep-v15-xl-sft-Q8_0.gguf",
+     "caption": "epic dark fantasy orchestral, low brass, strings, war drums, low string tremolo, dark crypt, distant hollow percussion, sneaky plucked strings and a cheeky whistle",
+     "lyrics": "[Instrumental]",
+     "seed": 482215367,
+     "generated": "2026-11-03",
+     "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt"
+    },
+    {
+     "mood": "mystery",
+     "file": "mystery_01.mp3",
+     "path": "music/crypt_of_shadows/mystery/mystery_01.mp3",
+     "sha256": "c3516d3dd400c06d7cddbfe522baf8eee8ee4c115fa928136ba8d682819f6ea3",
+     "generator": "ACE-Step 1.5 (acestep.cpp, acestep-6013134)",
+     "model": "acestep-v15-xl-sft-Q8_0.gguf",
+     "caption": "epic dark fantasy orchestral, low brass, strings, war drums, ancient sanctuary, sparse echoing harp, low choir pad, starlit celesta and an arcane harp arpeggio",
+     "lyrics": "[Instrumental]",
+     "seed": 560891146,
+     "generated": "2026-11-03",
+     "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt"
+    },
+    {
+     "mood": "combat",
+     "file": "combat_01.mp3",
+     "path": "music/crypt_of_shadows/combat/combat_01.mp3",
+     "sha256": "db22203b039f6779763e7438321e51b1f92ee37a22eef2fd7e7c518717ea1001",
+     "generator": "ACE-Step 1.5 (acestep.cpp, acestep-6013134)",
+     "model": "acestep-v15-xl-sft-Q8_0.gguf",
+     "caption": "epic dark fantasy orchestral, low brass, strings, war drums, driving war drums, staccato strings, brass hits, fast and fierce, stout dwarven low brass and anvil beats",
+     "lyrics": "[Instrumental]",
+     "seed": 1652141532,
+     "generated": "2026-11-03",
+     "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt"
+    },
+    {
+     "mood": "combat",
+     "file": "combat_02.mp3",
+     "path": "music/crypt_of_shadows/combat/combat_02.mp3",
+     "sha256": "e53b9febee957b429311fb50450fc3bd795ea8e9fc63683382c5745ffb947ce3",
+     "generator": "ACE-Step 1.5 (acestep.cpp, acestep-6013134)",
+     "model": "acestep-v15-xl-sft-Q8_0.gguf",
+     "caption": "epic dark fantasy orchestral, low brass, strings, war drums, driving war drums, staccato strings, brass hits, fast and fierce, stout dwarven low brass and anvil beats",
+     "lyrics": "[Instrumental]",
+     "seed": 1112882367,
+     "generated": "2026-11-03",
+     "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt"
+    },
+    {
+     "mood": "boss",
+     "file": "boss_01.mp3",
+     "path": "music/crypt_of_shadows/boss/boss_01.mp3",
+     "sha256": "b8010401b92250ce058968fd853d3388a426eb702efdce6b978b715b32b6820f",
+     "generator": "ACE-Step 1.5 (acestep.cpp, acestep-6013134)",
+     "model": "acestep-v15-xl-sft-Q8_0.gguf",
+     "caption": "epic dark fantasy orchestral, low brass, strings, war drums, massive orchestra, dark male choir chanting, relentless war drums, climactic",
+     "lyrics": "[Intro]\n[Chorus]\nah, ah, oh\nah, ah, oh\n[Instrumental Break]\n[Chorus]\nah, ah, oh",
+     "seed": 701061208,
+     "generated": "2026-11-03",
+     "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt"
+    }
+   ]
   }
  }
 }

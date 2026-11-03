@@ -162,7 +162,73 @@
      "duration": 100
     }
    },
-   "tracks": []
+   "tracks": [
+    {
+     "mood": "calm",
+     "file": "calm_01.mp3",
+     "path": "music/ryokan_night/calm/calm_01.mp3",
+     "sha256": "cd4d1338b3f529a315f8955547000bda43ffac908fa627dfa59cc057fc318f5d",
+     "generator": "ACE-Step 1.5 (acestep.cpp, acestep-6013134)",
+     "model": "acestep-v15-xl-sft-Q8_0.gguf",
+     "caption": "traditional japanese, koto, shakuhachi, soft taiko, cozy but eerie, warm koto and shakuhachi, quiet mountain inn, snow falling outside, gentle piano like turning book pages, thoughtful, chiptune lead and headphone beat, gamer energy",
+     "lyrics": "[Instrumental]",
+     "seed": 32245310,
+     "generated": "2026-11-03",
+     "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt"
+    },
+    {
+     "mood": "calm",
+     "file": "calm_02.mp3",
+     "path": "music/ryokan_night/calm/calm_02.mp3",
+     "sha256": "9c1dc40c7f0b6dab87ac0c8f648aa76ab64c4d628276e20a9d415eeeba600068",
+     "generator": "ACE-Step 1.5 (acestep.cpp, acestep-6013134)",
+     "model": "acestep-v15-xl-sft-Q8_0.gguf",
+     "caption": "traditional japanese, koto, shakuhachi, soft taiko, cozy but eerie, warm koto and shakuhachi, quiet mountain inn, snow falling outside, gentle piano like turning book pages, thoughtful, chiptune lead and headphone beat, gamer energy",
+     "lyrics": "[Instrumental]",
+     "seed": 1577034637,
+     "generated": "2026-11-03",
+     "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt"
+    },
+    {
+     "mood": "tavern",
+     "file": "tavern_01.mp3",
+     "path": "music/ryokan_night/tavern/tavern_01.mp3",
+     "sha256": "0a1d408bc892b87604118351a8391c271df755ed96fd017f895cd9f9064448e9",
+     "generator": "ACE-Step 1.5 (acestep.cpp, acestep-6013134)",
+     "model": "acestep-v15-xl-sft-Q8_0.gguf",
+     "caption": "traditional japanese, koto, shakuhachi, soft taiko, cozy but eerie, gentle shamisen and koto, cozy evening meal, soft laughter in the next room",
+     "lyrics": "[Instrumental]",
+     "seed": 952359086,
+     "generated": "2026-11-03",
+     "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt"
+    },
+    {
+     "mood": "tension",
+     "file": "tension_01.mp3",
+     "path": "music/ryokan_night/tension/tension_01.mp3",
+     "sha256": "098399c1b6a1f29bf0f8f072519412409be9ac8ea33a9edc9c78c43c4195c2cb",
+     "generator": "ACE-Step 1.5 (acestep.cpp, acestep-6013134)",
+     "model": "acestep-v15-xl-sft-Q8_0.gguf",
+     "caption": "traditional japanese, koto, shakuhachi, soft taiko, cozy but eerie, low taiko heartbeat, dissonant shakuhachi, slowly rising suspense, chiptune lead and headphone beat, gamer energy",
+     "lyrics": "[Instrumental]",
+     "seed": 665250225,
+     "generated": "2026-11-03",
+     "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt"
+    },
+    {
+     "mood": "mystery",
+     "file": "mystery_01.mp3",
+     "path": "music/ryokan_night/mystery/mystery_01.mp3",
+     "sha256": "41169d2361dfa5c6c2ab3c4aea5e2653ce7f6f19fe7c9c607cfbb36eb8339316",
+     "generator": "ACE-Step 1.5 (acestep.cpp, acestep-6013134)",
+     "model": "acestep-v15-xl-sft-Q8_0.gguf",
+     "caption": "traditional japanese, koto, shakuhachi, soft taiko, cozy but eerie, sparse koto plucks, distant wind chimes, creaking wood, unsettling silence",
+     "lyrics": "[Instrumental]",
+     "seed": 1360025474,
+     "generated": "2026-11-03",
+     "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt"
+    }
+   ]
   }
  }
 }

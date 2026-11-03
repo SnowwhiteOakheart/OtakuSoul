@@ -155,7 +155,60 @@
      "duration": 100
     }
    },
-   "tracks": []
+   "tracks": [
+    {
+     "mood": "calm",
+     "file": "calm_01.mp3",
+     "path": "music/missing_mic/calm/calm_01.mp3",
+     "sha256": "c653ca7ae446239651975541b7b3be6ff56b65708a2e6cd8fcad8f0b05a38b3c",
+     "generator": "ACE-Step 1.5 (acestep.cpp, acestep-6013134)",
+     "model": "acestep-v15-xl-sft-Q8_0.gguf",
+     "caption": "cozy mystery, lo-fi hip hop, jazzy electric piano, soft chiptune accents, mellow lo-fi beat, warm vinyl crackle, after-school computer room, gentle piano like turning book pages, thoughtful, chiptune lead and headphone beat, gamer energy",
+     "lyrics": "[Instrumental]",
+     "seed": 438417932,
+     "generated": "2026-11-03",
+     "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt"
+    },
+    {
+     "mood": "calm",
+     "file": "calm_02.mp3",
+     "path": "music/missing_mic/calm/calm_02.mp3",
+     "sha256": "045e864a3a093078da66db2c79eb34af02e96809c883feb43d0f9a8bfb2d9c28",
+     "generator": "ACE-Step 1.5 (acestep.cpp, acestep-6013134)",
+     "model": "acestep-v15-xl-sft-Q8_0.gguf",
+     "caption": "cozy mystery, lo-fi hip hop, jazzy electric piano, soft chiptune accents, mellow lo-fi beat, warm vinyl crackle, after-school computer room, gentle piano like turning book pages, thoughtful, chiptune lead and headphone beat, gamer energy",
+     "lyrics": "[Instrumental]",
+     "seed": 832886423,
+     "generated": "2026-11-03",
+     "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt"
+    },
+    {
+     "mood": "tension",
+     "file": "tension_01.mp3",
+     "path": "music/missing_mic/tension/tension_01.mp3",
+     "sha256": "17a4927f4e213a5fc39e93f087e1ea288a573b0515b668820f06753cbd68aab2",
+     "generator": "ACE-Step 1.5 (acestep.cpp, acestep-6013134)",
+     "model": "acestep-v15-xl-sft-Q8_0.gguf",
+     "caption": "cozy mystery, lo-fi hip hop, jazzy electric piano, soft chiptune accents, ticking clock, pulsing synth bass, chiptune arpeggio, rising pressure, chiptune lead and headphone beat, gamer energy",
+     "lyrics": "[Instrumental]",
+     "seed": 1112996416,
+     "generated": "2026-11-03",
+     "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt"
+    },
+    {
+     "mood": "mystery",
+     "file": "mystery_01.mp3",
+     "path": "music/missing_mic/mystery/mystery_01.mp3",
+     "sha256": "3a018783b35c3b6f1634e829091de2e5e03984fa7fb153b9f34d118eecceb450",
+     "generator": "ACE-Step 1.5 (acestep.cpp, acestep-6013134)",
+     "model": "acestep-v15-xl-sft-Q8_0.gguf",
+     "caption": "cozy mystery, lo-fi hip hop, jazzy electric piano, soft chiptune accents, walking upright bass, brushed drums, sneaky detective jazz",
+     "lyrics": "[Instrumental]",
+     "seed": 1638474291,
+     "generated": "2026-11-03",
+     "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt"
+    }
+   ]
   }
  }
 }

@@ -2,12 +2,12 @@
 """Musik der Geschichten ohne die App erzeugen und ausliefern (ACE-Step 1.5).
 
 Dasselbe wie das Musik-Fenster der Stage, nur von der Kommandozeile: Plan einer Szene, fehlende Titel
-mit dem `ace-server` der App-Laufzeit erzeugen und fertige Titel als OGG ins Daten-Repo legen. Schema
+mit dem `ace-server` der App-Laufzeit erzeugen und fertige Titel ins Daten-Repo legen. Schema
 und Ablauf: `docs/stage_music.md`, Abschnitt „Script `tools/story_music.py`“.
 
     python tools/story_music.py plan     SZENE.json ...   # Plan zeigen: Set, Captions, was fehlt
     python tools/story_music.py generate SZENE.json ...   # fehlende Titel erzeugen (App-Ordner)
-    python tools/story_music.py ship     SZENE.json ...   # OGG ins Daten-Repo, `tracks` eintragen
+    python tools/story_music.py ship     SZENE.json ...   # Titel ins Daten-Repo, `tracks` eintragen
 
 `SZENE.json` ist eine Szenen-Datei (`presets/stories/scenes/*.json`, `stages_gateway/*.json`) oder ein
 gespeicherter Spielstand. Szenen derselben Geschichte teilen ein Set; `generate` und `ship` arbeiten
@@ -16,7 +16,7 @@ Klangwelt) + Caption der Stimmung + Leitmotive der Gruppe (Karten als JSON oder 
 
 Titel entstehen im App-Datenordner (`<Daten>/music/sets/<set>/<stimmung>/`), die App findet sie dort
 sofort; Herkunft liegt als `<datei>.json` daneben. `generate` zählt vorhandene Titel mit, erzeugt also
-nur, was laut `count` fehlt. Nur die Standardbibliothek; `ship` braucht `ffmpeg` (mit libvorbis).
+nur, was laut `count` fehlt. Nur die Standardbibliothek; `ship --format ogg` braucht `ffmpeg`.
 """
 
 from __future__ import annotations
@@ -510,13 +510,15 @@ def cmd_generate(args: argparse.Namespace) -> None:
 # Ausliefern
 # ---------------------------------------------------------------------------------------------
 
-def to_ogg(source: Path, target: Path, quality: float) -> None:
+def convert(source: Path, target: Path, quality: float) -> None:
+    """Wandelt mit ffmpeg um (nur nötig, wenn Quell- und Zielformat verschieden sind)."""
     ffmpeg = shutil.which("ffmpeg")
     if not ffmpeg:
-        fail("`ffmpeg` fehlt (mit libvorbis). Windows: `winget install Gyan.FFmpeg`, Linux/macOS: Paketverwaltung.")
+        fail("`ffmpeg` fehlt (mit libvorbis/libmp3lame). Windows: `winget install Gyan.FFmpeg`, Linux/macOS: Paketverwaltung.")
     target.parent.mkdir(parents=True, exist_ok=True)
+    codec = ["-c:a", "libvorbis"] if target.suffix == ".ogg" else ["-c:a", "libmp3lame"]
     result = subprocess.run(
-        [ffmpeg, "-v", "error", "-y", "-i", str(source), "-vn", "-map_metadata", "-1", "-c:a", "libvorbis", "-q:a", str(quality), str(target)],
+        [ffmpeg, "-v", "error", "-y", "-i", str(source), "-vn", "-map_metadata", "-1", *codec, "-q:a", str(quality), str(target)],
         capture_output=True, text=True,
     )
     if result.returncode != 0 or not target.is_file():
@@ -573,12 +575,12 @@ def cmd_ship(args: argparse.Namespace) -> None:
         tracks = []
         for source in sources:
             mood = source.parent.name
-            target = repo / "music" / set_id / mood / (source.stem + ".ogg")
-            if source.suffix.lower() == ".ogg":
+            target = repo / "music" / set_id / mood / (source.stem + "." + args.format)
+            if source.suffix.lower() == "." + args.format:
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(source, target)
             elif not target.is_file() or target.stat().st_mtime < source.stat().st_mtime:
-                to_ogg(source, target, args.quality)
+                convert(source, target, args.quality)
             origin_file = source.with_name(source.name + ".json")
             origin = read_json(origin_file) if origin_file.is_file() else {}
             tracks.append({
@@ -596,8 +598,11 @@ def cmd_ship(args: argparse.Namespace) -> None:
             data = json.loads(raw)
             definition = data["definition"] if isinstance(data.get("definition"), dict) else data
             definition["extensions"][MUSIC_EXT]["tracks"] = tracks
+            # Format der Datei beibehalten (Einrückung, Zeilenende), damit der Diff klein bleibt.
             newline = "\r\n" if "\r\n" in raw else "\n"
-            scene_path.write_text(json.dumps(data, indent=2, ensure_ascii=False).replace("\n", newline) + (newline if raw.endswith("\n") else ""), encoding="utf-8", newline="")
+            indent = next((len(line) - len(line.lstrip(" ")) for line in raw.splitlines()[1:] if line.startswith(" ")), 2)
+            text = json.dumps(data, indent=indent, ensure_ascii=False).replace("\n", newline)
+            scene_path.write_text(text + (newline if raw.endswith("\n") else ""), encoding="utf-8", newline="")
             note = bump_registry_revision(scene_path.resolve())
             print(f"{scene_path.name}: {len(tracks)} Titel eingetragen" + (f" ({note})" if note else ""))
     print("\nNoch von Hand: im Daten-Repo (und bei Preset-Szenen in der App) committen und pushen;"
@@ -612,7 +617,7 @@ def main() -> None:
     for name, handler, help_text in [
         ("plan", cmd_plan, "Plan der Szenen zeigen"),
         ("generate", cmd_generate, "fehlende Titel erzeugen"),
-        ("ship", cmd_ship, "Titel als OGG ins Daten-Repo legen und `tracks` eintragen"),
+        ("ship", cmd_ship, "Titel ins Daten-Repo legen und `tracks` eintragen"),
     ]:
         p = sub.add_parser(name, help=help_text)
         p.set_defaults(handler=handler)
@@ -627,7 +632,8 @@ def main() -> None:
             p.add_argument("--dry-run", action="store_true", help="nur zeigen, was erzeugt würde")
         if name == "ship":
             p.add_argument("--data-repo", default=str(REPO.parent / "otakusoul-data"), help="Ordner von otakusoul-data")
-            p.add_argument("--quality", type=float, default=5, help="Vorbis-Qualität 0–10 (Standard 5, etwa 160 kbit/s)")
+            p.add_argument("--format", choices=["mp3", "ogg"], default="mp3", help="Format im Daten-Repo (Standard mp3: die erzeugten Dateien werden unverändert kopiert; ogg wandelt mit ffmpeg um)")
+            p.add_argument("--quality", type=float, default=5, help="nur bei Umwandlung: ffmpeg -q:a (Vorbis 0–10, Standard 5; MP3 0–9, kleiner ist besser, dann z. B. 2)")
     args = parser.parse_args()
     args.handler(args)
 

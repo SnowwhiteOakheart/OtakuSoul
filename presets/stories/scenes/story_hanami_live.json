@@ -160,7 +160,73 @@
      "duration": 120
     }
    },
-   "tracks": []
+   "tracks": [
+    {
+     "mood": "calm",
+     "file": "calm_01.mp3",
+     "path": "music/hanami_live/calm/calm_01.mp3",
+     "sha256": "efc13ef979776cbc90a0c53b02a9c20d3f5aaf7b72b8e717d9099bbf265ea2ec",
+     "generator": "ACE-Step 1.5 (acestep.cpp, acestep-6013134)",
+     "model": "acestep-v15-xl-sft-Q8_0.gguf",
+     "caption": "bright j-pop school festival, acoustic guitar, glockenspiel, light drums, playful, relaxed acoustic guitar and piano, sunny afternoon under cherry blossoms, gentle piano like turning book pages, thoughtful, chiptune lead and headphone beat, gamer energy",
+     "lyrics": "[Instrumental]",
+     "seed": 527369000,
+     "generated": "2026-11-03",
+     "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt"
+    },
+    {
+     "mood": "calm",
+     "file": "calm_02.mp3",
+     "path": "music/hanami_live/calm/calm_02.mp3",
+     "sha256": "da5bfdf41cfe69e5bb4c8c17877016e902d9d88f71c6aa783b3e4501c7d435ed",
+     "generator": "ACE-Step 1.5 (acestep.cpp, acestep-6013134)",
+     "model": "acestep-v15-xl-sft-Q8_0.gguf",
+     "caption": "bright j-pop school festival, acoustic guitar, glockenspiel, light drums, playful, relaxed acoustic guitar and piano, sunny afternoon under cherry blossoms, gentle piano like turning book pages, thoughtful, chiptune lead and headphone beat, gamer energy",
+     "lyrics": "[Instrumental]",
+     "seed": 1673236387,
+     "generated": "2026-11-03",
+     "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt"
+    },
+    {
+     "mood": "adventure",
+     "file": "adventure_01.mp3",
+     "path": "music/hanami_live/adventure/adventure_01.mp3",
+     "sha256": "2ae1621f3fef98bb536a690c04e5126c0138d1fc110fc7960885a4e3e3faaa94",
+     "generator": "ACE-Step 1.5 (acestep.cpp, acestep-6013134)",
+     "model": "acestep-v15-xl-sft-Q8_0.gguf",
+     "caption": "bright j-pop school festival, acoustic guitar, glockenspiel, light drums, playful, upbeat brass and handclaps, busy festival rush, cheerful, chiptune lead and headphone beat, gamer energy",
+     "lyrics": "[Instrumental]",
+     "seed": 29960081,
+     "generated": "2026-11-03",
+     "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt"
+    },
+    {
+     "mood": "tension",
+     "file": "tension_01.mp3",
+     "path": "music/hanami_live/tension/tension_01.mp3",
+     "sha256": "1195e529a8fd04183c972dd152a5baf1931c1334032d885a2eeb6df087b9211b",
+     "generator": "ACE-Step 1.5 (acestep.cpp, acestep-6013134)",
+     "model": "acestep-v15-xl-sft-Q8_0.gguf",
+     "caption": "bright j-pop school festival, acoustic guitar, glockenspiel, light drums, playful, comic suspense, pizzicato strings, ticking woodblock, sneaky, chiptune lead and headphone beat, gamer energy",
+     "lyrics": "[Instrumental]",
+     "seed": 857190567,
+     "generated": "2026-11-03",
+     "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt"
+    },
+    {
+     "mood": "romance",
+     "file": "romance_01.mp3",
+     "path": "music/hanami_live/romance/romance_01.mp3",
+     "sha256": "49546b32baa58f2e8818a638f637aacc674f64fa7432ebabd1098844af2eef51",
+     "generator": "ACE-Step 1.5 (acestep.cpp, acestep-6013134)",
+     "model": "acestep-v15-xl-sft-Q8_0.gguf",
+     "caption": "bright j-pop school festival, acoustic guitar, glockenspiel, light drums, playful, tender piano and soft strings, shy warm feeling, gentle piano like turning book pages, thoughtful",
+     "lyrics": "[Instrumental]",
+     "seed": 21147732,
+     "generated": "2026-11-03",
+     "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt"
+    }
+   ]
   }
  }
 }
