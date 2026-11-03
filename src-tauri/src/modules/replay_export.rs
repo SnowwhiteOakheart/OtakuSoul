@@ -208,7 +208,16 @@ pub fn render_html(replay: &Replay, lang: &ContentLang, language_code: &str) -> 
     for (i, (_, portrait)) in portraits.iter().enumerate() {
         let _ = write!(out, ".p{i} {{ background-image: url({portrait}); }}\n");
     }
-    out.push_str("</style>\n</head>\n<body>\n<main>\n<header>\n");
+    out.push_str("</style>\n</head>\n<body>\n<main>\n");
+    out.push_str(&content(replay, lang, &avatar));
+    out.push_str("</main>\n</body>\n</html>\n");
+    out
+}
+
+/// The story itself (header, cast, lists, log, footer); `avatar` draws a speaker's picture.
+fn content(replay: &Replay, lang: &ContentLang, avatar: &dyn Fn(&str) -> String) -> String {
+    let mut out = String::new();
+    out.push_str("<header>\n");
     let _ = write!(out, "<h1>{}</h1>\n", escape(&replay.title));
     if !replay.subtitle.trim().is_empty() {
         let _ = write!(out, "<p class=\"sub\">{}</p>\n", rich(&replay.subtitle));
@@ -283,10 +292,187 @@ pub fn render_html(replay: &Replay, lang: &ContentLang, language_code: &str) -> 
     }
     let _ = write!(
         out,
-        "<footer>{}</footer>\n</main>\n</body>\n</html>\n",
+        "<footer>{}</footer>\n",
         escape(&lang.t("Made with OtakuSoul"))
     );
     out
+}
+
+const EPUB_STYLE: &str = r#"
+body { font-family: serif; line-height: 1.5; margin: 0 .6em; }
+h1 { font-size: 1.6em; margin: 1em 0 .2em; }
+.sub { font-style: italic; margin: 0 0 1em; }
+.facts { list-style: none; padding: 0; margin: 0 0 1em; font-family: sans-serif; font-size: .85em; }
+.facts li { display: inline-block; margin: 0 .8em .3em 0; }
+.cast { margin: 0 0 1em; font-family: sans-serif; font-size: .85em; }
+.cast span { display: inline-block; margin: 0 1em .4em 0; }
+.av { width: 1.8em; height: 1.8em; border-radius: 50%; vertical-align: middle; margin-right: .4em; }
+span.av { display: inline-block; text-align: center; line-height: 1.8em; background: #7c3aed; color: #fff; font-family: sans-serif; font-weight: bold; }
+.list h2 { font-family: sans-serif; font-size: .8em; text-transform: uppercase; margin: 1em 0 .2em; }
+hr { margin: 1.2em 0; }
+.line { margin: 0 0 .9em; }
+.who { font-family: sans-serif; font-size: .8em; font-weight: bold; margin: 0 0 .1em; }
+.who time { font-weight: normal; margin-left: .5em; }
+.narrator .bubble { border-left: 3px solid #7c3aed; padding-left: .7em; }
+.player { text-align: right; }
+.player .bubble { margin-left: 2em; }
+.figure .bubble { margin-right: 2em; }
+.think .bubble { font-style: italic; }
+.whisper .bubble { border-bottom: 1px dashed #999; }
+.system .bubble { font-family: sans-serif; font-size: .9em; color: #555; }
+.tag { font-family: sans-serif; font-size: .7em; text-transform: uppercase; margin-right: .4em; }
+footer { margin-top: 2em; text-align: center; font-family: sans-serif; font-size: .8em; }
+"#;
+
+/// `(media type, file extension, bytes)` of a picture data URL (`data:image/png;base64,…`).
+fn decode_portrait(data_url: &str) -> Option<(&'static str, &'static str, Vec<u8>)> {
+    use base64::Engine as _;
+    let rest = data_url.strip_prefix("data:")?;
+    let (meta, payload) = rest.split_once(',')?;
+    let mime = meta.strip_suffix(";base64")?;
+    let (mime, extension) = match mime {
+        "image/png" => ("image/png", "png"),
+        "image/jpeg" | "image/jpg" => ("image/jpeg", "jpg"),
+        "image/webp" => ("image/webp", "webp"),
+        "image/gif" => ("image/gif", "gif"),
+        _ => return None,
+    };
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(payload)
+        .ok()?;
+    Some((mime, extension, bytes))
+}
+
+/// A stable `urn:uuid:` for the book, from its title and size (the same story gets the same ID).
+fn book_id(replay: &Replay) -> String {
+    use sha2::{Digest, Sha256};
+    let mut hasher = Sha256::new();
+    hasher.update(replay.title.as_bytes());
+    hasher.update(replay.lines.len().to_le_bytes());
+    let hex: String = hasher
+        .finalize()
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect();
+    format!(
+        "urn:uuid:{}-{}-{}-{}-{}",
+        &hex[0..8],
+        &hex[8..12],
+        &hex[12..16],
+        &hex[16..20],
+        &hex[20..32]
+    )
+}
+
+/// The replay as an EPUB 3 book (one chapter, the cast's portraits as images): reads on e-readers
+/// and phones.
+pub fn render_epub(
+    replay: &Replay,
+    lang: &ContentLang,
+    language_code: &str,
+) -> Result<Vec<u8>, String> {
+    use std::io::Write as _;
+    use zip::write::SimpleFileOptions;
+
+    // Portraits by speaker (lower case): file name in the book.
+    let mut images: Vec<(String, &'static str, Vec<u8>)> = Vec::new();
+    let mut image_of: Vec<(String, String)> = Vec::new();
+    for member in &replay.cast {
+        if let Some((mime, extension, bytes)) = member
+            .portrait
+            .as_deref()
+            .filter(|p| safe_portrait(p))
+            .and_then(decode_portrait)
+        {
+            let file = format!("images/p{}.{extension}", images.len());
+            image_of.push((member.name.to_lowercase(), file.clone()));
+            images.push((file, mime, bytes));
+        }
+    }
+    let avatar = |name: &str| -> String {
+        match image_of.iter().find(|(n, _)| *n == name.to_lowercase()) {
+            Some((_, file)) => {
+                format!(
+                    "<img class=\"av\" src=\"{file}\" alt=\"{}\"/>",
+                    escape(name)
+                )
+            }
+            None => format!(
+                "<span class=\"av\">{}</span>",
+                escape(
+                    &name
+                        .chars()
+                        .next()
+                        .map(|c| c.to_uppercase().to_string())
+                        .unwrap_or_default()
+                )
+            ),
+        }
+    };
+    // XHTML wants closed void elements.
+    let body = content(replay, lang, &avatar)
+        .replace("<br>", "<br/>")
+        .replace("<hr>", "<hr/>");
+    let code = escape(language_code);
+    let title = escape(&replay.title);
+    let chapter = format!(
+        "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!DOCTYPE html>\n<html xmlns=\"http://www.w3.org/1999/xhtml\" xmlns:epub=\"http://www.idpf.org/2007/ops\" lang=\"{code}\" xml:lang=\"{code}\">\n<head>\n<meta charset=\"utf-8\"/>\n<title>{title}</title>\n<link rel=\"stylesheet\" type=\"text/css\" href=\"style.css\"/>\n</head>\n<body>\n{body}</body>\n</html>\n"
+    );
+    let nav = format!(
+        "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!DOCTYPE html>\n<html xmlns=\"http://www.w3.org/1999/xhtml\" xmlns:epub=\"http://www.idpf.org/2007/ops\" lang=\"{code}\" xml:lang=\"{code}\">\n<head><meta charset=\"utf-8\"/><title>{title}</title></head>\n<body>\n<nav epub:type=\"toc\" id=\"toc\"><ol><li><a href=\"chapter.xhtml\">{title}</a></li></ol></nav>\n</body>\n</html>\n"
+    );
+    let mut manifest = String::from(
+        "<item id=\"nav\" href=\"nav.xhtml\" media-type=\"application/xhtml+xml\" properties=\"nav\"/>\n<item id=\"style\" href=\"style.css\" media-type=\"text/css\"/>\n<item id=\"chapter\" href=\"chapter.xhtml\" media-type=\"application/xhtml+xml\"/>\n",
+    );
+    for (i, (file, mime, _)) in images.iter().enumerate() {
+        let _ = writeln!(
+            manifest,
+            "<item id=\"img{i}\" href=\"{file}\" media-type=\"{mime}\"/>"
+        );
+    }
+    let opf = format!(
+        "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<package xmlns=\"http://www.idpf.org/2007/opf\" version=\"3.0\" unique-identifier=\"bookid\" xml:lang=\"{code}\">\n<metadata xmlns:dc=\"http://purl.org/dc/elements/1.1/\">\n<dc:identifier id=\"bookid\">{}</dc:identifier>\n<dc:title>{title}</dc:title>\n<dc:language>{code}</dc:language>\n<dc:creator>OtakuSoul</dc:creator>\n<meta property=\"dcterms:modified\">{}</meta>\n</metadata>\n<manifest>\n{manifest}</manifest>\n<spine>\n<itemref idref=\"chapter\"/>\n</spine>\n</package>\n",
+        book_id(replay),
+        chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ")
+    );
+    let container = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<container version=\"1.0\" xmlns=\"urn:oasis:names:tc:opendocument:xmlns:container\">\n<rootfiles>\n<rootfile full-path=\"OEBPS/content.opf\" media-type=\"application/oebps-package+xml\"/>\n</rootfiles>\n</container>\n";
+
+    let mut writer = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
+    let stored = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
+    let packed = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
+    let mut add = |name: &str, bytes: &[u8], options: SimpleFileOptions| -> Result<(), String> {
+        writer
+            .start_file(name, options)
+            .map_err(|e| e.to_string())?;
+        writer.write_all(bytes).map_err(|e| e.to_string())
+    };
+    // The format wants `mimetype` first and uncompressed.
+    add("mimetype", b"application/epub+zip", stored)?;
+    add("META-INF/container.xml", container.as_bytes(), packed)?;
+    add("OEBPS/content.opf", opf.as_bytes(), packed)?;
+    add("OEBPS/nav.xhtml", nav.as_bytes(), packed)?;
+    add("OEBPS/style.css", EPUB_STYLE.as_bytes(), packed)?;
+    add("OEBPS/chapter.xhtml", chapter.as_bytes(), packed)?;
+    for (file, _, bytes) in &images {
+        add(&format!("OEBPS/{file}"), bytes, stored)?;
+    }
+    writer
+        .finish()
+        .map(std::io::Cursor::into_inner)
+        .map_err(|e| e.to_string())
+}
+
+/// Writes the replay to `target_path`: an EPUB book for `.epub`, otherwise an HTML page.
+pub fn write_replay(replay: &Replay, lang: &ContentLang, target_path: &str) -> Result<(), String> {
+    let is_epub = std::path::Path::new(target_path)
+        .extension()
+        .is_some_and(|e| e.eq_ignore_ascii_case("epub"));
+    let bytes = if is_epub {
+        render_epub(replay, lang, lang.code())?
+    } else {
+        render_html(replay, lang, lang.code()).into_bytes()
+    };
+    std::fs::write(target_path, bytes).map_err(|e| e.to_string())
 }
 
 const MAX_PORTRAIT_BYTES: u64 = 6 * 1024 * 1024;
@@ -595,7 +781,12 @@ mod tests {
             timestamp: 1_760_000_000,
         };
         state.chat_log = vec![
-            message("gm", "GM", "<think>x</think>Es schneit. [emotion: calm]", "do"),
+            message(
+                "gm",
+                "GM",
+                "<think>x</think>Es schneit. [emotion: calm]",
+                "do",
+            ),
             message("player", "Du", "Ich klopfe.", "do"),
             message("companion", "Lirwen", "*lächelt*", "say"),
         ];
@@ -605,9 +796,58 @@ mod tests {
         assert_eq!(replay.lines.len(), 3);
         assert_eq!(replay.lines[0].voice, Voice::Narrator);
         assert_eq!(replay.lines[0].text, "Es schneit.");
-        assert!(replay.cast.iter().any(|c| c.name == "Lirwen"), "the speakers are in the cast");
+        assert!(
+            replay.cast.iter().any(|c| c.name == "Lirwen"),
+            "the speakers are in the cast"
+        );
         let html = render_html(&replay, &lang, lang.code());
         assert!(html.contains("line narrator") && html.contains("line figure"));
-        assert!(!html.contains("&lt;think&gt;") && !html.contains("emotion:"), "reasoning does not leak into the page");
+        assert!(
+            !html.contains("&lt;think&gt;") && !html.contains("emotion:"),
+            "reasoning does not leak into the page"
+        );
+    }
+
+    #[test]
+    fn the_epub_is_a_valid_package_with_the_portraits_as_images() {
+        use std::io::Read as _;
+        let bytes = render_epub(&replay(), &ContentLang::current(), "de").unwrap();
+        let mut book = zip::ZipArchive::new(std::io::Cursor::new(bytes)).unwrap();
+        {
+            // `mimetype` comes first and is stored, as the format demands.
+            let first = book.by_index(0).unwrap();
+            assert_eq!(first.name(), "mimetype");
+            assert_eq!(first.compression(), zip::CompressionMethod::Stored);
+        }
+        let mut read = |name: &str| {
+            let mut text = String::new();
+            book.by_name(name)
+                .unwrap()
+                .read_to_string(&mut text)
+                .unwrap();
+            text
+        };
+        assert_eq!(read("mimetype"), "application/epub+zip");
+        let opf = read("OEBPS/content.opf");
+        assert!(opf.contains("<dc:title>Frostweiler &lt;1&gt;</dc:title>"));
+        assert!(opf.contains("urn:uuid:") && opf.contains("dcterms:modified"));
+        assert!(opf.contains("href=\"images/p0.png\" media-type=\"image/png\""));
+        let chapter = read("OEBPS/chapter.xhtml");
+        assert!(chapter.contains("<img class=\"av\" src=\"images/p0.png\" alt=\"Lirwen\"/>"));
+        assert!(
+            !chapter.contains("<br>") && !chapter.contains("<hr>"),
+            "XHTML closes empty elements"
+        );
+        assert!(chapter.contains("&lt;b&gt;hinein&lt;/b&gt;"));
+        // A picture that is no data URL never gets in; Faelion shows an initial instead.
+        assert!(book.by_name("OEBPS/images/p1.png").is_err());
+    }
+
+    #[test]
+    fn the_same_story_gets_the_same_book_id() {
+        assert_eq!(book_id(&replay()), book_id(&replay()));
+        let mut other = replay();
+        other.title = "Etwas anderes".into();
+        assert_ne!(book_id(&replay()), book_id(&other));
     }
 }

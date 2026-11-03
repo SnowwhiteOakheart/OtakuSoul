@@ -290,7 +290,10 @@ export const StageView: React.FC = () => {
     if (!stageState) return;
     const target = await saveDialog({
       defaultPath: `${stageState.definition.title.toLowerCase().replace(/\s+/g, '_')}.html`,
-      filters: [{ name: 'HTML', extensions: ['html'] }],
+      filters: [
+        { name: 'HTML', extensions: ['html'] },
+        { name: 'EPUB', extensions: ['epub'] },
+      ],
     });
     if (!target) return;
     try {

@@ -196,7 +196,10 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
   const handleExportHtml = async () => {
     const target = await saveDialog({
       defaultPath: `${activeCharacter?.card.data.name || 'chat'}_${new Date().toISOString().slice(0, 10)}.html`,
-      filters: [{ name: 'HTML', extensions: ['html'] }],
+      filters: [
+        { name: 'HTML', extensions: ['html'] },
+        { name: 'EPUB', extensions: ['epub'] },
+      ],
     });
     if (!target) return;
     if (await exportCurrentChatHtml(target)) toast.success(translate('chatSidebar.exportedHtml'));

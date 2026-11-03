@@ -464,8 +464,8 @@ fn group_speaker_names(
     })
 }
 
-/// The chat as an HTML replay (one self-contained page), written to `target_path`: the webview
-/// cannot download files itself.
+/// The chat as a story: an HTML page, or an EPUB book when `target_path` ends in `.epub`, written
+/// there (the webview cannot download files itself).
 #[tauri::command(async)]
 pub fn export_chat_html(
     state: State<'_, AppState>,
@@ -474,7 +474,7 @@ pub fn export_chat_html(
     user_name: String,
     target_path: String,
 ) -> Result<(), String> {
-    use crate::modules::replay_export::{chat_replay, render_html};
+    use crate::modules::replay_export::{chat_replay, write_replay};
     let speaker_names = group_speaker_names(&state, &chat_id)?;
     let title = state
         .memory_db
@@ -498,8 +498,7 @@ pub fn export_chat_html(
         &characters,
         &lang,
     );
-    std::fs::write(&target_path, render_html(&replay, &lang, lang.code()))
-        .map_err(|e| e.to_string())
+    write_replay(&replay, &lang, &target_path).map_err(|e| e.to_string())
 }
 
 /// The chat in SillyTavern's JSONL format; with `target_path` also written to that file (the

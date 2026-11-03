@@ -1144,7 +1144,7 @@ Etikett). Texte werden HTML-maskiert, `*Aktion*`/`**fett**` werden zu `<em>`/`<s
 `[emotion: …]`-Tags fehlen. Hell/Dunkel per `prefers-color-scheme`, druckfreundlich. Befehle `export_stage_html` und
 `export_chat_html` schreiben nach `target_path` (der Webview kann nichts herunterladen; Speichern-Dialog in `StageView` und
 `ChatSidebar`). Beschriftungen kommen über `ContentLang::t` (Englisch als Quelle; Übersetzungen in `presets/locales/{de,ru,ja}.json`
-**und** `otakusoul-data/locales/` – beides pflegen, sonst überschreibt der Hub-Abgleich sie). Offen: EPUB und Webtoon (B5, zweite Stufe).
+**und** `otakusoul-data/locales/` – beides pflegen, sonst überschreibt der Hub-Abgleich sie). Dieselbe Geschichte als EPUB 3 (`render_epub`: ein Kapitel, Porträts als Bilder, `mimetype` zuerst und ungepackt; `write_replay` wählt nach der Dateiendung `.epub`/`.html`). Offen: Webtoon-Strip (B5, dritte Stufe).
 
 **Berührung im Hauptfenster (Avatar im Chat).** Wie im Pet: Antippen des Kopfes = Streicheln (`headpat`), sonst Stupsen
 (`poke`); nur ein Tipp (≤ 6 px Weg, ≤ 500 ms), weil Ziehen schon die Kamera dreht bzw. das Modell verschiebt
