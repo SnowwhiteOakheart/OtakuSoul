@@ -153,9 +153,34 @@ struct Shared<'a, C: Fn() -> bool, P: Fn(u64)> {
     done: AtomicU64,
     last_emit: Mutex<Instant>,
     no_ranges: AtomicBool,
+    /// Fastest recent rate of a single connection in bytes per second (slowly fading).
+    best_rate: AtomicU64,
+}
+
+/// Measuring window of one connection.
+const RATE_WINDOW: Duration = Duration::from_secs(15);
+
+/// Below this a connection is never dropped for being slow: the whole line is slow then.
+const MIN_BEST_RATE: u64 = 256 * 1024;
+
+/// A connection that delivers less than this fraction of the fastest one is replaced.
+const SLOW_FRACTION: u64 = 8;
+
+/// Whether a connection with `rate` hangs behind its peers (`best`) so far that a new connection
+/// is worth more. Single connections are throttled at random on the server side.
+fn far_too_slow(rate: u64, best: u64) -> bool {
+    best >= MIN_BEST_RATE && rate * SLOW_FRACTION < best
 }
 
 impl<C: Fn() -> bool, P: Fn(u64)> Shared<'_, C, P> {
+    /// Records a connection's rate of one window and tells whether it should be replaced.
+    fn judge_rate(&self, rate: u64) -> bool {
+        let best = self.best_rate.load(Ordering::SeqCst);
+        self.best_rate
+            .store(rate.max(best - best / 16), Ordering::SeqCst);
+        far_too_slow(rate, best.max(rate))
+    }
+
     fn add(&self, bytes: u64) {
         let done = self.done.fetch_add(bytes, Ordering::SeqCst) + bytes;
         let mut last = self.last_emit.lock().unwrap_or_else(|e| e.into_inner());
@@ -211,6 +236,7 @@ async fn fetch_segment<C: Fn() -> bool, P: Fn(u64)>(
             Ok(response) if response.status() == reqwest::StatusCode::PARTIAL_CONTENT => {
                 let mut stream = response.bytes_stream();
                 let mut error = None;
+                let mut window = (Instant::now(), 0u64);
                 while let Some(chunk) = stream.next().await {
                     if let Some(stop) = shared.stopped() {
                         out.flush().await.ok();
@@ -227,6 +253,19 @@ async fn fetch_segment<C: Fn() -> bool, P: Fn(u64)>(
                             shared.add(take as u64);
                             if have == segment.len() {
                                 break;
+                            }
+                            window.1 += take as u64;
+                            let secs = window.0.elapsed();
+                            if secs >= RATE_WINDOW {
+                                let rate = (window.1 as f64 / secs.as_secs_f64()) as u64;
+                                if shared.judge_rate(rate) {
+                                    error = Some(format!(
+                                        "Verbindung zu langsam ({} KB/s)",
+                                        rate / 1024
+                                    ));
+                                    break;
+                                }
+                                window = (Instant::now(), 0);
                             }
                         }
                         Err(e) => {
@@ -335,6 +374,7 @@ pub async fn download(
         done: AtomicU64::new(partial_bytes(part)),
         last_emit: Mutex::new(Instant::now()),
         no_ranges: AtomicBool::new(false),
+        best_rate: AtomicU64::new(0),
     };
     // All ranges run concurrently on this task; file writes go to the blocking pool.
     let results = futures_util::future::join_all(
@@ -391,6 +431,17 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         dir.join("model.gguf.part")
+    }
+
+    #[test]
+    fn only_connections_far_behind_their_peers_are_replaced() {
+        let mib = 1 << 20;
+        assert!(far_too_slow(70 * 1024, mib), "70 KB/s next to 1 MB/s");
+        assert!(!far_too_slow(500 * 1024, mib), "half as fast is normal");
+        assert!(
+            !far_too_slow(10 * 1024, 100 * 1024),
+            "a slow line stays as it is"
+        );
     }
 
     #[tokio::test(flavor = "multi_thread")]
