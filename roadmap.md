@@ -23,7 +23,7 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 | A4 | Nutzertests mit 2–3 Einsteigern | ★★★ | S | Testpersonen |
 | A5 | Signierte Installer (Windows, macOS) | ★★★ | S–M | Zertifikat bzw. Apple-Konto (Kosten) |
 | **B** | **Als Nächstes – baut auf Vorhandenem auf** | | | |
-| B4 | Eigene Figuren und Geschichten teilen | ★★★ | L | Prüfablauf im Daten-Repo |
+| B4 | Teilen: Lorebooks, automatische Prüfung der Einreichung | ★★ | M | Prüfablauf im Daten-Repo |
 | B5 | Webtoon-Export (HTML und EPUB sind fertig) | ★★ | M | – |
 | B6 | OBS-Overlay: 3D-/Live2D-Modell statt Porträt | ★ | M | – |
 | B7 | Benachrichtigungsklick unter Linux und macOS | ★ | S (Linux) / M (macOS) | Mac für macOS |
@@ -125,9 +125,10 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 
 ## B. Als Nächstes – baut auf Vorhandenem auf
 
-- [ ] **B4 · Eigene Figuren und Geschichten teilen:** Einreichen in den Hub aus der App (Pull Request an `otakusoul-data`
-  oder Formular), mit Prüfung vor der Aufnahme (Validator, Lizenz- und Altersangaben, NSFW-Trennung). *Nutzen:* mehr
-  Inhalte ohne eigenen Aufwand; *Risiko:* Prüfaufwand und Moderation.
+- [ ] **B4 · Eigene Figuren und Geschichten teilen – Rest:** Der Weg „Paket + vorbefülltes Issue“ steht (Prüfung, ZIP im Repo-Layout,
+  Lizenzwahl, Altersmarke, Issue-Vorlagen in beiden Daten-Repos; siehe `roadmap_abgeschlossen.md`). Offen: Lorebooks beisteuern,
+  ein Workflow im Daten-Repo, der das ZIP aus dem Issue prüft (Validator) und einen Pull Request vorschlägt, und der erste echte
+  Durchlauf mit einem Issue. *Risiko:* Prüfaufwand und Moderation bleiben beim Betreiber.
 - [ ] **B5 · Webtoon-Export:** HTML-Replay und EPUB sind fertig (`replay_export.rs`, siehe `roadmap_abgeschlossen.md`).
   Offen: ein Webtoon-Strip aus einem Akt mit Szenenbildern und Emotionsporträts (lange Bildspalte, Sprechblasen).
 - [ ] **B6 · OBS-Overlay mit Modell:** Das Overlay (`/overlay`) zeigt heute das Porträt mit Sprechblase und Stimmung. Offen: das

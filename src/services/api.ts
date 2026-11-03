@@ -1,3 +1,6 @@
+import type { ContributionResult } from '../types/generated/ContributionResult';
+import type { Finding } from '../types/generated/Finding';
+import type { SubmissionInfo } from '../types/generated/SubmissionInfo';
 import type { TokenEvent } from '../types/generated/TokenEvent';
 import type { ThoughtEvent } from '../types/generated/ThoughtEvent';
 import type { UiLanguage } from '../types/generated/UiLanguage';
@@ -658,6 +661,24 @@ export const api = {
     return await invoke<SceneState>('stage_import_scene_json', { jsonContent, targetFolder });
   },
 
+  /** What the hub needs of a character before it is contributed. */
+  checkCharacterContribution: async (profile: CharacterProfile): Promise<Finding[]> => {
+    return await invoke<Finding[]>('check_character_contribution', { profile });
+  },
+  checkStoryContribution: async (sceneId: string): Promise<Finding[]> => {
+    return await invoke<Finding[]>('check_story_contribution', { sceneId });
+  },
+  /** Writes the contribution package (ZIP) of a character to `targetPath`; the result has the issue address. */
+  exportCharacterContribution: async (
+    profile: CharacterProfile,
+    info: SubmissionInfo,
+    targetPath: string,
+  ): Promise<ContributionResult> => {
+    return await invoke<ContributionResult>('export_character_contribution', { profile, info, targetPath });
+  },
+  exportStoryContribution: async (sceneId: string, info: SubmissionInfo, targetPath: string): Promise<ContributionResult> => {
+    return await invoke<ContributionResult>('export_story_contribution', { sceneId, info, targetPath });
+  },
   /** The act as an HTML replay, written to `targetPath` by the backend (the webview cannot download files). */
   exportStageHtml: async (sceneId: string, targetPath: string): Promise<void> => {
     await invoke<void>('export_stage_html', { sceneId, targetPath });

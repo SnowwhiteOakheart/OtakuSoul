@@ -35,6 +35,7 @@ import {
   Scroll,
   Swords,
   BookOpen,
+  Share2,
   MapPin,
   Backpack,
   LoaderCircle,
@@ -50,6 +51,7 @@ import {
   SlidersHorizontal,
 } from 'lucide-react';
 import { api } from '../../services/api';
+import { ContributeDialog } from '../hub/ContributeDialog';
 import { save as saveDialog } from '@tauri-apps/plugin-dialog';
 import { SceneState } from '../../types';
 import { ModalOverlay } from '../ui/ModalOverlay';
@@ -284,6 +286,8 @@ export const StageView: React.FC = () => {
       URL.revokeObjectURL(url);
     }
   };
+
+  const [contributing, setContributing] = useState(false);
 
   // An HTML page with the whole act as a story; the backend writes it where the user says.
   const handleExportHtml = async () => {
@@ -549,6 +553,12 @@ export const StageView: React.FC = () => {
                 description: t('stage.exportHtml'),
                 icon: BookOpen,
                 onSelect: () => void handleExportHtml(),
+              },
+              {
+                label: t('contribute.menuStory'),
+                description: t('contribute.menuStoryHint'),
+                icon: Share2,
+                onSelect: () => setContributing(true),
               },
             ]}
           />
@@ -941,6 +951,12 @@ export const StageView: React.FC = () => {
         onClose={closeLobby}
         initialRules={lobbyRules}
       />
+      {contributing && stageState && (
+        <ContributeDialog
+          target={{ kind: 'story', sceneId: stageState.definition.id, title: stageState.definition.title }}
+          onClose={() => setContributing(false)}
+        />
+      )}
     </div>
   );
 };

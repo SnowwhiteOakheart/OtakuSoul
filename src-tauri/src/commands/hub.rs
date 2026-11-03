@@ -132,3 +132,68 @@ pub async fn import_scene_from_gateway(
 pub fn list_installed_hub_items() -> Vec<crate::modules::hub_installed::InstalledHubItem> {
     crate::modules::hub_installed::list()
 }
+
+// ---------------------------------------------------------------------------------------
+// Contributing to the hub (`modules/contribution.rs`)
+// ---------------------------------------------------------------------------------------
+
+/// What the hub needs of a character, before it is contributed.
+#[tauri::command(async)]
+pub fn check_character_contribution(
+    profile: crate::modules::characters::CharacterProfile,
+) -> Vec<crate::modules::contribution::Finding> {
+    crate::modules::contribution::check_character(&profile)
+}
+
+/// What the hub needs of a story, before it is contributed.
+#[tauri::command(async)]
+pub fn check_story_contribution(
+    scene_id: String,
+) -> Result<Vec<crate::modules::contribution::Finding>, String> {
+    let state = crate::modules::stage::load_scene_by_id(&scene_id)?;
+    Ok(crate::modules::contribution::check_story(&state.definition))
+}
+
+/// Writes the contribution package of a character to `target_path` (a ZIP); the result has the
+/// address of the prefilled issue.
+#[tauri::command(async)]
+pub fn export_character_contribution(
+    profile: crate::modules::characters::CharacterProfile,
+    info: crate::modules::contribution::SubmissionInfo,
+    target_path: String,
+) -> Result<crate::modules::contribution::ContributionResult, String> {
+    use crate::modules::contribution::{Kind, character_files, check_character, prepare};
+    let findings = check_character(&profile);
+    let files = character_files(&profile, &info)?;
+    let (bytes, result) = prepare(
+        Kind::Character,
+        &profile.card.data.name,
+        &info,
+        &findings,
+        files,
+    )?;
+    std::fs::write(&target_path, bytes).map_err(|e| e.to_string())?;
+    Ok(result)
+}
+
+/// Writes the contribution package of a story to `target_path` (a ZIP).
+#[tauri::command(async)]
+pub fn export_story_contribution(
+    scene_id: String,
+    info: crate::modules::contribution::SubmissionInfo,
+    target_path: String,
+) -> Result<crate::modules::contribution::ContributionResult, String> {
+    use crate::modules::contribution::{Kind, check_story, prepare, story_files};
+    let state = crate::modules::stage::load_scene_by_id(&scene_id)?;
+    let findings = check_story(&state.definition);
+    let files = story_files(&state.definition, &info)?;
+    let (bytes, result) = prepare(
+        Kind::Story,
+        &state.definition.title,
+        &info,
+        &findings,
+        files,
+    )?;
+    std::fs::write(&target_path, bytes).map_err(|e| e.to_string())?;
+    Ok(result)
+}

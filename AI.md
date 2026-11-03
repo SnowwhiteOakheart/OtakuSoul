@@ -1136,6 +1136,17 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
 - Chat-Blasen der Brücke: nur frische Antworten (nach Generierungsende oder < 2 min) – der Verlauf eines Chats kommt
   nach dem Chatwechsel und sein Ende ist sonst „neu“. Satzweise Blasen über `streamingTts.onSentence`.
 
+**Beitrag zum Hub (B4).** `contribution.rs` + `ContributeDialog.tsx` (Teilen-Symbol an der Karte im Charakter-Archiv, Eintrag
+im Stage-Menü). Ablauf: Prüfung (`check_character`/`check_story`, Fehler stoppen, Warnungen nicht; Codes `contribute.check.<code>`
+in den UI-Sprachen), Angaben (Name, Lizenz `CC0-1.0` vorbelegt / `CC-BY-4.0` / `CC-BY-SA-4.0`, Altersmarke, Rechte-Bestätigung),
+dann ZIP im Ordner-Layout des Daten-Repos (`cards_gateway/<Name>.png` mit `extensions.otakusoul_license` und ggf.
+`otakusoul_nsfw`, bzw. `stages_gateway/<Titel>.json` ohne Spielstand-Spuren; dazu `EINREICHUNG.json` mit Prüfsummen und
+Prüfergebnis sowie `README.txt`) und eine vorbefüllte Issue-Adresse (`issues/new?title&body&template=einreichung.md`;
+Inhalte ab 18 gehen an `otakusoul-data-nsfw`). Die App hält kein GitHub-Token; der Nutzer zieht das ZIP in das Issue,
+die Aufnahme prüft der Betreiber mit der Checkliste der Vorlage (`.github/ISSUE_TEMPLATE/einreichung.md` in beiden
+Daten-Repos) und übernimmt per Pull Request. `card_png_bytes` (`characters.rs`) ist die gemeinsame PNG-Ausgabe von Export
+und Beitrag. Offen: Lorebooks beisteuern, automatische Prüfung der Einreichung per Workflow.
+
 **HTML-Replay (Export als Geschichte).** `replay_export.rs` macht aus einem Stage-Akt (`scene_replay`) oder einem Chat
 (`chat_replay`) eine einzige HTML-Seite ohne Skripte und ohne Fremdanfragen (`render_html`): Titel, Ort/Zeit, Besetzung mit
 Porträts (je Figur einmal als CSS-`background-image`, nur `data:image/…` ohne Sonderzeichen, bis 6 MB; sonst Anfangsbuchstabe),

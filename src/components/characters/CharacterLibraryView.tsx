@@ -21,11 +21,13 @@ import {
   MoreHorizontal,
   SearchX,
   UserPlus,
+  Share2,
 } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useGridCols } from '../../hooks/useGridCols';
 import { useDragScroll } from '../../hooks/useDragScroll';
 import { CharacterEditorModal } from './CharacterEditorModal';
+import { ContributeDialog } from '../hub/ContributeDialog';
 import { CharacterPreviewModal, isStarterCharacter } from './CharacterPreviewModal';
 import { StarterBanner } from './StarterBanner';
 import { translate, useTranslation } from '../../i18n';
@@ -107,6 +109,7 @@ export const CharacterLibraryView = () => {
       .sort((a, b) => Number(isStarterCharacter(b)) - Number(isStarterCharacter(a)));
   }, [availableCharacters, searchQuery, selectedTag, currentLanguage]);
   const [previewing, setPreviewing] = useState<CharacterProfile | null>(null);
+  const [contributing, setContributing] = useState<CharacterProfile | null>(null);
 
   const { ref: parentRef, cols } = useGridCols({ 640: 2, 768: 3, 1024: 4, 1280: 5 }, 1);
   // The starter characters sit in their own framed block under the cover; the user's other
@@ -193,6 +196,14 @@ export const CharacterLibraryView = () => {
               aria-label={t('library.exportPng', { name: data.name })}
             >
               <Download className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setContributing(char)}
+              className={`${CARD_ACTION_BUTTON} hover:bg-fuchsia-600`}
+              title={t('contribute.menu', { name: data.name })}
+              aria-label={t('contribute.menu', { name: data.name })}
+            >
+              <Share2 className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => handleDeleteCard(char)}
@@ -515,6 +526,8 @@ export const CharacterLibraryView = () => {
           }}
         />
       )}
+
+      {contributing && <ContributeDialog target={{ kind: 'character', profile: contributing }} onClose={() => setContributing(null)} />}
 
       {isEditorOpen && (
         <CharacterEditorModal

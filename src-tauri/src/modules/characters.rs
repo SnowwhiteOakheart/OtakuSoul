@@ -890,11 +890,7 @@ pub fn export_character_card(
 ) -> Result<(), String> {
     let card = without_local_picture_paths(&profile.card);
     if export_as_png {
-        let base_bytes = profile
-            .avatar_png_bytes()
-            .unwrap_or_else(get_placeholder_png);
-
-        let enriched_png = inject_character_metadata_png(&base_bytes, &card)?;
+        let enriched_png = card_png_bytes(profile)?;
         fs::write(target_path, enriched_png)
             .map_err(|e| crate::err!("backend.characters.exportPng", error = e))?;
     } else {
@@ -905,6 +901,15 @@ pub fn export_character_card(
     }
 
     Ok(())
+}
+
+/// The card as a PNG with its data inside (the format cards travel in), without local picture paths.
+pub fn card_png_bytes(profile: &CharacterProfile) -> Result<Vec<u8>, String> {
+    let card = without_local_picture_paths(&profile.card);
+    let base_bytes = profile
+        .avatar_png_bytes()
+        .unwrap_or_else(get_placeholder_png);
+    inject_character_metadata_png(&base_bytes, &card)
 }
 
 /// Deletes a character: moves user-created files to the trash folder, and hides preset characters
