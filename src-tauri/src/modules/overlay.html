@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OtakuSoul Overlay</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: #f8fafc; }
+  #root { position: fixed; inset: 0; display: flex; align-items: flex-end; padding: 2vh 2vw; }
+  #root.left { justify-content: flex-start; }
+  #root.center { justify-content: center; }
+  #root.right { justify-content: flex-end; }
+  #figure { position: relative; display: flex; flex-direction: column; align-items: center; max-width: 100%; max-height: 100%; transform-origin: bottom center; }
+  #portrait { display: none; max-width: 100%; max-height: 78vh; object-fit: contain; transform-origin: bottom center; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, .45)); transition: transform .08s linear; }
+  #placeholder { display: none; width: 22vh; height: 22vh; border-radius: 50%; align-items: center; justify-content: center; font-size: 11vh; background: rgba(15, 23, 42, .75); border: 2px solid rgba(103, 232, 249, .5); }
+  #portrait.idle { animation: breathe 4.2s ease-in-out infinite; }
+  @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.012, 1.02); } }
+  #bubble { display: none; position: relative; max-width: min(46em, 92vw); margin-bottom: 1.1em; padding: .7em 1em; border-radius: 1.1em; background: rgba(15, 23, 42, .88); border: 1px solid rgba(103, 232, 249, .35); box-shadow: 0 4px 18px rgba(0, 0, 0, .4); font-size: var(--font, 22px); line-height: 1.35; white-space: pre-wrap; overflow-wrap: anywhere; }
+  #bubble::after { content: ""; position: absolute; left: 50%; bottom: -.5em; width: .9em; height: .9em; margin-left: -.45em; background: inherit; border-right: 1px solid rgba(103, 232, 249, .35); border-bottom: 1px solid rgba(103, 232, 249, .35); transform: rotate(45deg); }
+  #bubble.show { display: block; animation: pop .18s ease-out; }
+  @keyframes pop { from { opacity: 0; transform: translateY(.4em) scale(.96); } to { opacity: 1; transform: none; } }
+  #tag { display: none; margin-top: .5em; padding: .15em .8em; border-radius: 1em; background: rgba(15, 23, 42, .8); font-size: calc(var(--font, 22px) * .7); color: #67e8f9; }
+  #tag.show { display: block; }
+  #dots { display: none; gap: .3em; margin-left: .6em; vertical-align: middle; }
+  #dots.show { display: inline-flex; }
+  #dots i { width: .45em; height: .45em; border-radius: 50%; background: #67e8f9; animation: dot 1s infinite; }
+  #dots i:nth-child(2) { animation-delay: .15s; } #dots i:nth-child(3) { animation-delay: .3s; }
+  @keyframes dot { 0%, 60%, 100% { opacity: .25; transform: none; } 30% { opacity: 1; transform: translateY(-.3em); } }
+  #wait { position: fixed; top: 8px; left: 8px; padding: 6px 10px; border-radius: 8px; background: rgba(15, 23, 42, .85); font-size: 13px; color: #94a3b8; }
+</style>
+</head>
+<body>
+<div id="root" class="center">
+  <div id="figure">
+    <div id="bubble"><span id="text"></span><span id="dots"><i></i><i></i><i></i></span></div>
+    <img id="portrait" alt="">
+    <div id="placeholder"></div>
+    <div id="tag"></div>
+  </div>
+</div>
+<div id="wait"></div>
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  var token = q.get('token') || '';
+  var de = (navigator.language || 'en').toLowerCase().indexOf('de') === 0;
+  var num = function (key, def, min, max) { var v = parseFloat(q.get(key)); return isFinite(v) ? Math.min(max, Math.max(min, v)) : def; };
+  var scale = num('scale', 1, 0.3, 3);
+  var showBubble = q.get('bubble') !== '0';
+  var showName = q.get('name') === '1';
+  var showEmotion = q.get('emotion') === '1';
+  var align = ['left', 'center', 'right'].indexOf(q.get('align')) >= 0 ? q.get('align') : 'center';
+  var bg = q.get('bg');
+  if (bg && /^[#a-z0-9(),. %-]{1,40}$/i.test(bg)) document.body.style.background = bg;
+  document.documentElement.style.setProperty('--font', num('font', 22, 10, 80) + 'px');
+
+  var $ = function (id) { return document.getElementById(id); };
+  $('root').className = align;
+  $('figure').style.transform = 'scale(' + scale + ')';
+
+  var state = { characterName: '', emotion: '', portrait: '', thinking: false };
+  var gotState = false;
+  var bubbleTimer = 0;
+  var speakingUntil = 0;
+  var amplitude = 0;
+
+  function waitText(text) { $('wait').textContent = text; $('wait').style.display = text ? 'block' : 'none'; }
+  waitText(token ? (de ? 'Verbinde mit OtakuSoul …' : 'Connecting to OtakuSoul …')
+                 : (de ? 'Es fehlt ?token=… in der Adresse.' : 'The address needs ?token=…'));
+
+  function render() {
+    var img = $('portrait');
+    var hasPortrait = !!state.portrait;
+    if (hasPortrait && img.getAttribute('src') !== state.portrait) img.src = state.portrait;
+    img.style.display = hasPortrait ? 'block' : 'none';
+    $('placeholder').style.display = !hasPortrait && gotState ? 'flex' : 'none';
+    $('placeholder').textContent = (state.characterName || '?').charAt(0).toUpperCase();
+    var parts = [];
+    if (showName && state.characterName) parts.push(state.characterName);
+    if (showEmotion && state.emotion) parts.push(state.emotion);
+    $('tag').textContent = parts.join(' · ');
+    $('tag').className = parts.length ? 'show' : '';
+    $('dots').className = state.thinking ? 'show' : '';
+    if (state.thinking && showBubble && !$('text').textContent) $('bubble').className = 'show';
+    else if (!state.thinking && !$('text').textContent) $('bubble').className = '';
+  }
+
+  function say(text, ms) {
+    if (!showBubble || !text) return;
+    $('text').textContent = text;
+    $('bubble').className = 'show';
+    clearTimeout(bubbleTimer);
+    bubbleTimer = setTimeout(function () {
+      $('text').textContent = '';
+      $('bubble').className = state.thinking ? 'show' : '';
+    }, ms);
+  }
+
+  // The mouth: the figure swells a little with the voice (portrait only, no model here).
+  function tick() {
+    var talking = Date.now() < speakingUntil;
+    var img = $('portrait');
+    var lift = amplitude > 0.02 ? 1 + Math.min(amplitude, 1) * 0.035 : 1;
+    img.style.transform = 'scale(' + lift + ')';
+    img.className = talking || amplitude > 0.02 ? '' : 'idle';
+    amplitude *= 0.85;
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+
+  function handle(msg) {
+    if (msg.type === 'state') {
+      for (var key in msg) if (key !== 'type') state[key] = msg[key];
+      if (!gotState) { gotState = true; waitText(''); }
+      render();
+    } else if (msg.type === 'say') {
+      say(msg.text, Math.min(20000, Math.max(4000, msg.text.length * 70)));
+    } else if (msg.type === 'sentence') {
+      speakingUntil = Date.now() + msg.ms;
+      say(msg.text, Math.max(2500, msg.ms + 1200));
+    } else if (msg.type === 'audio') {
+      amplitude = Math.max(amplitude, msg.amplitude);
+      if (msg.amplitude > 0.02) speakingUntil = Date.now() + 250;
+    }
+  }
+
+  var delay = 500;
+  function connect() {
+    if (!token) return;
+    var ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/api/overlay-ws?token=' + encodeURIComponent(token));
+    ws.onopen = function () {
+      delay = 500;
+      if (!gotState) waitText(de ? 'Verbunden. Warte auf die Figur …' : 'Connected. Waiting for the figure …');
+    };
+    ws.onmessage = function (event) { try { handle(JSON.parse(event.data)); } catch (e) { /* ignore */ } };
+    ws.onclose = function () {
+      if (!gotState) waitText(de ? 'Keine Verbindung (läuft der Web-Server, stimmt das Token?) …' : 'No connection (is the web server on, is the token right?) …');
+      setTimeout(connect, delay);
+      delay = Math.min(delay * 2, 8000);
+    };
+  }
+  connect();
+})();
+</script>
+</body>
+</html>

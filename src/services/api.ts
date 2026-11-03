@@ -2052,6 +2052,10 @@ export const api = {
     return await invoke<void>('stop_web_server');
   },
 
+  /** Tells the streaming overlay (OBS browser source) what the figure does; returns how many pages are open. */
+  overlayPush: async (message: Record<string, unknown>): Promise<number> => {
+    return await invoke<number>('overlay_push', { message });
+  },
   getWebServerStatus: async (): Promise<WebServerStatus> => {
     return await invoke<WebServerStatus>('get_web_server_status');
   },

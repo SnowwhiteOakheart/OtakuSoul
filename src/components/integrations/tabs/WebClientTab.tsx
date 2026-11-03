@@ -37,6 +37,7 @@ export const WebClientTab: React.FC = () => {
   );
 
   const [copiedUrl, setCopiedUrl] = useState(false);
+  const [copiedOverlay, setCopiedOverlay] = useState(false);
   // Edits live in a draft; without one the form shows the saved configuration.
   const [draft, setLocalWebConfig] = useState<WebServerConfig | null>(null);
   const localWebConfig = draft ?? webServerConfig ?? DEFAULT_WEB_CONFIG;
@@ -49,6 +50,20 @@ export const WebClientTab: React.FC = () => {
       setTimeout(() => setCopiedUrl(false), 2500);
     } catch (e) {
       console.error('Failed to copy URL:', e);
+    }
+  };
+
+  const overlayUrl = webServerStatus
+    ? `http://127.0.0.1:${webServerStatus.port}/overlay?token=${webServerStatus.auth_token}`
+    : '';
+
+  const handleCopyOverlayUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(overlayUrl);
+      setCopiedOverlay(true);
+      setTimeout(() => setCopiedOverlay(false), 2500);
+    } catch (e) {
+      console.error('Failed to copy overlay URL:', e);
     }
   };
 
@@ -162,6 +177,42 @@ export const WebClientTab: React.FC = () => {
                   <ExternalLink className="w-4 h-4" />
                 </a>
               </div>
+            </div>
+          )}
+
+          {/* OBS overlay: same machine, so the loopback address works whatever the host is set to */}
+          {webServerStatus?.is_running && (
+            <div className="bg-app border border-fuchsia-500/30 rounded-xl p-4 space-y-2">
+              <span className="text-xs font-bold text-fuchsia-300 uppercase tracking-wider">{t('int.overlayTitle')}</span>
+              <p className="text-xs text-slate-400">{t('int.overlayHint')}</p>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  aria-label={t('int.overlayTitle')}
+                  value={overlayUrl}
+                  className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-fuchsia-200 select-all"
+                />
+                <button
+                  onClick={handleCopyOverlayUrl}
+                  title={t('int.overlayCopy')}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition"
+                >
+                  {copiedOverlay ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedOverlay ? t('int.overlayCopied') : t('int.overlayCopy')}</span>
+                </button>
+                <a
+                  href={overlayUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700"
+                  title={t('int.openBrowser')}
+                >
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              </div>
+              <p className="text-[11px] text-slate-500 font-mono break-words">{t('int.overlayOptions')}</p>
+              <p className="text-[11px] text-amber-300/80">{t('int.overlayNote')}</p>
             </div>
           )}
 

@@ -254,6 +254,8 @@ impl WebServerManager {
             .route("/api/status", get(handle_status))
             .route("/api/chat", post(handle_chat))
             .route("/api/ws", get(handle_ws))
+            .route("/overlay", get(handle_overlay))
+            .route("/api/overlay-ws", get(handle_overlay_ws))
             .with_state(state);
 
         tokio::spawn(async move {
@@ -336,6 +338,62 @@ async fn handle_index() -> impl IntoResponse {
     );
     headers.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
     (headers, Html(MOBILE_CLIENT_HTML))
+}
+
+/// The streaming overlay for OBS (browser source): a transparent page; what it shows comes over
+/// `/api/overlay-ws`, which needs the token.
+async fn handle_overlay() -> impl IntoResponse {
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        header::CONTENT_SECURITY_POLICY,
+        HeaderValue::from_static("default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self' ws: wss:; img-src data:; base-uri 'none'; form-action 'none'"),
+    );
+    headers.insert(
+        header::REFERRER_POLICY,
+        HeaderValue::from_static("no-referrer"),
+    );
+    headers.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+    (headers, Html(crate::modules::overlay::PAGE))
+}
+
+async fn handle_overlay_ws(
+    ws: WebSocketUpgrade,
+    State(ctx): State<AppStateContext>,
+    headers: HeaderMap,
+    Query(params): Query<AuthParams>,
+) -> Response {
+    if !check_auth(&headers, &params, &ctx.auth_token.read().await) {
+        return (StatusCode::UNAUTHORIZED, "Invalid token for WebSocket").into_response();
+    }
+    ws.on_upgrade(handle_overlay_socket)
+}
+
+async fn handle_overlay_socket(mut socket: WebSocket) {
+    let hub = crate::modules::overlay::hub();
+    let (mut feed, _guard) = hub.subscribe();
+    if let Some(state) = hub.snapshot()
+        && socket.send(WsMessage::Text(state.into())).await.is_err()
+    {
+        return;
+    }
+    loop {
+        tokio::select! {
+            message = feed.recv() => match message {
+                Ok(text) => {
+                    if socket.send(WsMessage::Text(text.into())).await.is_err() {
+                        break;
+                    }
+                }
+                // A slow page skips what it missed (voice frames); the state follows anyway.
+                Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => {}
+                Err(_) => break,
+            },
+            incoming = socket.recv() => match incoming {
+                Some(Ok(WsMessage::Close(_))) | None | Some(Err(_)) => break,
+                Some(Ok(_)) => {}
+            },
+        }
+    }
 }
 
 async fn handle_status(

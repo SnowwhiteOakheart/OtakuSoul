@@ -637,6 +637,7 @@ pub fn run() {
             commands::ecosystem::start_web_server,
             commands::ecosystem::stop_web_server,
             commands::ecosystem::get_web_server_status,
+            commands::ecosystem::overlay_push,
             commands::ecosystem::regenerate_web_server_token,
             commands::ecosystem::build_character_wizard_prompt_cmd,
             commands::characters::parse_character_wizard_draft_cmd,

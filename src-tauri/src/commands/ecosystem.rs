@@ -323,6 +323,13 @@ pub async fn stop_web_server(state: State<'_, AppState>) -> Result<(), String> {
     state.web_server.stop_server().await
 }
 
+/// The main window tells the streaming overlay what the figure does; returns how many overlay pages
+/// are open (voice frames are skipped while it is 0).
+#[tauri::command]
+pub fn overlay_push(message: serde_json::Value) -> usize {
+    crate::modules::overlay::hub().push(&message)
+}
+
 #[tauri::command]
 pub async fn get_web_server_status(
     state: State<'_, AppState>,

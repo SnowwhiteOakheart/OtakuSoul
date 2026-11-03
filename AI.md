@@ -1136,6 +1136,17 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
 - Chat-Blasen der Brücke: nur frische Antworten (nach Generierungsende oder < 2 min) – der Verlauf eines Chats kommt
   nach dem Chatwechsel und sein Ende ist sonst „neu“. Satzweise Blasen über `streamingTts.onSentence`.
 
+**Streaming-Overlay (OBS-Browser-Quelle).** `web_server.rs` liefert `GET /overlay` (transparente Seite, `modules/overlay.html`,
+CSP ohne Fremdquellen) und `GET /api/overlay-ws?token=…` (WebSocket, Token wie beim Web-Client). Zustand kommt aus dem
+Hauptfenster: `useOverlayBridge` (immer an) ruft `overlay_push` auf (`state`: Name, Stimmung, Porträt nur bei Änderung,
+`thinking`; `say`: neue Antwort; `sentence`: Satz der Stimme mit Dauer; `audio`: Pegel, nur solange eine Seite offen ist – der
+Befehl gibt die Zahl offener Seiten zurück). `overlay::OverlayHub` (globaler `OnceLock`) bereinigt jede Nachricht
+(bekannte Schlüssel, Porträt nur als `data:image/…` bis 6 MB, Texte bis 2.000 Zeichen), merkt sich den letzten `state` und
+schickt ihn einer neu verbundenen Seite zuerst. `watchNewReplies` (`hooks/replyWatcher.ts`) ist die gemeinsame „frische
+Antwort“-Regel von Pet und Overlay. Stand: Porträt statt 3D-/Live2D-Modell (Modelldateien werden nicht über HTTP
+ausgeliefert); Optionen per Adresse (`scale`, `align`, `name`, `emotion`, `bubble`, `font`, `bg`), Karte in
+Integrationen → Mobiler Web-Client.
+
 ## Stand
 
 Erledigtes (Portierung Phasen 1–18, Verbesserungen, TTS, Neutralisierung, Inhalte, Qualität) steht in

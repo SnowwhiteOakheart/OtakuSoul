@@ -9,6 +9,7 @@ import { useCloseToTray } from './hooks/useCloseToTray';
 import { useSyncUpdateCheck } from './hooks/useSyncUpdateCheck';
 import { useProactiveMessages } from './hooks/useProactiveMessages';
 import { useDesktopPetBridge } from './hooks/useDesktopPetBridge';
+import { useOverlayBridge } from './hooks/useOverlayBridge';
 import { isPetWindow } from './services/desktopPet';
 import { useTranslation } from './i18n';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
@@ -45,6 +46,7 @@ export function App() {
   useCloseToTray(!isPet);
   useProactiveMessages(!isPet);
   useDesktopPetBridge(!isPet);
+  useOverlayBridge(!isPet);
   useSyncUpdateCheck(!isPet && onboardingCompleted);
 
   if (isPet) {
