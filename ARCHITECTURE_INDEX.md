@@ -27,7 +27,7 @@
 | **E2E-Tests (Mock-LLM)** | `npm run e2e` (`npm run e2e:run` ohne Build) | Baut nach `target/e2e`, nutzt tauri-driver + Mock-LLM |
 | **Perf-Messung** | `npm run e2e:perf` | Langchat-Stresstest (1.000 Nachrichten) |
 | **Screenshots erstellen** | `xvfb-run -a node e2e/readme-screenshots.mjs de\|en\|ru` | Erstellt UI-Screenshots unter `docs/assets/screenshots/<lang>/` |
-| **Story-Musik ohne App** | `python tools/story_music.py plan\|generate\|ship SZENE.json …` | Plan, ACE-Step-Erzeugung und OGG-Auslieferung nach `otakusoul-data`; siehe `docs/stage_music.md` |
+| **Story-Musik ohne App** | `python tools/story_music.py plan\|generate\|ship SZENE.json …` | Plan, ACE-Step-Erzeugung und MP3-Auslieferung nach `otakusoul-data`; siehe `docs/stage_music.md` |
 | **GPU-Tests (Real)** | `cargo test --test gpu_e2e -- --ignored --nocapture` in `src-tauri/` | Nur auf Wunsch, lädt reale Modelle aus `assets/models` |
 
 ---

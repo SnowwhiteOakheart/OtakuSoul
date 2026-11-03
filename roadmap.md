@@ -86,6 +86,26 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
   Titel der Starter-Geschichten und des Gruft-Abenteuers erzeugen, anhören und unter `otakusoul-data/music/<set>/`
   ausliefern (Ablauf: `docs/stage_music.md`, „Titel ausliefern“). *Nutzen:* Ohne mitgelieferte Titel bleibt die Stage für
   Nutzer ohne starke GPU stumm.
+  - Echter Lauf 03.11.2026 (RTX 5090 Laptop, schnelle Leitung): Laufzeit, Standard, XL und beide LMs geladen (8 parallele
+    Segmente je Datei); alle 6 Titel der Frostweiler-Geschichte erzeugt: Standard ~17 s je Titel (102 s gesamt), XL ~25 s
+    (150 s gesamt); VRAM-Höchstwert ~8,4 GB (Plan `Parallel`); Abbrechen mitten im Titel stoppt `ace-server` sofort, gibt
+    den VRAM frei und hinterlässt keine halbe Datei.
+  - Gefunden und behoben (`8eddf2d`): Ein Download-Segment blieb bei ~70 KB/s hängen und hielt den Modell-Download
+    minutenlang auf; Verbindungen unter 1/8 der schnellsten (15-s-Fenster) werden jetzt ersetzt. Auffällig: Der
+    abgebrochene Laufzeit-Download vom 02.11. (238 MB) wurde nicht fortgesetzt, sondern neu begonnen.
+  - Alle Titel erzeugt (XL, 03.11.2026, 97 MB MP3): Frostweiler 6, Kirschblüten 5, Arcade-Stick 4, Ryokan 5,
+    Kepler-9 5, Gruft 8 (~24 s je Titel). Mit geladenem Chat-Modell (~10 GB) wählt die App `Parallel`: Spitze 15 GB
+    von 24 GB, Chat-Modell bleibt geladen. GPU geprüft: `ace-server` läuft auf der RTX (100 %), die iGPU-Last
+    stammt von `dwm`, der WebView und dem Claude-Fenster.
+  - Gefunden und behoben (`cac1a2b`): Eine vor der Musikfunktion begonnene Geschichte (Gruft Akt 1) hatte keinen
+    Musik-Abschnitt; erst „Von vorn beginnen“ holte ihn nach. Jetzt ergänzt schon das Fortsetzen fehlende oder leere
+    `extensions`-Schlüssel still aus dem Preset (eine Ebene tief, damit später ausgelieferte `tracks` ankommen).
+  - Ausgeliefert (03.11.2026): 33 Titel als MP3 in `otakusoul-data/music/<set>/` (`b62e4f8`), `tracks` in den acht
+    Szenen (`55f074e`). Neu: `tools/story_music.py` (`plan`, `generate`, `ship`) für weitere Geschichten ohne App,
+    Doku in `docs/stage_music.md`.
+  - **Noch offen:** Klang anhören (Standard-Titel zum Vergleich: `<Daten>/music/standard_backup/frozen_bells_standard`;
+    Elfengesang bei `mystery`), Überblenden in der Stage, Rückkehr des Chat-Modells bei Plan `Sequential` (nur mit
+    weniger freiem VRAM), Nachladen der Titel in einer frischen Installation (Hub-Download, SHA-256) einmal sehen.
 - [ ] **A3 · Sync zwischen Geräten und Sprechblasen im Alltag prüfen.** Sync: zwei Geräte gegen Nextcloud und einen
   geteilten Ordner, Hinweis beim Start, Wiederherstellen mit Sicherheitskopie (Protokoll-Test gegen eigene Nextcloud:
   `cargo test --lib real_webdav_server -- --ignored`, siehe `AI.md`). Sprechblasen: passt die Satzaufteilung nach
