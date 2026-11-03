@@ -23,10 +23,9 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 | A4 | Nutzertests mit 2–3 Einsteigern | ★★★ | S | Testpersonen |
 | A5 | Signierte Installer (Windows, macOS) | ★★★ | S–M | Zertifikat bzw. Apple-Konto (Kosten) |
 | **B** | **Als Nächstes – baut auf Vorhandenem auf** | | | |
-| B3 | Touch-Reaktionen im Hauptfenster | ★★ | M | – |
 | B4 | Eigene Figuren und Geschichten teilen | ★★★ | L | Prüfablauf im Daten-Repo |
-| B5 | Light-Novel- und Webtoon-Export | ★★ | M–L | – |
-| B6 | OBS-/Streaming-Overlay | ★★ | M | – |
+| B5 | Webtoon-Export (HTML und EPUB sind fertig) | ★★ | M | – |
+| B6 | OBS-Overlay: 3D-/Live2D-Modell statt Porträt | ★ | M | – |
 | B7 | Benachrichtigungsklick unter Linux und macOS | ★ | S (Linux) / M (macOS) | Mac für macOS |
 | **C** | **Später – größere Vorhaben** | | | |
 | C1 | Zugriff von unterwegs (Relay), danach Handy-App | ★★★ | XL | Relay-Dienst, Sicherheitskonzept |
@@ -126,17 +125,14 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 
 ## B. Als Nächstes – baut auf Vorhandenem auf
 
-- [ ] **B3 · Touch-Reaktionen im Hauptfenster:** Im Desktop-Pet erledigt (Kopf/Körper, Hormone `headpat`/`poke`);
-  offen für den Avatar im Chat: Live2D (`hitTest` auf `Head`, `Face`, `Body`) und 3D per Raycasting, mit denselben
-  Reaktionen. *Baut auf:* Pet-Verhalten, Körperzonen.
 - [ ] **B4 · Eigene Figuren und Geschichten teilen:** Einreichen in den Hub aus der App (Pull Request an `otakusoul-data`
   oder Formular), mit Prüfung vor der Aufnahme (Validator, Lizenz- und Altersangaben, NSFW-Trennung). *Nutzen:* mehr
   Inhalte ohne eigenen Aufwand; *Risiko:* Prüfaufwand und Moderation.
-- [ ] **B5 · Light-Novel- und Webtoon-Export:** Ein gespielter Akt oder Chat wird auf Knopfdruck zum Kapitel (PDF/EPUB/
-  HTML-Replay) bzw. Webtoon-Strip, mit Szenenbildern und Emotionsporträts. Zuerst HTML-Replay (am einfachsten), dann EPUB.
-- [ ] **B6 · OBS-/Streaming-Overlay:** Die transparente Pet-Ansicht (`index.html?pet=true`, `DesktopPet.tsx`) über den
-  eingebauten Web-Server (`web_server.rs`) als Browser-Source für OBS – ohne Tauri-Fensteraufrufe, Zustand per WebSocket.
-  *Nutzen:* erreicht Streamer und sorgt für Sichtbarkeit.
+- [ ] **B5 · Webtoon-Export:** HTML-Replay und EPUB sind fertig (`replay_export.rs`, siehe `roadmap_abgeschlossen.md`).
+  Offen: ein Webtoon-Strip aus einem Akt mit Szenenbildern und Emotionsporträts (lange Bildspalte, Sprechblasen).
+- [ ] **B6 · OBS-Overlay mit Modell:** Das Overlay (`/overlay`) zeigt heute das Porträt mit Sprechblase und Stimmung. Offen: das
+  3D-/Live2D-Modell selbst als Browser-Quelle; dafür müssten Modelldateien über den Web-Server ausgeliefert und die Viewer
+  ohne Tauri-Fensteraufrufe laufen.
 - [ ] **B7 · Klick auf die Benachrichtigung öffnet den Chat – Linux und macOS:** Unter Windows erledigt (`notify_chat`).
   Linux: `notify-rust` mit `wait_for_action` (klein); macOS: `UNUserNotificationCenter`-Delegate (braucht einen Mac).
 
