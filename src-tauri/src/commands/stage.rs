@@ -212,6 +212,22 @@ pub fn export_stage_markdown(scene_id: String) -> Result<String, String> {
     crate::modules::stage::export_scene_to_markdown(&scene_id)
 }
 
+/// The act as an HTML replay (one self-contained page), written to `target_path`: the webview
+/// cannot download files itself.
+#[tauri::command(async)]
+pub fn export_stage_html(scene_id: String, target_path: String) -> Result<(), String> {
+    use crate::modules::replay_export::{render_html, scene_replay};
+    let state = crate::modules::stage::load_scene_by_id(&scene_id)?;
+    let characters = crate::modules::paths::scan_available_characters();
+    let lang = crate::modules::content_lang::ContentLang::current();
+    let html = render_html(
+        &scene_replay(&state, &characters, &lang),
+        &lang,
+        lang.code(),
+    );
+    std::fs::write(&target_path, html).map_err(|e| e.to_string())
+}
+
 #[tauri::command(async)]
 pub fn stage_list_folders() -> Result<Vec<String>, String> {
     crate::modules::stage::list_stage_folders()

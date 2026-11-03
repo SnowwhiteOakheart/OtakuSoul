@@ -18,6 +18,7 @@ import {
   Sliders,
   ChevronRight,
   Users,
+  BookOpen,
 } from 'lucide-react';
 import { translate, useTranslation, type TranslationKey } from '../../i18n';
 import { toast } from '../ui/feedback';
@@ -61,13 +62,14 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
     updateAuthorNote,
     applyHudPreset,
     exportCurrentChat,
+    exportCurrentChatHtml,
     importChatJsonl,
     updateChatSummary,
     isSummarizing,
   } = useStoreFields(
     'activeCharacter', 'chatSessions', 'activeChatId', 'switchChatSession', 'createNewChat',
     'renameChatSession', 'deleteChatSession', 'updateAuthorNote', 'applyHudPreset',
-    'exportCurrentChat', 'importChatJsonl', 'updateChatSummary', 'isSummarizing',
+    'exportCurrentChat', 'exportCurrentChatHtml', 'importChatJsonl', 'updateChatSummary', 'isSummarizing',
   );
   const bookmarkedMessageIds = useAppStore((s) => s.bookmarkedMessageIds);
   const storedMessages = useAppStore((s) => s.storedMessages);
@@ -189,6 +191,15 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
     });
     if (!target) return;
     if (await exportCurrentChat(target)) toast.success(translate('chatSidebar.exported'));
+  };
+
+  const handleExportHtml = async () => {
+    const target = await saveDialog({
+      defaultPath: `${activeCharacter?.card.data.name || 'chat'}_${new Date().toISOString().slice(0, 10)}.html`,
+      filters: [{ name: 'HTML', extensions: ['html'] }],
+    });
+    if (!target) return;
+    if (await exportCurrentChatHtml(target)) toast.success(translate('chatSidebar.exportedHtml'));
   };
 
   const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -430,6 +441,15 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ isOpen, onClose }) => 
             >
               <FileDown className="w-3.5 h-3.5 text-accent-400" />
               <span>{t('chatSidebar.export')}</span>
+            </button>
+            <button
+              onClick={() => void handleExportHtml()}
+              disabled={!activeChatId}
+              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-xs font-medium rounded-lg text-slate-200 transition-colors"
+              title={t('chatSidebar.exportHtmlHint')}
+            >
+              <BookOpen className="w-3.5 h-3.5 text-sky-400" />
+              <span>{t('chatSidebar.exportHtml')}</span>
             </button>
 
             <label className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 bg-slate-800 hover:bg-slate-700 cursor-pointer text-xs font-medium rounded-lg text-slate-200 transition-colors focus-within:ring-2 focus-within:ring-accent-400">

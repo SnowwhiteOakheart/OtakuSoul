@@ -137,6 +137,11 @@ pub async fn refresh_locales() {
 pub struct ContentLang(pub String);
 
 impl ContentLang {
+    /// The language code (`de`, `en`, …).
+    pub fn code(&self) -> &str {
+        &self.0
+    }
+
     pub fn from_reply_language(name: &str) -> Self {
         Self(language_code(name))
     }

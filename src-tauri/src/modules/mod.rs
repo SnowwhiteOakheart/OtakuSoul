@@ -65,6 +65,7 @@ pub mod vad;
 pub use hub as soul_hub;
 pub use memory_pipeline as soul_memory_pipeline;
 pub mod overlay;
+pub mod replay_export;
 pub mod reply_ideas;
 pub mod translate;
 pub mod tts_local;

@@ -1136,6 +1136,16 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
 - Chat-Blasen der Brücke: nur frische Antworten (nach Generierungsende oder < 2 min) – der Verlauf eines Chats kommt
   nach dem Chatwechsel und sein Ende ist sonst „neu“. Satzweise Blasen über `streamingTts.onSentence`.
 
+**HTML-Replay (Export als Geschichte).** `replay_export.rs` macht aus einem Stage-Akt (`scene_replay`) oder einem Chat
+(`chat_replay`) eine einzige HTML-Seite ohne Skripte und ohne Fremdanfragen (`render_html`): Titel, Ort/Zeit, Besetzung mit
+Porträts (je Figur einmal als CSS-`background-image`, nur `data:image/…` ohne Sonderzeichen, bis 6 MB; sonst Anfangsbuchstabe),
+Ziele/Inventar/Konsequenzen, dann der Verlauf (Erzähler als Prosa, Spieler rechts, Figuren links, Denken und Flüstern mit
+Etikett). Texte werden HTML-maskiert, `*Aktion*`/`**fett**` werden zu `<em>`/`<strong>`; `<think>`-Blöcke und
+`[emotion: …]`-Tags fehlen. Hell/Dunkel per `prefers-color-scheme`, druckfreundlich. Befehle `export_stage_html` und
+`export_chat_html` schreiben nach `target_path` (der Webview kann nichts herunterladen; Speichern-Dialog in `StageView` und
+`ChatSidebar`). Beschriftungen kommen über `ContentLang::t` (Englisch als Quelle; Übersetzungen in `presets/locales/{de,ru,ja}.json`
+**und** `otakusoul-data/locales/` – beides pflegen, sonst überschreibt der Hub-Abgleich sie). Offen: EPUB und Webtoon (B5, zweite Stufe).
+
 **Berührung im Hauptfenster (Avatar im Chat).** Wie im Pet: Antippen des Kopfes = Streicheln (`headpat`), sonst Stupsen
 (`poke`); nur ein Tipp (≤ 6 px Weg, ≤ 500 ms), weil Ziehen schon die Kamera dreht bzw. das Modell verschiebt
 (`avatarTouch.ts`: `watchTaps`, `isTap`, `zoneInViewer`). Treffer je Viewer: 3D (VRM/glTF/MMD) über `stage.setTapHandler` mit

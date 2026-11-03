@@ -50,6 +50,7 @@ import {
   SlidersHorizontal,
 } from 'lucide-react';
 import { api } from '../../services/api';
+import { save as saveDialog } from '@tauri-apps/plugin-dialog';
 import { SceneState } from '../../types';
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { translate, useTranslation } from '../../i18n';
@@ -281,6 +282,22 @@ export const StageView: React.FC = () => {
       link.download = `${stageState.definition.title.toLowerCase().replace(/\s+/g, '_')}_abenteuer.md`;
       link.click();
       URL.revokeObjectURL(url);
+    }
+  };
+
+  // An HTML page with the whole act as a story; the backend writes it where the user says.
+  const handleExportHtml = async () => {
+    if (!stageState) return;
+    const target = await saveDialog({
+      defaultPath: `${stageState.definition.title.toLowerCase().replace(/\s+/g, '_')}.html`,
+      filters: [{ name: 'HTML', extensions: ['html'] }],
+    });
+    if (!target) return;
+    try {
+      await api.exportStageHtml(stageState.definition.id, target);
+      toast.success(translate('stage.exportedHtml'));
+    } catch (e) {
+      toast.error(errorMessage(e));
     }
   };
 
@@ -523,6 +540,12 @@ export const StageView: React.FC = () => {
                 description: t('stage.exportMd'),
                 icon: Download,
                 onSelect: () => void handleExportMarkdown(),
+              },
+              {
+                label: t('stage.menuExportHtml'),
+                description: t('stage.exportHtml'),
+                icon: BookOpen,
+                onSelect: () => void handleExportHtml(),
               },
             ]}
           />

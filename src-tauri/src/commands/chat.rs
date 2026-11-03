@@ -442,6 +442,66 @@ pub fn delete_messages_after(
         .map_err(|e| e.to_string())
 }
 
+/// The guests of a group chat (IDs) with their names; empty for a chat with one figure.
+fn group_speaker_names(
+    state: &State<'_, AppState>,
+    chat_id: &str,
+) -> Result<std::collections::HashMap<String, String>, String> {
+    let members = state
+        .memory_db
+        .get_chat_session(chat_id)
+        .map_err(|e| e.to_string())?
+        .map(|s| s.members)
+        .unwrap_or_default();
+    Ok(if members.is_empty() {
+        Default::default()
+    } else {
+        crate::modules::paths::scan_available_characters()
+            .into_iter()
+            .filter(|c| members.contains(&c.id))
+            .map(|c| (c.id, c.card.data.name))
+            .collect()
+    })
+}
+
+/// The chat as an HTML replay (one self-contained page), written to `target_path`: the webview
+/// cannot download files itself.
+#[tauri::command(async)]
+pub fn export_chat_html(
+    state: State<'_, AppState>,
+    chat_id: String,
+    char_name: String,
+    user_name: String,
+    target_path: String,
+) -> Result<(), String> {
+    use crate::modules::replay_export::{chat_replay, render_html};
+    let speaker_names = group_speaker_names(&state, &chat_id)?;
+    let title = state
+        .memory_db
+        .get_chat_session(&chat_id)
+        .map_err(|e| e.to_string())?
+        .map(|s| s.title)
+        .filter(|t| !t.trim().is_empty())
+        .unwrap_or_else(|| char_name.clone());
+    let messages = state
+        .memory_db
+        .get_chat_messages(&chat_id)
+        .map_err(|e| e.to_string())?;
+    let characters = crate::modules::paths::scan_available_characters();
+    let lang = crate::modules::content_lang::ContentLang::current();
+    let replay = chat_replay(
+        &title,
+        &messages,
+        &char_name,
+        &user_name,
+        &speaker_names,
+        &characters,
+        &lang,
+    );
+    std::fs::write(&target_path, render_html(&replay, &lang, lang.code()))
+        .map_err(|e| e.to_string())
+}
+
 /// The chat in SillyTavern's JSONL format; with `target_path` also written to that file (the
 /// webview cannot download files itself).
 #[tauri::command(async)]
@@ -452,21 +512,7 @@ pub fn export_chat_jsonl(
     user_name: String,
     target_path: Option<String>,
 ) -> Result<String, String> {
-    let members = state
-        .memory_db
-        .get_chat_session(&chat_id)
-        .map_err(|e| e.to_string())?
-        .map(|s| s.members)
-        .unwrap_or_default();
-    let speaker_names: std::collections::HashMap<String, String> = if members.is_empty() {
-        Default::default()
-    } else {
-        crate::modules::paths::scan_available_characters()
-            .into_iter()
-            .filter(|c| members.contains(&c.id))
-            .map(|c| (c.id, c.card.data.name))
-            .collect()
-    };
+    let speaker_names = group_speaker_names(&state, &chat_id)?;
     let jsonl = state
         .memory_db
         .export_chat_jsonl(&chat_id, &char_name, &user_name, &speaker_names)

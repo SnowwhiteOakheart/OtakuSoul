@@ -90,5 +90,14 @@
   "None.": "Keine.",
   "Promise kept: {}": "Versprechen gehalten: {}",
   "Promise not kept: {}": "Versprechen nicht eingehalten: {}",
-  "Plan dropped: {}": "Vorhaben verworfen: {}"
+  "Plan dropped: {}": "Vorhaben verworfen: {}",
+  "Game master": "Spielleiter",
+  "Place": "Ort",
+  "Time": "Zeit",
+  "Goals": "Ziele",
+  "Lasting consequences": "Dauerhafte Konsequenzen",
+  "Date": "Datum",
+  "Thinks": "Denkt",
+  "Whispers": "Flüstert",
+  "Made with OtakuSoul": "Erstellt mit OtakuSoul"
 }

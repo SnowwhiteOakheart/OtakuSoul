@@ -90,5 +90,14 @@
   "None.": "Нет.",
   "Promise kept: {}": "Обещание выполнено: {}",
   "Promise not kept: {}": "Обещание не выполнено: {}",
-  "Plan dropped: {}": "План отменён: {}"
+  "Plan dropped: {}": "План отменён: {}",
+  "Game master": "Ведущий",
+  "Place": "Место",
+  "Time": "Время",
+  "Goals": "Цели",
+  "Lasting consequences": "Долгосрочные последствия",
+  "Date": "Дата",
+  "Thinks": "Думает",
+  "Whispers": "Шепчет",
+  "Made with OtakuSoul": "Создано в OtakuSoul"
 }

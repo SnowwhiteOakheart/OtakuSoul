@@ -658,6 +658,10 @@ export const api = {
     return await invoke<SceneState>('stage_import_scene_json', { jsonContent, targetFolder });
   },
 
+  /** The act as an HTML replay, written to `targetPath` by the backend (the webview cannot download files). */
+  exportStageHtml: async (sceneId: string, targetPath: string): Promise<void> => {
+    await invoke<void>('export_stage_html', { sceneId, targetPath });
+  },
   exportStageSceneJson: async (sceneId: string): Promise<string> => {
     return await invoke<string>('stage_export_scene_json', { sceneId });
   },
@@ -1398,6 +1402,11 @@ export const api = {
       userName,
       targetPath: targetPath ?? null,
     });
+  },
+
+  /** The chat as an HTML replay, written to `targetPath` by the backend. */
+  exportChatHtml: async (chatId: string, charName: string, userName: string, targetPath: string): Promise<void> => {
+    await invoke<void>('export_chat_html', { chatId, charName, userName, targetPath });
   },
 
   importChatJsonl: async (

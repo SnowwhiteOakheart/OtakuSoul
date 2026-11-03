@@ -155,6 +155,8 @@ export interface ChatSlice {
   continueChatMessage: (msgId: string) => Promise<void>;
   /** Writes the open chat as SillyTavern JSONL to `targetPath`; reports failures itself. */
   exportCurrentChat: (targetPath: string) => Promise<boolean>;
+  /** The open chat as an HTML replay at `targetPath`. */
+  exportCurrentChatHtml: (targetPath: string) => Promise<boolean>;
   importChatJsonl: (jsonlContent: string, title?: string) => Promise<void>;
   autoTtsEnabled: boolean;
   setAutoTtsEnabled: (enabled: boolean) => void;
@@ -1261,6 +1263,18 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     if (!activeChatId || !activeCharacter) return false;
     try {
       await api.exportChatJsonl(activeChatId, activeCharacter.card.data.name, activePersona.name, targetPath);
+      return true;
+    } catch (e) {
+      reportFailure('Export failed:', e);
+      return false;
+    }
+  },
+
+  exportCurrentChatHtml: async (targetPath) => {
+    const { activeChatId, activeCharacter, activePersona } = get();
+    if (!activeChatId || !activeCharacter) return false;
+    try {
+      await api.exportChatHtml(activeChatId, activeCharacter.card.data.name, activePersona.name, targetPath);
       return true;
     } catch (e) {
       reportFailure('Export failed:', e);
