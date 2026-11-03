@@ -1136,6 +1136,15 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
 - Chat-Blasen der Brücke: nur frische Antworten (nach Generierungsende oder < 2 min) – der Verlauf eines Chats kommt
   nach dem Chatwechsel und sein Ende ist sonst „neu“. Satzweise Blasen über `streamingTts.onSentence`.
 
+**Berührung im Hauptfenster (Avatar im Chat).** Wie im Pet: Antippen des Kopfes = Streicheln (`headpat`), sonst Stupsen
+(`poke`); nur ein Tipp (≤ 6 px Weg, ≤ 500 ms), weil Ziehen schon die Kamera dreht bzw. das Modell verschiebt
+(`avatarTouch.ts`: `watchTaps`, `isTap`, `zoneInViewer`). Treffer je Viewer: 3D (VRM/glTF/MMD) über `stage.setTapHandler` mit
+dem Render-Pixel-`probe` des Pets (Hintergrund löst nichts aus) und der Kopflinie `headLine()`; Live2D über `model.hitTest`
+(Trefferbereiche `head|face|hair` = Kopf, sonst Körper; ohne Bereiche das obere Drittel der Figur); Inochi2D und 2D-Porträt ohne
+Treffermaske: jeder Tipp zählt, die oberen 40 % sind der Kopf. `useFigureTouch` (`FigureTouchReaction.tsx`) wendet
+die Hormone an (höchstens alle 3 s), setzt 2,5 s lang `embarrassment` bzw. `surprise` (danach die vorherige Stimmung, falls sie
+niemand sonst geändert hat) und zeigt Herz bzw. Funke an der Stelle.
+
 **Streaming-Overlay (OBS-Browser-Quelle).** `web_server.rs` liefert `GET /overlay` (transparente Seite, `modules/overlay.html`,
 CSP ohne Fremdquellen) und `GET /api/overlay-ws?token=…` (WebSocket, Token wie beim Web-Client). Zustand kommt aus dem
 Hauptfenster: `useOverlayBridge` (immer an) ruft `overlay_push` auf (`state`: Name, Stimmung, Porträt nur bei Änderung,

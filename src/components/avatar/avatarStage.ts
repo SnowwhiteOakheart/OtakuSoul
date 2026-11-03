@@ -1,4 +1,5 @@
 import { answerSnapshots } from '../../services/avatarSnapshot';
+import { watchTaps, zoneInViewer, type FigureTouch } from './avatarTouch';
 import * as THREE from 'three';
 import { OutlineEffect } from 'three/examples/jsm/effects/OutlineEffect.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -77,6 +78,11 @@ export interface AvatarStage {
   setHands: (hands: THREE.Object3D[]) => void;
   /** Desktop pet: is this point (px in the viewer) on one of the hands as posed right now? */
   handAt: (x: number, y: number) => boolean;
+  /**
+   * Taps on the figure (not on the background; drags turn the camera) as a pat on the head or a
+   * poke elsewhere; `null` stops it. Used by the chat's avatar.
+   */
+  setTapHandler: (handler: ((touch: FigureTouch) => void) | null) => void;
   dispose: () => void;
 }
 
@@ -286,6 +292,28 @@ export function createAvatarStage(container: HTMLElement, modelPath: string, opt
     gl.readPixels(px, py, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, probePixel);
     onResult(probePixel[3]! > PROBE_ALPHA);
   };
+  const headLineNow = () => {
+    if (modelHead === null) return null;
+    camera.updateMatrixWorld();
+    headPoint.set(0, modelHead, 0).project(camera);
+    return (1 - headPoint.y) / 2;
+  };
+  let tapHandler: ((touch: FigureTouch) => void) | null = null;
+  const stopTaps = watchTaps(renderer.domElement, (clientX, clientY) => {
+    if (!tapHandler) return;
+    const rect = renderer.domElement.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    markActive();
+    // The next rendered frame says whether the figure (and not the background) is there.
+    pendingProbe = {
+      x,
+      y,
+      onResult: (hit) => {
+        if (hit) tapHandler?.({ zone: zoneInViewer(y, rect.height, headLineNow()), x, y });
+      },
+    };
+  });
   return {
     scene,
     camera,
@@ -319,11 +347,9 @@ export function createAvatarStage(container: HTMLElement, modelPath: string, opt
         return Math.hypot(x - hx, y - hy) <= reach;
       });
     },
-    headLine: () => {
-      if (modelHead === null) return null;
-      camera.updateMatrixWorld();
-      headPoint.set(0, modelHead, 0).project(camera);
-      return (1 - headPoint.y) / 2;
+    headLine: headLineNow,
+    setTapHandler: (handler) => {
+      tapHandler = handler;
     },
     setFraming: (framing) => {
       petFraming = framing;
@@ -444,6 +470,8 @@ export function createAvatarStage(container: HTMLElement, modelPath: string, opt
       saveViewState();
       cancelAnimationFrame(animationFrameId);
       pendingProbe = null;
+      tapHandler = null;
+      stopTaps();
       stopSnapshots();
       controls.removeEventListener('start', markMoved);
       controls.removeEventListener('change', markChanged);

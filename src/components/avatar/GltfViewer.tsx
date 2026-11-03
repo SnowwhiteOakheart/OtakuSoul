@@ -142,11 +142,16 @@ export const GltfViewer = ({
   motions = [],
   gesture = null,
   onPickEmotion = () => {},
+  onTouch,
   pet,
   loop = null,
 }: AvatarViewerProps) => {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
+  const onTouchRef = useRef(onTouch);
+  useEffect(() => {
+    onTouchRef.current = onTouch;
+  }, [onTouch]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const emotionRef = useRef(emotion);
@@ -196,6 +201,7 @@ export const GltfViewer = ({
       audioVisemes = visemes;
     });
     const stage = createAvatarStage(container, modelPath, { pet: !!petRef.current });
+    stage.setTapHandler((touch) => onTouchRef.current?.(touch));
     petRef.current?.onStage(stage);
     stage.useStudioEnvironment();
     stageRef.current = stage;

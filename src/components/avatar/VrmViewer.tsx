@@ -12,6 +12,7 @@ import { mouthTarget, SILENT_VISEMES, type Visemes } from '../../services/lipSyn
 import type { AvatarMotion } from '../../types';
 import type { GestureRequest, LoopRole } from '../../utils/avatarGestures';
 import { loadMotionClip, AvatarMotionPlayer } from './vrmMotions';
+import type { FigureTouch } from './avatarTouch';
 import { createAvatarStage, createBlinker, neverCull, type AvatarStage } from './avatarStage';
 import { AvatarViewerChrome } from './AvatarViewerChrome';
 import { bodyPose, BodySway, EDGE_SIT_LEGS, floorSitPose, legReach, walkBob, WALK_CYCLE_HZ, type BodyBone, type LegLengths } from './proceduralBody';
@@ -30,6 +31,8 @@ export interface AvatarViewerProps {
   gesture?: GestureRequest | null;
   /** A quick emotion button was pressed (GoEmotions name). */
   onPickEmotion?: (emotion: string) => void;
+  /** The figure was tapped (not dragged): a pat on the head or a poke, with its place in the viewer. */
+  onTouch?: (touch: FigureTouch) => void;
   /**
    * Desktop pet: transparent, whole figure, no camera controls or buttons. Receives the stage
    * (pointer for looking, hit test for click-through) and `null` when it goes.
@@ -124,12 +127,17 @@ export const VrmViewer = ({
   motions = [],
   gesture = null,
   onPickEmotion = () => {},
+  onTouch,
   pet,
   loop = null,
   seat: seatMode = null,
 }: AvatarViewerProps) => {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
+  const onTouchRef = useRef(onTouch);
+  useEffect(() => {
+    onTouchRef.current = onTouch;
+  }, [onTouch]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const emotionRef = useRef(emotion);
@@ -177,6 +185,7 @@ export const VrmViewer = ({
       audioVisemes = visemes;
     });
     const stage = createAvatarStage(container, modelPath, { pet: !!petRef.current });
+    stage.setTapHandler((touch) => onTouchRef.current?.(touch));
     resetViewRef.current = stage.resetView;
     petRef.current?.onStage(stage);
 

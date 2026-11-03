@@ -14,6 +14,8 @@ import { MissingPuppetHint } from '../avatars/MissingPuppetHint';
 import { AvatarSkeleton, ScrollText } from '../ui';
 import { languageCode, localizeCard } from '../../utils/cardI18n';
 import { audioPlayer } from '../../services/audioPlayer';
+import { FigureTouchFlash, useFigureTouch } from './FigureTouchReaction';
+import { zoneInViewer } from './avatarTouch';
 import { breathSeconds, PORTRAIT_FPS, PORTRAIT_SPEAKING_FPS, portraitPose } from '../../utils/portraitMotion';
 
 // MMD brings its own loader and physics; only loaded for MMD avatars.
@@ -250,6 +252,8 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
   );
   const { t, tEmotion } = useTranslation();
   const [talkingOpen, setTalkingOpen] = useState(false);
+  const { flash, onTouch, clear: clearFlash } = useFigureTouch();
+  const rootRef = useRef<HTMLDivElement>(null);
 
   // 1. Resolve VRM path (Character override or global setting). A character's model that is no
   // longer in the list (removed in the settings) falls back to the default avatar.
@@ -276,6 +280,21 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
 
   const handleSelectManualEmotion = (em: string) => setCurrentEmotion(manualEmotion(em));
 
+  // 2D portrait: a click on the picture (the upper part is the head), like a tap on a model.
+  const handlePortraitClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const picture = e.currentTarget.querySelector('img');
+    const root = rootRef.current;
+    if (!picture || !root) return;
+    const rect = picture.getBoundingClientRect();
+    if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) return;
+    const rootRect = root.getBoundingClientRect();
+    onTouch({
+      zone: zoneInViewer(e.clientY - rect.top, rect.height, 0.4),
+      x: e.clientX - rootRect.left,
+      y: e.clientY - rootRect.top,
+    });
+  };
+
   // The extra portraits this card has can be tried out too (the emotion behind each drives 3D).
   const extraPortraits = PORTRAIT_MOODS.filter((m) => m.group !== 'standard' && getPortraitExpressions(character)[m.key]);
   const handleSelectPortrait = (key: string) => {
@@ -285,7 +304,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
   };
 
   return (
-    <div className="@container relative w-full h-full flex flex-col items-center justify-center overflow-hidden border-r border-slate-800 bg-app/80">
+    <div ref={rootRef} className="@container relative w-full h-full flex flex-col items-center justify-center overflow-hidden border-r border-slate-800 bg-app/80">
       {/* Top Controls: 3-way Mode Selector & Emotion Badge; wraps instead of leaving narrow columns */}
       <div className="absolute top-3 inset-x-3 z-30 flex flex-wrap items-center justify-end gap-2">
         {/* Emotion Pill / Tester Dropdown */}
@@ -423,6 +442,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
               motions={avatarMotions}
               gesture={avatarGesture}
               onPickEmotion={handleSelectManualEmotion}
+              onTouch={onTouch}
             />
           </Suspense>
         ) : isGltfModel(vrmPath) ? (
@@ -435,6 +455,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
               motions={avatarMotions}
               gesture={avatarGesture}
               onPickEmotion={handleSelectManualEmotion}
+              onTouch={onTouch}
             />
           </Suspense>
         ) : (
@@ -445,6 +466,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
             motions={avatarMotions}
             gesture={avatarGesture}
             onPickEmotion={handleSelectManualEmotion}
+            onTouch={onTouch}
           />
         )
       ) : avatarMode === 'live2d' ? (
@@ -456,6 +478,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
               modelPath={live2dPath}
               emotion={currentEmotion.emotion}
               isSpeaking={isSpeaking}
+              onTouch={onTouch}
             />
           </Suspense>
         ) : (
@@ -476,6 +499,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
               emotion={currentEmotion.portrait ?? currentEmotion.emotion}
               isSpeaking={isSpeaking}
               gesture={avatarGesture}
+              onTouch={onTouch}
             />
           </Suspense>
         ) : (
@@ -488,7 +512,12 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
         </>
       ) : (
         /* 2D Portrait / Expression Sprite Mode */
-        <div className="relative w-full h-full flex flex-col items-center justify-center p-6 bg-linear-to-b from-slate-900/60 via-accent-950/30 to-app">
+        <div
+          className="relative w-full h-full flex flex-col items-center justify-center p-6 bg-linear-to-b from-slate-900/60 via-accent-950/30 to-app"
+          // Poking the picture is an extra for the pointer; nothing here is reachable only by it.
+          role="presentation"
+          onClick={handlePortraitClick}
+        >
           {emotionImage || character?.avatar_data_url ? (
             <MorphingPortrait
               key={character?.id || 'none'}
@@ -517,6 +546,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
           </div>
         </div>
       )}
+      <FigureTouchFlash flash={flash} onDone={clearFlash} />
       {talkingOpen && character?.avatar_data_url && (
         <TalkingPortraitDialog
           characterId={character.id}

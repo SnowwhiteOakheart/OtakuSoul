@@ -9,6 +9,8 @@ import { useAppStore } from '../../store/useAppStore';
 import { audioPlayer } from '../../services/audioPlayer';
 import { DEFAULT_PET_FRAMING, loadLive2DViewState, PET_FEET_SHARE, saveLive2DViewState, type PetFraming } from '../../services/avatarViewState';
 import { DEFAULT_PET_FRAME_RATE, type PetFigure } from './avatarStage';
+import { type FigureTouch } from './avatarTouch';
+import { touchZoneAt } from '../companion/petBehavior';
 import { Loader2, Sparkles, RefreshCw } from 'lucide-react';
 import { translate, useTranslation } from '../../i18n';
 import { errorMessage } from '../../utils/errors';
@@ -175,6 +177,8 @@ interface Live2DViewerProps {
    * pet window tells it; no dragging, zooming or tapping. Receives the figure's controls once loaded.
    */
   pet?: { onStage: (figure: PetFigure | null) => void };
+  /** The figure was tapped (not dragged): a pat on the head or a poke, with its place in the viewer. */
+  onTouch?: (touch: FigureTouch) => void;
 }
 
 export const Live2DViewer: React.FC<Live2DViewerProps> = ({
@@ -182,6 +186,7 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
   emotion = 'neutral',
   isSpeaking: _isSpeaking = false,
   pet,
+  onTouch,
 }) => {
   const { t, tEmotion } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -196,6 +201,10 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
   useLayoutEffect(() => {
     petRef.current = pet;
   }, [pet]);
+  const onTouchRef = useRef(onTouch);
+  useLayoutEffect(() => {
+    onTouchRef.current = onTouch;
+  }, [onTouch]);
 
   const modelRef = useRef<Live2DModel | null>(null);
   const appRef = useRef<Application | null>(null);
@@ -463,8 +472,13 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
         const bounds = model.getBounds();
         const insideBounds =
           x >= bounds.x && x <= bounds.x + bounds.width && y >= bounds.y && y <= bounds.y + bounds.height;
-        if (model.hitTest(x, y).length > 0 || insideBounds) {
+        const areas = model.hitTest(x, y);
+        if (areas.length > 0 || insideBounds) {
           void playTapMotion(model);
+          // The model's own hit areas say "head" or "face"; without them the top third of the figure is the head.
+          const headArea = areas.some((area) => /head|face|hair|kao|atama/i.test(area));
+          const zone = areas.length > 0 && !headArea ? 'body' : headArea ? 'head' : touchZoneAt((y - bounds.y) / Math.max(1, bounds.height), 0.33);
+          onTouchRef.current?.({ zone, x, y });
         }
       } catch {}
     };

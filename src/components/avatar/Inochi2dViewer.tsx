@@ -1,3 +1,4 @@
+import { zoneInViewer, type FigureTouch } from './avatarTouch';
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Film, Loader2, RefreshCw, Sparkles } from 'lucide-react';
 import { api } from '../../services/api';
@@ -33,6 +34,8 @@ interface Inochi2dViewerProps {
   gesture?: GestureRequest | null;
   /** Reports what the puppet offers, for the settings editor in the avatar library. */
   onPuppet?: (info: PuppetInfo) => void;
+  /** The puppet was tapped (not dragged): a pat on the head or a poke, with its place in the viewer. */
+  onTouch?: (touch: FigureTouch) => void;
   /**
    * Desktop pet: whole figure at the bottom of a transparent window, no controls or remembered
    * view; hands the pet its figure (gaze from the global pointer, hit test for click-through).
@@ -72,7 +75,7 @@ interface View {
  * Inochi2D puppet in the chat and the avatar library: WebGL2 canvas, drag to move, wheel to zoom,
  * lips follow the voice, face follows the emotion, eyes and head follow the pointer.
  */
-export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emotion = 'neutral', isSpeaking: _isSpeaking = false, gesture = null, onPuppet, pet, loop: petLoop = null }) => {
+export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emotion = 'neutral', isSpeaking: _isSpeaking = false, gesture = null, onPuppet, onTouch, pet, loop: petLoop = null }) => {
   const { t, tEmotion } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -85,9 +88,11 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
   const defaultViewRef = useRef<View>({ xRatio: 0.5, yRatio: 0.5, zoom: 1 });
   const emotionRef = useRef(emotion);
   const onPuppetRef = useRef(onPuppet);
+  const onTouchRef = useRef(onTouch);
   const petRef = useRef(pet);
   useEffect(() => {
     onPuppetRef.current = onPuppet;
+    onTouchRef.current = onTouch;
     petRef.current = pet;
   });
   const isPet = !!pet;
@@ -378,7 +383,13 @@ export const Inochi2dViewer: React.FC<Inochi2dViewerProps> = ({ modelPath, emoti
     const onPointerUp = (e: PointerEvent) => {
       if (container.hasPointerCapture?.(e.pointerId)) container.releasePointerCapture(e.pointerId);
       if (dragging && moved) scheduleSave();
-      else if (dragging) animatorRef.current?.poke();
+      else if (dragging) {
+        animatorRef.current?.poke();
+        // No hit mask of the puppet: any tap counts, the upper part of the viewer as the head.
+        const rect = container.getBoundingClientRect();
+        const y = e.clientY - rect.top;
+        onTouchRef.current?.({ zone: zoneInViewer(y, rect.height, 0.4), x: e.clientX - rect.left, y });
+      }
       dragging = false;
     };
     const onPointerLeave = () => {
