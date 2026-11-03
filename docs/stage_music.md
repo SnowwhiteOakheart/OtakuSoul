@@ -95,16 +95,48 @@ Stimmungen angehängt (ohne `moods`: `calm`, `romance`, `sorrow`).
 `tools/set_music.py` in Gateway- und Preset-Dateien samt PNG-Karten; das Werkzeug erhöht die Registry-Revisionen.
 Die Karten der App selbst (`presets/characters`, `presets/crypt-of-shadows`) haben ihr Leitmotiv direkt im JSON.
 
+## Script `tools/story_music.py`: Titel ohne die App erzeugen und ausliefern
+
+Wenn eine neue Geschichte dazukommt, geht es ohne Klicken in der App. Voraussetzungen: ACE-Step-Laufzeit
+und Modelle sind einmal in der App geladen (Stage → Musik), `ffmpeg` mit libvorbis für `ship`
+(Windows: `winget install Gyan.FFmpeg`). Nur die Python-Standardbibliothek.
+
+```bash
+python tools/story_music.py plan     presets/stories/scenes/story_neu.json
+python tools/story_music.py generate presets/stories/scenes/story_neu.json                  # Modell xl
+python tools/story_music.py generate presets/stories/scenes/story_neu.json --model standard --mood calm
+python tools/story_music.py ship     presets/stories/scenes/story_neu.json
+```
+
+| Befehl | Was er tut |
+|---|---|
+| `plan` | Zeigt je Set die Klangwelt, die fertige Caption je Stimmung (mit Lorebook-Stil und Leitmotiven der Gruppe, wie im Musik-Fenster) und wie viele Titel fehlen |
+| `generate` | Startet den `ace-server` der Laufzeit (Port 48600, die App darf weiterlaufen), erzeugt die fehlenden Titel nach `<Daten>/music/sets/<set>/<stimmung>/` und schreibt die Herkunft daneben; `--dry-run` zeigt nur den Umfang |
+| `ship` | Wandelt die Titel eines Sets in OGG (Vorbis, `--quality 5`), legt sie nach `otakusoul-data/music/<set>/<stimmung>/`, trägt `tracks` mit SHA-256 und Herkunft in alle genannten Szenen ein und erhöht bei Hub-Szenen (`stages_gateway/`) `revision` und `updated` in `stages_registry.json` |
+
+Mehrere Szenen derselben Geschichte dürfen zusammen übergeben werden (ein Set wird einmal bearbeitet,
+`ship` schreibt die Titel in jede Szene). Wichtige Schalter: `--data-dir` (Datenordner der App, Standard
+der Plattformordner oder `$OTAKUSOUL_HOME/data`), `--cards` und `--lorebooks` (weitere Ordner für
+Leitmotive und Klangwelten; Standard: `presets/` und die Ordner von `otakusoul-data`), `--model`
+(`standard`, `quality`, `xl`), `--data-repo` (Standard `../otakusoul-data`). `generate` zählt vorhandene
+Titel mit und erzeugt nur, was laut `count` fehlt. Reicht der VRAM nicht neben dem Chat-Modell, dieses
+vorher in der App beenden (das Script warnt). Der Plan ist eine Kopie von `story_music::plan` und die
+Modellstufen von `music_gen.rs`: Wer dort etwas ändert, zieht das Script nach.
+
 ## Titel ausliefern (Daten-Repo)
 
-1. Titel erzeugen (Caption aus dem Musik-Fenster der Stage: „Musik dieser Geschichte“ zeigt die
-   fertige Caption je Stimmung mit Lorebook-Stil und Leitmotiven) und als OGG exportieren.
-2. Nach `otakusoul-data/music/<set>/<stimmung>/<datei>.ogg` legen, `sha256sum` bilden.
-3. Den Eintrag in `tracks` jeder Szene der Geschichte ergänzen (bei Hub-Szenen in
-   `stages_gateway/…`, bei mitgelieferten Geschichten in `presets/…/scenes/*.json` der App),
-   `revision` der Szene erhöhen.
+1. Titel erzeugen: im Musik-Fenster der Stage oder mit `generate`. Anhören; was nicht passt, aus dem
+   Set-Ordner löschen und neu erzeugen.
+2. `python tools/story_music.py ship <Szenen>` legt die OGG-Dateien nach
+   `otakusoul-data/music/<set>/<stimmung>/<datei>.ogg`, bildet die Prüfsummen und trägt `tracks` in die
+   Szenen ein (bei Hub-Szenen in `stages_gateway/…`, bei mitgelieferten Geschichten in
+   `presets/…/scenes/*.json` der App) und erhöht bei Hub-Szenen die `revision`. Von Hand geht es genauso:
+   OGG ablegen, `sha256sum` bilden, `tracks` ergänzen, `revision` der Szene erhöhen.
+3. In beiden Repos committen und pushen (Daten-Repo zuerst, damit die Dateien erreichbar sind).
 4. Beim Öffnen der Szene lädt die App fehlende Titel nach (`story_music::ensure_scene_music`),
    prüft die Prüfsumme und legt die Herkunft daneben; im Musik-Fenster geht es auch von Hand.
+   Eine schon begonnene Geschichte bekommt beim Fortsetzen fehlende Angaben des mitgelieferten Presets
+   (`otakusoul_music`, später dazugekommene `tracks`) still dazu; eigene Werte bleiben.
 
 Herkunft und KI-Kennzeichnung gehören immer dazu: ACE-Step bittet darum, erzeugte Werke auf
 Ähnlichkeit zu prüfen und KI-Beteiligung offenzulegen.
