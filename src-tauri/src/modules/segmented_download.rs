@@ -160,6 +160,10 @@ struct Shared<'a, C: Fn() -> bool, P: Fn(u64)> {
 /// Measuring window of one connection.
 const RATE_WINDOW: Duration = Duration::from_secs(15);
 
+/// A connection that answers or sends nothing for this long is replaced (the rate check above only
+/// runs when data arrives, so a silent connection would otherwise wait forever).
+const STALL_TIMEOUT: Duration = Duration::from_secs(30);
+
 /// Below this a connection is never dropped for being slow: the whole line is slow then.
 const MIN_BEST_RATE: u64 = 256 * 1024;
 
@@ -224,20 +228,31 @@ async fn fetch_segment<C: Fn() -> bool, P: Fn(u64)>(
             return Err(stop);
         }
         let from = segment.start + have;
-        let error = match client
+        let request = client
             .get(url)
             .header(
                 reqwest::header::RANGE,
                 format!("bytes={from}-{}", segment.end),
             )
-            .send()
-            .await
-        {
+            .send();
+        let sent = match tokio::time::timeout(STALL_TIMEOUT, request).await {
+            Ok(sent) => sent.map_err(|e| e.to_string()),
+            Err(_) => Err(format!("keine Antwort seit {} s", STALL_TIMEOUT.as_secs())),
+        };
+        let error = match sent {
             Ok(response) if response.status() == reqwest::StatusCode::PARTIAL_CONTENT => {
                 let mut stream = response.bytes_stream();
                 let mut error = None;
                 let mut window = (Instant::now(), 0u64);
-                while let Some(chunk) = stream.next().await {
+                loop {
+                    let chunk = match tokio::time::timeout(STALL_TIMEOUT, stream.next()).await {
+                        Ok(Some(chunk)) => chunk,
+                        Ok(None) => break,
+                        Err(_) => {
+                            error = Some(format!("keine Daten seit {} s", STALL_TIMEOUT.as_secs()));
+                            break;
+                        }
+                    };
                     if let Some(stop) = shared.stopped() {
                         out.flush().await.ok();
                         return Err(stop);
@@ -292,7 +307,7 @@ async fn fetch_segment<C: Fn() -> bool, P: Fn(u64)>(
                 return Err(SegmentError::Status(response.status().as_u16()));
             }
             Ok(response) => format!("HTTP {}", response.status()),
-            Err(e) => e.to_string(),
+            Err(e) => e,
         };
         // Only attempts in a row without new data count.
         if have > resumed_at {
