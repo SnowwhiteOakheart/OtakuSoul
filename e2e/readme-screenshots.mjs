@@ -31,7 +31,8 @@ const TEXT = {
       'Shiori holt tief Luft und klammert sich an deine Worte, als wären sie ein Rettungsring. „Einfach lesen … ja.“ ' +
       'Sota hat derweil den Stapel Hefte auf zwei Tische verteilt und sortiert mit Speedrun-Tempo die Seiten. ' +
       'Draußen füllen sich die letzten Stuhlreihen, und die Kirschblüten wehen bis hinter die Bühne.',
-    crypt: { title: 'Die Halle der Gruft', location: 'Unter dem alten Kloster', time: 'Mitternacht', tone: 'Düstere Fantasy', action: 'Ich betrete die Gruft.' },
+    crypt: { title: 'Die Halle der Gruft', location: 'Unter dem alten Kloster', time: 'Mitternacht', tone: 'Düstere Fantasy', action: 'Ich betrete die Gruft.',
+      narration: 'Fackellicht flackert über die Grabnischen. Aus der Dunkelheit kratzen Krallen – zwei Goblins und ein Skelett stellen sich euch in den Weg!' },
     stageReply:
       '*Shiori atmet tief durch und nickt dir dankbar zu.* „Okay … okay. Wie eine Heldin im letzten Kapitel. Hältst du mir das Heft?“',
   },
@@ -47,7 +48,8 @@ const TEXT = {
       'Shiori takes a deep breath and clings to your words like a lifebuoy. "Just read it … yes." ' +
       'Meanwhile Sota has spread the pile of booklets over two tables and is sorting the pages at speedrun pace. ' +
       'Outside, the last rows of chairs are filling up, and cherry blossoms drift all the way behind the stage.',
-    crypt: { title: 'The Crypt Hall', location: 'Beneath the old monastery', time: 'Midnight', tone: 'Dark fantasy', action: 'I enter the crypt.' },
+    crypt: { title: 'The Crypt Hall', location: 'Beneath the old monastery', time: 'Midnight', tone: 'Dark fantasy', action: 'I enter the crypt.',
+      narration: 'Torchlight flickers over the burial niches. Claws scrape in the dark – two goblins and a skeleton block your way!' },
     stageReply:
       '*Shiori takes a deep breath and gives you a grateful nod.* "Okay … okay. Like a heroine in the final chapter. Will you hold the booklet for me?"',
   },
@@ -63,12 +65,14 @@ const TEXT = {
       'Сиори глубоко вдыхает и цепляется за твои слова, как за спасательный круг. «Просто прочитать… да». ' +
       'Тем временем Сота разложил стопку брошюр на двух столах и сортирует страницы в темпе спидрана. ' +
       'Снаружи заполняются последние ряды стульев, а лепестки сакуры залетают прямо за сцену.',
-    crypt: { title: 'Зал склепа', location: 'Под старым монастырём', time: 'Полночь', tone: 'Мрачное фэнтези', action: 'Я вхожу в склеп.' },
+    crypt: { title: 'Зал склепа', location: 'Под старым монастырём', time: 'Полночь', tone: 'Мрачное фэнтези', action: 'Я вхожу в склеп.',
+      narration: 'Свет факела дрожит на погребальных нишах. Во тьме скребут когти – два гоблина и скелет преграждают вам путь!' },
     stageReply: '*Сиори глубоко вдыхает и благодарно кивает тебе.* «Ладно… ладно. Как героиня в последней главе. Подержишь мне брошюру?»',
   },
 }[lang];
 
-const base = { app_language: lang, reply_language: TEXT.reply };
+// A neutral model name instead of "mock" in the title bar; the mock answers whatever is asked for.
+const base = { app_language: lang, reply_language: TEXT.reply, cloud_model: 'mistral-small' };
 
 /** One fresh app per scene group; `run` gets helpers for screenshots, clicks and tabs. */
 async function session(settings, run) {
@@ -205,7 +209,7 @@ await session({}, async ({ browser, mock, shot, click, invoke }) => {
       combat: { ...scene.combat, is_active: false, combatants: [], events: [] },
     },
   });
-  Object.assign(mock.stats, { calmPlanner: true, stageEncounter: { action: 'start', enemies: [{ monster: 'goblin', count: 2 }, { monster: 'skeleton', count: 1 }] } });
+  Object.assign(mock.stats, { calmPlanner: true, stageNarration: TEXT.crypt.narration, stageEncounter: { action: 'start', enemies: [{ monster: 'goblin', count: 2 }, { monster: 'skeleton', count: 1 }] } });
   await browser.execute(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: '3', ctrlKey: true })));
   const input = await browser.$('form textarea');
   await input.waitForDisplayed({ timeout: 15_000 });

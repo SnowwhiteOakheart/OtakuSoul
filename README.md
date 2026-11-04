@@ -14,12 +14,19 @@
 </p>
 
 <p align="center">
+  <img src="docs/assets/demo/en.gif" alt="OtakuSoul in action: start page, chat with Shiori, a story with the AI game master, 3D avatar and a 5e fight" width="100%" />
+</p>
+
+<p align="center">
+  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest"><img alt="Download" src="https://img.shields.io/badge/%E2%AC%87%20Download-free%20·%20Windows%20·%20Linux%20·%20macOS-7c3aed?style=for-the-badge" height="42" /></a>
+</p>
+
+<p align="center">
   <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest"><img alt="Version" src="https://img.shields.io/badge/OtakuSoul-v0.7.2-8b5cf6?style=for-the-badge&logo=sparkles&logoColor=white" /></a>
   <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/SnowwhiteOakheart/OtakuSoul/total?style=for-the-badge&logo=github" /></a>
   <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/SnowwhiteOakheart/OtakuSoul?style=for-the-badge&logo=github" /></a>
   <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/network/members"><img alt="Forks" src="https://img.shields.io/github/forks/SnowwhiteOakheart/OtakuSoul?style=for-the-badge&logo=github" /></a>
   <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/issues"><img alt="Issues" src="https://img.shields.io/github/issues/SnowwhiteOakheart/OtakuSoul?style=for-the-badge&logo=github" /></a>
-  <img alt="Windows · Linux · macOS" src="https://img.shields.io/badge/Windows%20·%20Linux%20·%20macOS-desktop-0ea5e9?style=for-the-badge" />
   <img alt="Local First" src="https://img.shields.io/badge/Local--First-100%25-10b981?style=for-the-badge&logo=shield&logoColor=white" />
   <img alt="Zero Python" src="https://img.shields.io/badge/Zero--Python-no_setup-f59e0b?style=for-the-badge" />
   <img alt="GPLv3" src="https://img.shields.io/badge/License-GPLv3-22c55e?style=for-the-badge" />
@@ -40,9 +47,13 @@
 
 OtakuSoul is an app in which **AI characters** talk to you, play stories with you and **remember** what you experienced together. You pick a character – or create your own – and simply write. The AI answers in the character's voice, with picture, mood and, if you like, spoken voice and a 3D avatar.
 
-<p align="center">
-  <img src="docs/assets/screenshots/en/home.png" alt="OtakuSoul start page: continue chatting, continue your story, discover new characters" width="95%" />
-</p>
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/assets/screenshots/en/chat.png" alt="Chat" /><br><b>Chat</b><br><sub>Characters with feelings and a memory</sub></td>
+    <td align="center" width="33%"><img src="docs/assets/screenshots/en/story-play.png" alt="Stories" /><br><b>Stories</b><br><sub>An AI game master, your companions react</sub></td>
+    <td align="center" width="33%"><img src="docs/assets/screenshots/en/stage-5e-board.png" alt="5e adventures" /><br><b>5e adventures</b><br><sub>Real rules on a battle map</sub></td>
+  </tr>
+</table>
 
 * 💬 **Chat** with characters that have a personality, feelings and a memory.
 * 📖 **Play stories:** pick a ready-made adventure, the AI narrates, you decide what your character says and does.
@@ -175,7 +186,6 @@ The **settings** start in a simple view; the *expert mode* adds samplers, server
 Disk space: the app itself is small; local models need about 3–22 GB each. Supported graphics cards: NVIDIA (CUDA), AMD and Intel (Vulkan), Apple Silicon (Metal).
 
 ---
----
 
 ## 🛠️ For power users & developers
 
@@ -187,7 +197,8 @@ Disk space: the app itself is small; local models need about 3–22 GB each. Sup
 * **Honest note on extensions:** there is no plugin system for third-party code (yet) – extensions from other frontends and STscript commands (slash commands in quick replies) do not run; the import leaves them out and says how many. Instruct and context templates are not needed, because OtakuSoul uses the model's own chat template.
 * **Beyond chat:** Besides open roleplay chat, OtakuSoul offers guided narrative stories, tactical 5e adventures on a battle map, and an automatic 4-layer cognitive long-term memory in SQLite.
 
-### Feature reference
+<details>
+<summary><b>Feature reference</b></summary>
 
 | Area | Details |
 |---|---|
@@ -203,7 +214,10 @@ Disk space: the app itself is small; local models need about 3–22 GB each. Sup
 | 📱 **Web client** | Axum server in the LAN with QR code, token auth and DNS-rebinding protection. |
 | 🎨 **UI** | 5 themes plus light mode, DE/EN/RU/JA plus own languages as JSON files (import in the settings, new ones from the data repository, check with `npm run i18n:check`), mouse drag-scrolling in libraries and Hub, close dialog (minimise to tray or quit, with *“Remember my choice”*), reset per settings section, command palette (Ctrl+K), keyboard navigation (Ctrl+1…9), WCAG AA contrast, expert mode, background task centre with progress, cancel and retry. |
 
-### Architecture
+</details>
+
+<details>
+<summary><b>Architecture</b></summary>
 
 No Python runtime: every engine is C++ or Rust and is downloaded on demand with SHA-256 verification.
 
@@ -259,7 +273,10 @@ flowchart LR
     SQLiteMemory --> Search["Matching memories<br/>(full-text search)"] --> Prompt["Prompt builder"] --> Next["Next turn"]
 ```
 
-### Measured performance
+</details>
+
+<details>
+<summary><b>Measured performance</b></summary>
 
 Reference system: **NVIDIA GeForce RTX 4070 Ti SUPER, 16 GB VRAM**, Linux, CUDA.
 
@@ -292,6 +309,8 @@ Reference system: **NVIDIA GeForce RTX 4070 Ti SUPER, 16 GB VRAM**, Linux, CUDA.
 | **Kokoro DE** | Victoria / Bernd / Eva | 77 % | – | – | 0.06–0.23 | +1.0–1.8 GB |
 
 The local chat is ready again 1–4 seconds after an image or speech job.
+
+</details>
 
 ### Data & privacy
 
@@ -326,7 +345,7 @@ npm run e2e        # end-to-end suite against a mock LLM (tauri-driver)
 npm run e2e:perf   # long-chat measurement (1,000 messages)
 ```
 
-The README screenshots are generated with `xvfb-run -a node e2e/readme-screenshots.mjs en` (or `de`, `ru`). Notes for contributors and AI assistants: [AI.md](AI.md).
+The README screenshots and the animation at the top are generated with `node e2e/readme-screenshots.mjs en` and `node e2e/readme-demo.mjs en` (or `de`, `ru`; on Linux with `xvfb-run -a` in front, the animation needs `ffmpeg`). Notes for contributors and AI assistants: [AI.md](AI.md).
 
 ### Technology stack
 
@@ -335,6 +354,17 @@ The README screenshots are generated with `xvfb-run -a node e2e/readme-screensho
 * **Avatars:** [Three.js](https://threejs.org/), [@pixiv/three-vrm](https://github.com/pixiv/three-vrm), `@moeru/three-mmd`, [PixiJS](https://pixijs.com/) & Live2D Cubism Core, Inochi2D runtime ported from [Inox2D](https://github.com/Inochi2D/inox2d)
 * **Local AI:** llama.cpp & PrismML, stable-diffusion.cpp, CrispASR, whisper.cpp, ONNX Runtime (`ort`, for Kokoro & Talking Head Anime 3)
 * **Vibe-coding & AI:** Built primarily through vibe-coding and AI pair-programming with assistance from Claude, ChatGPT, and Gemini (Antigravity) – reinforced by strict typing (`ts-rs`), clippy, e2e tests, and architectural guidelines ([`AI.md`](AI.md)).
+
+---
+
+## ⭐ Support OtakuSoul
+
+The easiest ways to help:
+
+* **Leave a ⭐ on GitHub** – it helps other people find the app.
+* **Share your characters and stories:** the share button on a character card in the library (or *Contribute to the hub* in the story menu) checks your work, packs it and opens a prefilled issue in the data repository.
+* **Report bugs and wishes** under [Issues](https://github.com/SnowwhiteOakheart/OtakuSoul/issues) – screenshots and the log from *Settings → Expert mode* help a lot.
+* **Translate:** new interface languages are plain JSON files, see *Settings → Interface language*.
 
 ---
 

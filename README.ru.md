@@ -14,12 +14,19 @@
 </p>
 
 <p align="center">
+  <img src="docs/assets/demo/ru.gif" alt="OtakuSoul в действии: стартовая страница, чат с Сиори, история с ИИ-ведущим, 3D-аватар и бой 5e" width="100%" />
+</p>
+
+<p align="center">
+  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest"><img alt="Скачать" src="https://img.shields.io/badge/%E2%AC%87%20Скачать-бесплатно%20·%20Windows%20·%20Linux%20·%20macOS-7c3aed?style=for-the-badge" height="42" /></a>
+</p>
+
+<p align="center">
   <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest"><img alt="Версия" src="https://img.shields.io/badge/OtakuSoul-v0.7.2-8b5cf6?style=for-the-badge&logo=sparkles&logoColor=white" /></a>
   <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/SnowwhiteOakheart/OtakuSoul/total?style=for-the-badge&logo=github" /></a>
   <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/SnowwhiteOakheart/OtakuSoul?style=for-the-badge&logo=github" /></a>
   <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/network/members"><img alt="Forks" src="https://img.shields.io/github/forks/SnowwhiteOakheart/OtakuSoul?style=for-the-badge&logo=github" /></a>
   <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/issues"><img alt="Issues" src="https://img.shields.io/github/issues/SnowwhiteOakheart/OtakuSoul?style=for-the-badge&logo=github" /></a>
-  <img alt="Windows · Linux · macOS" src="https://img.shields.io/badge/Windows%20·%20Linux%20·%20macOS-desktop-0ea5e9?style=for-the-badge" />
   <img alt="Local First" src="https://img.shields.io/badge/Local--First-100%25-10b981?style=for-the-badge&logo=shield&logoColor=white" />
   <img alt="Без Python" src="https://img.shields.io/badge/Без_Python-без_настройки-f59e0b?style=for-the-badge" />
   <img alt="GPLv3" src="https://img.shields.io/badge/Лицензия-GPLv3-22c55e?style=for-the-badge" />
@@ -40,9 +47,13 @@
 
 OtakuSoul – это приложение, в котором **ИИ-персонажи** разговаривают с тобой, играют вместе с тобой в истории и **помнят**, что вы пережили вместе. Выбери персонажа – или создай своего – и просто пиши. ИИ отвечает от лица персонажа: с изображением, настроением, а при желании и с голосом и 3D-аватаром.
 
-<p align="center">
-  <img src="docs/assets/screenshots/ru/home.png" alt="Главная страница OtakuSoul: продолжить разговор, продолжить историю, найти новых персонажей" width="95%" />
-</p>
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/assets/screenshots/ru/chat.png" alt="Чат" /><br><b>Чат</b><br><sub>Персонажи с чувствами и памятью</sub></td>
+    <td align="center" width="33%"><img src="docs/assets/screenshots/ru/story-play.png" alt="Истории" /><br><b>Истории</b><br><sub>ИИ-ведущий, спутники реагируют сами</sub></td>
+    <td align="center" width="33%"><img src="docs/assets/screenshots/ru/stage-5e-board.png" alt="Приключения 5e" /><br><b>Приключения 5e</b><br><sub>Настоящие правила на игровом поле</sub></td>
+  </tr>
+</table>
 
 * 💬 **Общение** с персонажами, у которых есть характер, чувства и память.
 * 📖 **Истории:** выбери готовое приключение – ИИ рассказывает, а ты решаешь, что говорит и делает твой персонаж.
@@ -175,7 +186,6 @@ OtakuSoul обновляется сам: когда выходит новая в
 Место на диске: само приложение небольшое; локальные модели занимают примерно 3–22 ГБ каждая. Поддерживаемые видеокарты: NVIDIA (CUDA), AMD и Intel (Vulkan), Apple Silicon (Metal).
 
 ---
----
 
 ## 🛠️ Для опытных пользователей и разработчиков
 
@@ -187,7 +197,8 @@ OtakuSoul обновляется сам: когда выходит новая в
 * **Честно о расширениях:** системы плагинов для стороннего кода (пока) нет – расширения из других фронтендов и команды STscript (slash-команды в быстрых ответах) не работают; импорт их пропускает и сообщает, сколько их было. Instruct- и контекстные шаблоны не нужны, потому что OtakuSoul использует шаблон чата самой модели.
 * **Больше, чем чат:** Помимо свободного ролевого чата, OtakuSoul предлагает сюжетные истории, тактические приключения по правилам 5e на клеточном поле и автоматическую четырёхслойную когнитивную долговременную память в SQLite.
 
-### Обзор возможностей
+<details>
+<summary><b>Обзор возможностей</b></summary>
 
 | Область | Подробности |
 |---|---|
@@ -203,7 +214,10 @@ OtakuSoul обновляется сам: когда выходит новая в
 | 📱 **Веб-клиент** | Сервер Axum в локальной сети с QR-кодом, токен-авторизацией и защитой от DNS-rebinding. |
 | 🎨 **Интерфейс** | 5 тем и светлый режим, DE/EN/RU/JA и свои языки в виде JSON-файлов (импорт в настройках, новые из репозитория данных, проверка `npm run i18n:check`), прокрутка перетаскиванием мыши в библиотеках и хабе, диалог закрытия окна (свернуть в трей или выйти, с *«Запомнить выбор»*), сброс по разделам настроек, палитра команд (Ctrl+K), навигация с клавиатуры (Ctrl+1…9), контраст WCAG AA, режим эксперта, центр фоновых задач с прогрессом, отменой и повтором. |
 
-### Архитектура
+</details>
+
+<details>
+<summary><b>Архитектура</b></summary>
 
 Без Python: все движки написаны на C++ или Rust, загружаются по необходимости и проверяются по SHA-256.
 
@@ -259,7 +273,10 @@ flowchart LR
     SQLiteMemory --> Search["Подходящие воспоминания<br/>(полнотекстовый поиск)"] --> Prompt["Сборщик промптов"] --> Next["Следующий раунд"]
 ```
 
-### Измеренная производительность
+</details>
+
+<details>
+<summary><b>Измеренная производительность</b></summary>
 
 Эталонная система: **NVIDIA GeForce RTX 4070 Ti SUPER, 16 ГБ VRAM**, Linux, CUDA.
 
@@ -292,6 +309,8 @@ flowchart LR
 | **Kokoro DE** | Victoria / Bernd / Eva | 77 % | – | – | 0,06–0,23 | +1,0–1,8 ГБ |
 
 Локальный чат снова готов через 1–4 секунды после генерации изображения или речи.
+
+</details>
 
 ### Данные и приватность
 
@@ -326,7 +345,7 @@ npm run e2e        # сквозные тесты против мок-LLM (tauri-
 npm run e2e:perf   # замер длинного чата (1000 сообщений)
 ```
 
-Скриншоты для README создаются командой `xvfb-run -a node e2e/readme-screenshots.mjs ru` (или `de`, `en`). Заметки для участников и ИИ-ассистентов: [AI.md](AI.md).
+Скриншоты для README и анимация вверху создаются командами `node e2e/readme-screenshots.mjs ru` и `node e2e/readme-demo.mjs ru` (или `de`, `en`; в Linux с `xvfb-run -a` впереди, для анимации нужен `ffmpeg`). Заметки для участников и ИИ-ассистентов: [AI.md](AI.md).
 
 ### Технологии
 
@@ -335,6 +354,17 @@ npm run e2e:perf   # замер длинного чата (1000 сообщени
 * **Аватары:** [Three.js](https://threejs.org/), [@pixiv/three-vrm](https://github.com/pixiv/three-vrm), `@moeru/three-mmd`, [PixiJS](https://pixijs.com/) и Live2D Cubism Core, среда Inochi2D (портирована из [Inox2D](https://github.com/Inochi2D/inox2d))
 * **Локальный ИИ:** llama.cpp и PrismML, stable-diffusion.cpp, CrispASR, whisper.cpp, ONNX Runtime (`ort`, для Kokoro и Talking Head Anime 3)
 * **Вайб-кодинг и ИИ:** Создано преимущественно через вайб-кодинг и парное программирование с ИИ при поддержке Claude, ChatGPT и Gemini (Antigravity) — с контролем строгой типизации (`ts-rs`), clippy, сквозных e2e-тестов и архитектурных правил ([`AI.md`](AI.md)).
+
+---
+
+## ⭐ Поддержать OtakuSoul
+
+Проще всего помочь так:
+
+* **Поставь ⭐ на GitHub** – так другие найдут приложение.
+* **Делись персонажами и историями:** кнопка «Поделиться» на карточке персонажа в библиотеке (или *Предложить в хаб* в меню истории) проверит работу, упакует её и откроет заполненный issue в репозитории данных.
+* **Сообщай об ошибках и пожеланиях** в [Issues](https://github.com/SnowwhiteOakheart/OtakuSoul/issues) – скриншоты и журнал из *Настройки → Режим эксперта* очень помогают.
+* **Переводи:** новые языки интерфейса – это простые JSON-файлы, см. *Настройки → Язык интерфейса*.
 
 ---
 

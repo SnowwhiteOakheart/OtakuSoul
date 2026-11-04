@@ -14,12 +14,19 @@
 </p>
 
 <p align="center">
+  <img src="docs/assets/demo/de.gif" alt="OtakuSoul in Aktion: Startseite, Chat mit Shiori, eine Geschichte mit KI-Spielleitung, 3D-Avatar und ein 5e-Kampf" width="100%" />
+</p>
+
+<p align="center">
+  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest"><img alt="Herunterladen" src="https://img.shields.io/badge/%E2%AC%87%20Herunterladen-kostenlos%20·%20Windows%20·%20Linux%20·%20macOS-7c3aed?style=for-the-badge" height="42" /></a>
+</p>
+
+<p align="center">
   <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest"><img alt="Version" src="https://img.shields.io/badge/OtakuSoul-v0.7.2-8b5cf6?style=for-the-badge&logo=sparkles&logoColor=white" /></a>
   <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/SnowwhiteOakheart/OtakuSoul/total?style=for-the-badge&logo=github" /></a>
   <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/SnowwhiteOakheart/OtakuSoul?style=for-the-badge&logo=github" /></a>
   <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/network/members"><img alt="Forks" src="https://img.shields.io/github/forks/SnowwhiteOakheart/OtakuSoul?style=for-the-badge&logo=github" /></a>
   <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/issues"><img alt="Issues" src="https://img.shields.io/github/issues/SnowwhiteOakheart/OtakuSoul?style=for-the-badge&logo=github" /></a>
-  <img alt="Windows · Linux · macOS" src="https://img.shields.io/badge/Windows%20·%20Linux%20·%20macOS-Desktop-0ea5e9?style=for-the-badge" />
   <img alt="Local First" src="https://img.shields.io/badge/Local--First-100%25-10b981?style=for-the-badge&logo=shield&logoColor=white" />
   <img alt="Ohne Python" src="https://img.shields.io/badge/Ohne_Python-keine_Einrichtung-f59e0b?style=for-the-badge" />
   <img alt="GPLv3" src="https://img.shields.io/badge/Lizenz-GPLv3-22c55e?style=for-the-badge" />
@@ -40,9 +47,13 @@
 
 OtakuSoul ist eine App, in der **KI-Charaktere** mit dir sprechen, mit dir Geschichten spielen und sich **erinnern**, was ihr zusammen erlebt habt. Du suchst dir einen Charakter aus – oder erschaffst einen eigenen – und schreibst einfach los. Die KI antwortet in der Rolle der Figur, mit Bild, Stimmung und auf Wunsch mit gesprochener Stimme und 3D-Avatar.
 
-<p align="center">
-  <img src="docs/assets/screenshots/de/home.png" alt="OtakuSoul Startseite: weiterchatten, Geschichte weiterspielen, neue Charaktere entdecken" width="95%" />
-</p>
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/assets/screenshots/de/chat.png" alt="Chat" /><br><b>Chat</b><br><sub>Charaktere mit Gefühlen und Gedächtnis</sub></td>
+    <td align="center" width="33%"><img src="docs/assets/screenshots/de/story-play.png" alt="Geschichten" /><br><b>Geschichten</b><br><sub>Eine KI-Spielleitung, deine Gefährten reagieren</sub></td>
+    <td align="center" width="33%"><img src="docs/assets/screenshots/de/stage-5e-board.png" alt="5e-Abenteuer" /><br><b>5e-Abenteuer</b><br><sub>Echte Regeln auf dem Spielbrett</sub></td>
+  </tr>
+</table>
 
 * 💬 **Chatten** mit Charakteren, die Persönlichkeit, Gefühle und ein Gedächtnis haben.
 * 📖 **Geschichten spielen:** Such dir ein fertiges Abenteuer aus – die KI erzählt, du entscheidest, was deine Figur sagt und tut.
@@ -175,7 +186,6 @@ Die **Einstellungen** starten in einer einfachen Ansicht; der *Expertenmodus* bl
 Speicherplatz: Die App selbst ist klein; lokale Modelle brauchen je etwa 3–22 GB. Unterstützte Grafikkarten: NVIDIA (CUDA), AMD und Intel (Vulkan), Apple Silicon (Metal).
 
 ---
----
 
 ## 🛠️ Für Fortgeschrittene & Entwickler
 
@@ -187,7 +197,8 @@ Speicherplatz: Die App selbst ist klein; lokale Modelle brauchen je etwa 3–22 
 * **Ehrlicher Hinweis zu Erweiterungen:** Ein Plugin-System für fremden Code gibt es (noch) nicht – Extensions aus anderen Frontends und STscript-Befehle (Slash-Befehle in Quick-Replies) laufen nicht; der Import lässt sie aus und sagt, wie viele es waren. Instruct- und Kontextvorlagen braucht OtakuSoul nicht, weil es die Chat-Vorlage des Modells nutzt.
 * **Mehr als nur Chat:** Neben freiem Rollenspiel-Chat bietet OtakuSoul geführte interaktive Geschichten, taktische 5e-Abenteuer auf dem Spielbrett und ein automatisches vierstufiges kognitives Langzeitgedächtnis in SQLite.
 
-### Funktionsübersicht
+<details>
+<summary><b>Funktionsübersicht</b></summary>
 
 | Bereich | Details |
 |---|---|
@@ -203,7 +214,10 @@ Speicherplatz: Die App selbst ist klein; lokale Modelle brauchen je etwa 3–22 
 | 📱 **Web-Client** | Axum-Server im LAN mit QR-Code, Token-Anmeldung und Schutz gegen DNS-Rebinding. |
 | 🎨 **Oberfläche** | 5 Themes plus heller Modus, DE/EN/RU/JA plus eigene Sprachen als JSON-Dateien (Import in den Einstellungen, neue aus dem Daten-Repository, Prüfung mit `npm run i18n:check`), Scrollen per Mausziehen in Bibliotheken und Hub, Schließen-Dialog (Systemleiste oder Beenden, mit *„Auswahl merken“*), Zurücksetzen pro Einstellungsbereich, Befehlspalette (Strg+K), Tastaturnavigation (Strg+1…9), WCAG-AA-Kontraste, Expertenmodus, Aufgabenliste für Hintergrundvorgänge mit Fortschritt, Abbrechen und Wiederholen. |
 
-### Architektur
+</details>
+
+<details>
+<summary><b>Architektur</b></summary>
 
 Keine Python-Laufzeit: Alle Engines sind C++ oder Rust und werden bei Bedarf geladen und per SHA-256 geprüft.
 
@@ -259,7 +273,10 @@ flowchart LR
     SQLiteMemory --> Search["Passende Erinnerungen<br/>(Volltextsuche)"] --> Prompt["Prompt-Builder"] --> Next["Nächste Runde"]
 ```
 
-### Gemessene Leistung
+</details>
+
+<details>
+<summary><b>Gemessene Leistung</b></summary>
 
 Referenzsystem: **NVIDIA GeForce RTX 4070 Ti SUPER, 16 GB VRAM**, Linux, CUDA.
 
@@ -292,6 +309,8 @@ Referenzsystem: **NVIDIA GeForce RTX 4070 Ti SUPER, 16 GB VRAM**, Linux, CUDA.
 | **Kokoro DE** | Victoria / Bernd / Eva | 77 % | – | – | 0,06–0,23 | +1,0–1,8 GB |
 
 Der lokale Chat steht 1–4 Sekunden nach einem Bild- oder Sprachauftrag wieder bereit.
+
+</details>
 
 ### Daten & Privatsphäre
 
@@ -326,7 +345,7 @@ npm run e2e        # End-to-End-Suite gegen ein Mock-LLM (tauri-driver)
 npm run e2e:perf   # Langchat-Messung (1000 Nachrichten)
 ```
 
-Die README-Screenshots entstehen mit `xvfb-run -a node e2e/readme-screenshots.mjs de` (bzw. `en`, `ru`). Hinweise für Mitwirkende und KI-Assistenten: [AI.md](AI.md).
+Die README-Screenshots und die Animation oben entstehen mit `node e2e/readme-screenshots.mjs de` und `node e2e/readme-demo.mjs de` (bzw. `en`, `ru`; unter Linux mit `xvfb-run -a` davor, die Animation braucht `ffmpeg`). Hinweise für Mitwirkende und KI-Assistenten: [AI.md](AI.md).
 
 ### Technologie
 
@@ -335,6 +354,17 @@ Die README-Screenshots entstehen mit `xvfb-run -a node e2e/readme-screenshots.mj
 * **Avatare:** [Three.js](https://threejs.org/), [@pixiv/three-vrm](https://github.com/pixiv/three-vrm), `@moeru/three-mmd`, [PixiJS](https://pixijs.com/) & Live2D Cubism Core, Inochi2D-Laufzeit portiert aus [Inox2D](https://github.com/Inochi2D/inox2d)
 * **Lokale KI:** llama.cpp & PrismML, stable-diffusion.cpp, CrispASR, whisper.cpp, ONNX Runtime (`ort`, für Kokoro & Talking Head Anime 3)
 * **Vibe-Coding & KI:** Größtenteils durch Vibe-Coding und Pair-Programming mit Unterstützung von Claude, ChatGPT und Gemini (Antigravity) entwickelt – abgesichert durch strenge Typensicherheit (`ts-rs`), Clippy, E2E-Tests und ein festes Architektur-Regelwerk ([`AI.md`](AI.md)).
+
+---
+
+## ⭐ OtakuSoul unterstützen
+
+So hilfst du am einfachsten:
+
+* **Gib dem Projekt einen ⭐ auf GitHub** – so finden andere die App.
+* **Teile deine Charaktere und Geschichten:** Der Teilen-Knopf auf einer Charakterkarte in der Bibliothek (oder *Zum Hub beisteuern* im Geschichten-Menü) prüft dein Werk, packt es und öffnet ein vorbefülltes Issue im Daten-Repository.
+* **Melde Fehler und Wünsche** unter [Issues](https://github.com/SnowwhiteOakheart/OtakuSoul/issues) – Screenshots und das Protokoll aus *Einstellungen → Expertenmodus* helfen sehr.
+* **Übersetze:** Neue Oberflächensprachen sind einfache JSON-Dateien, siehe *Einstellungen → Sprache der Benutzeroberfläche*.
 
 ---
 
