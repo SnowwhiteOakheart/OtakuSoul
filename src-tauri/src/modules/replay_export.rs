@@ -74,6 +74,8 @@ fn escape(text: &str) -> String {
             '>' => out.push_str("&gt;"),
             '"' => out.push_str("&quot;"),
             '\'' => out.push_str("&#39;"),
+            // Not allowed in XML (the EPUB chapter) and invisible anyway.
+            c if c.is_control() && !matches!(c, '\n' | '\r' | '\t') => {}
             _ => out.push(c),
         }
     }
@@ -87,30 +89,44 @@ fn rich(text: &str) -> String {
         if i > 0 {
             out.push_str("<br><br>");
         }
-        let mut bold = false;
-        let mut italic = false;
+        // Open marks, innermost last: closing one closes those opened inside it first and opens
+        // them again, so the tags always nest (EPUB readers parse XHTML strictly).
+        let mut open: Vec<&str> = Vec::new();
         let escaped = escape(paragraph.trim()).replace('\n', "<br>");
         let mut chars = escaped.chars().peekable();
         while let Some(c) = chars.next() {
-            if c == '*' {
-                if chars.peek() == Some(&'*') {
-                    chars.next();
-                    out.push_str(if bold { "</strong>" } else { "<strong>" });
-                    bold = !bold;
-                } else {
-                    out.push_str(if italic { "</em>" } else { "<em>" });
-                    italic = !italic;
-                }
-            } else {
+            if c != '*' {
                 out.push(c);
+                continue;
+            }
+            let tag = if chars.peek() == Some(&'*') {
+                chars.next();
+                "strong"
+            } else {
+                "em"
+            };
+            match open.iter().rposition(|t| *t == tag) {
+                Some(at) => {
+                    let inner = open.split_off(at + 1);
+                    for t in inner.iter().rev() {
+                        let _ = write!(out, "</{t}>");
+                    }
+                    let _ = write!(out, "</{tag}>");
+                    open.pop();
+                    for t in &inner {
+                        let _ = write!(out, "<{t}>");
+                    }
+                    open.extend(inner);
+                }
+                None => {
+                    let _ = write!(out, "<{tag}>");
+                    open.push(tag);
+                }
             }
         }
         // A paragraph ends every open mark.
-        if italic {
-            out.push_str("</em>");
-        }
-        if bold {
-            out.push_str("</strong>");
+        for t in open.iter().rev() {
+            let _ = write!(out, "</{t}>");
         }
     }
     out
@@ -206,7 +222,7 @@ pub fn render_html(replay: &Replay, lang: &ContentLang, language_code: &str) -> 
         escape(&replay.title)
     );
     for (i, (_, portrait)) in portraits.iter().enumerate() {
-        let _ = write!(out, ".p{i} {{ background-image: url({portrait}); }}\n");
+        let _ = writeln!(out, ".p{i} {{ background-image: url({portrait}); }}");
     }
     out.push_str("</style>\n</head>\n<body>\n<main>\n");
     out.push_str(&content(replay, lang, &avatar));
@@ -218,15 +234,15 @@ pub fn render_html(replay: &Replay, lang: &ContentLang, language_code: &str) -> 
 fn content(replay: &Replay, lang: &ContentLang, avatar: &dyn Fn(&str) -> String) -> String {
     let mut out = String::new();
     out.push_str("<header>\n");
-    let _ = write!(out, "<h1>{}</h1>\n", escape(&replay.title));
+    let _ = writeln!(out, "<h1>{}</h1>", escape(&replay.title));
     if !replay.subtitle.trim().is_empty() {
-        let _ = write!(out, "<p class=\"sub\">{}</p>\n", rich(&replay.subtitle));
+        let _ = writeln!(out, "<p class=\"sub\">{}</p>", rich(&replay.subtitle));
     }
     out.push_str("</header>\n");
     if !replay.facts.is_empty() {
         out.push_str("<ul class=\"facts\">\n");
         for (label, value) in replay.facts.iter().filter(|(_, v)| !v.trim().is_empty()) {
-            let _ = write!(out, "<li><b>{}</b>{}</li>\n", escape(label), escape(value));
+            let _ = writeln!(out, "<li><b>{}</b>{}</li>", escape(label), escape(value));
         }
         out.push_str("</ul>\n");
     }
@@ -290,9 +306,9 @@ fn content(replay: &Replay, lang: &ContentLang, avatar: &dyn Fn(&str) -> String)
         out.push_str(&rich(&line.text));
         out.push_str("</div></div></div>\n");
     }
-    let _ = write!(
+    let _ = writeln!(
         out,
-        "<footer>{}</footer>\n",
+        "<footer>{}</footer>",
         escape(&lang.t("Made with OtakuSoul"))
     );
     out
@@ -758,6 +774,20 @@ mod tests {
     fn open_marks_end_with_their_paragraph() {
         assert_eq!(rich("*offen"), "<em>offen</em>");
         assert_eq!(rich("a\n\n**b"), "a<br><br><strong>b</strong>");
+    }
+
+    #[test]
+    fn crossed_marks_still_nest() {
+        assert_eq!(rich("*a **b"), "<em>a <strong>b</strong></em>");
+        assert_eq!(
+            rich("*a **b* c**"),
+            "<em>a <strong>b</strong></em><strong> c</strong>"
+        );
+        assert_eq!(
+            rich("**a *b** c*"),
+            "<strong>a <em>b</em></strong><em> c</em>"
+        );
+        assert_eq!(rich("2 * 3 = 6"), "2 <em> 3 = 6</em>");
     }
 
     #[test]
