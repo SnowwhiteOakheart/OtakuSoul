@@ -858,12 +858,56 @@ pub fn import_character_file(
     store_imported_card(loaded.card, avatar, overwrite)
 }
 
+/// Keys in a card's `extensions` that name an avatar model on this computer.
+const AVATAR_MODEL_KEYS: [&str; 5] = [
+    "custom_vrm",
+    "sow_vrm",
+    "custom_live2d",
+    "sow_live2d",
+    "custom_inochi2d",
+];
+
+/// What of an avatar model reference may leave this computer: web addresses as they are, a local
+/// path only as its last two parts (no user folder, no drive), a VRoid Hub model not at all.
+fn portable_model_reference(model: &str) -> Option<String> {
+    let model = model.trim();
+    if model.is_empty() || model.starts_with(crate::modules::vroid_hub::PATH_PREFIX) {
+        return None;
+    }
+    if model.starts_with("http://") || model.starts_with("https://") {
+        return Some(model.to_string());
+    }
+    let parts: Vec<&str> = model
+        .split(['/', '\\'])
+        .filter(|p| !p.is_empty() && !p.contains(':'))
+        .collect();
+    let end = parts[parts.len().saturating_sub(2)..].join("/");
+    (!end.is_empty()).then_some(end)
+}
+
 /// Exports a character card to an arbitrary destination chosen by the user
 /// A card leaving the app carries no local file paths: emotion pictures stored as paths on this
 /// computer (absolute after loading) would only reveal the user's folders and not work elsewhere.
-/// Web and `data:` pictures stay.
+/// Web and `data:` pictures stay. Avatar models keep only the end of their path (folder and file,
+/// which the viewers match on) and VRoid Hub models are dropped: they may only be used by the
+/// account they were shared with.
 fn without_local_picture_paths(card: &CharacterCardV2) -> CharacterCardV2 {
     let mut card = card.clone();
+    if let Some(extensions) = card.data.extensions.as_object_mut() {
+        for key in AVATAR_MODEL_KEYS {
+            let Some(model) = extensions.get(key).and_then(serde_json::Value::as_str) else {
+                continue;
+            };
+            match portable_model_reference(model) {
+                Some(short) => {
+                    extensions.insert(key.into(), short.into());
+                }
+                None => {
+                    extensions.remove(key);
+                }
+            }
+        }
+    }
     for key in ["expressions", "custom_expressions", "sow_expressions"] {
         if let Some(map) = card
             .data
@@ -1175,6 +1219,37 @@ mod tests {
         // The exact name wins over a short one.
         assert_eq!(id("Kirito").as_deref(), Some("kirito"));
         assert_eq!(id("Asuna"), None);
+    }
+
+    #[test]
+    fn exported_cards_name_their_avatar_without_user_folders_or_vroid_models() {
+        let card: CharacterCardV2 = serde_json::from_value(serde_json::json!({
+            "spec": "chara_card_v2", "spec_version": "2.0",
+            "data": {"name": "Export", "description": "", "personality": "", "scenario": "", "first_mes": "",
+                "extensions": {
+                    "custom_vrm": "C:\\Users\\Someone\\AppData\\Roaming\\otakusoul\\avatars\\Lirwen.vrm",
+                    "sow_vrm": "vroid:5225889348359061944",
+                    "custom_live2d": "/home/someone/.local/share/otakusoul/live2d/hiyori/hiyori.model3.json",
+                    "custom_inochi2d": "Aka.inx",
+                    "custom_title": "C:\\keep\\me"
+                }}
+        }))
+        .unwrap();
+        let clean = super::without_local_picture_paths(&card);
+        let ext = &clean.data.extensions;
+        assert_eq!(ext["custom_vrm"], "avatars/Lirwen.vrm");
+        assert!(
+            ext.get("sow_vrm").is_none(),
+            "VRoid Hub models stay with their account"
+        );
+        assert_eq!(ext["custom_live2d"], "hiyori/hiyori.model3.json");
+        assert_eq!(ext["custom_inochi2d"], "Aka.inx");
+        assert_eq!(
+            ext["custom_title"], "C:\\keep\\me",
+            "other keys are untouched"
+        );
+        let text = serde_json::to_string(&clean).unwrap();
+        assert!(!text.contains("Someone") && !text.contains("someone"));
     }
 
     #[test]
