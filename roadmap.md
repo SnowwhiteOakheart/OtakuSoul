@@ -126,9 +126,13 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 ## B. Als Nächstes – baut auf Vorhandenem auf
 
 - [ ] **B4 · Eigene Figuren und Geschichten teilen – Rest:** Der Weg „Paket + vorbefülltes Issue“ steht (Prüfung, ZIP im Repo-Layout,
-  Lizenzwahl, Altersmarke, Issue-Vorlagen in beiden Daten-Repos; siehe `roadmap_abgeschlossen.md`). Offen: Lorebooks beisteuern,
-  ein Workflow im Daten-Repo, der das ZIP aus dem Issue prüft (Validator) und einen Pull Request vorschlägt, und der erste echte
-  Durchlauf mit einem Issue. *Risiko:* Prüfaufwand und Moderation bleiben beim Betreiber.
+  Lizenzwahl, Altersmarke, Issue-Vorlagen in beiden Daten-Repos; siehe `roadmap_abgeschlossen.md`). Seit 04.11.2026 prüft der
+  Workflow `einreichung.yml` in beiden Daten-Repos jedes Issue „Beitrag: …“ automatisch (`tools/check_submission.py`: Archiv,
+  Prüfsummen, Lizenz, Altersmarke/Repository, lokale Pfade, `vroid:`, Dubletten, Repo-Regeln) und kommentiert das Ergebnis; das
+  Label `aufnehmen` legt Branch und Pull Request an. Offen: der erste echte Durchlauf mit einem Issue (dabei sehen, ob GitHub
+  Anhänge ohne Anmeldung ausliefert und ob die Vorlage per `template=` greift), die Einstellung „Allow GitHub Actions to create and
+  approve pull requests“ (sonst nur Ein-Klick-Link) und Lorebooks beisteuern. *Risiko:* Inhaltsprüfung und Moderation bleiben beim
+  Betreiber.
 - [ ] **B5 · Webtoon-Export:** HTML-Replay und EPUB sind fertig (`replay_export.rs`, siehe `roadmap_abgeschlossen.md`).
   Offen: ein Webtoon-Strip aus einem Akt mit Szenenbildern und Emotionsporträts (lange Bildspalte, Sprechblasen).
 - [ ] **B6 · OBS-Overlay mit Modell:** Das Overlay (`/overlay`) zeigt heute das Porträt mit Sprechblase und Stimmung. Offen: das
