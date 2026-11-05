@@ -11,6 +11,16 @@
 - Display / X11: Bei headless-Umgebungen oder gesperrter Desktop-Sitzung per `xvfb-run npm run e2e` ausführen, da WebKit-Bildaufnahmen und Animationsabfragen sonst hängen können.
 - `sqlite3` CLI für die Fehler- und Rollback-Tests (temporäre Trigger ausschließlich im Wegwerfprofil).
 
+## Voraussetzungen (Windows)
+
+- `tauri-driver` wie oben.
+- `msedgedriver.exe` in genau der Version der installierten WebView2-Laufzeit (Registry
+  `HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}`, Wert `pv`),
+  von `https://msedgedriver.microsoft.com/<version>/edgedriver_win64.zip`, in einem Ordner im `PATH`. Nach einem
+  WebView2-Update passend nachziehen.
+- `sqlite3`: `winget install SQLite.SQLite`.
+- Kein `xvfb` nötig; die Sitzung sollte aber nicht gesperrt sein.
+
 ## Abgedeckte Testbereiche
 
 Die Suite umfasst über 90 spezialisierte Testmodule:
@@ -28,6 +38,7 @@ Die Suite umfasst über 90 spezialisierte Testmodule:
 3. **Kognitives Gedächtnis:**
    - `memory-save-errors.mjs`, `memory-read-errors.mjs`, `memory-operations.mjs`, `memory-drafts.mjs`, `memory-sources.mjs`.
    - `memory-recall.mjs`, `memory-supersede.mjs`, `memory-intentions.mjs`, `memory-cleanup.mjs`: FTS5-Relevanzabruf, Ablösen überholter Erinnerungen, Vorhaben & Versprechen mit Fälligkeit sowie Aufräumen überlappender Einträge.
+   - `memory-atlas.mjs`, `memory-journal.mjs`, `memory-branches.mjs`: Beziehungs-Atlas, Tagebuch-Modus (Abend-Reflexion, Gute-Nacht-Nachricht, Monatsrückblick) und Zweige mit eigenem Gedächtnis.
 
 4. **Soul Stage & 5e-Regelsystem:**
    - `stage-context.mjs`, `stage-npcs.mjs`, `stage-editor.mjs`, `stage-director.mjs`, `stage-voice.mjs`, `stage-world.mjs`, `stage-memory.mjs`, `stage-offscreen.mjs`, `stage-upkeep-abort.mjs`.

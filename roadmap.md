@@ -29,9 +29,9 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 | B7 | Benachrichtigungsklick unter Linux und macOS | ★ | S (Linux) / M (macOS) | Mac für macOS |
 | **C** | **Später – größere Vorhaben** | | | |
 | C1 | Zugriff von unterwegs (Relay), danach Handy-App | ★★★ | XL | Relay-Dienst, Sicherheitskonzept |
-| C2 | Beziehungs-Atlas (Gedächtnis als Graph) | ★★ | L | – |
-| C3 | Zeitreise-Checkpoints (Verzweigung samt Gedächtnisstand) | ★★ | L | – |
-| C4 | Abend-Reflexion und Monatsrückblick | ★★ | M | – |
+| C2 | ~~Beziehungs-Atlas~~ erledigt (05.11.2026) | – | – | – |
+| C3 | ~~Zeitreise-Checkpoints~~ erledigt (05.11.2026) | – | – | – |
+| C4 | ~~Abend-Reflexion und Monatsrückblick~~ erledigt (05.11.2026) | – | – | – |
 | C5 | Fokus-/Pomodoro-Modus mit Avatar | ★ | M | – |
 | C6 | Mehrere Pets gleichzeitig | ★ | L | – |
 | C7 | Mitguck-Modus (Bildschirm/Webcam) | ★★ | L | Vision-Modell, Datenschutzkonzept |
@@ -151,26 +151,25 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 - [ ] **C1 · Zugriff von unterwegs:** Web-Client außerhalb des WLANs über eine verschlüsselte Relay-Verbindung ohne
   Portfreigabe, mit Push-Benachrichtigungen; danach eine eigene Handy-App über Tauri 2 (Android/iOS) prüfen. *Nutzen:*
   größte Lücke gegenüber Character.AI, Kindroid und Replika; *aber:* braucht einen Relay-Dienst und ein Sicherheitskonzept.
-- [ ] **C2 · Beziehungs-Atlas:** Interaktive Knotenansicht des SQLite-Gedächtnisses (`psyche`, `relationship`,
+- [x] **C2 · Beziehungs-Atlas:** Interaktive Knotenansicht des SQLite-Gedächtnisses (`psyche`, `relationship`,
   `episodes`, `diary`, `plans`), in der Verbindungen zeigen, welche Erlebnisse welche Überzeugungen geformt haben.
   Umgesetzt (05.11.2026): Drawer-Reiter „Atlas“ (`memory/atlas.rs`, `AtlasTab.tsx`): Überzeugungen oben, Erlebnisse,
   Tagebuch und Vorhaben auf einer Zeitachse; gespeicherte Verbindungen durchgezogen, über FTS5 erschlossene gestrichelt;
-  Klick zeigt Text, Verbindungen und „Zur Nachricht“. **Noch offen:** E2E-Durchlauf mit Screenshots (auf dem
-  Windows-Rechner nicht eingerichtet).
-- [ ] **C3 · Zeitreise-Checkpoints:** Von einem Punkt der Beziehungs-Chronik aus einen neuen Zweig starten („Was wäre,
+  Klick zeigt Text, Verbindungen und „Zur Nachricht“. E2E `memory-atlas.mjs` (Screenshot 120) bestanden.
+- [x] **C3 · Zeitreise-Checkpoints:** Von einem Punkt der Beziehungs-Chronik aus einen neuen Zweig starten („Was wäre,
   wenn …?“) – mit eigenem Gedächtnisstand. Braucht Gedächtnis-Snapshots je Zweig; sinnvoll nach C2.
   Umgesetzt (05.11.2026): „Ab hier neu“ bietet „Eigenes Gedächtnis (Was wäre, wenn …?)“, der Atlas „Zweig ab hier“
   an jeder Erinnerung mit Quelle. Der Zweig startet mit dem Gedächtnis am Verzweigungspunkt (Erinnerungen, Tagebuch,
   Vorhaben; Stimmung und Beziehung im Stand des Verzweigungstags) und lebt danach getrennt; der Drawer zeigt „Gedächtnis
-  dieses Zweigs“. **Noch offen:** E2E-Durchlauf mit Screenshots; Stimmung/Beziehung zum damaligen Zeitpunkt bräuchte
-  eine Historie dieser Werte.
-- [ ] **C4 · Abend-Reflexion und Monatsrückblick:** Optionaler Journaling-Modus; die Figur reflektiert den Tag, begleitet
+  dieses Zweigs“. E2E `memory-branches.mjs` (Screenshot 122) bestanden. Grenze: Stimmung/Beziehung
+  zum damaligen Zeitpunkt bräuchte eine Historie dieser Werte.
+- [x] **C4 · Abend-Reflexion und Monatsrückblick:** Optionaler Journaling-Modus; die Figur reflektiert den Tag, begleitet
   `habits`/`plans` und schreibt am Monatsende einen Rückblick. *Baut auf:* Tagebuch und proaktiven Nachrichten.
   Umgesetzt (05.11.2026): Einstellung „Abend-Reflexion und Monatsrückblick“ (aus bis zum Einschalten): ab einer
   wählbaren Uhrzeit schreibt die Figur des offenen Chats einmal am Tag über euren Tag ins Tagebuch (mit Gewohnheiten und
   Vorhaben), optional mit Gute-Nacht-Nachricht und Erinnerung an Vorhaben für morgen; zu Monatsbeginn ein Rückblick auf
-  den letzten Monat. Im Tagebuch-Reiter von Hand auslösbar. **Noch offen:** E2E-Durchlauf mit Mock-LLM und
-  Screenshots, Klang der Texte mit echten Modellen.
+  den letzten Monat. Im Tagebuch-Reiter von Hand auslösbar. E2E `memory-journal.mjs` (Screenshot 121) bestanden.
+  Offen nur: Klang der Texte mit echten Modellen.
 - [ ] **C5 · Fokus-/Pomodoro-Modus:** Fokus-Timer, bei dem der Avatar mitarbeitet, Pausen ankündigt und erledigte
   Aufgaben feiert (inspiriert von *Spirit City: Lofi Sessions*).
 - [ ] **C6 · Mehrere Pets:** Bei Gruppenchats mehrere Figuren gleichzeitig, die sich anschauen und nacheinander sprechen

@@ -139,6 +139,9 @@ export function startMockLlm() {
         stats.memoryRouter = (stats.memoryRouter ?? 0) + 1;
         (stats.memoryRequests ??= []).push(JSON.stringify(request.messages));
       }
+      // Journaling mode: evening reflection and monthly review (`stats.journalRequests`).
+      const isJournal = system.includes('Write a private journal entry about today') || system.includes('Write a personal review of the month');
+      if (isJournal) (stats.journalRequests ??= []).push({ system, user: String(request.messages?.at(-1)?.content ?? '') });
       // Memory cleanup ("tidy up memory"): answers with the groups a test sets.
       const isCleanup = system.includes('[SOUL MEMORY — CLEANUP]');
       if (isCleanup) { stats.cleanup = (stats.cleanup ?? 0) + 1; stats.lastCleanupMessages = request.messages ?? []; }
@@ -182,6 +185,7 @@ export function startMockLlm() {
       const text = stats.memoryRouterResult && JSON.stringify(request.messages ?? []).includes('=== RECENT MESSAGES ===')
         ? JSON.stringify(stats.memoryRouterResult)
         : isCleanup ? JSON.stringify(stats.cleanupResult ?? { groups: [] })
+        : isJournal ? (system.includes('review of the month') ? 'Dieser Monat war voller kleiner Gewitter und großer Gespräche.' : 'Heute hat Kai mir von seinem Tag erzählt, und ich habe mich gefreut.')
         : isArcArchive ? 'ARC_SUMMARY: Das Tor wurde geöffnet, der Wächter ist frei.'
         : isAudit ? JSON.stringify(stats.auditResult ?? { prune_keys: [], updated_facts: {} })
         : isChatRouting ? JSON.stringify({ next_actor: stats.chatRoutes?.shift() ?? 'PLAYER' })
