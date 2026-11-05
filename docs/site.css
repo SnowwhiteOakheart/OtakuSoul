@@ -43,6 +43,7 @@ h3 { font-size: 1.21rem; }
 .eyebrow { color: var(--gold); font-size: .73rem; font-weight: 800; letter-spacing: .17em; margin: 0 0 1rem; }
 .lead { font-size: clamp(1.08rem, 1.8vw, 1.3rem); max-width: 36rem; }
 .hero .lead { max-width: 31rem; margin-top: 1.3rem; }
+.offline-note { max-width: 31rem; margin-top: 1rem; }
 .actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.55rem; }
 .button { display: inline-flex; gap: .8rem; align-items: center; padding: .65rem 1rem; border-radius: .4rem; border: 1px solid transparent; text-decoration: none; font-weight: 750; }
 .primary { background: var(--accent); color: #231232; }
