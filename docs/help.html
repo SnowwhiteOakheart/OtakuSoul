@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Set up OtakuSoul, start your first chat or story, configure voice and images, and troubleshoot common problems.">
+  <meta name="theme-color" content="#100c19">
+  <title>Help &amp; setup · OtakuSoul</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="site.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <nav class="wrap nav" aria-label="Main navigation">
+    <a class="brand" href="./"><img src="favicon.svg" width="28" height="28" alt="">OtakuSoul</a>
+    <div class="nav-links"><a href="./#features">Features</a><a href="help.html" aria-current="page">Help</a><a class="nav-cta" href="./#download">Download</a></div>
+  </nav>
+</header>
+<main id="main">
+  <header class="help-heading"><div class="wrap"><p class="eyebrow">OTAKUSOUL / HELP CENTER</p><h1>From install to<br><em>your first adventure.</em></h1><p class="lead">Set up an AI model, meet your first character and learn where to look when you get stuck.</p></div></header>
+  <div class="wrap help-layout">
+    <aside><nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#install">Install</a><a href="#choose-ai">Choose local or cloud AI</a><a href="#first-chat">Start a chat or story</a><a href="#voice-images">Voice and images</a><a href="#troubleshooting">Troubleshooting</a><a href="#more-help">More help</a></nav></aside>
+    <div class="help-body">
+      <section id="install">
+        <p class="eyebrow">01 / INSTALL</p><h2>Get the installer for your system</h2>
+        <p>Go to the <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest">latest release</a>, expand <strong>Assets</strong> and select your installer.</p>
+        <dl class="install-list">
+          <dt>Windows 10 or 11</dt><dd>Download <code>…_x64-setup.exe</code> and run it.</dd>
+          <dt>Linux</dt><dd>Download the x86-64 AppImage and mark it executable before opening it. On Debian or Ubuntu you can also install the <code>…_amd64.deb</code> package with <code>sudo apt install ./filename.deb</code>, replacing <code>filename.deb</code> with your download.</dd>
+          <dt>macOS with Apple silicon</dt><dd>Open the <code>…_aarch64.dmg</code> and drag OtakuSoul to Applications. If macOS blocks the unnotarized app, consult the <a href="https://github.com/SnowwhiteOakheart/OtakuSoul#-download">macOS notes in the README</a>.</dd>
+        </dl>
+      </section>
+      <section id="choose-ai">
+        <p class="eyebrow">02 / FIRST LAUNCH</p><h2>Choose how the AI runs</h2>
+        <p>The setup assistant asks for your language and theme, then lets you select local or cloud AI. You can switch later from <strong>Home → Change AI</strong>.</p>
+        <div class="choice-grid">
+          <article><h3>Local AI</h3><p>Chat processing stays on your device. Choose the setup assistant’s recommendation for your PC and download a model that fits. You can start with chat and add voice or image models later.</p><p>Model downloads can take several gigabytes. If memory is tight, pick a smaller model or enable one capability at a time.</p></article>
+          <article><h3>Cloud AI</h3><p>A provider runs the model. Choose one in the assistant, connect your account or paste its API key, and test the connection. This is an option for laptops without a dedicated GPU.</p><p>Your provider processes the requests and sets its own usage limits and pricing.</p></article>
+        </div>
+        <figure><img src="assets/screenshots/en/setup-local.png" alt="The setup assistant showing local model recommendations" width="2100" height="1350" loading="lazy"><figcaption>The local setup assistant recommends a model based on your hardware.</figcaption></figure>
+      </section>
+      <section id="first-chat">
+        <p class="eyebrow">03 / PLAY</p><h2>Start a chat or a story</h2>
+        <ol class="steps">
+          <li><strong>Meet a character.</strong> Open <strong>Characters</strong>, choose a card marked <strong>Good to start with</strong> and select <strong>Chat now</strong>. Send a message or use the light bulb for ideas.</li>
+          <li><strong>Bring in more characters.</strong> Open <strong>Conversations</strong> and start a group chat or invite guests from the group controls. Address a character by name to give them the floor.</li>
+          <li><strong>Start a story.</strong> Open <strong>Stage</strong>, pick an adventure from the story gallery and select <strong>Start story</strong>. Choose what to say, do or think. You can also whisper to a companion or give the game master a direction.</li>
+        </ol>
+        <p class="note"><strong>Try this.</strong> Open a message’s menu and choose <strong>Remember this message</strong> to save a detail for future chats.</p>
+      </section>
+      <section id="voice-images">
+        <p class="eyebrow">04 / CUSTOMIZE</p><h2>Speak, listen and illustrate</h2>
+        <dl class="install-list">
+          <dt>Hear your characters</dt><dd>Open <strong>Settings → Voice</strong>. Preview the options under <strong>Listen to and compare voices</strong>, then choose a voice and set up its speech engine.</dd>
+          <dt>Speak into your microphone</dt><dd>Set up speech recognition, then use the microphone control in chat. Allow microphone access in your operating system if prompted.</dd>
+          <dt>Generate a scene image</dt><dd>Configure an image model or service in <strong>Settings → Images</strong>. In a reply’s menu, select <strong>This moment as a picture</strong>. Use the image card if you want to make it your chat background.</dd>
+          <dt>Choose an avatar</dt><dd>Use a portrait or give a character an avatar. The <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/blob/main/docs/guide-3d-avatars.md">3D avatar guide</a> walks through supported formats and setup.</dd>
+        </dl>
+      </section>
+      <section id="troubleshooting">
+        <p class="eyebrow">05 / TROUBLESHOOTING</p><h2>When something gets stuck</h2>
+        <div class="faq">
+          <details><summary>The AI does not reply</summary><p>Open <strong>Home → Change AI</strong> and check the selected model. For cloud AI, test the connection and check your provider account or key. For local AI, check that the model download finished and use the error’s suggested fix if shown.</p></details>
+          <details><summary>The local model is slow or does not fit</summary><p>Try a smaller chat model. If chat works on its own, add image or speech models one at a time to see what fits alongside it. You can also switch chat to a cloud provider.</p></details>
+          <details><summary>The microphone or speech output does not work</summary><p>Check the microphone and output device in your operating system. Test a voice in <strong>Settings → Voice</strong> and confirm that the speech engine or speech recognition model has finished setting up.</p></details>
+          <details><summary>I cannot generate a picture</summary><p>Open <strong>Settings → Images</strong> and check which model or provider is selected. Make sure a local model has finished downloading or that the cloud service is connected.</p></details>
+          <details><summary>I want to bring in an existing character or chat</summary><p>Import SillyTavern character cards as PNG or JSON and import lorebooks separately. For an existing conversation, open <strong>Conversations</strong> and use the import action for a SillyTavern JSONL file.</p></details>
+        </div>
+      </section>
+      <section id="more-help">
+        <p class="eyebrow">06 / MORE HELP</p><h2>Find the right help</h2>
+        <p>Open the question mark in the app’s title bar for <strong>First steps</strong> and the <strong>Glossary</strong>. The <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/blob/main/docs/guide-getting-started.md">full getting-started guide</a> covers reply controls, group chats and Stage in more detail.</p>
+        <p>If the problem persists, include your OS, app version, model or provider and the steps that reproduce it. Remove API keys and private chat text from any screenshots or logs.</p>
+        <div class="actions"><a class="button primary" href="https://github.com/SnowwhiteOakheart/OtakuSoul/issues">Open GitHub Issues <span aria-hidden="true">↗</span></a></div>
+      </section>
+    </div>
+  </div>
+</main>
+<footer class="site-footer"><div class="wrap footer-content"><a class="brand" href="./">OtakuSoul</a><div><a href="./#download">Download</a><a href="https://github.com/SnowwhiteOakheart/OtakuSoul">GitHub</a></div></div></footer>
+</body>
+</html>
