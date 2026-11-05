@@ -107,7 +107,11 @@ pub fn evening_input(db: &MemoryDb, req: &JournalRequest) -> Result<Option<Strin
         .list_chat_sessions(&req.chat_character_id)
         .map_err(|e| e.to_string())?
     {
-        if session.updated_at < req.from {
+        // Only the chats of this memory: a branch with its own memory has its own day.
+        if session.updated_at < req.from
+            || crate::modules::memory::memory_id(&session.character_id, &session.memory_branch)
+                != req.character_id
+        {
             continue;
         }
         let chat = db
@@ -369,6 +373,43 @@ mod tests {
         assert!(text.contains("- Joggt morgens"));
         // Messages outside the day do not count.
         assert!(evening_input(&db, &req("evening", 0, 1)).unwrap().is_none());
+    }
+
+    #[test]
+    fn evening_reads_only_the_chats_of_its_own_memory() {
+        let db = MemoryDb::new_in_memory().unwrap();
+        let main = db.create_chat_session("ayu", "Chat").unwrap();
+        let start = db
+            .add_chat_message(&main.id, "assistant", "Hallo!", None, &[])
+            .unwrap();
+        let branch = db
+            .branch_chat(&main.id, &start.id, "Was wäre wenn", true)
+            .unwrap();
+        db.add_chat_message(&branch.id, "user", "Nur im Zweig", None, &[])
+            .unwrap();
+        // The main line talked about nothing today.
+        assert!(
+            evening_input(&db, &req("evening", 0, u64::MAX))
+                .unwrap()
+                .is_none()
+        );
+        let scoped = crate::modules::memory::memory_id("ayu", &branch.memory_branch);
+        let in_branch = JournalRequest {
+            character_id: scoped,
+            ..req("evening", 0, u64::MAX)
+        };
+        assert!(
+            evening_input(&db, &in_branch)
+                .unwrap()
+                .unwrap()
+                .contains("Nur im Zweig")
+        );
+        db.add_chat_message(&main.id, "user", "Nur in der Hauptlinie", None, &[])
+            .unwrap();
+        let text = evening_input(&db, &req("evening", 0, u64::MAX))
+            .unwrap()
+            .unwrap();
+        assert!(text.contains("Nur in der Hauptlinie") && !text.contains("Nur im Zweig"));
     }
 
     #[test]

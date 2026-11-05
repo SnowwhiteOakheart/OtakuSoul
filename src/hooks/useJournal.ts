@@ -57,9 +57,9 @@ export async function writeJournal(period: JournalPeriod, replace = false): Prom
   return outcome;
 }
 
-/** Writes `period` unless handled in this run or failed a short while ago. */
-async function writeOnce(period: JournalPeriod, charId: string): Promise<JournalOutcome | null> {
-  const key = `${charId}|${period.kind}|${period.period}`;
+/** Writes `period` unless handled in this run or failed a short while ago (per memory id). */
+async function writeOnce(period: JournalPeriod, memory: string): Promise<JournalOutcome | null> {
+  const key = `${memory}|${period.kind}|${period.period}`;
   if (done.has(key) || Date.now() - (failedAt.get(key) ?? 0) < RETRY_AFTER_MS) return null;
   try {
     const outcome = await writeJournal(period);
@@ -79,13 +79,15 @@ async function check() {
   if (!journal.enabled || !activeCharacter || !aiReady()) return;
   const now = new Date();
   const name = presentedAs(activeCharacter, useAppStore.getState().replyLanguage).name;
+  // A branch with its own memory keeps its own diary.
+  const memory = memoryIdFor(activeCharacter.id, useAppStore.getState().chatSessions.find((s) => s.id === useAppStore.getState().activeChatId));
 
   if (journal.monthly) {
-    const outcome = await writeOnce(monthPeriod(now), activeCharacter.id);
+    const outcome = await writeOnce(monthPeriod(now), memory);
     if (outcome?.status === 'written') toast.info(translate('journal.monthlyWritten', { name }));
   }
   if (!eveningDue(journal, now) || !aiReady()) return;
-  const outcome = await writeOnce(dayPeriod(now), activeCharacter.id);
+  const outcome = await writeOnce(dayPeriod(now), memory);
   if (outcome?.status !== 'written' || !outcome.entry) return;
   toast.info(translate('journal.eveningWritten', { name }));
 
