@@ -1324,6 +1324,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "öffnet example.com im Standardbrowser; nur von Hand: cargo test --lib test_companion_tool_safety_countdown -- --ignored"]
     fn test_companion_tool_safety_countdown() {
         let engine = CompanionEngine::new();
         let req = engine
