@@ -44,6 +44,25 @@ impl RemoteFile {
     }
 }
 
+/// What a download needs to know of its file: name (for messages), size and checksum.
+#[derive(Clone, Copy)]
+pub struct FileSpec<'a> {
+    pub name: &'a str,
+    pub size: u64,
+    /// Lower-case hex SHA-256; without it only the size is checked.
+    pub sha256: Option<&'a str>,
+}
+
+impl RemoteFile {
+    fn spec(&self) -> FileSpec<'static> {
+        FileSpec {
+            name: self.file_name(),
+            size: self.size,
+            sha256: self.sha256,
+        }
+    }
+}
+
 pub fn part_path(target: &Path) -> PathBuf {
     target.with_extension(format!(
         "{}.part",
@@ -66,7 +85,15 @@ pub async fn download_file(
     cancel: &AtomicBool,
     emit: &(impl Fn(u64) + Sync),
 ) -> Result<(), String> {
-    download_from(client, &file.url(), file, &file.path_in(dir), cancel, emit).await
+    download_from(
+        client,
+        &file.url(),
+        &file.spec(),
+        &file.path_in(dir),
+        cancel,
+        emit,
+    )
+    .await
 }
 
 /// [`download_file`] under another name than the one in the repository (generic names such as
@@ -78,7 +105,7 @@ pub async fn download_file_as(
     cancel: &AtomicBool,
     emit: &(impl Fn(u64) + Sync),
 ) -> Result<(), String> {
-    download_from(client, &file.url(), file, target, cancel, emit).await
+    download_from(client, &file.url(), &file.spec(), target, cancel, emit).await
 }
 
 /// [`download_file_as`] from another address than `main` of the repository, e.g. a pinned
@@ -87,6 +114,18 @@ pub async fn download_file_from(
     client: &reqwest::Client,
     url: &str,
     file: &RemoteFile,
+    target: &Path,
+    cancel: &AtomicBool,
+    emit: &(impl Fn(u64) + Sync),
+) -> Result<(), String> {
+    download_from(client, url, &file.spec(), target, cancel, emit).await
+}
+
+/// Any file at `url` (e.g. a release asset on GitHub), with the same resumes and checks.
+pub async fn download_spec(
+    client: &reqwest::Client,
+    url: &str,
+    file: &FileSpec<'_>,
     target: &Path,
     cancel: &AtomicBool,
     emit: &(impl Fn(u64) + Sync),
@@ -115,7 +154,7 @@ fn is_transient(error: &str) -> bool {
 async fn download_from(
     client: &reqwest::Client,
     url: &str,
-    file: &RemoteFile,
+    file: &FileSpec<'_>,
     target: &Path,
     cancel: &AtomicBool,
     emit: &(impl Fn(u64) + Sync),
@@ -138,7 +177,7 @@ async fn download_from(
                 }
                 tracing::warn!(
                     "Download von {} unterbrochen, setze fort (Versuch {attempt}): {error}",
-                    file.file_name()
+                    file.name
                 );
                 tokio::time::sleep(resume_delay(attempt)).await;
             }
@@ -150,7 +189,7 @@ async fn download_from(
 async fn download_once(
     client: &reqwest::Client,
     url: &str,
-    file: &RemoteFile,
+    file: &FileSpec<'_>,
     target: &Path,
     cancel: &AtomicBool,
     emit: &(impl Fn(u64) + Sync),
@@ -288,7 +327,7 @@ async fn download_once(
 /// Checks the finished partial file (`have` bytes, SHA-256 `actual`) and moves it into place;
 /// a wrong file is removed.
 async fn finish(
-    file: &RemoteFile,
+    file: &FileSpec<'_>,
     part: &Path,
     target: &Path,
     actual: &str,
@@ -300,7 +339,7 @@ async fn finish(
             segmented_download::remove_partial(part);
             return Err(crate::err!(
                 "backend.runtime.checksum",
-                file = file.file_name(),
+                file = file.name,
                 expected = expected,
                 actual = actual
             ));
@@ -309,7 +348,7 @@ async fn finish(
         segmented_download::remove_partial(part);
         return Err(crate::err!(
             "backend.common.downloadInterrupted",
-            error = file.file_name()
+            error = file.name
         ));
     }
     tokio::fs::rename(part, target)
@@ -431,7 +470,7 @@ mod tests {
         download_from(
             &http_client().unwrap(),
             &url,
-            &file,
+            &file.spec(),
             &file.path_in(&dir),
             &AtomicBool::new(false),
             &|_| {},
@@ -489,9 +528,16 @@ mod tests {
 
         // A previous attempt left the first 10 bytes behind.
         std::fs::write(part_path(&file.path_in(&dir)), &DATA[..10]).unwrap();
-        download_from(&client, &url, &file, &file.path_in(&dir), &cancel, &|_| {})
-            .await
-            .unwrap();
+        download_from(
+            &client,
+            &url,
+            &file.spec(),
+            &file.path_in(&dir),
+            &cancel,
+            &|_| {},
+        )
+        .await
+        .unwrap();
         assert_eq!(std::fs::read(file.path_in(&dir)).unwrap(), DATA);
         assert!(file.is_complete(&dir));
         assert!(!part_path(&file.path_in(&dir)).exists());
@@ -503,9 +549,16 @@ mod tests {
         };
         std::fs::write(part_path(&bad.path_in(&dir)), b"XXXXXXXXXX").unwrap();
         assert!(
-            download_from(&client, &url, &bad, &bad.path_in(&dir), &cancel, &|_| {})
-                .await
-                .is_err()
+            download_from(
+                &client,
+                &url,
+                &bad.spec(),
+                &bad.path_in(&dir),
+                &cancel,
+                &|_| {}
+            )
+            .await
+            .is_err()
         );
         assert!(!part_path(&bad.path_in(&dir)).exists());
 
@@ -519,7 +572,7 @@ mod tests {
             download_from(
                 &client,
                 &url,
-                &cancelled,
+                &cancelled.spec(),
                 &cancelled.path_in(&dir),
                 &cancel,
                 &|_| {}

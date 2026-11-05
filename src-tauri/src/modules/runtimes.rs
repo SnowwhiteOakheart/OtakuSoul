@@ -7,12 +7,10 @@
 //! Every archive is checked against the SHA-256 digest GitHub publishes for it, unpacked into
 //! `runtimes/<kind>` in the data folder and remembered in `current.json`.
 
-use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 use tauri::Emitter;
-use tokio::io::AsyncWriteExt;
 use ts_rs::TS;
 
 /// Which runtime to download.
@@ -665,8 +663,47 @@ fn progress(kind: RuntimeKind, phase: &str, done: u64, total: u64) -> RuntimePro
     }
 }
 
+/// The SHA-256 GitHub states for `asset` (`sha256:<hex>`), lower case.
+fn asset_sha256(asset: &Asset) -> Option<String> {
+    asset
+        .digest
+        .as_deref()
+        .and_then(|d| d.strip_prefix("sha256:"))
+        .map(str::to_ascii_lowercase)
+}
+
+/// Whether `target` already is the finished, verified `asset` (an earlier attempt that failed
+/// later, e.g. while unpacking).
+fn already_downloaded(asset: &Asset, target: &Path) -> bool {
+    if std::fs::metadata(target).map(|m| m.len()).ok() != Some(asset.size) {
+        return false;
+    }
+    let Some(expected) = asset_sha256(asset) else {
+        return false;
+    };
+    let Ok(mut file) = std::fs::File::open(target) else {
+        return false;
+    };
+    let mut hasher = Sha256::new();
+    let mut buf = vec![0u8; 1 << 20];
+    loop {
+        match std::io::Read::read(&mut file, &mut buf) {
+            Ok(0) => break,
+            Ok(n) => hasher.update(&buf[..n]),
+            Err(_) => return false,
+        }
+    }
+    let actual: String = hasher
+        .finalize()
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect();
+    actual == expected
+}
+
 /// Downloads `asset` to `target`, reporting progress relative to the whole installation, and
-/// verifies GitHub's SHA-256 digest.
+/// verifies GitHub's SHA-256 digest. Like model files it goes to `<name>.part` over several
+/// connections and continues after a dropped connection or a restart instead of starting over.
 async fn download_verified(
     kind: RuntimeKind,
     on_progress: &(impl Fn(RuntimeProgress) + Sync),
@@ -676,56 +713,34 @@ async fn download_verified(
     offset: u64,
     total: u64,
 ) -> Result<(), String> {
-    let response = client
-        .get(&asset.browser_download_url)
-        .send()
-        .await
-        .and_then(reqwest::Response::error_for_status)
-        .map_err(|e| crate::err!("backend.common.downloadFailed", error = e))?;
-    let mut file = tokio::fs::File::create(target)
-        .await
-        .map_err(|e| crate::err!("backend.common.fileCreate", error = e))?;
-    let mut stream = response.bytes_stream();
-    let mut hasher = Sha256::new();
-    let mut downloaded = 0u64;
-    let mut last_emit = std::time::Instant::now();
-    while let Some(chunk) = stream.next().await {
-        let chunk =
-            chunk.map_err(|e| crate::err!("backend.common.downloadInterrupted", error = e))?;
-        file.write_all(&chunk)
-            .await
-            .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
-        hasher.update(&chunk);
-        downloaded += chunk.len() as u64;
-        if last_emit.elapsed().as_millis() >= 250 {
-            on_progress(progress(kind, "download", offset + downloaded, total));
-            last_emit = std::time::Instant::now();
-        }
+    if already_downloaded(asset, target) {
+        on_progress(progress(kind, "download", offset + asset.size, total));
+        return Ok(());
     }
-    file.flush()
-        .await
-        .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
-
-    if let Some(expected) = asset
-        .digest
-        .as_deref()
-        .and_then(|d| d.strip_prefix("sha256:"))
-    {
-        let actual: String = hasher
-            .finalize()
-            .iter()
-            .map(|b| format!("{b:02x}"))
-            .collect();
-        if !actual.eq_ignore_ascii_case(expected) {
-            return Err(crate::err!(
-                "backend.runtime.checksum",
-                file = asset.name,
-                expected = expected,
-                actual = actual
-            ));
-        }
-    }
-    Ok(())
+    let sha256 = asset_sha256(asset);
+    let spec = crate::modules::model_files::FileSpec {
+        name: &asset.name,
+        size: asset.size,
+        sha256: sha256.as_deref(),
+    };
+    // Installing a runtime has no cancel button; an interrupted one continues next time.
+    let never = std::sync::atomic::AtomicBool::new(false);
+    let last_emit = std::sync::Mutex::new(std::time::Instant::now());
+    crate::modules::model_files::download_spec(
+        client,
+        &asset.browser_download_url,
+        &spec,
+        target,
+        &never,
+        &|done| {
+            let mut last = last_emit.lock().unwrap_or_else(|e| e.into_inner());
+            if last.elapsed().as_millis() >= 250 {
+                on_progress(progress(kind, "download", offset + done, total));
+                *last = std::time::Instant::now();
+            }
+        },
+    )
+    .await
 }
 
 /// Unpacks a `.tar.gz` or `.zip` archive into `dest`; both readers refuse paths outside `dest`.
@@ -887,6 +902,10 @@ async fn install_into(
     .map_err(|e| crate::err!("backend.runtime.installFailed", error = e))??;
 
     activate(root, &install_dir, &info)?;
+    // The archives are unpacked now; keeping them would only cost disk space.
+    for asset in &assets {
+        let _ = tokio::fs::remove_file(downloads.join(&asset.name)).await;
+    }
     on_progress(progress(kind, "done", total, total));
     Ok(info)
 }
@@ -1271,6 +1290,71 @@ mod tests {
             library_dirs: Vec::new(),
         };
         (dir, info)
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn runtime_archives_continue_and_a_finished_one_is_reused() {
+        use crate::modules::model_files::{part_path, serve_flaky};
+        let data: &'static [u8] = Box::leak(
+            (0..300_000u32)
+                .map(|i| (i * 7 % 251) as u8)
+                .collect::<Vec<_>>()
+                .into_boxed_slice(),
+        );
+        let sha: String = Sha256::digest(data)
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect();
+        // The server drops every connection after 64 KiB: only resuming gets the whole file.
+        let asset = Asset {
+            name: "runtime.zip".into(),
+            size: data.len() as u64,
+            browser_download_url: serve_flaky(data, 64 * 1024).await,
+            digest: Some(format!("sha256:{sha}")),
+        };
+        let dir = std::env::temp_dir().join(format!("otakusoul-rt-dl-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let target = dir.join(&asset.name);
+        let client = client().unwrap();
+        let size = asset.size;
+
+        // An earlier attempt (or app start) left part of the archive behind.
+        std::fs::write(part_path(&target), &data[..50_000]).unwrap();
+        download_verified(
+            RuntimeKind::Llama,
+            &|_| {},
+            &client,
+            &asset,
+            &target,
+            0,
+            size,
+        )
+        .await
+        .unwrap();
+        assert_eq!(std::fs::read(&target).unwrap(), data);
+        assert!(!part_path(&target).exists());
+
+        // A finished, verified archive (unpacking failed afterwards) needs no network.
+        let offline = Asset {
+            browser_download_url: "http://127.0.0.1:9/gone".into(),
+            ..asset.clone()
+        };
+        download_verified(
+            RuntimeKind::Llama,
+            &|_| {},
+            &client,
+            &offline,
+            &target,
+            0,
+            size,
+        )
+        .await
+        .unwrap();
+        // …but a damaged one is fetched again instead of being trusted.
+        std::fs::write(&target, vec![0u8; data.len()]).unwrap();
+        assert!(!already_downloaded(&asset, &target));
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]
