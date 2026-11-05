@@ -751,6 +751,8 @@ export interface SceneTurnMessage {
   whisper_target?: string | null;
   event_card?: StageEventCard | null;
   timestamp: number;
+  /** Background on screen when the line was said (missing in older lines). */
+  bg?: string;
 }
 
 export interface SceneState {

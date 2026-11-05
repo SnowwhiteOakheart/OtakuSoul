@@ -390,6 +390,8 @@ pub fn run() {
             commands::stage::delete_stage_scene,
             commands::stage::export_stage_markdown,
             commands::stage::export_stage_html,
+            commands::stage::export_stage_webtoon_script,
+            commands::stage::save_webtoon_pages,
             commands::stage::stage_list_folders,
             commands::stage::stage_create_folder,
             commands::stage::stage_move_scene_to_folder,

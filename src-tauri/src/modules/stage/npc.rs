@@ -473,7 +473,7 @@ mod tests {
         msg.turn_mode = "whisper".into();
         msg.whisper_target = Some("Ayu".into());
         msg.content = "SECRET".into();
-        state.chat_log.push(msg);
+        state.push_message(msg);
         observe_npcs(&mut state, 1);
         assert!(!state.npcs[0].memories[0].text.contains("SECRET"));
         state.chat_log[1].whisper_target = Some("Mira".into());

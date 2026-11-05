@@ -23,6 +23,7 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
         whisper_target: None,
         event_card: None,
         timestamp: Utc::now().timestamp() as u64,
+        bg: None,
     };
 
     let world = WorldState {

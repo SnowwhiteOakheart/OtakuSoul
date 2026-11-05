@@ -317,6 +317,11 @@ pub struct SceneTurnMessage {
     #[serde(default)]
     pub event_card: Option<StageEventCard>,
     pub timestamp: u64,
+    /// The background on screen when the line was said (`SceneState::current_bg`); missing in
+    /// lines from before it was recorded. The webtoon export follows the places with it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub bg: Option<String>,
 }
 
 pub(super) fn default_turn_mode() -> String {
@@ -681,6 +686,20 @@ pub struct SceneState {
     /// What happened while exploring the map (5e scenes).
     #[serde(default)]
     pub exploration: Vec<super::rules5e::ExploreEvent>,
+}
+
+impl SceneState {
+    /// Appends a line to the log and notes the background it was said in front of.
+    pub fn push_message(&mut self, mut message: SceneTurnMessage) {
+        if message.bg.is_none() {
+            message.bg = self
+                .current_bg
+                .clone()
+                .or_else(|| Some(self.definition.starting_bg.clone()))
+                .filter(|bg| !bg.trim().is_empty() && !bg.eq_ignore_ascii_case("none"));
+        }
+        self.chat_log.push(message);
+    }
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, TS)]

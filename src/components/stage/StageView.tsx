@@ -35,6 +35,7 @@ import {
   Scroll,
   Swords,
   BookOpen,
+  GalleryVertical,
   Share2,
   MapPin,
   Backpack,
@@ -308,6 +309,33 @@ export const StageView: React.FC = () => {
     }
   };
 
+  // A webtoon: the backend gathers panels and pictures, the canvas draws them, the backend saves the PNGs.
+  const handleExportWebtoon = async () => {
+    if (!stageState) return;
+    const target = await saveDialog({
+      defaultPath: `${stageState.definition.title.toLowerCase().replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, '_')}_webtoon.png`,
+      filters: [{ name: 'PNG', extensions: ['png'] }],
+    });
+    if (!target) return;
+    try {
+      toast.info(translate('stage.exportingWebtoon'));
+      const script = await api.exportStageWebtoonScript(stageState.definition.id);
+      if (script.panels.length === 0) {
+        toast.info(translate('stage.webtoonEmpty'));
+        return;
+      }
+      const { renderWebtoon } = await import('../../services/webtoon');
+      const pages = await renderWebtoon(script, {
+        thinks: translate('stage.webtoonThinks'),
+        whispers: translate('stage.webtoonWhispers'),
+      });
+      const files = await api.saveWebtoonPages(target, pages);
+      toast.success(translate('stage.exportedWebtoon', { count: files.length }));
+    } catch (e) {
+      toast.error(errorMessage(e));
+    }
+  };
+
   const world = stageState?.world;
   const currentScene = stageState?.definition;
   const header = currentScene ? localizeSceneHeader(currentScene, languageCode(replyLanguage)) : null;
@@ -553,6 +581,12 @@ export const StageView: React.FC = () => {
                 description: t('stage.exportHtml'),
                 icon: BookOpen,
                 onSelect: () => void handleExportHtml(),
+              },
+              {
+                label: t('stage.menuExportWebtoon'),
+                description: t('stage.exportWebtoon'),
+                icon: GalleryVertical,
+                onSelect: () => void handleExportWebtoon(),
               },
               {
                 label: t('contribute.menuStory'),

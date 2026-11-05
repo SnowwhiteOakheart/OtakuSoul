@@ -77,8 +77,9 @@ pub async fn execute_stage_turn(
             whisper_target: req.whisper_target.clone(),
             event_card: None,
             timestamp: Utc::now().timestamp() as u64,
+            bg: None,
         };
-        state.chat_log.push(player_msg);
+        state.push_message(player_msg);
     }
 
     let observation_start = state
@@ -1016,11 +1017,12 @@ RULES:
         whisper_target: None,
         event_card: dice_event_card,
         timestamp: Utc::now().timestamp() as u64,
+        bg: None,
     };
-    state.chat_log.push(gm_turn_msg);
+    state.push_message(gm_turn_msg);
 
     for (index, (content, card)) in secondary_event_cards.into_iter().enumerate() {
-        state.chat_log.push(SceneTurnMessage {
+        state.push_message(SceneTurnMessage {
             id: format!("msg_{}_{}", Utc::now().timestamp_millis(), index),
             sender_id: "system".to_string(),
             sender_name: lang.t("Campaign chronicle").to_string(),
@@ -1031,6 +1033,7 @@ RULES:
             whisper_target: None,
             event_card: Some(card),
             timestamp: Utc::now().timestamp() as u64,
+            bg: None,
         });
     }
 
@@ -1237,8 +1240,9 @@ Reply in {reply_language}.{memories}{secrets}"#,
                     whisper_target: None,
                     event_card: None,
                     timestamp: Utc::now().timestamp() as u64,
+                    bg: None,
                 };
-                state.chat_log.push(companion_msg);
+                state.push_message(companion_msg);
                 if let Some(npc) = npc
                     && let Some(stored) = state.npcs.iter_mut().find(|n| n.id == npc.id)
                 {
@@ -1504,11 +1508,12 @@ pub async fn execute_stage_rest(
         whisper_target: None,
         event_card: Some(rest_card),
         timestamp: Utc::now().timestamp() as u64,
+        bg: None,
     };
-    state.chat_log.push(rest_msg);
+    state.push_message(rest_msg);
 
     for (index, (companion, affinity, milestone)) in bond_milestones.into_iter().enumerate() {
-        state.chat_log.push(SceneTurnMessage {
+        state.push_message(SceneTurnMessage {
             id: format!("msg_bond_{}_{}", Utc::now().timestamp_millis(), index),
             sender_id: "system".to_string(),
             sender_name: lang.t("Bond milestone").to_string(),
@@ -1526,6 +1531,7 @@ pub async fn execute_stage_rest(
                 milestone,
             }),
             timestamp: Utc::now().timestamp() as u64,
+            bg: None,
         });
     }
 
@@ -1544,8 +1550,9 @@ pub async fn execute_stage_rest(
             whisper_target: None,
             event_card: None,
             timestamp: Utc::now().timestamp() as u64,
+            bg: None,
         };
-        state.chat_log.push(comp_msg);
+        state.push_message(comp_msg);
     }
 
     observe_npcs(&mut state, observation_start);

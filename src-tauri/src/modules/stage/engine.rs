@@ -126,6 +126,7 @@ extensions: serde_json::Value::Null,
             whisper_target: None,
             event_card: None,
             timestamp: Utc::now().timestamp() as u64,
+            bg: None,
         };
 
         let state = SceneState {
@@ -528,7 +529,7 @@ extensions: serde_json::Value::Null,
             st.inventory.remove(item_index);
         }
 
-        st.chat_log.push(SceneTurnMessage {
+        st.push_message(SceneTurnMessage {
             id: format!("msg_{}", Utc::now().timestamp_millis()),
             sender_id: "system".to_string(),
             sender_name: lang.t("Inventory").to_string(),
@@ -544,6 +545,7 @@ extensions: serde_json::Value::Null,
                 cleared_condition,
             }),
             timestamp: Utc::now().timestamp() as u64,
+            bg: None,
         });
 
         let observation_start = st.chat_log.len().saturating_sub(1);

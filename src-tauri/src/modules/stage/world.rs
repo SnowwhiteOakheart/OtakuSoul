@@ -558,6 +558,7 @@ mod tests {
             whisper_target: target.map(Into::into),
             event_card: None,
             timestamp: 0,
+            bg: None,
         }
     }
 

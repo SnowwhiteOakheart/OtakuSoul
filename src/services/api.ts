@@ -1,6 +1,7 @@
 import type { ContributionResult } from '../types/generated/ContributionResult';
 import type { Finding } from '../types/generated/Finding';
 import type { SubmissionInfo } from '../types/generated/SubmissionInfo';
+import type { WebtoonScript } from '../types/generated/WebtoonScript';
 import type { TokenEvent } from '../types/generated/TokenEvent';
 import type { ThoughtEvent } from '../types/generated/ThoughtEvent';
 import type { UiLanguage } from '../types/generated/UiLanguage';
@@ -683,6 +684,12 @@ export const api = {
   exportStageHtml: async (sceneId: string, targetPath: string): Promise<void> => {
     await invoke<void>('export_stage_html', { sceneId, targetPath });
   },
+  /** The act as webtoon panels with their pictures (data URLs), for `renderWebtoon`. */
+  exportStageWebtoonScript: (sceneId: string): Promise<WebtoonScript> =>
+    invoke<WebtoonScript>('export_stage_webtoon_script', { sceneId }),
+  /** Writes drawn webtoon pages (PNG data URLs); several pages get `_01`, `_02` … Returns the files. */
+  saveWebtoonPages: (targetPath: string, pages: string[]): Promise<string[]> =>
+    invoke<string[]>('save_webtoon_pages', { targetPath, pages }),
   exportStageSceneJson: async (sceneId: string): Promise<string> => {
     return await invoke<string>('stage_export_scene_json', { sceneId });
   },

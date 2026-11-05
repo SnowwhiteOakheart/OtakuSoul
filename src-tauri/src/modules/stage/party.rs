@@ -317,6 +317,7 @@ mod tests {
             whisper_target: target.map(Into::into),
             event_card: None,
             timestamp: 0,
+            bg: None,
         }
     }
 
@@ -348,7 +349,7 @@ mod tests {
         let mut state = build_initial_scene_state(&StageEngine::new().get_state().definition);
         let mut said = message("say", None);
         said.content = "Draußen zieht ein Gewitter auf.".into();
-        state.chat_log.push(said);
+        state.push_message(said);
         let block = soul_memory_block(&state, &db, "shiori_amane", "Shiori", "Kai");
         assert!(block.contains("long-term memories"));
         assert!(block.contains("Gewittern"));

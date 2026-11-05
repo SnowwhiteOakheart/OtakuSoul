@@ -224,6 +224,28 @@ pub fn export_stage_html(scene_id: String, target_path: String) -> Result<(), St
     write_replay(&replay, &lang, &target_path)
 }
 
+/// The act as webtoon panels (pictures as data URLs) for the interface to draw.
+#[tauri::command(async)]
+pub fn export_stage_webtoon_script(
+    scene_id: String,
+) -> Result<crate::modules::webtoon::WebtoonScript, String> {
+    let state = crate::modules::stage::load_scene_by_id(&scene_id)?;
+    let characters = crate::modules::paths::scan_available_characters();
+    let lang = crate::modules::content_lang::ContentLang::current();
+    Ok(crate::modules::webtoon::webtoon_script(
+        &state,
+        &characters,
+        &lang,
+        &|name| crate::modules::stage::get_stage_background_image(name).ok(),
+    ))
+}
+
+/// Writes the drawn webtoon pages (PNG) to `target_path` (numbered when there are several).
+#[tauri::command(async)]
+pub fn save_webtoon_pages(target_path: String, pages: Vec<String>) -> Result<Vec<String>, String> {
+    crate::modules::webtoon::write_pages(&target_path, &pages)
+}
+
 #[tauri::command(async)]
 pub fn stage_list_folders() -> Result<Vec<String>, String> {
     crate::modules::stage::list_stage_folders()

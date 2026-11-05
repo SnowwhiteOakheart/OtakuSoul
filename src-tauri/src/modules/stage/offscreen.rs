@@ -183,7 +183,7 @@ pub async fn tell_offscreen(
     let observation_start = state.chat_log.len();
     let mut companions = vec![teller.clone()];
     companions.extend(partner);
-    state.chat_log.push(SceneTurnMessage {
+    state.push_message(SceneTurnMessage {
         id: format!("msg_{}", Utc::now().timestamp_millis()),
         sender_id: teller.clone(),
         sender_name: teller,
@@ -194,6 +194,7 @@ pub async fn tell_offscreen(
         whisper_target: None,
         event_card: Some(StageEventCard::Offscreen { companions }),
         timestamp: now,
+        bg: None,
     });
     observe_npcs(&mut state, observation_start);
     engine.set_state(state.clone());
@@ -217,6 +218,7 @@ mod tests {
             whisper_target: None,
             event_card: None,
             timestamp,
+            bg: None,
         }
     }
 
@@ -228,7 +230,7 @@ mod tests {
         state.chat_log = vec![message("gm", start)];
         let later = start + OFFSCREEN_MIN_PAUSE_SECS;
         assert!(!offscreen_due(&state, later), "noch keine Spieleraktion");
-        state.chat_log.push(message("player", start));
+        state.push_message(message("player", start));
         assert!(offscreen_due(&state, later));
         assert!(!offscreen_due(&state, later - 1));
         state.combat.is_active = true;

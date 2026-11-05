@@ -1551,7 +1551,7 @@ pub(super) async fn narrate_facts(
     .ok()
     .filter(|text| !text.trim().is_empty());
     if let Some(content) = text {
-        state.chat_log.push(SceneTurnMessage {
+        state.push_message(SceneTurnMessage {
             id: message_id,
             sender_id: "gm".to_string(),
             sender_name: "Game Master".to_string(),
@@ -1562,6 +1562,7 @@ pub(super) async fn narrate_facts(
             whisper_target: None,
             event_card: None,
             timestamp: Utc::now().timestamp() as u64,
+            bg: None,
         });
     }
 }

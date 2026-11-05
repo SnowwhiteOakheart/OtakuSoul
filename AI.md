@@ -1145,7 +1145,7 @@ Prüfergebnis sowie `README.txt`) und eine vorbefüllte Issue-Adresse (`issues/n
 Inhalte ab 18 gehen an `otakusoul-data-nsfw`). Die App hält kein GitHub-Token; der Nutzer zieht das ZIP in das Issue,
 die Aufnahme prüft der Betreiber mit der Checkliste der Vorlage (`.github/ISSUE_TEMPLATE/einreichung.md` in beiden
 Daten-Repos) und übernimmt per Pull Request. `card_png_bytes` (`characters.rs`) ist die gemeinsame PNG-Ausgabe von Export
-und Beitrag. Offen: Lorebooks beisteuern, automatische Prüfung der Einreichung per Workflow.
+und Beitrag. Die Daten-Repos prüfen Einreichungs-Issues automatisch (`tools/check_submission.py`, Workflow `einreichung.yml`, Label `aufnehmen` → Pull Request). Offen: Lorebooks beisteuern.
 
 **HTML-Replay (Export als Geschichte).** `replay_export.rs` macht aus einem Stage-Akt (`scene_replay`) oder einem Chat
 (`chat_replay`) eine einzige HTML-Seite ohne Skripte und ohne Fremdanfragen (`render_html`): Titel, Ort/Zeit, Besetzung mit
@@ -1155,7 +1155,19 @@ Etikett). Texte werden HTML-maskiert, `*Aktion*`/`**fett**` werden zu `<em>`/`<s
 `[emotion: …]`-Tags fehlen. Hell/Dunkel per `prefers-color-scheme`, druckfreundlich. Befehle `export_stage_html` und
 `export_chat_html` schreiben nach `target_path` (der Webview kann nichts herunterladen; Speichern-Dialog in `StageView` und
 `ChatSidebar`). Beschriftungen kommen über `ContentLang::t` (Englisch als Quelle; Übersetzungen in `presets/locales/{de,ru,ja}.json`
-**und** `otakusoul-data/locales/` – beides pflegen, sonst überschreibt der Hub-Abgleich sie). Dieselbe Geschichte als EPUB 3 (`render_epub`: ein Kapitel, Porträts als Bilder, `mimetype` zuerst und ungepackt; `write_replay` wählt nach der Dateiendung `.epub`/`.html`). Offen: Webtoon-Strip (B5, dritte Stufe).
+**und** `otakusoul-data/locales/` – beides pflegen, sonst überschreibt der Hub-Abgleich sie). Dieselbe Geschichte als EPUB 3 (`render_epub`: ein Kapitel, Porträts als Bilder, `mimetype` zuerst und ungepackt; `write_replay` wählt nach der Dateiendung `.epub`/`.html`).
+
+**Webtoon (PNG-Bildspalte).** `webtoon.rs` macht aus einem Akt ein Drehbuch (`webtoon_script`, Befehl
+`export_stage_webtoon_script`): ein Panel je Zeile mit Sprecher, Stimme (`narrator`/`player`/`figure`/`system`), bereinigtem Text,
+Hintergrund und Porträt als Index in `images` (jedes Bild einmal). Der Ort kommt aus `SceneTurnMessage.bg`, das
+`SceneState::push_message` beim Anhängen aus `current_bg` (sonst `starting_bg`) setzt – **neue Nachrichten immer über
+`push_message`, nie `chat_log.push`**; ältere Zeilen ohne `bg` behalten den zuletzt bekannten Ort, am Anfang den Startort. Das
+Porträt wählt `classify_emotion` je Zeile: Extra-Slot (`portrait`) → Stimmung (`vrm_expression`) → `neutral` → Kartenbild;
+NPCs nehmen `avatar_url`. Bilder gehen nur als `data:`-URL oder App-Pfad (`/npc/…`) hinaus, sonst wäre das Canvas
+„verunreinigt“ und `toDataURL` schlüge fehl. Gezeichnet wird im Frontend (`services/webtoon.ts`, `renderWebtoon`: 800 px breit,
+Erzählung als Textkasten oben, Figur links mit Blase, Spieler rechts, Denken mit Punkten, Flüstern gestrichelt, CJK bricht
+zwischen Zeichen); Seiten enden nach dem Panel, das 12 000 px überschreitet (Canvas-Grenzen). `save_webtoon_pages` schreibt die
+PNGs (eine Seite = gewählter Name, mehrere = `_01`, `_02` …, nur echte PNGs). Menü „Als Webtoon exportieren“ in `StageView`.
 
 **Berührung im Hauptfenster (Avatar im Chat).** Wie im Pet: Antippen des Kopfes = Streicheln (`headpat`), sonst Stupsen
 (`poke`); nur ein Tipp (≤ 6 px Weg, ≤ 500 ms), weil Ziehen schon die Kamera dreht bzw. das Modell verschiebt

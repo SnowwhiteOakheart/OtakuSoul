@@ -494,7 +494,9 @@ pub fn write_replay(replay: &Replay, lang: &ContentLang, target_path: &str) -> R
 const MAX_PORTRAIT_BYTES: u64 = 6 * 1024 * 1024;
 
 /// The figure's picture as a data URL: the one the profile carries, else the card's PNG.
-fn portrait_data_url(profile: &crate::modules::characters::CharacterProfile) -> Option<String> {
+pub(crate) fn portrait_data_url(
+    profile: &crate::modules::characters::CharacterProfile,
+) -> Option<String> {
     if let Some(url) = profile
         .avatar_data_url
         .as_deref()
@@ -809,6 +811,7 @@ mod tests {
             whisper_target: None,
             event_card: None,
             timestamp: 1_760_000_000,
+            bg: None,
         };
         state.chat_log = vec![
             message(

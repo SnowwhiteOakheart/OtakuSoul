@@ -75,6 +75,7 @@ pub mod updater;
 pub mod voice;
 pub mod vroid_hub;
 pub mod web_server;
+pub mod webtoon;
 
 pub const APP_NAME: &str = "OtakuSoul";
 pub const APP_DEFAULT_COMPANION_NAME: &str = "Companion";
