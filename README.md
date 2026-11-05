@@ -2,7 +2,9 @@
 
 **English** · [Deutsch](README.de.md) · [Русский](README.ru.md)
 
-**AI characters who remember you.** Chat with your own characters, play interactive stories with an AI game master, or try a tactical 5e adventure.
+**Roleplay with a cast of AI characters.** Play interactive stories with an AI game master or try a tactical 5e adventure. Each companion has their own voice and remembers what you've shared.
+
+**Type or speak to your characters.** Hear their replies with text-to-speech (TTS) and bring scenes to life with AI-generated images.
 
 Free and open source for Windows, Linux and macOS. Run AI locally or connect a cloud provider.
 

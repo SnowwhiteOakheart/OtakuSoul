@@ -2,7 +2,9 @@
 
 [English](README.md) · **Deutsch** · [Русский](README.ru.md)
 
-**KI-Charaktere, die sich an dich erinnern.** Chatte mit deinen eigenen Charakteren, spiele interaktive Geschichten mit KI-Spielleitung oder starte ein taktisches 5e-Abenteuer.
+**Erlebe Rollenspiele mit mehreren KI-Charakteren.** Spiele interaktive Geschichten mit KI-Spielleitung oder starte ein taktisches 5e-Abenteuer. Jede Figur hat ihre eigene Stimme und erinnert sich an eure gemeinsamen Erlebnisse.
+
+**Schreib deinen Figuren oder sprich mit ihnen.** Höre ihre Antworten per Sprachausgabe (TTS) und lass passende Bilder zu deinen Szenen generieren.
 
 Kostenlos und quelloffen für Windows, Linux und macOS. Nutze lokale KI oder verbinde einen Cloud-Anbieter.
 
