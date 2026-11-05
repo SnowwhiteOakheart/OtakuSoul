@@ -1,65 +1,38 @@
-<p align="center">
-  <img src="docs/assets/otakusoul-logo-wide-master.png" alt="OtakuSoul – Infinite Worlds" width="100%" />
-</p>
+# OtakuSoul
 
-<p align="center">
-  <a href="README.md">🇬🇧 English</a> •
-  <a href="README.de.md"><strong>🇩🇪 Deutsch</strong></a> •
-  <a href="README.ru.md">🇷🇺 Русский</a>
-</p>
+[English](README.md) · **Deutsch** · [Русский](README.ru.md)
 
-<p align="center">
-  <strong>Mit KI-Charakteren chatten, gemeinsam Geschichten spielen und von ihnen erinnert werden – privat auf deinem eigenen PC.</strong><br>
-  <em>Eine Desktop-App für Windows, Linux und macOS. Läuft lokal auf deiner Grafikkarte oder mit einer Cloud-KI deiner Wahl.</em>
-</p>
+**KI-Charaktere, die sich an dich erinnern.** Chatte mit deinen eigenen Charakteren, spiele interaktive Geschichten mit KI-Spielleitung oder starte ein taktisches 5e-Abenteuer.
 
-<p align="center">
-  <img src="docs/assets/demo/de.gif" alt="OtakuSoul in Aktion: Startseite, Chat mit Shiori, eine Geschichte mit KI-Spielleitung, 3D-Avatar und ein 5e-Kampf" width="100%" />
-</p>
+Kostenlos und quelloffen für Windows, Linux und macOS. Nutze lokale KI oder verbinde einen Cloud-Anbieter.
 
-<p align="center">
-  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest"><img alt="Herunterladen" src="https://img.shields.io/badge/%E2%AC%87%20Herunterladen-kostenlos%20·%20Windows%20·%20Linux%20·%20macOS-7c3aed?style=for-the-badge" height="42" /></a>
-</p>
+**[Download für Windows, Linux oder macOS](https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest)** · [App in Aktion](#demo) · [Erste Schritte](#quick-start)
 
-<p align="center">
-  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest"><img alt="Version" src="https://img.shields.io/badge/OtakuSoul-v0.7.5-8b5cf6?style=for-the-badge&logo=sparkles&logoColor=white" /></a>
-  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/SnowwhiteOakheart/OtakuSoul/total?style=for-the-badge&logo=github" /></a>
-  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/SnowwhiteOakheart/OtakuSoul?style=for-the-badge&logo=github" /></a>
-  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/network/members"><img alt="Forks" src="https://img.shields.io/github/forks/SnowwhiteOakheart/OtakuSoul?style=for-the-badge&logo=github" /></a>
-  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/issues"><img alt="Issues" src="https://img.shields.io/github/issues/SnowwhiteOakheart/OtakuSoul?style=for-the-badge&logo=github" /></a>
-  <img alt="Local First" src="https://img.shields.io/badge/Local--First-100%25-10b981?style=for-the-badge&logo=shield&logoColor=white" />
-  <img alt="Ohne Python" src="https://img.shields.io/badge/Ohne_Python-keine_Einrichtung-f59e0b?style=for-the-badge" />
-  <img alt="GPLv3" src="https://img.shields.io/badge/Lizenz-GPLv3-22c55e?style=for-the-badge" />
-</p>
+<a name="demo"></a>
 
-<p align="center">
-  <a href="#-was-ist-otakusoul">Was ist das?</a> •
-  <a href="#-herunterladen">Herunterladen</a> •
-  <a href="#-deine-ersten-zehn-minuten">Erste Schritte</a> •
-  <a href="#-ein-rundgang-durch-die-app">Rundgang</a> •
-  <a href="#-reicht-mein-pc">Voraussetzungen</a> •
-  <a href="#-für-fortgeschrittene--entwickler">Für Fortgeschrittene</a>
-</p>
+## Lerne Shiori kennen
 
----
+![Shiori fragt im neuen Chat nach dem Klavierkonzert.](docs/assets/demo/de-memory.gif)
+
+[Demo als MP4](docs/assets/demo/de-memory.mp4) · Aufnahme aus der App mit Testprofil und vorbereiteten Antworten.
 
 ## 🌸 Was ist OtakuSoul?
-
-OtakuSoul ist eine App, in der **KI-Charaktere** mit dir sprechen, mit dir Geschichten spielen und sich **erinnern**, was ihr zusammen erlebt habt. Du suchst dir einen Charakter aus – oder erschaffst einen eigenen – und schreibst einfach los. Die KI antwortet in der Rolle der Figur, mit Bild, Stimmung und auf Wunsch mit gesprochener Stimme und 3D-Avatar.
-
-<table>
-  <tr>
-    <td align="center" width="33%"><img src="docs/assets/screenshots/de/chat.png" alt="Chat" /><br><b>Chat</b><br><sub>Charaktere mit Gefühlen und Gedächtnis</sub></td>
-    <td align="center" width="33%"><img src="docs/assets/screenshots/de/story-play.png" alt="Geschichten" /><br><b>Geschichten</b><br><sub>Eine KI-Spielleitung, deine Gefährten reagieren</sub></td>
-    <td align="center" width="33%"><img src="docs/assets/screenshots/de/stage-5e-board.png" alt="5e-Abenteuer" /><br><b>5e-Abenteuer</b><br><sub>Echte Regeln auf dem Spielbrett</sub></td>
-  </tr>
-</table>
 
 * 💬 **Chatten** mit Charakteren, die Persönlichkeit, Gefühle und ein Gedächtnis haben.
 * 📖 **Geschichten spielen:** Such dir ein fertiges Abenteuer aus – die KI erzählt, du entscheidest, was deine Figur sagt und tut.
 * 🎲 **Würfeln wie am Spieltisch:** Auf Wunsch 5e-Regeln mit Spielbrett – die Regel-Engine entscheidet, die KI erzählt.
-* 🔒 **Privat:** Mit einem lokalen KI-Modell verlässt nichts deinen PC. Kein Konto, keine Telemetrie.
-* 🧩 **Ohne Basteln:** Ein Einrichtungsassistent lädt alles Nötige mit einem Klick – kein Python, keine Kommandozeile.
+
+Mit lokaler KI werden deine Chats auf deinem Gerät verarbeitet. Der Einrichtungsassistent hilft dir, ein passendes Modell auszuwählen und herunterzuladen.
+
+Du kommst von SillyTavern? Importiere deine Charakterkarten (PNG/JSON) und Lorebooks.
+
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/assets/screenshots/de/memory-chat.png" alt="Chat" /><br><b>Chat</b><br><sub>Charaktere mit Gefühlen und Gedächtnis</sub></td>
+    <td align="center" width="33%"><img src="docs/assets/screenshots/de/story-play.png" alt="Geschichten" /><br><b>Geschichten</b><br><sub>Eine KI-Spielleitung, deine Gefährten reagieren</sub></td>
+    <td align="center" width="33%"><img src="docs/assets/screenshots/de/stage-5e-board.png" alt="5e-Abenteuer" /><br><b>5e-Abenteuer</b><br><sub>Echte Regeln auf dem Spielbrett</sub></td>
+  </tr>
+</table>
 
 ---
 
@@ -69,14 +42,16 @@ Die neueste Version gibt es auf der **[Release-Seite](https://github.com/Snowwhi
 
 | System | Datei | So startest du |
 |---|---|---|
-| 🪟 **Windows 10 / 11** | `OtakuSoul_0.7.5_x64-setup.exe` | Doppelklick und dem Installer folgen. |
-| 🐧 **Linux** (jede Distribution) | `OtakuSoul_0.7.5_amd64.AppImage` | Ausführbar machen (`chmod +x`) und starten. |
-| 🐧 **Debian / Ubuntu** | `OtakuSoul_0.7.5_amd64.deb` | `sudo apt install ./OtakuSoul_0.7.5_amd64.deb` |
-| 🍏 **macOS** (Apple Silicon) | `OtakuSoul_0.7.5_aarch64.dmg` | OtakuSoul in *Programme* ziehen. Die App ist nicht notarisiert: beim ersten Start Rechtsklick → *Öffnen* (oder `xattr -dr com.apple.quarantine /Applications/OtakuSoul.app`). |
+| 🪟 **Windows 10 / 11** | `OtakuSoul_*_x64-setup.exe` | Doppelklick und dem Installer folgen. |
+| 🐧 **Linux** | `OtakuSoul_*_amd64.AppImage` | Ausführbar machen (`chmod +x`) und starten. |
+| 🐧 **Debian / Ubuntu** | `OtakuSoul_*_amd64.deb` | `sudo apt install ./OtakuSoul_*_amd64.deb` |
+| 🍏 **macOS** (Apple Silicon) | `OtakuSoul_*_aarch64.dmg` | OtakuSoul in *Programme* ziehen. Die App ist nicht notarisiert: beim ersten Start Rechtsklick → *Öffnen* (oder `xattr -dr com.apple.quarantine /Applications/OtakuSoul.app`). |
 
 OtakuSoul aktualisiert sich selbst: Gibt es eine neue Version, erscheint ein Knopf in der Kopfzeile.
 
 ---
+
+<a name="quick-start"></a>
 
 ## 🚀 Deine ersten zehn Minuten
 
@@ -94,6 +69,9 @@ OtakuSoul aktualisiert sich selbst: Gibt es eine neue Version, erscheint ein Kno
 Nicht weitergekommen? Das **Fragezeichen** oben rechts öffnet *Erste Schritte* und ein **Glossar**, das jeden Fachbegriff in einem Satz erklärt. Häufige Fehler bringen einen Lösungsknopf mit („API-Schlüssel prüfen“, „Kleineres Modell wählen“, „Lokale KI starten“). Die ausführliche Anleitung: **[Erste Schritte mit OtakuSoul](docs/guide-getting-started.de.md)**.
 
 ---
+
+<details>
+<summary><strong>Ausführlicher App-Rundgang</strong></summary>
 
 ## 🗺️ Ein Rundgang durch die App
 
@@ -175,6 +153,8 @@ Eine Regel-Engine nach SRD 5.1 entscheidet jeden Wurf, Treffer und Gegnerzug –
 </p>
 
 Die **Einstellungen** starten in einer einfachen Ansicht; der *Expertenmodus* blendet Sampler, Server-Tuning, Prompt-Vorlagen, Token-Zahlen und Protokolle ein.
+
+</details>
 
 ---
 

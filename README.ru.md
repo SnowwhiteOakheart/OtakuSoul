@@ -1,65 +1,38 @@
-<p align="center">
-  <img src="docs/assets/otakusoul-logo-wide-master.png" alt="OtakuSoul – Infinite Worlds" width="100%" />
-</p>
+# OtakuSoul
 
-<p align="center">
-  <a href="README.md">🇬🇧 English</a> •
-  <a href="README.de.md">🇩🇪 Deutsch</a> •
-  <a href="README.ru.md"><strong>🇷🇺 Русский</strong></a>
-</p>
+[English](README.md) · [Deutsch](README.de.md) · **Русский**
 
-<p align="center">
-  <strong>Общайся с ИИ-персонажами, играй с ними в истории – и они будут тебя помнить. Приватно, на твоём собственном ПК.</strong><br>
-  <em>Приложение для Windows, Linux и macOS. Работает локально на твоей видеокарте или с облачным ИИ на твой выбор.</em>
-</p>
+**ИИ-персонажи, которые тебя помнят.** Общайся со своими персонажами, играй в интерактивные истории с ИИ-ведущим или попробуй тактическое приключение по правилам 5e.
 
-<p align="center">
-  <img src="docs/assets/demo/ru.gif" alt="OtakuSoul в действии: стартовая страница, чат с Сиори, история с ИИ-ведущим, 3D-аватар и бой 5e" width="100%" />
-</p>
+Бесплатное приложение с открытым кодом для Windows, Linux и macOS. Запускай ИИ локально или подключи облачного провайдера.
 
-<p align="center">
-  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest"><img alt="Скачать" src="https://img.shields.io/badge/%E2%AC%87%20Скачать-бесплатно%20·%20Windows%20·%20Linux%20·%20macOS-7c3aed?style=for-the-badge" height="42" /></a>
-</p>
+**[Скачать для Windows, Linux или macOS](https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest)** · [Посмотреть демо](#demo) · [Первые шаги](#quick-start)
 
-<p align="center">
-  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest"><img alt="Версия" src="https://img.shields.io/badge/OtakuSoul-v0.7.5-8b5cf6?style=for-the-badge&logo=sparkles&logoColor=white" /></a>
-  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/SnowwhiteOakheart/OtakuSoul/total?style=for-the-badge&logo=github" /></a>
-  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/SnowwhiteOakheart/OtakuSoul?style=for-the-badge&logo=github" /></a>
-  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/network/members"><img alt="Forks" src="https://img.shields.io/github/forks/SnowwhiteOakheart/OtakuSoul?style=for-the-badge&logo=github" /></a>
-  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/issues"><img alt="Issues" src="https://img.shields.io/github/issues/SnowwhiteOakheart/OtakuSoul?style=for-the-badge&logo=github" /></a>
-  <img alt="Local First" src="https://img.shields.io/badge/Local--First-100%25-10b981?style=for-the-badge&logo=shield&logoColor=white" />
-  <img alt="Без Python" src="https://img.shields.io/badge/Без_Python-без_настройки-f59e0b?style=for-the-badge" />
-  <img alt="GPLv3" src="https://img.shields.io/badge/Лицензия-GPLv3-22c55e?style=for-the-badge" />
-</p>
+<a name="demo"></a>
 
-<p align="center">
-  <a href="#-что-такое-otakusoul">Что это?</a> •
-  <a href="#-скачать">Скачать</a> •
-  <a href="#-первые-десять-минут">Первые шаги</a> •
-  <a href="#-экскурсия-по-приложению">Экскурсия</a> •
-  <a href="#-подойдёт-ли-мой-пк">Требования</a> •
-  <a href="#-для-опытных-пользователей-и-разработчиков">Для опытных</a>
-</p>
+## Знакомься: Сиори
 
----
+![Сиори спрашивает о концерте в новом чате.](docs/assets/demo/ru-memory.gif)
+
+[Демо в MP4](docs/assets/demo/ru-memory.mp4) · Запись из приложения с тестовым профилем и подготовленными ответами.
 
 ## 🌸 Что такое OtakuSoul?
-
-OtakuSoul – это приложение, в котором **ИИ-персонажи** разговаривают с тобой, играют вместе с тобой в истории и **помнят**, что вы пережили вместе. Выбери персонажа – или создай своего – и просто пиши. ИИ отвечает от лица персонажа: с изображением, настроением, а при желании и с голосом и 3D-аватаром.
-
-<table>
-  <tr>
-    <td align="center" width="33%"><img src="docs/assets/screenshots/ru/chat.png" alt="Чат" /><br><b>Чат</b><br><sub>Персонажи с чувствами и памятью</sub></td>
-    <td align="center" width="33%"><img src="docs/assets/screenshots/ru/story-play.png" alt="Истории" /><br><b>Истории</b><br><sub>ИИ-ведущий, спутники реагируют сами</sub></td>
-    <td align="center" width="33%"><img src="docs/assets/screenshots/ru/stage-5e-board.png" alt="Приключения 5e" /><br><b>Приключения 5e</b><br><sub>Настоящие правила на игровом поле</sub></td>
-  </tr>
-</table>
 
 * 💬 **Общение** с персонажами, у которых есть характер, чувства и память.
 * 📖 **Истории:** выбери готовое приключение – ИИ рассказывает, а ты решаешь, что говорит и делает твой персонаж.
 * 🎲 **Броски кубиков как за игровым столом:** по желанию правила 5e с игровым полем – движок правил решает, ИИ рассказывает.
-* 🔒 **Приватно:** с локальной моделью ничего не покидает твой ПК. Без аккаунта, без телеметрии.
-* 🧩 **Без возни:** мастер настройки скачивает всё нужное одним щелчком – без Python и командной строки.
+
+При использовании локальной модели чаты обрабатываются на твоём устройстве. Мастер настройки поможет выбрать и скачать подходящую модель.
+
+Переходишь с SillyTavern? Импортируй карточки персонажей (PNG/JSON) и книги мира.
+
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/assets/screenshots/ru/memory-chat.png" alt="Чат" /><br><b>Чат</b><br><sub>Персонажи с чувствами и памятью</sub></td>
+    <td align="center" width="33%"><img src="docs/assets/screenshots/ru/story-play.png" alt="Истории" /><br><b>Истории</b><br><sub>ИИ-ведущий, спутники реагируют сами</sub></td>
+    <td align="center" width="33%"><img src="docs/assets/screenshots/ru/stage-5e-board.png" alt="Приключения 5e" /><br><b>Приключения 5e</b><br><sub>Настоящие правила на игровом поле</sub></td>
+  </tr>
+</table>
 
 ---
 
@@ -69,14 +42,16 @@ OtakuSoul – это приложение, в котором **ИИ-персон
 
 | Система | Файл | Как запустить |
 |---|---|---|
-| 🪟 **Windows 10 / 11** | `OtakuSoul_0.7.5_x64-setup.exe` | Двойной щелчок и следовать установщику. |
-| 🐧 **Linux** (любой дистрибутив) | `OtakuSoul_0.7.5_amd64.AppImage` | Сделать исполняемым (`chmod +x`) и запустить. |
-| 🐧 **Debian / Ubuntu** | `OtakuSoul_0.7.5_amd64.deb` | `sudo apt install ./OtakuSoul_0.7.5_amd64.deb` |
-| 🍏 **macOS** (Apple Silicon) | `OtakuSoul_0.7.5_aarch64.dmg` | Перетащить OtakuSoul в *Программы*. Приложение не нотариально заверено: при первом запуске правый щелчок → *Открыть* (или `xattr -dr com.apple.quarantine /Applications/OtakuSoul.app`). |
+| 🪟 **Windows 10 / 11** | `OtakuSoul_*_x64-setup.exe` | Двойной щелчок и следовать установщику. |
+| 🐧 **Linux** | `OtakuSoul_*_amd64.AppImage` | Сделать исполняемым (`chmod +x`) и запустить. |
+| 🐧 **Debian / Ubuntu** | `OtakuSoul_*_amd64.deb` | `sudo apt install ./OtakuSoul_*_amd64.deb` |
+| 🍏 **macOS** (Apple Silicon) | `OtakuSoul_*_aarch64.dmg` | Перетащить OtakuSoul в *Программы*. Приложение не нотариально заверено: при первом запуске правый щелчок → *Открыть* (или `xattr -dr com.apple.quarantine /Applications/OtakuSoul.app`). |
 
 OtakuSoul обновляется сам: когда выходит новая версия, в заголовке появляется кнопка.
 
 ---
+
+<a name="quick-start"></a>
 
 ## 🚀 Первые десять минут
 
@@ -94,6 +69,9 @@ OtakuSoul обновляется сам: когда выходит новая в
 Что-то не получается? **Знак вопроса** справа вверху открывает *Первые шаги* и **глоссарий**, который объясняет каждый термин одним предложением. У частых ошибок есть кнопка решения («Проверить ключ API», «Выбрать модель поменьше», «Запустить локальный ИИ»). Подробное руководство: **[Первые шаги с OtakuSoul](docs/guide-getting-started.ru.md)**.
 
 ---
+
+<details>
+<summary><strong>Подробный обзор приложения</strong></summary>
 
 ## 🗺️ Экскурсия по приложению
 
@@ -175,6 +153,8 @@ OtakuSoul обновляется сам: когда выходит новая в
 </p>
 
 **Настройки** открываются в простом виде; *режим эксперта* добавляет сэмплеры, тонкую настройку сервера, шаблоны промптов, счётчики токенов и журналы.
+
+</details>
 
 ---
 

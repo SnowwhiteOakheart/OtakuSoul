@@ -1,65 +1,38 @@
-<p align="center">
-  <img src="docs/assets/otakusoul-logo-wide-master.png" alt="OtakuSoul – Infinite Worlds" width="100%" />
-</p>
+# OtakuSoul
 
-<p align="center">
-  <a href="README.md"><strong>🇬🇧 English</strong></a> •
-  <a href="README.de.md">🇩🇪 Deutsch</a> •
-  <a href="README.ru.md">🇷🇺 Русский</a>
-</p>
+**English** · [Deutsch](README.de.md) · [Русский](README.ru.md)
 
-<p align="center">
-  <strong>Chat with AI characters, play stories together and let them remember you – privately on your own PC.</strong><br>
-  <em>A desktop app for Windows, Linux and macOS. Runs locally on your graphics card or with a cloud AI of your choice.</em>
-</p>
+**AI characters who remember you.** Chat with your own characters, play interactive stories with an AI game master, or try a tactical 5e adventure.
 
-<p align="center">
-  <img src="docs/assets/demo/en.gif" alt="OtakuSoul in action: start page, chat with Shiori, a story with the AI game master, 3D avatar and a 5e fight" width="100%" />
-</p>
+Free and open source for Windows, Linux and macOS. Run AI locally or connect a cloud provider.
 
-<p align="center">
-  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest"><img alt="Download" src="https://img.shields.io/badge/%E2%AC%87%20Download-free%20·%20Windows%20·%20Linux%20·%20macOS-7c3aed?style=for-the-badge" height="42" /></a>
-</p>
+**[Download for Windows, Linux or macOS](https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest)** · [See it in action](#demo) · [First steps](#quick-start)
 
-<p align="center">
-  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest"><img alt="Version" src="https://img.shields.io/badge/OtakuSoul-v0.7.5-8b5cf6?style=for-the-badge&logo=sparkles&logoColor=white" /></a>
-  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/SnowwhiteOakheart/OtakuSoul/total?style=for-the-badge&logo=github" /></a>
-  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/SnowwhiteOakheart/OtakuSoul?style=for-the-badge&logo=github" /></a>
-  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/network/members"><img alt="Forks" src="https://img.shields.io/github/forks/SnowwhiteOakheart/OtakuSoul?style=for-the-badge&logo=github" /></a>
-  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/issues"><img alt="Issues" src="https://img.shields.io/github/issues/SnowwhiteOakheart/OtakuSoul?style=for-the-badge&logo=github" /></a>
-  <img alt="Local First" src="https://img.shields.io/badge/Local--First-100%25-10b981?style=for-the-badge&logo=shield&logoColor=white" />
-  <img alt="Zero Python" src="https://img.shields.io/badge/Zero--Python-no_setup-f59e0b?style=for-the-badge" />
-  <img alt="GPLv3" src="https://img.shields.io/badge/License-GPLv3-22c55e?style=for-the-badge" />
-</p>
+<a name="demo"></a>
 
-<p align="center">
-  <a href="#-what-is-otakusoul">What is it?</a> •
-  <a href="#-download">Download</a> •
-  <a href="#-your-first-ten-minutes">First steps</a> •
-  <a href="#-a-tour-through-the-app">Tour</a> •
-  <a href="#-is-my-pc-good-enough">Requirements</a> •
-  <a href="#-for-power-users--developers">For power users</a>
-</p>
+## Meet Shiori
 
----
+![Shiori brings up the piano recital in a new chat.](docs/assets/demo/en-memory.gif)
+
+[MP4 version](docs/assets/demo/en-memory.mp4) · Scripted demo recorded in the app with a test profile.
 
 ## 🌸 What is OtakuSoul?
-
-OtakuSoul is an app in which **AI characters** talk to you, play stories with you and **remember** what you experienced together. You pick a character – or create your own – and simply write. The AI answers in the character's voice, with picture, mood and, if you like, spoken voice and a 3D avatar.
-
-<table>
-  <tr>
-    <td align="center" width="33%"><img src="docs/assets/screenshots/en/chat.png" alt="Chat" /><br><b>Chat</b><br><sub>Characters with feelings and a memory</sub></td>
-    <td align="center" width="33%"><img src="docs/assets/screenshots/en/story-play.png" alt="Stories" /><br><b>Stories</b><br><sub>An AI game master, your companions react</sub></td>
-    <td align="center" width="33%"><img src="docs/assets/screenshots/en/stage-5e-board.png" alt="5e adventures" /><br><b>5e adventures</b><br><sub>Real rules on a battle map</sub></td>
-  </tr>
-</table>
 
 * 💬 **Chat** with characters that have a personality, feelings and a memory.
 * 📖 **Play stories:** pick a ready-made adventure, the AI narrates, you decide what your character says and does.
 * 🎲 **Roll dice like at the table:** optional 5e rules with a battle map – the rules engine decides, the AI tells the story.
-* 🔒 **Private:** with a local AI model nothing leaves your PC. No account, no telemetry.
-* 🧩 **No tinkering:** a setup assistant downloads everything needed with one click – no Python, no command line.
+
+With local AI, chat processing stays on your device. The setup assistant helps you choose and download a model.
+
+Coming from SillyTavern? Import your character cards (PNG/JSON) and lorebooks.
+
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/assets/screenshots/en/memory-chat.png" alt="Chat" /><br><b>Chat</b><br><sub>Characters with feelings and a memory</sub></td>
+    <td align="center" width="33%"><img src="docs/assets/screenshots/en/story-play.png" alt="Stories" /><br><b>Stories</b><br><sub>An AI game master, your companions react</sub></td>
+    <td align="center" width="33%"><img src="docs/assets/screenshots/en/stage-5e-board.png" alt="5e adventures" /><br><b>5e adventures</b><br><sub>Real rules on a battle map</sub></td>
+  </tr>
+</table>
 
 ---
 
@@ -69,14 +42,16 @@ Get the latest version from the **[Releases page](https://github.com/SnowwhiteOa
 
 | System | File | How to start |
 |---|---|---|
-| 🪟 **Windows 10 / 11** | `OtakuSoul_0.7.5_x64-setup.exe` | Double-click and follow the installer. |
-| 🐧 **Linux** (any distribution) | `OtakuSoul_0.7.5_amd64.AppImage` | Make it executable (`chmod +x`) and start it. |
-| 🐧 **Debian / Ubuntu** | `OtakuSoul_0.7.5_amd64.deb` | `sudo apt install ./OtakuSoul_0.7.5_amd64.deb` |
-| 🍏 **macOS** (Apple Silicon) | `OtakuSoul_0.7.5_aarch64.dmg` | Drag OtakuSoul into *Applications*. The app is not notarised: on first start right-click → *Open* (or run `xattr -dr com.apple.quarantine /Applications/OtakuSoul.app`). |
+| 🪟 **Windows 10 / 11** | `OtakuSoul_*_x64-setup.exe` | Double-click and follow the installer. |
+| 🐧 **Linux** | `OtakuSoul_*_amd64.AppImage` | Make it executable (`chmod +x`) and start it. |
+| 🐧 **Debian / Ubuntu** | `OtakuSoul_*_amd64.deb` | `sudo apt install ./OtakuSoul_*_amd64.deb` |
+| 🍏 **macOS** (Apple Silicon) | `OtakuSoul_*_aarch64.dmg` | Drag OtakuSoul into *Applications*. The app is not notarised: on first start right-click → *Open* (or run `xattr -dr com.apple.quarantine /Applications/OtakuSoul.app`). |
 
 OtakuSoul updates itself: when a new version is out, a button appears in the title bar.
 
 ---
+
+<a name="quick-start"></a>
 
 ## 🚀 Your first ten minutes
 
@@ -94,6 +69,9 @@ OtakuSoul updates itself: when a new version is out, a button appears in the tit
 Stuck? The **question mark** at the top right opens *First steps* and a **glossary** that explains every technical term in one sentence. Common errors come with a fix button (“Check API key”, “Choose a smaller model”, “Start local AI”). The full guide: **[Getting started with OtakuSoul](docs/guide-getting-started.md)**.
 
 ---
+
+<details>
+<summary><strong>Full app tour</strong></summary>
 
 ## 🗺️ A tour through the app
 
@@ -175,6 +153,8 @@ A rules engine based on the SRD 5.1 decides every roll, hit and enemy move – t
 </p>
 
 The **settings** start in a simple view; the *expert mode* adds samplers, server tuning, prompt templates, token counts and logs.
+
+</details>
 
 ---
 
