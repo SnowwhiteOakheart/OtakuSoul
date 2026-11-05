@@ -4,8 +4,10 @@ import App from "./App";
 import { applyColorMode } from "./services/theme";
 import { installFrontendLogForwarding } from "./services/frontendLog";
 import { isPetWindow } from "./services/desktopPet";
+import { installBrowserChromeGuards } from "./services/browserChrome";
 
 installFrontendLogForwarding();
+installBrowserChromeGuards();
 applyColorMode('system');
 // The desktop pet's window is transparent: no page background behind the avatar.
 if (isPetWindow()) document.documentElement.classList.add('pet-window');

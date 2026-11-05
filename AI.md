@@ -240,6 +240,10 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `npm run e2e:build` löschen, sonst sehen E2E-Tests und README-Screenshots noch die alten Inhalte.
 - Das Hauptfenster steht in `tauri.conf.json` mit `create: false` und wird in `lib.rs` (`create_main_window`) gebaut,
   damit `OTAKUSOUL_HOME` auch den Webview-Speicher umlenkt (`<home>/webview`); der E2E-Harness prüft das per Marker.
+- Die App soll nicht als Browser erkennbar sein: `services/browserChrome.ts` unterdrückt das Webview-Kontextmenü
+  (außer in Textfeldern) und im Release-Build Browser-Kürzel (F5, Strg+R/P/F/U, F12 …), nur deren Standardaktion –
+  App-eigene Tastenkürzel laufen weiter. Eigene Kontextmenüs per React-`onContextMenu` mit `preventDefault` bauen.
+  Den Inspektor gibt es nur in Debug-Builds; das Cargo-Feature `devtools` nicht aktivieren.
 - Bei gesperrter Desktop-Sitzung können WebKit-Screenshots und Animationsabfragen hängen. E2E dann unter
   einem separaten Xvfb-Display ausführen (`xvfb-run npm run e2e`); die Desktop-Sperre nicht verändern.
 - Befehlsaufrufe: `src/test/commandCheck.test.ts` gleicht jedes `invoke('…', {…})` mit den Rust-Signaturen und
