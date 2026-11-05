@@ -24,7 +24,7 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 | A5 | Signierte Installer (Windows, macOS) | ★★★ | S–M | Zertifikat bzw. Apple-Konto (Kosten) |
 | **B** | **Als Nächstes – baut auf Vorhandenem auf** | | | |
 | B4 | Teilen: Lorebooks, automatische Prüfung der Einreichung | ★★ | M | Prüfablauf im Daten-Repo |
-| B5 | ~~Webtoon-Export~~ erledigt (05.11.2026), Rest: Szenenbilder je Panel | ★ | S | – |
+| B5 | ~~Webtoon-Export~~ erledigt (05.11.2026) | – | – | – |
 | B6 | OBS-Overlay: 3D-/Live2D-Modell statt Porträt | ★ | M | – |
 | B7 | Benachrichtigungsklick unter Linux und macOS | ★ | S (Linux) / M (macOS) | Mac für macOS |
 | **C** | **Später – größere Vorhaben** | | | |
@@ -139,7 +139,7 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 - [x] **B5 · Webtoon-Export:** erledigt (05.11.2026). Stage-Menü „Als Webtoon exportieren“: PNG-Bildspalte, je Zeile ein
   Panel mit Ort, Stimmungsporträt und Sprechblase, lange Akte in mehreren Bildern (`webtoon.rs`, `services/webtoon.ts`).
   Nachrichten merken sich ihren Hintergrund (`SceneTurnMessage.bg`), Ortswechsel erscheinen also erst in Akten ab jetzt.
-  Möglicher Rest: in der Sitzung erzeugte Szenenbilder an ihre Nachricht hängen und als eigene Panels zeigen.
+  Szenenbilder aus der Stage hängen an der Nachricht, bei der sie erzeugt wurden, und erscheinen danach als eigenes Panel.
 - [ ] **B6 · OBS-Overlay mit Modell:** Das Overlay (`/overlay`) zeigt heute das Porträt mit Sprechblase und Stimmung. Offen: das
   3D-/Live2D-Modell selbst als Browser-Quelle; dafür müssten Modelldateien über den Web-Server ausgeliefert und die Viewer
   ohne Tauri-Fensteraufrufe laufen.
