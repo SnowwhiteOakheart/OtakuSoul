@@ -91,7 +91,10 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
     den VRAM frei und hinterlässt keine halbe Datei.
   - Gefunden und behoben (`8eddf2d`): Ein Download-Segment blieb bei ~70 KB/s hängen und hielt den Modell-Download
     minutenlang auf; Verbindungen unter 1/8 der schnellsten (15-s-Fenster) werden jetzt ersetzt. Auffällig: Der
-    abgebrochene Laufzeit-Download vom 02.11. (238 MB) wurde nicht fortgesetzt, sondern neu begonnen.
+    abgebrochene Laufzeit-Download vom 02.11. (238 MB) wurde nicht fortgesetzt, sondern neu begonnen. Behoben (05.11.2026):
+    Laufzeiten luden über eine Verbindung direkt in die Zieldatei, die jeder Versuch neu anlegte. Jetzt nehmen sie den
+    Weg der Modelle (`model_files::download_spec`: `.part`, mehrere Verbindungen, Fortsetzen, SHA-256); ein fertiges,
+    geprüftes Archiv wird wiederverwendet, nach der Installation gelöscht.
   - Alle Titel erzeugt (XL, 03.11.2026, 97 MB MP3): Frostweiler 6, Kirschblüten 5, Arcade-Stick 4, Ryokan 5,
     Kepler-9 5, Gruft 8 (~24 s je Titel). Mit geladenem Chat-Modell (~10 GB) wählt die App `Parallel`: Spitze 15 GB
     von 24 GB, Chat-Modell bleibt geladen. GPU geprüft: `ace-server` läuft auf der RTX (100 %), die iGPU-Last
