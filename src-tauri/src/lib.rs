@@ -297,6 +297,7 @@ pub fn run() {
             commands::llm::get_hardware_info,
             commands::llm::openrouter_login,
             commands::memory::get_dream_memories,
+            commands::memory::get_memory_atlas,
             commands::llm::openrouter_login_cancel,
             commands::llm::get_layer_recommendation,
             commands::llm::start_llama_server,

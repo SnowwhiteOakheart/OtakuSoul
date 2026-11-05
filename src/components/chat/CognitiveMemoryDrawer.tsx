@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import type { PsychologyState, RelationshipState } from '../../types';
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { chatSpeakers, memoryCharacter, presentedAs } from '../../utils/groupChat';
-import { Brain, X, Heart, RefreshCw, BookHeart, Clock, Sparkles, Bookmark, FileCode, RotateCcw, Sliders, CalendarClock } from 'lucide-react';
+import { Brain, X, Heart, RefreshCw, BookHeart, Clock, Sparkles, Bookmark, FileCode, RotateCcw, Sliders, CalendarClock, Network } from 'lucide-react';
 import { translate, useTranslation } from '../../i18n';
 import { toast } from '../ui/feedback';
 import { ModalOverlay } from '../ui/ModalOverlay';
@@ -16,6 +16,7 @@ import { DiaryTab } from './memory/DiaryTab';
 import { HealingTab } from './memory/HealingTab';
 import { MemoryBackupsTab } from './memory/MemoryBackupsTab';
 import { IntentionsTab } from './memory/IntentionsTab';
+import { AtlasTab } from './memory/AtlasTab';
 
 interface MemoryEditorDraft {
   psychology?: PsychologyState;
@@ -82,7 +83,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
   }, [isOpen, memoryCharacterId, setMemoryCharacter]);
 
   const [activeTab, setActiveTab] = useState<
-    'psychology' | 'relationship' | 'markdown' | 'memories' | 'diary' | 'healing' | 'backups' | 'intentions'
+    'psychology' | 'relationship' | 'markdown' | 'memories' | 'diary' | 'healing' | 'backups' | 'intentions' | 'atlas'
   >('psychology');
 
   // Keep edits through tab switches and closing; never reuse another character/persona's draft.
@@ -370,6 +371,19 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
             <RotateCcw className="w-3.5 h-3.5" />
             {t('memory.tabBackups', { count: memoryBackups.length })}
           </button>
+          <button
+            role="tab"
+            aria-selected={activeTab === 'atlas'}
+            onClick={() => setActiveTab('atlas')}
+            className={`py-3 px-3 border-b-2 transition flex items-center gap-1.5 shrink-0 whitespace-nowrap outline-hidden focus-visible:bg-slate-800/60 ${
+              activeTab === 'atlas'
+                ? 'border-accent-500 text-accent-300 font-semibold'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Network className="w-3.5 h-3.5" />
+            {t('memory.tabAtlas')}
+          </button>
         </div>
 
         {/* Tab Contents */}
@@ -395,6 +409,7 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
           {activeTab === 'healing' && <HealingTab />}
           {activeTab === 'backups' && <MemoryBackupsTab />}
           {activeTab === 'intentions' && <IntentionsTab />}
+          {activeTab === 'atlas' && <AtlasTab />}
         </div>
       </div>
     </ModalOverlay>,

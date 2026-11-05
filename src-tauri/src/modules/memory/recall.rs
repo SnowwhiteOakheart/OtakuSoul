@@ -208,9 +208,8 @@ const STOPWORDS: &[&str] = &[
     "которая",
 ];
 
-/// Turns free text into a safe FTS5 query: distinct words of three letters or more without
-/// filler words, each quoted, joined with OR. `None` when nothing searchable is left.
-pub(crate) fn fts_query(text: &str) -> Option<String> {
+/// The distinct lowercase search words of `text` (three letters or more, no filler words).
+pub(super) fn query_terms(text: &str) -> Vec<String> {
     let mut terms: Vec<String> = Vec::new();
     for word in text.split(|c: char| !c.is_alphanumeric()) {
         let word = word.to_lowercase();
@@ -222,6 +221,13 @@ pub(crate) fn fts_query(text: &str) -> Option<String> {
             break;
         }
     }
+    terms
+}
+
+/// Turns free text into a safe FTS5 query: distinct words of three letters or more without
+/// filler words, each quoted, joined with OR. `None` when nothing searchable is left.
+pub(crate) fn fts_query(text: &str) -> Option<String> {
+    let terms = query_terms(text);
     if terms.is_empty() {
         return None;
     }

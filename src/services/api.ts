@@ -2,6 +2,7 @@ import type { ContributionResult } from '../types/generated/ContributionResult';
 import type { Finding } from '../types/generated/Finding';
 import type { SubmissionInfo } from '../types/generated/SubmissionInfo';
 import type { WebtoonScript } from '../types/generated/WebtoonScript';
+import type { MemoryAtlas } from '../types/generated/MemoryAtlas';
 import type { TokenEvent } from '../types/generated/TokenEvent';
 import type { ThoughtEvent } from '../types/generated/ThoughtEvent';
 import type { UiLanguage } from '../types/generated/UiLanguage';
@@ -418,6 +419,10 @@ export const api = {
   },
 
   /** Random older memories of a character, woven into a dream told on start. */
+  getMemoryAtlas: async (charId: string, userName: string, includeSuperseded: boolean): Promise<MemoryAtlas> => {
+    return await invoke<MemoryAtlas>('get_memory_atlas', { charId, userName, includeSuperseded });
+  },
+
   getDreamMemories: async (charId: string, limit: number): Promise<EpisodicMemory[]> => {
     return await invoke<EpisodicMemory[]>('get_dream_memories', { charId, limit });
   },

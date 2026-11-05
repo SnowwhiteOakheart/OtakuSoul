@@ -2092,3 +2092,59 @@ fn dreams_need_real_memories_and_prefer_older_ones() {
     }
     assert!(db.dream_memories("niemand", 3).unwrap().is_empty());
 }
+
+#[test]
+fn atlas_links_beliefs_to_the_experiences_that_fit_them() {
+    let db = MemoryDb::new_in_memory().unwrap();
+    let mut psych = db.get_or_create_psychology("ayu").unwrap();
+    psych.core_identity = vec!["Hat Angst vor Gewitter".into()];
+    db.update_psychology("ayu", &psych).unwrap();
+    let mut rel = db.get_or_create_relationship("ayu", "Kai").unwrap();
+    rel.preferences_habits = vec!["Kai trinkt abends Jasmintee".into()];
+    rel.shared_milestones = vec!["Keine.".into()];
+    db.update_relationship("ayu", &rel).unwrap();
+    let storm = db
+        .add_episodic_memory("ayu", "event", "Das Gewitter am See hat Ayu erschreckt", 4)
+        .unwrap();
+    let tea = db
+        .add_episodic_memory("ayu", "fact", "Kai bestellt immer Jasmintee", 3)
+        .unwrap();
+    db.add_episodic_memory("ayu", "fact", "Ayu sammelt Muscheln", 2)
+        .unwrap();
+    db.add_diary_entry(
+        "ayu",
+        "Abend",
+        "Heute sprach Kai wieder über Jasmintee.",
+        "Calm",
+    )
+    .unwrap();
+    let plan_id = db
+        .add_intention("ayu", "Kai", &plan("Muscheln sammeln gehen", "story", None))
+        .unwrap()
+        .unwrap();
+    db.set_intention_status("ayu", plan_id, "fulfilled")
+        .unwrap();
+
+    let atlas = db.get_memory_atlas("ayu", "Kai", false).unwrap();
+    let has = |from: &str, to: &str, kind: &str| {
+        atlas
+            .edges
+            .iter()
+            .any(|e| e.from == from && e.to == to && e.kind == kind)
+    };
+    assert!(has(&format!("memory:{storm}"), "identity:0", "shaped"));
+    assert!(has(&format!("memory:{tea}"), "habit:0", "shaped"));
+    assert!(!has(&format!("memory:{storm}"), "habit:0", "shaped"));
+    assert!(has(&format!("memory:{tea}"), "diary:1", "reflects"));
+    // "Keine." is no milestone.
+    assert!(!atlas.nodes.iter().any(|n| n.kind == "milestone"));
+    // The fulfilled plan became a memory (stored, not inferred).
+    let became = atlas
+        .edges
+        .iter()
+        .find(|e| e.from == format!("intention:{plan_id}"))
+        .expect("plan → memory");
+    assert_eq!(became.kind, "became");
+    assert!(!became.inferred);
+    assert_eq!(atlas.hidden_memories, 0);
+}

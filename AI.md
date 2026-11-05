@@ -953,6 +953,13 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   verlangt je Gruppe ≥ 2 bekannte IDs, jede nur einmal. Erst `apply_memory_cleanup` (nach Snapshot, eine Transaktion)
   legt je Gruppe eine Erinnerung an und löst die Quellen per `supersede_memory_on` ab (wiederherstellbar). Sperre über
   `memoryOperation = 'cleanup'`. Mock-LLM: `stats.cleanupResult`.
+- Beziehungs-Atlas (`memory/atlas.rs`, `get_memory_atlas`, Drawer-Reiter „Atlas“ als **letzter** Reiter,
+  `AtlasTab.tsx`, Layout `utils/memoryAtlas.ts`): Knoten = Überzeugungen (`core_identity`, Gewohnheiten, Meilensteine,
+  Vertrauen, Unausgesprochenes, Ziel; Platzhalter wie „Keine.“ fallen weg), Erlebnisse (höchstens 150, angepinnte und
+  wichtigste zuerst), Tagebuch (60), Vorhaben. Gespeicherte Kanten: Vorhaben → `memory_id` (`became`), alt →
+  `superseded_by` (`replaced`). Erschlossene Kanten (`inferred`, gestrichelt) über `search_episodic_memories_on` mit
+  Nachfilter auf gemeinsame Suchwörter (`query_terms`; ab 4 Wörtern mindestens 2 Treffer). Ohne Modellaufruf, schreibt
+  nichts. Zeitachse nach Rang (je Punkt ein Schritt), Überzeugungen über dem Mittel ihrer Erlebnisse.
 - Raw-Strings für Prompts: ein `"#` (z. B. `"#12"`) beendet `r#"…"#` – dann `r##"…"##` nehmen.
 - Router-JSON wird tolerant gelesen (`memory_pipeline::lenient`): lokale Modelle (Qwen 3.6, Mistral Nemo) schreiben
   Textfelder wie `known_attributes` als Liste, Listen als einzelnen Text, Zahlen/IDs als String (`"#27"`). Strenge

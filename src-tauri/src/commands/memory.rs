@@ -515,6 +515,20 @@ pub fn restore_memory_backup(
     state.memory_db.restore_memory_backup(&resolved)
 }
 
+/// The memory as a graph of beliefs and the experiences that shaped them (memory drawer).
+#[tauri::command(async)]
+pub fn get_memory_atlas(
+    state: State<'_, AppState>,
+    char_id: String,
+    user_name: String,
+    include_superseded: bool,
+) -> Result<crate::modules::memory::MemoryAtlas, String> {
+    state
+        .memory_db
+        .get_memory_atlas(&char_id, &user_name, include_superseded)
+        .map_err(|e| e.to_string())
+}
+
 /// Random older memories of a character, for a dream told on the next start.
 #[tauri::command]
 pub fn get_dream_memories(

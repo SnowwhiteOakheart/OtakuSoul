@@ -153,6 +153,10 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
   größte Lücke gegenüber Character.AI, Kindroid und Replika; *aber:* braucht einen Relay-Dienst und ein Sicherheitskonzept.
 - [ ] **C2 · Beziehungs-Atlas:** Interaktive Knotenansicht des SQLite-Gedächtnisses (`psyche`, `relationship`,
   `episodes`, `diary`, `plans`), in der Verbindungen zeigen, welche Erlebnisse welche Überzeugungen geformt haben.
+  Umgesetzt (05.11.2026): Drawer-Reiter „Atlas“ (`memory/atlas.rs`, `AtlasTab.tsx`): Überzeugungen oben, Erlebnisse,
+  Tagebuch und Vorhaben auf einer Zeitachse; gespeicherte Verbindungen durchgezogen, über FTS5 erschlossene gestrichelt;
+  Klick zeigt Text, Verbindungen und „Zur Nachricht“. **Noch offen:** E2E-Durchlauf mit Screenshots (auf dem
+  Windows-Rechner nicht eingerichtet).
 - [ ] **C3 · Zeitreise-Checkpoints:** Von einem Punkt der Beziehungs-Chronik aus einen neuen Zweig starten („Was wäre,
   wenn …?“) – mit eigenem Gedächtnisstand. Braucht Gedächtnis-Snapshots je Zweig; sinnvoll nach C2.
 - [ ] **C4 · Abend-Reflexion und Monatsrückblick:** Optionaler Journaling-Modus; die Figur reflektiert den Tag, begleitet

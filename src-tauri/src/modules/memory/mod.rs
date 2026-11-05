@@ -9,6 +9,7 @@ use std::sync::LazyLock;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::{info, warn};
 
+mod atlas;
 mod chats;
 mod cleanup;
 pub use chats::MAX_CHAT_GUESTS;
@@ -22,6 +23,7 @@ mod soul;
 #[cfg(test)]
 mod tests;
 
+pub use atlas::{AtlasEdge, AtlasNode, MemoryAtlas};
 pub use cleanup::{CLEANUP_TOKENS, CleanupGroup, CleanupProposal, valid_cleanup_groups};
 pub use intentions::{IntentionChanges, parse_due};
 pub use models::*;

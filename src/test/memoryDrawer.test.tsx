@@ -79,7 +79,7 @@ describe('CognitiveMemoryDrawer', () => {
     render(<CognitiveMemoryDrawer isOpen onClose={() => {}} />);
 
     const tabs = screen.getAllByRole('tab');
-    expect(tabs).toHaveLength(8);
+    expect(tabs).toHaveLength(9);
     for (const tab of tabs) {
       await user.click(tab);
       expect(tab).toHaveAttribute('aria-selected', 'true');

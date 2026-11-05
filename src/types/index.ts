@@ -70,6 +70,9 @@ import type { EpisodicMemory } from './generated/EpisodicMemory';
 import type { PromptMemories } from './generated/PromptMemories';
 import type { IntentionEntry } from './generated/IntentionEntry';
 import type { IntentionDraft } from './generated/IntentionDraft';
+import type { MemoryAtlas } from './generated/MemoryAtlas';
+import type { AtlasNode } from './generated/AtlasNode';
+import type { AtlasEdge } from './generated/AtlasEdge';
 import type { CleanupGroup } from './generated/CleanupGroup';
 import type { CleanupProposal } from './generated/CleanupProposal';
 import type { MemoryCleanupRequest } from './generated/MemoryCleanupRequest';
@@ -217,6 +220,9 @@ export type {
   PromptMemories,
   IntentionEntry,
   IntentionDraft,
+  MemoryAtlas,
+  AtlasNode,
+  AtlasEdge,
   CleanupGroup,
   CleanupProposal,
   MemoryCleanupRequest,
