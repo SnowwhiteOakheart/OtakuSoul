@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link2, Network } from 'lucide-react';
+import { GitBranch, Link2, Network } from 'lucide-react';
 import { api } from '../../../services/api';
 import { useAppStore } from '../../../store/useAppStore';
-import { memoryCharacter } from '../../../utils/groupChat';
+import { memoryId } from '../../../utils/groupChat';
 import { errorMessage } from '../../../utils/errors';
 import { useTranslation, type TranslationKey } from '../../../i18n';
 import type { AtlasNode, MemoryAtlas } from '../../../types';
@@ -40,7 +40,7 @@ const short = (text: string, max = 90) => {
  */
 export const AtlasTab = () => {
   const { t } = useTranslation();
-  const characterId = useAppStore((state) => memoryCharacter(state)?.id);
+  const characterId = useAppStore(memoryId);
   const userName = useAppStore((state) => state.activePersona.name);
   const overview = useAppStore((state) => state.cognitiveOverview);
   const appLanguage = useAppStore((state) => state.appLanguage);
@@ -70,6 +70,17 @@ export const AtlasTab = () => {
   const current = selected ? byId.get(selected) : undefined;
   const kindLabel = (node: AtlasNode) => t(`memory.atlasKind.${node.kind}` as TranslationKey);
   const dateOf = (node: AtlasNode) => (node.at != null ? new Date(node.at * 1000).toLocaleString(appLanguage) : '');
+
+  // Branching works for the open chat's own character, not for a guest's memory.
+  const ownCharacter = useAppStore((state) => !state.memoryCharacterId || state.memoryCharacterId === state.activeCharacter?.id);
+
+  /** "What if …?": a new chat from this memory's source message, with its own memory. */
+  const branchHere = async (node: AtlasNode) => {
+    if (!node.chat_id || !node.message_id) return;
+    const store = useAppStore.getState;
+    store().setMemoryDrawerOpen(false);
+    await store().branchChatFrom(node.message_id, true, node.chat_id);
+  };
 
   const showSource = async (node: AtlasNode) => {
     const store = useAppStore.getState;
@@ -186,6 +197,12 @@ export const AtlasTab = () => {
                 <Link2 className="w-3 h-3" />
                 {t('memory.atlasToMessage')}
               </button>
+              {ownCharacter && (
+                <button type="button" onClick={() => void branchHere(current)} className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-accent-300" data-atlas-branch>
+                  <GitBranch className="w-3 h-3" />
+                  {t('memory.atlasBranchHere')}
+                </button>
+              )}
             </div>
           )}
           {neighbours(atlas.edges, current.id).length > 0 && (

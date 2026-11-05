@@ -17,4 +17,9 @@ style?: ChatStyle,
 /**
  * Invited characters of a group chat (IDs, without the chat's own character).
  */
-members: Array<string>, };
+members: Array<string>, 
+/**
+ * A branch with its own memory of the chat's character ('' = the shared memory); the
+ * memory id is then `<character>@branch-<this>`.
+ */
+memory_branch: string, };

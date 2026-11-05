@@ -72,7 +72,7 @@ describe('continuing a chat as a new one', () => {
     vi.mocked(api.getChatMessages).mockResolvedValue([copied]);
     vi.mocked(api.listChatBookmarks).mockResolvedValue([]);
     await useAppStore.getState().branchChatFrom('m1');
-    expect(api.branchChat).toHaveBeenCalledWith('c', 'm1', 'Kyoto (branch)');
+    expect(api.branchChat).toHaveBeenCalledWith('c', 'm1', 'Kyoto (branch)', false);
     expect(useAppStore.getState()).toMatchObject({ activeChatId: 'c2', storedMessages: [copied] });
     expect(useAppStore.getState().chatSessions).toHaveLength(2);
   });

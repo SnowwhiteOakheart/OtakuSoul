@@ -10,6 +10,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::{info, warn};
 
 mod atlas;
+mod branches;
 mod chats;
 mod cleanup;
 pub use chats::MAX_CHAT_GUESTS;
@@ -24,6 +25,7 @@ mod soul;
 mod tests;
 
 pub use atlas::{AtlasEdge, AtlasNode, MemoryAtlas};
+pub use branches::{BRANCH_MARK, base_character_id, memory_id};
 pub use cleanup::{CLEANUP_TOKENS, CleanupGroup, CleanupProposal, valid_cleanup_groups};
 pub use intentions::{IntentionChanges, parse_due};
 pub use models::*;

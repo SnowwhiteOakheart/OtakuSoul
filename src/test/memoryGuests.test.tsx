@@ -10,7 +10,7 @@ import type { CharacterProfile, ChatSession, CognitiveOverview } from '../types'
 const card = (id: string, name: string) => ({ id, card: { data: { name } }, bound_lorebooks: [] }) as unknown as CharacterProfile;
 const ayu = card('ayu', 'Ayu');
 const sora = card('sora', 'Sora');
-const session: ChatSession = { id: 'chat-1', character_id: 'ayu', title: 'Gruppe', created_at: 0, updated_at: 0, author_note: '', author_note_depth: 0, message_count: 0, summary: '', summary_until: -1, members: ['sora'] };
+const session: ChatSession = { id: 'chat-1', character_id: 'ayu', title: 'Gruppe', created_at: 0, updated_at: 0, author_note: '', author_note_depth: 0, message_count: 0, summary: '', summary_until: -1, members: ['sora'], memory_branch: '' };
 const overview = (name: string) => ({ recent_memories: [{ id: 1, category: 'fact', content: `${name} mag Tee` }] }) as unknown as CognitiveOverview;
 const initial = useAppStore.getState();
 
@@ -32,7 +32,7 @@ describe('memory of group chat guests', () => {
     // Another chat or another character: back to the active one without a reset.
     useAppStore.setState({ activeChatId: 'chat-2' });
     expect(memoryCharacter(useAppStore.getState())?.id).toBe('ayu');
-    useAppStore.setState({ activeChatId: 'chat-1', chatSessions: [{ ...session, members: [] }] });
+    useAppStore.setState({ activeChatId: 'chat-1', chatSessions: [{ ...session, members: [], memory_branch: '' }] });
     expect(memoryCharacter(useAppStore.getState())?.id).toBe('ayu');
   });
 

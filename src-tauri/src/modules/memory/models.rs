@@ -252,6 +252,10 @@ pub struct ChatSession {
     /// Invited characters of a group chat (IDs, without the chat's own character).
     #[serde(default)]
     pub members: Vec<String>,
+    /// A branch with its own memory of the chat's character ('' = the shared memory); the
+    /// memory id is then `<character>@branch-<this>`.
+    #[serde(default)]
+    pub memory_branch: String,
 }
 
 /// Per-chat look and sound. Pictures and sounds come from the Stage library

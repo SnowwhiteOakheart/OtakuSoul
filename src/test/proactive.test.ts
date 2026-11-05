@@ -116,7 +116,7 @@ describe('proactive messages', () => {
 describe('chats of other characters', () => {
   const session = (id: string, character_id: string, updatedIso: string, message_count = 6) => ({
     id, character_id, title: '', created_at: 0, updated_at: seconds(updatedIso), author_note: '', author_note_depth: 0,
-    message_count, summary: '', summary_until: -1, members: [],
+    message_count, summary: '', summary_until: -1, members: [], memory_branch: '',
   });
   const now = at('2026-10-20T14:00:00');
 

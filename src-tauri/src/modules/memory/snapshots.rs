@@ -7,7 +7,11 @@ impl MemoryDb {
 
     pub fn backup_dir_for_character(char_id: &str) -> PathBuf {
         let base_dir = crate::modules::paths::base_dirs().1;
-        base_dir.join("characters").join(char_id).join("backups")
+        // A branch keeps its snapshots next to the character's (the file names tell them apart).
+        base_dir
+            .join("characters")
+            .join(super::branches::base_character_id(char_id))
+            .join("backups")
     }
 
     pub fn backup_memory_state(

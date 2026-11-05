@@ -282,10 +282,11 @@ pub fn branch_chat(
     chat_id: String,
     message_id: String,
     title: String,
+    own_memory: Option<bool>,
 ) -> Result<crate::modules::memory::ChatSession, String> {
     state
         .memory_db
-        .branch_chat(&chat_id, &message_id, &title)
+        .branch_chat(&chat_id, &message_id, &title, own_memory.unwrap_or(false))
         .map_err(|e| e.to_string())
 }
 

@@ -1,6 +1,23 @@
 import type { CharacterProfile, ChatMessage, ChatSession, GroupMember, StoredChatMessage } from '../types';
 import { languageCode, localizeCard } from './cardI18n';
 
+/** Separates the character from the branch in a memory id (as `BRANCH_MARK` in `memory/branches.rs`). */
+export const BRANCH_MARK = '@branch-';
+
+/**
+ * The memory id of `charId` for `session`: a chat branched off with its own memory keeps the
+ * memory of its own character under `<character>@branch-<id>`; guests keep their shared memory.
+ */
+export function memoryIdFor(charId: string, session?: Pick<ChatSession, 'character_id' | 'memory_branch'> | null): string {
+  return session?.memory_branch && session.character_id === charId ? `${charId}${BRANCH_MARK}${session.memory_branch}` : charId;
+}
+
+/** The memory id the memory drawer shows (`memoryCharacter` in the open chat). */
+export function memoryId(state: Parameters<typeof memoryCharacter>[0]): string | undefined {
+  const character = memoryCharacter(state);
+  return character ? memoryIdFor(character.id, state.chatSessions.find((s) => s.id === state.activeChatId)) : undefined;
+}
+
 /** Invited characters a chat can have besides its own (as `MAX_CHAT_GUESTS` in `memory/chats.rs`). */
 export const MAX_CHAT_GUESTS = 4;
 

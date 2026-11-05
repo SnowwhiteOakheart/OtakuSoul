@@ -2,6 +2,7 @@ import { api } from '../services/api';
 import { soundFx } from '../services/soundFx';
 import { waitWithAbort } from '../utils/cancellation';
 import { chatLorebooks } from '../utils/lorebookUsage';
+import { memoryIdFor } from '../utils/groupChat';
 import { resolveInochi2dPath, resolveLive2dPath } from '../components/avatars/avatarMatch';
 import type { AssembledPrompt, CharacterProfile, ChatMessage, CognitiveOverview, GroupMember, LorebookEntry, LlmProviderType, SamplingParams } from '../types';
 import type { AppStoreState } from './storeTypes';
@@ -120,7 +121,7 @@ export async function resolvePromptWithLore(
   // intentions. Without
   // them (old backend, error) the overview's memories are used.
   // Also with nothing to search for: the core and the open plans and promises still count.
-  const memories = await waitWithAbort(() => api.getPromptMemories(activeCharacter.id, activePersona.name, recentMemoryQuery(recentMessages)).catch((e) => {
+  const memories = await waitWithAbort(() => api.getPromptMemories(memoryIdFor(activeCharacter.id, chatSessions.find((s) => s.id === activeChatId)), activePersona.name, recentMemoryQuery(recentMessages)).catch((e) => {
     console.warn('Failed getPromptMemories, using the overview:', e);
     return null;
   }), signal);

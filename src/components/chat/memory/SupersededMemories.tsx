@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { RotateCcw } from 'lucide-react';
 import { api } from '../../../services/api';
 import { useAppStore } from '../../../store/useAppStore';
-import { memoryCharacter } from '../../../utils/groupChat';
+import { memoryId } from '../../../utils/groupChat';
 import { translate, useTranslation } from '../../../i18n';
 import { toast } from '../../ui/feedback';
 import { errorMessage } from '../../../utils/errors';
@@ -14,7 +14,7 @@ import type { EpisodicMemory } from '../../../types';
  */
 export const SupersededMemories = () => {
   const { t } = useTranslation();
-  const characterId = useAppStore((state) => memoryCharacter(state)?.id);
+  const characterId = useAppStore(memoryId);
   const overview = useAppStore((state) => state.cognitiveOverview);
   const [result, setResult] = useState<{ characterId: string; memories: EpisodicMemory[]; error: string | null } | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);

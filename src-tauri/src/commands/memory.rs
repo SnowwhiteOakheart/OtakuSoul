@@ -387,7 +387,7 @@ pub async fn generate_manual_diary_entry(
     } else {
         let sessions = state
             .memory_db
-            .list_chat_sessions(char_id)
+            .list_chat_sessions(crate::modules::memory::base_character_id(char_id))
             .unwrap_or_default();
         if let Some(first) = sessions.first() {
             state
@@ -411,7 +411,10 @@ pub async fn generate_manual_diary_entry(
     }
 
     let diary_sys = crate::modules::memory_pipeline::DIARY_SYSTEM_PROMPT
-        .replace("{character}", char_id)
+        .replace(
+            "{character}",
+            crate::modules::memory::base_character_id(char_id),
+        )
         .replace("{user_name}", user_name)
         .replace(
             "{language}",

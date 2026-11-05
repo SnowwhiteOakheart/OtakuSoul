@@ -4,7 +4,7 @@ import { translate } from '../i18n';
 import { useAppStore } from '../store/useAppStore';
 import { llmTarget } from '../store/helpers';
 import { toast } from '../components/ui/feedback';
-import { presentedAs } from '../utils/groupChat';
+import { memoryIdFor, presentedAs } from '../utils/groupChat';
 import { dayPeriod, eveningCheckInInstruction, eveningDue, monthPeriod, plansForTomorrow, type JournalPeriod } from '../utils/journal';
 import type { JournalOutcome } from '../types';
 
@@ -40,7 +40,7 @@ export async function writeJournal(period: JournalPeriod, replace = false): Prom
     ? date.toLocaleDateString('en', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
     : date.toLocaleDateString('en', { month: 'long', year: 'numeric' });
   const outcome = await api.writeJournalEntry({
-    character_id: character.id,
+    character_id: memoryIdFor(character.id, state.chatSessions.find((s) => s.id === state.activeChatId)),
     chat_character_id: character.id,
     character_name: presentedAs(character, state.replyLanguage).name,
     user_name: state.activePersona.name,
@@ -97,7 +97,7 @@ async function check() {
   const messages = state.storedMessages;
   const lastUser = messages.map((m) => m.role).lastIndexOf('user');
   if (lastUser < 0 || messages.slice(lastUser + 1).some((m) => own.has(m.id))) return;
-  const intentions = await api.getIntentions(activeCharacter.id, state.activePersona.name, false).catch(() => []);
+  const intentions = await api.getIntentions(memoryIdFor(activeCharacter.id, state.chatSessions.find((s) => s.id === state.activeChatId)), state.activePersona.name, false).catch(() => []);
   const reflection = outcome.entry.entry_text;
   const stored = await state.writeOnOwn((who) => eveningCheckInInstruction(who, state.activePersona.name, reflection, plansForTomorrow(intentions, now)));
   if (stored) {

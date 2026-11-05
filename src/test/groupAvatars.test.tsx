@@ -24,7 +24,7 @@ const card = (id: string, name: string, expressions: Record<string, string> = {}
   ({ id, card: { data: { name, extensions: { custom_expressions: expressions } } }, avatar_data_url: `data:${id}`, bound_lorebooks: [] }) as unknown as CharacterProfile;
 const ayu = card('ayu', 'Ayu');
 const sora = card('sora', 'Sora');
-const session: ChatSession = { id: 'chat', character_id: 'ayu', title: '', created_at: 0, updated_at: 0, author_note: '', author_note_depth: 0, message_count: 0, summary: '', summary_until: -1, members: ['sora'] };
+const session: ChatSession = { id: 'chat', character_id: 'ayu', title: '', created_at: 0, updated_at: 0, author_note: '', author_note_depth: 0, message_count: 0, summary: '', summary_until: -1, members: ['sora'], memory_branch: '' };
 const happy: EmotionResult = { emotion: 'joy', vrm_expression: 'happy', live2d_expression: 'joy_animation', confidence: 1, intensity: 0.8 };
 const initial = useAppStore.getState();
 let done: Parameters<typeof api.onLlmDone>[0];
@@ -82,7 +82,7 @@ describe('avatars in a group chat', () => {
   });
 
   it('offers no group options in a normal chat', async () => {
-    useAppStore.setState({ chatSessions: [{ ...session, members: [] }] });
+    useAppStore.setState({ chatSessions: [{ ...session, members: [], memory_branch: '' }] });
     await mount();
     expect(screen.queryByRole('button', { name: 'Show everyone' })).toBeNull();
     expect((await screen.findByTestId('avatar')).textContent).toBe('ayu');

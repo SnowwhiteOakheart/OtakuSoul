@@ -44,7 +44,7 @@ describe('deleting a chat message', () => {
 
 const session = (id: string): ChatSession => ({
   id, character_id: 'ayu', title: id, created_at: 0, updated_at: 0, author_note: '', author_note_depth: 2,
-  message_count: 1, summary: '', summary_until: -1, members: [],
+  message_count: 1, summary: '', summary_until: -1, members: [], memory_branch: '',
 });
 
 describe('deleting a chat', () => {

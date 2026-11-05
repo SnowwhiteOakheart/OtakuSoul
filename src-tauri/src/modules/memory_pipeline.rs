@@ -597,7 +597,7 @@ pub async fn execute_memory_pipeline(
         // Find most recent session for character
         let sessions = state
             .memory_db
-            .list_chat_sessions(char_id)
+            .list_chat_sessions(crate::modules::memory::base_character_id(char_id))
             .map_err(|e| e.to_string())?;
         if let Some(first) = sessions.first() {
             state
@@ -670,7 +670,10 @@ pub async fn execute_memory_pipeline(
     let content_lang = crate::modules::content_lang::ContentLang::current();
     let language = crate::modules::content_lang::ContentLang::reply_language_name();
     let router_sys = ROUTER_SYSTEM_PROMPT
-        .replace("{character}", char_id)
+        .replace(
+            "{character}",
+            crate::modules::memory::base_character_id(char_id),
+        )
         .replace("{user_name}", user_name)
         .replace("{language}", &language)
         .replace("{none}", &content_lang.none_marker());
@@ -987,7 +990,10 @@ pub async fn execute_memory_pipeline(
                 action.filename, action.action
             );
             let arch_sys = ARCHIVIST_SYSTEM_PROMPT
-                .replace("{character}", char_id)
+                .replace(
+                    "{character}",
+                    crate::modules::memory::base_character_id(char_id),
+                )
                 .replace("{filename}", &action.filename)
                 .replace("{summary}", &action.summary)
                 .replace("{action_type}", &action.action)
@@ -1064,7 +1070,10 @@ pub async fn execute_memory_pipeline(
     if req.include_diary.unwrap_or(true) {
         info!("[SoulMemory] Diary Agent für {} ausführen...", char_id);
         let diary_sys = DIARY_SYSTEM_PROMPT
-            .replace("{character}", char_id)
+            .replace(
+                "{character}",
+                crate::modules::memory::base_character_id(char_id),
+            )
             .replace("{user_name}", user_name)
             .replace("{language}", &language);
 
@@ -1498,7 +1507,10 @@ pub async fn propose_memory_cleanup(
             ChatMessage {
                 role: "system".to_string(),
                 content: CLEANUP_SYSTEM_PROMPT
-                    .replace("{character}", &req.character_id)
+                    .replace(
+                        "{character}",
+                        crate::modules::memory::base_character_id(&req.character_id),
+                    )
                     .replace("{language}", &language),
                 attachments: Vec::new(),
             },

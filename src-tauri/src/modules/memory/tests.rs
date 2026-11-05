@@ -799,7 +799,9 @@ fn branching_copies_the_history_up_to_a_message() {
     db.update_chat_summary(&chat.id, "Bisher: m0", i64::from(msgs[0].order_index))
         .unwrap();
 
-    let branch = db.branch_chat(&chat.id, &msgs[1].id, "Abzweig").unwrap();
+    let branch = db
+        .branch_chat(&chat.id, &msgs[1].id, "Abzweig", false)
+        .unwrap();
     assert_eq!(
         (
             branch.title.as_str(),
@@ -838,7 +840,9 @@ fn branching_copies_the_history_up_to_a_message() {
         i64::from(msgs[3].order_index),
     )
     .unwrap();
-    let early = db.branch_chat(&chat.id, &msgs[0].id, "Früh").unwrap();
+    let early = db
+        .branch_chat(&chat.id, &msgs[0].id, "Früh", false)
+        .unwrap();
     assert_eq!((early.summary.as_str(), early.summary_until), ("", -1));
 }
 
@@ -1128,7 +1132,7 @@ fn chat_style_is_stored_reset_and_kept_by_a_branch() {
     );
 
     let first = db.get_chat_messages(&chat.id).unwrap()[0].id.clone();
-    let branch = db.branch_chat(&chat.id, &first, "Abzweig").unwrap();
+    let branch = db.branch_chat(&chat.id, &first, "Abzweig", false).unwrap();
     assert_eq!(branch.style, Some(style));
 
     // Defaults are stored as "no style".
@@ -1209,7 +1213,7 @@ fn group_chats_keep_guests_and_speakers() {
     );
 
     // A branch keeps guests and speakers.
-    let branch = db.branch_chat(&chat.id, &reply.id, "Zweig").unwrap();
+    let branch = db.branch_chat(&chat.id, &reply.id, "Zweig", false).unwrap();
     assert_eq!(branch.members, ["sora"]);
     assert_eq!(
         db.get_chat_messages(&branch.id).unwrap()[2].speaker_id,
@@ -2147,4 +2151,163 @@ fn atlas_links_beliefs_to_the_experiences_that_fit_them() {
     assert_eq!(became.kind, "became");
     assert!(!became.inferred);
     assert_eq!(atlas.hidden_memories, 0);
+}
+
+#[test]
+fn a_branch_with_its_own_memory_starts_at_the_branch_point_and_lives_apart() {
+    let db = MemoryDb::new_in_memory().unwrap();
+    let chat = db.create_chat_session("ayu", "Chat").unwrap();
+    let m0 = db
+        .add_chat_message(&chat.id, "user", "Ich mag Gewitter", None, &[])
+        .unwrap();
+    let m1 = db
+        .add_chat_message(&chat.id, "assistant", "Wirklich?", None, &[])
+        .unwrap();
+    let m2 = db
+        .add_chat_message(&chat.id, "user", "Ich ziehe nach Kyoto", None, &[])
+        .unwrap();
+    let cid = chat.id.clone();
+    let early = vec![m0.id.clone()];
+    let storm = db
+        .add_episodic_memory_from(
+            "ayu",
+            "fact",
+            "Kai mag Gewitter",
+            3,
+            &MemorySource {
+                origin: "auto",
+                chat_id: Some(&cid),
+                message_ids: &early,
+            },
+        )
+        .unwrap();
+    let late = vec![m2.id.clone()];
+    db.add_episodic_memory_from(
+        "ayu",
+        "event",
+        "Kai zieht nach Kyoto",
+        4,
+        &MemorySource {
+            origin: "auto",
+            chat_id: Some(&cid),
+            message_ids: &late,
+        },
+    )
+    .unwrap();
+    let mut rel = db.get_or_create_relationship("ayu", "Kai").unwrap();
+    rel.trust_level = "Deeply Bound".into();
+    db.update_relationship("ayu", &rel).unwrap();
+
+    let branch = db
+        .branch_chat(&chat.id, &m1.id, "Was wäre wenn", true)
+        .unwrap();
+    assert!(!branch.memory_branch.is_empty());
+    let scoped = memory_id("ayu", &branch.memory_branch);
+    assert_eq!(base_character_id(&scoped), "ayu");
+
+    // Only what was learned up to the branch point, pointing at the copied messages.
+    let memories = db.get_all_episodic_memories(&scoped).unwrap();
+    assert_eq!(memories.len(), 1);
+    assert_eq!(memories[0].content, "Kai mag Gewitter");
+    assert_eq!(
+        memories[0].source_chat_id.as_deref(),
+        Some(branch.id.as_str())
+    );
+    let copied = db.get_chat_messages(&branch.id).unwrap();
+    assert_eq!(memories[0].source_message_ids, vec![copied[0].id.clone()]);
+    assert!(
+        db.search_episodic_memories(&scoped, "Gewitter", 5)
+            .unwrap()
+            .len()
+            == 1
+    );
+    assert_eq!(
+        db.get_memory_history(&scoped, memories[0].id)
+            .unwrap()
+            .len(),
+        1
+    );
+    assert_eq!(
+        db.get_or_create_relationship(&scoped, "Kai")
+            .unwrap()
+            .trust_level,
+        "Deeply Bound"
+    );
+
+    // Both lines live apart from now on.
+    db.forget_episodic_memory(&scoped, memories[0].id).unwrap();
+    assert_eq!(db.get_all_episodic_memories("ayu").unwrap().len(), 2);
+    assert!(
+        db.get_all_episodic_memories("ayu")
+            .unwrap()
+            .iter()
+            .any(|m| m.id == storm)
+    );
+
+    // A plain branch of the branch shares its memory; the branch's memory goes with its last chat.
+    let twig = db
+        .branch_chat(&branch.id, &copied[1].id, "Zweig vom Zweig", false)
+        .unwrap();
+    assert_eq!(twig.memory_branch, branch.memory_branch);
+    db.add_episodic_memory(&scoped, "fact", "Nur im Zweig", 3)
+        .unwrap();
+    db.delete_chat_session(&branch.id).unwrap();
+    assert_eq!(db.get_all_episodic_memories(&scoped).unwrap().len(), 1);
+    db.delete_chat_session(&twig.id).unwrap();
+    assert!(db.get_all_episodic_memories(&scoped).unwrap().is_empty());
+    assert!(
+        db.search_episodic_memories(&scoped, "Zweig", 5)
+            .unwrap()
+            .is_empty()
+    );
+    assert_eq!(db.get_all_episodic_memories("ayu").unwrap().len(), 2);
+}
+
+#[test]
+fn a_branch_reopens_plans_resolved_after_the_branch_point() {
+    let db = MemoryDb::new_in_memory().unwrap();
+    let chat = db.create_chat_session("ayu", "Chat").unwrap();
+    let m0 = db
+        .add_chat_message(&chat.id, "user", "Lass uns kochen", None, &[])
+        .unwrap();
+    let plan_id = db
+        .add_intention("ayu", "Kai", &plan("Zusammen kochen", "story", None))
+        .unwrap()
+        .unwrap();
+    // Plans are made by the reflection after the message; give the message a later time.
+    db.conn
+        .lock()
+        .execute(
+            "UPDATE chat_messages SET created_at = created_at + 10 WHERE id = ?1",
+            params![m0.id],
+        )
+        .unwrap();
+    db.conn
+        .lock()
+        .execute(
+            "UPDATE soul_intentions SET created_at = created_at - 10 WHERE id = ?1",
+            params![plan_id],
+        )
+        .unwrap();
+    db.set_intention_status("ayu", plan_id, "fulfilled")
+        .unwrap();
+    db.conn
+        .lock()
+        .execute(
+            "UPDATE soul_intentions SET resolved_at = resolved_at + 100 WHERE id = ?1",
+            params![plan_id],
+        )
+        .unwrap();
+
+    let branch = db.branch_chat(&chat.id, &m0.id, "Zweig", true).unwrap();
+    let scoped = memory_id("ayu", &branch.memory_branch);
+    let plans = db.get_intentions(&scoped, "Kai", true).unwrap();
+    assert_eq!(plans.len(), 1);
+    assert_eq!(plans[0].status, "pending");
+    assert_eq!(plans[0].memory_id, None);
+    // The main line keeps it fulfilled.
+    assert_eq!(
+        db.get_intentions("ayu", "Kai", true).unwrap()[0].status,
+        "fulfilled"
+    );
 }

@@ -20,7 +20,7 @@ const ayu = card('ayu', 'Ayu', 'Eine Fuchsdame.');
 const sora = card('sora', 'Sora', 'Ein Bogenschütze.');
 const msg = (id: string, role: StoredChatMessage['role'], content: string, speaker_id = ''): StoredChatMessage =>
   ({ id, chat_id: 'chat-1', role, content, thought: null, order_index: 0, swipe_index: 0, swipes: [{ content, thought: null }], created_at: 0, attachments: [], speaker_id });
-const session: ChatSession = { id: 'chat-1', character_id: 'ayu', title: 'Gruppe', created_at: 0, updated_at: 0, author_note: '', author_note_depth: 0, message_count: 2, summary: '', summary_until: -1, members: ['sora'] };
+const session: ChatSession = { id: 'chat-1', character_id: 'ayu', title: 'Gruppe', created_at: 0, updated_at: 0, author_note: '', author_note_depth: 0, message_count: 2, summary: '', summary_until: -1, members: ['sora'], memory_branch: '' };
 const prompt: ResolvedPrompt = { system: 'System', post_history: '', hits: NO_PROMPT_HITS };
 const done = { generation_id: 'g', full_text: 'Bin dabei.', full_thought: '', aborted: false };
 const history = [msg('a', 'assistant', 'Hallo!'), msg('u', 'user', 'Sora, kommst du mit?'), msg('s', 'assistant', 'Klar.', 'sora')];
@@ -73,7 +73,7 @@ describe('group chats', () => {
   });
 
   it('keeps a normal chat as it was', async () => {
-    useAppStore.setState({ chatSessions: [{ ...session, members: [] }] });
+    useAppStore.setState({ chatSessions: [{ ...session, members: [], memory_branch: '' }] });
     await useAppStore.getState().sendMessage('Hallo');
     expect(vi.mocked(resolvePromptWithLore).mock.calls[0]![4]).toBeUndefined();
     expect(api.getCognitiveOverview).not.toHaveBeenCalledWith('sora', expect.anything());

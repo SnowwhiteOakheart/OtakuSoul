@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { translate, useTranslation } from '../../i18n';
-import { confirmDialog, toast } from '../ui/feedback';
+import { toast, choiceDialog } from '../ui/feedback';
 import { errorMessage } from '../../utils/errors';
 import { PersonaAvatar } from '../characters/PersonaAvatar';
 import { RoleplayMessage } from './RoleplayMessage';
@@ -268,12 +268,13 @@ const ChatMessageItem = React.memo<ChatMessageItemProps>(
     const remove = () => void useAppStore.getState().deleteChatMessage(msg.id);
 
     const branch = async () => {
-      const confirmed = await confirmDialog({
+      const result = await choiceDialog({
         title: translate('confirm.branchTitle'),
         message: translate('confirm.branchText'),
         confirmLabel: translate('chat.branch'),
+        checkboxLabel: translate('confirm.branchOwnMemory'),
       });
-      if (confirmed) await useAppStore.getState().branchChatFrom(msg.id);
+      if (result.choice === 'confirm') await useAppStore.getState().branchChatFrom(msg.id, result.checked);
     };
 
     return (

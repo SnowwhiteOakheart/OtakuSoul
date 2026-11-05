@@ -471,7 +471,8 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
 - `<state>{…}</state>` am Antwortende aktualisiert HUD-Variablen (`utils/stateParser.ts`) und wird ausgeblendet.
 - Lange Chats: Sprung zu einer Nachricht über `chatSlice.requestChatJump` → `MessageList` (`jumpTo`, scrollt die
   virtualisierte Liste, Klasse `message-flash`). Lesezeichen in `chat_bookmarks` (per Join an Nachrichten gebunden),
-  „Ab hier neu“ = `branch_chat` (kopiert Verlauf, Varianten, Anhänge per `attachments::copy_to_chat`, Lesezeichen).
+  „Ab hier neu“ = `branch_chat` (kopiert Verlauf, Varianten, Anhänge per `attachments::copy_to_chat`, Lesezeichen;
+  mit `own_memory` ein Gedächtnis-Zweig, siehe Abschnitt 8).
 - Von selbst melden (`AppSettings.proactive`, Standard aus): `hooks/useProactiveMessages.ts` prüft 15 s nach dem Start,
   dann minütlich, nur den offenen Chat; Entscheidung rein in `utils/proactive.ts` (`proactiveReason`: Ruhezeit, Tageslimit
   über `proactive.sent`, stummgeschaltete Figuren, erst nach einer Nutzernachricht, nie zweimal ohne Antwort; fälliges
@@ -971,6 +972,20 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `proactive.sent` vermerkt (zählt fürs „nicht zweimal hintereinander“) und beachtet stummgeschaltete Figuren, aber
   nicht `proactive.enabled`/Ruhezeit (die Uhrzeit wählt der Nutzer selbst). Tagebuch-Reiter: Knöpfe schreiben den Tag
   bzw. den laufenden Monat neu (`replace`).
+- Gedächtnis-Zweige (C3, Migration v11, `memory/branches.rs`): `chat_sessions.memory_branch` ('' = gemeinsames
+  Gedächtnis). Gedächtnis-ID eines Zweigs = `<figur>@branch-<id>` (`memory_id`, `base_character_id`; Frontend
+  `memoryIdFor`/`memoryId` in `utils/groupChat.ts`). Alle Gedächtnistabellen sind über `character_id` geschlüsselt,
+  daher bleiben Abfragen unverändert – aber **jeder** Gedächtnis-Aufruf im Frontend muss die ID aus dem Chat ableiten,
+  für den er arbeitet (Drawer, Prompt, Reflexion, proaktiv, Tagebuch-Modus); Gäste eines Gruppen-Chats und die Stage
+  nutzen immer das gemeinsame Gedächtnis. Chatliste, `{character}` in Prompts und Snapshot-Ordner nehmen die Basis-ID.
+  `branch_chat(.., own_memory = true)` kopiert in derselben Transaktion (`copy_memory_scope_on`, generisch über
+  `PRAGMA table_info`): Psyche/Beziehung im heutigen Stand (keine Historie), Tagebuch/Heilungs-Log bis zum Zeitpunkt
+  der letzten kopierten Nachricht, Erinnerungen aus diesem Chat nur, wenn eine kopierte Nachricht Quelle ist (Quellen
+  auf den neuen Chat umgeschrieben), andere bis zum Zeitpunkt; später Abgelöstes wird wieder aktiv, später Erledigtes
+  wieder offen; `superseded_by`, `memory_id` und Historie werden auf neue IDs umgebogen. Ein normaler Zweig eines
+  Zweigs teilt dessen Gedächtnis. Löschen des letzten Chats eines Zweigs löscht dessen Gedächtnis
+  (`delete_memory_scope_on`, nie die Hauptlinie). Wechsel zwischen Hauptlinie und Zweig lädt die Übersicht neu
+  (`beginSessionLoad`).
 - Raw-Strings für Prompts: ein `"#` (z. B. `"#12"`) beendet `r#"…"#` – dann `r##"…"##` nehmen.
 - Router-JSON wird tolerant gelesen (`memory_pipeline::lenient`): lokale Modelle (Qwen 3.6, Mistral Nemo) schreiben
   Textfelder wie `known_attributes` als Liste, Listen als einzelnen Text, Zahlen/IDs als String (`"#27"`). Strenge

@@ -159,6 +159,11 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
   Windows-Rechner nicht eingerichtet).
 - [ ] **C3 · Zeitreise-Checkpoints:** Von einem Punkt der Beziehungs-Chronik aus einen neuen Zweig starten („Was wäre,
   wenn …?“) – mit eigenem Gedächtnisstand. Braucht Gedächtnis-Snapshots je Zweig; sinnvoll nach C2.
+  Umgesetzt (05.11.2026): „Ab hier neu“ bietet „Eigenes Gedächtnis (Was wäre, wenn …?)“, der Atlas „Zweig ab hier“
+  an jeder Erinnerung mit Quelle. Der Zweig startet mit dem Gedächtnis am Verzweigungspunkt (Erinnerungen, Tagebuch,
+  Vorhaben; Stimmung und Beziehung im Stand des Verzweigungstags) und lebt danach getrennt; der Drawer zeigt „Gedächtnis
+  dieses Zweigs“. **Noch offen:** E2E-Durchlauf mit Screenshots; Stimmung/Beziehung zum damaligen Zeitpunkt bräuchte
+  eine Historie dieser Werte.
 - [ ] **C4 · Abend-Reflexion und Monatsrückblick:** Optionaler Journaling-Modus; die Figur reflektiert den Tag, begleitet
   `habits`/`plans` und schreibt am Monatsende einen Rückblick. *Baut auf:* Tagebuch und proaktiven Nachrichten.
   Umgesetzt (05.11.2026): Einstellung „Abend-Reflexion und Monatsrückblick“ (aus bis zum Einschalten): ab einer

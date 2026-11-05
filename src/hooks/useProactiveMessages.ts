@@ -5,7 +5,7 @@ import { announceOnPet } from '../services/desktopPet';
 import { translate } from '../i18n';
 import { useAppStore } from '../store/useAppStore';
 import { toast } from '../components/ui/feedback';
-import { chatSpeakers, presentedAs } from '../utils/groupChat';
+import { chatSpeakers, memoryIdFor, presentedAs } from '../utils/groupChat';
 import { inQuietHours, otherChatCandidates, proactiveInstruction, proactiveReason, sentToday } from '../utils/proactive';
 
 /** First look shortly after the start (the chat is loaded by then), then once a minute. */
@@ -105,7 +105,7 @@ async function writeElsewhereIfDue(): Promise<boolean> {
     if (!mayWrite()) return false;
     const [messages, intentions] = await Promise.all([
       api.getChatMessages(session.id).catch(() => null),
-      api.getIntentions(session.character_id, userName, false).catch(() => []),
+      api.getIntentions(memoryIdFor(session.character_id, session), userName, false).catch(() => []),
     ]);
     if (!messages) continue;
     const reason = proactiveReason({ settings: useAppStore.getState().proactive, charId: session.character_id, chatId: session.id,
@@ -145,10 +145,12 @@ async function writeIfDue(startup: boolean, decided: () => void): Promise<boolea
   if (!activeCharacter || !activeChatId || state.isChatLoading || state.chatLoadError) return false;
 
   const userName = state.activePersona.name;
-  const intentions = await api.getIntentions(activeCharacter.id, userName, false).catch(() => []);
+  const session = state.chatSessions.find((s) => s.id === activeChatId);
+  // The open chat's memory (its own in a branch with its own memory).
+  const ownMemory = memoryIdFor(activeCharacter.id, session);
+  const intentions = await api.getIntentions(ownMemory, userName, false).catch(() => []);
   decided();
   // Guests of a group chat, as the instruction names them.
-  const session = state.chatSessions.find((s) => s.id === activeChatId);
   const guests = chatSpeakers(activeCharacter, session, state.availableCharacters)
     .filter((speaker) => speaker.id)
     .map((speaker) => ({ id: speaker.id, ...presentedAs(speaker.character, state.replyLanguage) }));
@@ -164,13 +166,13 @@ async function writeIfDue(startup: boolean, decided: () => void): Promise<boolea
   if (reason?.kind === 'offscreen') {
     // Older memories of both may colour what they did; none is fine too.
     const [own, theirs] = await Promise.all([
-      api.getDreamMemories(activeCharacter.id, 2).catch(() => null),
+      api.getDreamMemories(ownMemory, 2).catch(() => null),
       api.getDreamMemories(reason.guest.id, 1).catch(() => null),
     ]);
     reason = { ...reason, memories: [...(own ?? []), ...(theirs ?? [])].map((m) => m.content) };
   }
   if (reason?.kind === 'dream') {
-    const memories = (await api.getDreamMemories(activeCharacter.id, DREAM_MEMORIES).catch(() => null)) ?? [];
+    const memories = (await api.getDreamMemories(ownMemory, DREAM_MEMORIES).catch(() => null)) ?? [];
     // Nothing to dream of yet: an ordinary message after the pause instead.
     reason = memories.length > 0 ? { ...reason, memories: memories.map((m) => m.content) } : proactiveReason(input);
   }
@@ -190,14 +192,14 @@ async function writeIfDue(startup: boolean, decided: () => void): Promise<boolea
     const hostName = presentedAs(activeCharacter, state.replyLanguage).name;
     const source = { chatId: stored.chat_id, messageIds: [stored.id] };
     await Promise.all([
-      api.addEpisodicMemory(activeCharacter.id, 'event', translate('offscreen.memory', { name: reason.guest.name, text: told }), 3, source),
+      api.addEpisodicMemory(ownMemory, 'event', translate('offscreen.memory', { name: reason.guest.name, text: told }), 3, source),
       api.addEpisodicMemory(reason.guest.id, 'event', translate('offscreen.memory', { name: hostName, text: told }), 3, source),
     ]).catch((e) => console.warn('Off-screen memory failed:', e));
   }
   // The dream also goes into the character's diary.
   if (reason.kind === 'dream') {
     const title = translate('dreams.diaryTitle', { date: new Date().toLocaleDateString(state.appLanguage) });
-    await api.addDiaryEntry(activeCharacter.id, title, stored.content, 'dreamy').catch((e) => console.warn('Dream diary failed:', e));
+    await api.addDiaryEntry(ownMemory, title, stored.content, 'dreamy').catch((e) => console.warn('Dream diary failed:', e));
   }
 
   const name = presentedAs(activeCharacter, state.replyLanguage).name;

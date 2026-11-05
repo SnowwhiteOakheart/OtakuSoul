@@ -124,7 +124,8 @@ export const createCharacterSlice: SliceCreator<CharacterSlice> = (set, get) => 
     // read-aloud need it right away).
     const voice = get().loadVoiceConfigForCharacter(character.id);
     await get().loadChatSessions(character.id);
-    await get().fetchCognitiveOverview(character.id, get().activePersona.name);
+    // The memory of the opened chat (a branch may have its own).
+    await get().fetchCognitiveOverview();
     await voice;
   },
 

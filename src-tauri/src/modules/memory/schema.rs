@@ -15,6 +15,7 @@ pub(super) const MIGRATIONS: &[fn(&Connection) -> rusqlite::Result<()>] = &[
     migrate_v8_memory_versions,
     migrate_v9_memory_intentions,
     migrate_v10_journal,
+    migrate_v11_memory_branches,
 ];
 
 /// Brings the database to the latest schema, one transaction per step. A database written by a
@@ -432,6 +433,16 @@ pub(super) fn migrate_v10_journal(conn: &Connection) -> rusqlite::Result<()> {
     add_column_if_missing(conn, "soul_diary", "period", "TEXT NOT NULL DEFAULT ''")?;
     conn.execute_batch(
         "CREATE INDEX IF NOT EXISTS idx_diary_journal ON soul_diary(character_id, kind, period);",
+    )
+}
+
+/// v11: a chat branched off with its own memory names its branch (`''` = the shared memory).
+pub(super) fn migrate_v11_memory_branches(conn: &Connection) -> rusqlite::Result<()> {
+    add_column_if_missing(
+        conn,
+        "chat_sessions",
+        "memory_branch",
+        "TEXT NOT NULL DEFAULT ''",
     )
 }
 

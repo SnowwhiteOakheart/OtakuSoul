@@ -25,7 +25,7 @@ const withoutPending = (overview: CognitiveOverview): CognitiveOverview =>
     : { ...overview, recent_memories: overview.recent_memories.filter((m) => !pendingForgets.has(m.id)) };
 import { trackTask } from './taskSlice';
 import { llmTarget } from '../helpers';
-import { chatSpeakers, memoryCharacter, presentedAs } from '../../utils/groupChat';
+import { chatSpeakers, memoryId, memoryIdFor, presentedAs } from '../../utils/groupChat';
 
 /** Cognitive soul memory: psychology, relationship, diary, reflection and memory backups. */
 export interface MemorySlice {
@@ -88,7 +88,7 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
   let backupsRequest = 0;
   let markdownRequest = 0;
   /** Whose memory the drawer shows: a guest of the open group chat, else the active character. */
-  const memoryCid = () => memoryCharacter(get())?.id;
+  const memoryCid = () => memoryId(get());
   const refreshContext = async (cid: string, userName: string) => {
     const isCurrent = () => memoryCid() === cid && get().activePersona.name === userName;
     if (!isCurrent()) return;
@@ -305,11 +305,13 @@ export const createMemorySlice: SliceCreator<MemorySlice> = (set, get) => {
       if (!activeCharacter) throw new Error(translate('int.noCharacter'));
       if (get().isReflecting || get().memoryOperation) throw new Error(translate('memory.busy'));
       // In a group chat a guest learns from the same chat into their own memory.
-      const cid = characterId ?? activeCharacter.id;
-      const learner = cid === activeCharacter.id ? activeCharacter : get().availableCharacters.find((c) => c.id === cid);
+      const learnerId = characterId ?? activeCharacter.id;
+      const learner = learnerId === activeCharacter.id ? activeCharacter : get().availableCharacters.find((c) => c.id === learnerId);
       if (!learner) throw new Error(translate('int.noCharacter'));
       const userName = activePersona.name;
       const session = get().chatSessions.find((s) => s.id === activeChatId);
+      // A branch with its own memory learns into that memory.
+      const cid = memoryIdFor(learnerId, session);
       const speakers = chatSpeakers(activeCharacter, session, get().availableCharacters);
       const speakerNames = speakers.length > 1
         ? Object.fromEntries(speakers.map((s) => [s.id, presentedAs(s.character, get().replyLanguage).name]))

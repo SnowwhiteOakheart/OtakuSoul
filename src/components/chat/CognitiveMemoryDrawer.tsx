@@ -3,7 +3,7 @@ import { readDraft, writeDraft } from '../../utils/drafts';
 import { createPortal } from 'react-dom';
 import type { PsychologyState, RelationshipState } from '../../types';
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
-import { chatSpeakers, memoryCharacter, presentedAs } from '../../utils/groupChat';
+import { BRANCH_MARK, chatSpeakers, memoryCharacter, memoryId, presentedAs } from '../../utils/groupChat';
 import { Brain, X, Heart, RefreshCw, BookHeart, Clock, Sparkles, Bookmark, FileCode, RotateCcw, Sliders, CalendarClock, Network } from 'lucide-react';
 import { translate, useTranslation } from '../../i18n';
 import { toast } from '../ui/feedback';
@@ -72,6 +72,8 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
   const { t } = useTranslation();
   // In a group chat the drawer can show a guest's memory; it starts with the chat's own character.
   const shown = useAppStore(memoryCharacter);
+  // A chat branched off with its own memory shows that memory.
+  const inBranch = useAppStore((state) => memoryId(state)?.includes(BRANCH_MARK) ?? false);
   const setMemoryCharacter = useAppStore((s) => s.setMemoryCharacter);
   const memoryCharacterId = useAppStore((s) => s.memoryCharacterId);
   const { chatSessions, activeChatId, availableCharacters, replyLanguage } = useStoreFields(
@@ -144,6 +146,12 @@ export const CognitiveMemoryDrawer: React.FC<CognitiveMemoryDrawerProps> = ({
                 <span className="text-xs px-2 py-0.5 rounded-full bg-accent-900/50 text-accent-300 font-normal border border-accent-500/30">
                   {charName}
                 </span>
+                {inBranch && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-900/50 text-emerald-200 font-normal border border-emerald-500/30"
+                    title={t('memory.branchHint')} data-memory-branch>
+                    {t('memory.branchBadge')}
+                  </span>
+                )}
               </h2>
               <p className="text-xs text-slate-400">{t('memory.subtitle')}</p>
               {speakers.length > 1 && (

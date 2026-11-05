@@ -104,6 +104,7 @@ impl MemoryDb {
             summary_until: -1,
             style: None,
             members: Vec::new(),
+            memory_branch: String::new(),
         })
     }
 
@@ -196,7 +197,7 @@ impl MemoryDb {
         let mut stmt = conn.prepare(
             "SELECT s.id, s.character_id, s.title, s.created_at, s.updated_at, s.author_note, s.author_note_depth,
                     (SELECT COUNT(*) FROM chat_messages m WHERE m.chat_id = s.id) AS msg_count,
-                    s.summary, s.summary_until, s.style_json, s.members_json
+                    s.summary, s.summary_until, s.style_json, s.members_json, s.memory_branch
              FROM chat_sessions s
              WHERE s.character_id = ?1
              ORDER BY s.updated_at DESC",
@@ -217,6 +218,7 @@ impl MemoryDb {
                 summary_until: row.get(9)?,
                 style: parse_style(&row.get::<_, String>(10)?),
                 members: serde_json::from_str(&row.get::<_, String>(11)?).unwrap_or_default(),
+                memory_branch: row.get(12)?,
             })
         })?;
 
@@ -232,7 +234,7 @@ impl MemoryDb {
         let mut stmt = conn.prepare(
             "SELECT s.id, s.character_id, s.title, s.created_at, s.updated_at, s.author_note, s.author_note_depth,
                     (SELECT COUNT(*) FROM chat_messages m WHERE m.chat_id = s.id) AS msg_count,
-                    s.summary, s.summary_until, s.style_json, s.members_json
+                    s.summary, s.summary_until, s.style_json, s.members_json, s.memory_branch
              FROM chat_sessions s
              WHERE s.id = ?1",
         )?;
@@ -253,6 +255,7 @@ impl MemoryDb {
                 summary_until: row.get(9)?,
                 style: parse_style(&row.get::<_, String>(10)?),
                 members: serde_json::from_str(&row.get::<_, String>(11)?).unwrap_or_default(),
+                memory_branch: row.get(12)?,
             }))
         } else {
             Ok(None)
@@ -261,6 +264,27 @@ impl MemoryDb {
 
     pub fn delete_chat_session(&self, chat_id: &str) -> Result<(), rusqlite::Error> {
         let conn = self.conn.lock();
+        // The last chat of a memory branch takes the branch's memory with it.
+        let branch: Option<(String, String)> = conn
+            .query_row(
+                "SELECT character_id, memory_branch FROM chat_sessions WHERE id = ?1",
+                params![chat_id],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .optional()?;
+        if let Some((character_id, branch)) = branch.filter(|(_, b)| !b.is_empty()) {
+            let others: i64 = conn.query_row(
+                "SELECT COUNT(*) FROM chat_sessions WHERE character_id = ?1 AND memory_branch = ?2 AND id != ?3",
+                params![character_id, branch, chat_id],
+                |row| row.get(0),
+            )?;
+            if others == 0 {
+                Self::delete_memory_scope_on(
+                    &conn,
+                    &super::branches::memory_id(&character_id, &branch),
+                )?;
+            }
+        }
         conn.execute(
             "DELETE FROM chat_messages WHERE chat_id = ?1",
             params![chat_id],
@@ -319,21 +343,28 @@ impl MemoryDb {
 
     /// Continues a chat as a new one: copies the history up to and including `message_id`
     /// (variants, attachments, bookmarks) and the author's note; the running summary only
-    /// when it covers nothing after that point. The character's Soul Memory stays shared.
+    /// when it covers nothing after that point. The new chat stays with the memory of its
+    /// source (shared or its branch); with `own_memory` it gets a branch of its own that starts
+    /// as that memory at the branch point (`branches.rs`).
     pub fn branch_chat(
         &self,
         chat_id: &str,
         message_id: &str,
         title: &str,
+        own_memory: bool,
     ) -> Result<ChatSession, rusqlite::Error> {
         let new_id = {
             let conn = self.conn.lock();
             let tx = conn.unchecked_transaction()?;
-            let (character_id, author_note, depth, summary, summary_until): (String, String, i64, String, i64) = tx.query_row(
-                "SELECT character_id, author_note, author_note_depth, summary, summary_until FROM chat_sessions WHERE id = ?1",
+            type Source = (String, String, i64, String, i64, String);
+            let (character_id, author_note, depth, summary, summary_until, source_branch): Source = tx.query_row(
+                "SELECT character_id, author_note, author_note_depth, summary, summary_until, memory_branch FROM chat_sessions WHERE id = ?1",
                 params![chat_id],
-                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?)),
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?, row.get(5)?)),
             )?;
+            let mut copied: std::collections::HashMap<String, String> =
+                std::collections::HashMap::new();
+            let mut cut_at: u64 = 0;
             let up_to: i64 = tx.query_row(
                 "SELECT order_index FROM chat_messages WHERE id = ?1 AND chat_id = ?2",
                 params![message_id, chat_id],
@@ -401,6 +432,8 @@ impl MemoryDb {
             ) in rows.into_iter().enumerate()
             {
                 let id = format!("msg_{}_{:08x}_{index}", now, rand::random::<u32>());
+                copied.insert(old_id.clone(), id.clone());
+                cut_at = cut_at.max(created_at);
                 let attachments: Vec<crate::modules::attachments::Attachment> =
                     serde_json::from_str(&attachments_json).unwrap_or_default();
                 let attachments: Vec<_> = attachments
@@ -431,6 +464,28 @@ impl MemoryDb {
                     )?;
                 }
             }
+            let branch = if own_memory {
+                let branch = format!("{:08x}", rand::random::<u32>());
+                let cut = super::branches::BranchCut {
+                    at: cut_at,
+                    source_chat: chat_id,
+                    new_chat: &new_id,
+                    messages: &copied,
+                };
+                Self::copy_memory_scope_on(
+                    &tx,
+                    &super::branches::memory_id(&character_id, &source_branch),
+                    &super::branches::memory_id(&character_id, &branch),
+                    &cut,
+                )?;
+                branch
+            } else {
+                source_branch
+            };
+            tx.execute(
+                "UPDATE chat_sessions SET memory_branch = ?1 WHERE id = ?2",
+                params![branch, new_id],
+            )?;
             tx.commit()?;
             new_id
         };

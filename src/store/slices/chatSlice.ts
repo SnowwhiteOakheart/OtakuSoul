@@ -33,7 +33,7 @@ import { isRepeat } from '../../utils/repetition';
 import { applyReplacements, applyScripts, forPrompt } from '../../utils/replyFilters';
 import { STAGE_NARRATOR_VOICE_ID, forgetNarratorVoice } from '../../services/narratorVoice';
 import { loadCharacterVoiceConfig } from '../../services/characterVoice';
-import { GROUP_MAX_REPLIES, chatSpeakers, groupHistory, memoryCharacter, presentedAs } from '../../utils/groupChat';
+import { GROUP_MAX_REPLIES, chatSpeakers, groupHistory, memoryCharacter, memoryId, memoryIdFor, presentedAs } from '../../utils/groupChat';
 
 type GenerationFailure = {
   chatId: string;
@@ -54,7 +54,8 @@ export interface ChatSlice {
   bookmarkedMessageIds: string[];
   toggleBookmark: (messageId: string) => Promise<void>;
   /** Continues the open chat as a new one from `messageId` and opens it. */
-  branchChatFrom: (messageId: string) => Promise<void>;
+  /** Continues the chat from `messageId` in a new one; `ownMemory` gives it a memory branch of its own. */
+  branchChatFrom: (messageId: string, ownMemory?: boolean, chatId?: string) => Promise<void>;
   replyLanguage: string;
   setReplyLanguage: (lang: string) => void;
   messages: ChatMessage[];
@@ -311,7 +312,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     const showsHost = memoryCharacter(state)?.id === state.activeCharacter?.id;
     const cognitive = self.id === '' && showsHost
       ? state.cognitiveOverview
-      : await waitWithAbort(() => api.getCognitiveOverview(self.character.id, state.activePersona.name).catch(() => null), signal);
+      : await waitWithAbort(() => api.getCognitiveOverview(memoryIdFor(self.character.id, session), state.activePersona.name).catch(() => null), signal);
     const speaker: PromptSpeaker = {
       character: self.character,
       cognitive,
@@ -430,6 +431,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
   };
   const beginSessionLoad = (chatId: string | null) => {
     const request = ++sessionRequest;
+    const memoryBefore = memoryId(get());
     streamingTts.cancel();
     if (get().isGenerating && get().generationChatId) {
       void get().abortGeneration().catch((error) => console.warn('Navigation abort failed:', error));
@@ -437,6 +439,8 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
     // "Auto" belongs to the chat it was switched on in.
     set({ activeChatId: chatId, storedMessages: [], messages: [], contextUsage: null, generationSpeakerId: '', speakerEmotions: {}, groupAutoTalk: false,
       generationId: null, generationFailure: null, streamingText: '', streamingThought: '', isChatLoading: true, chatLoadError: null });
+    // Main line and a branch with its own memory differ in mood, memories and plans.
+    if (memoryId(get()) !== memoryBefore) void get().fetchCognitiveOverview().catch(() => undefined);
     return request;
   };
   /**
@@ -656,7 +660,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
       const userName = state.activePersona.name;
       const speakers = chatSpeakers(character, session, state.availableCharacters);
       const nameOf = (id: string) => presentedAs((speakers.find((s) => s.id === id) ?? speakers[0]!).character, state.replyLanguage).name;
-      const cognitive = await waitWithAbort(() => api.getCognitiveOverview(charId, userName).catch(() => null), signal);
+      const cognitive = await waitWithAbort(() => api.getCognitiveOverview(memoryIdFor(charId, session), userName).catch(() => null), signal);
       const group = speakers.length > 1;
       const flat = group ? groupHistory(history, '', nameOf, userName) : history.map(toFlat);
       const speaker: PromptSpeaker | undefined = group
@@ -754,18 +758,19 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
 
   bookmarkedMessageIds: [],
 
-  branchChatFrom: async (messageId) => {
-    const chatId = get().activeChatId;
+  branchChatFrom: async (messageId, ownMemory = false, fromChat) => {
+    const chatId = fromChat ?? get().activeChatId;
     const char = get().activeCharacter;
     if (!chatId || !char) return;
     const original = get().chatSessions.find((s) => s.id === chatId)?.title ?? translate('chat.newChatTitle');
     try {
-      const branch = await api.branchChat(chatId, messageId, translate('chat.branchTitle', { title: original }));
+      const branch = await api.branchChat(chatId, messageId,
+        translate(ownMemory ? 'chat.whatIfTitle' : 'chat.branchTitle', { title: original }), ownMemory);
       const sessions = await api.listChatSessions(char.id);
       if (get().activeCharacter?.id !== char.id) return;
       set({ chatSessions: visibleSessions(sessions) });
       await get().switchChatSession(branch.id);
-      toast.success(translate('chat.branched', { title: branch.title }));
+      toast.success(translate(ownMemory ? 'chat.branchedOwnMemory' : 'chat.branched', { title: branch.title }));
     } catch (e) {
       reportFailure('Failed to branch chat:', e);
     }
@@ -1405,7 +1410,7 @@ export const createChatSlice: SliceCreator<ChatSlice> = (set, get) => {
 
       // Naturally apply emotional decay tick & refresh soul overview
       if (activeCharacter?.id) {
-        api.applyEmotionalDecay(activeCharacter.id)
+        api.applyEmotionalDecay(memoryIdFor(activeCharacter.id, get().chatSessions.find((s) => s.id === get().activeChatId)))
           .then(() => { if (get().activeCharacter?.id === activeCharacter.id) return get().fetchCognitiveOverview(); })
           .catch((err) => console.warn('Decay tick error:', err));
       }

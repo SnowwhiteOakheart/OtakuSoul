@@ -22,7 +22,7 @@ import type { StoredChatMessage } from '../types';
 
 // The expression follows the reply on screen, not only a freshly generated one.
 const ayu = { id: 'ayu', card: { data: { name: 'Ayu', extensions: {} } }, bound_lorebooks: [] } as unknown as CharacterProfile;
-const session: ChatSession = { id: 'chat', character_id: 'ayu', title: '', created_at: 0, updated_at: 0, author_note: '', author_note_depth: 0, message_count: 0, summary: '', summary_until: -1, members: [] };
+const session: ChatSession = { id: 'chat', character_id: 'ayu', title: '', created_at: 0, updated_at: 0, author_note: '', author_note_depth: 0, message_count: 0, summary: '', summary_until: -1, members: [], memory_branch: '' };
 const emotion = (portrait: string): EmotionResult =>
   ({ emotion: 'embarrassment', vrm_expression: 'sad', live2d_expression: 'embarrassment_animation', confidence: 1, intensity: 0.8, portrait });
 const reply = (content: string, swipe_index = 0) =>

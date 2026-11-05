@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAppStore, useStoreFields } from '../../../store/useAppStore';
 import { api } from '../../../services/api';
-import { memoryCharacter } from '../../../utils/groupChat';
+import { memoryId } from '../../../utils/groupChat';
 import type { EpisodicMemory } from '../../../types';
 import { translate, useTranslation } from '../../../i18n';
 import { toast } from '../../ui/feedback';
@@ -28,7 +28,7 @@ export const MemoriesTab = () => {
   const [newMemContent, setNewMemContent] = useState('');
   const [newMemSignificance, setNewMemSignificance] = useState(3);
   const [isSaving, setIsSaving] = useState(false);
-  const characterId = useAppStore((state) => memoryCharacter(state)?.id);
+  const characterId = useAppStore(memoryId);
   const [showSuperseded, setShowSuperseded] = useState(false);
   const [search, setSearch] = useState('');
   // The answer belongs to one query; an older one is not shown for newer text.

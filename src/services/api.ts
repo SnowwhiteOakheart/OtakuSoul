@@ -1539,8 +1539,8 @@ export const api = {
   },
 
   /** New chat with the history up to and including `messageId`. */
-  branchChat: async (chatId: string, messageId: string, title: string): Promise<ChatSession> => {
-    return await invoke<ChatSession>('branch_chat', { chatId, messageId, title });
+  branchChat: async (chatId: string, messageId: string, title: string, ownMemory = false): Promise<ChatSession> => {
+    return await invoke<ChatSession>('branch_chat', { chatId, messageId, title, ownMemory });
   },
 
   listChatBookmarks: async (chatId: string): Promise<string[]> => {

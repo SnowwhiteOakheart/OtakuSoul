@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Check, CalendarClock, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { api } from '../../../services/api';
 import { useAppStore } from '../../../store/useAppStore';
-import { memoryCharacter } from '../../../utils/groupChat';
+import { memoryId } from '../../../utils/groupChat';
 import { translate, useTranslation, type TranslationKey } from '../../../i18n';
 import { toast } from '../../ui/feedback';
 import { errorMessage } from '../../../utils/errors';
@@ -110,7 +110,7 @@ const IntentionForm = ({ initial, busy, onSubmit, onCancel, submitLabel }: {
  */
 export const IntentionsTab = () => {
   const { t } = useTranslation();
-  const characterId = useAppStore((state) => memoryCharacter(state)?.id);
+  const characterId = useAppStore(memoryId);
   const userName = useAppStore((state) => state.activePersona.name);
   const overview = useAppStore((state) => state.cognitiveOverview);
   const [result, setResult] = useState<{ key: string; entries: IntentionEntry[]; error: string | null; at: number } | null>(null);
