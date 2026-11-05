@@ -15,6 +15,7 @@ import { isPetWindow } from './services/desktopPet';
 import { useTranslation } from './i18n';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { FeedbackHost } from './components/ui/feedback';
+import { TextContextMenu } from './components/ui/TextContextMenu';
 import { CommandPalette } from './components/CommandPalette';
 import { ViewSkeleton } from './components/ui';
 import './App.css';
@@ -90,6 +91,7 @@ export function App() {
         {!onboardingCompleted && <FirstRunWizard />}
       </Suspense>
       <FeedbackHost />
+      <TextContextMenu />
       <CommandPalette
         open={isCommandPaletteOpen}
         onOpen={() => setIsCommandPaletteOpen(true)}

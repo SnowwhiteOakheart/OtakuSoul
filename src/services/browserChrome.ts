@@ -2,6 +2,15 @@
 // (Back, Reload, Print, Inspect …) and, in release builds, the browser shortcuts
 // for reloading, printing, finding, viewing source and opening the inspector.
 // The inspector itself only exists in debug builds (no `devtools` feature in Cargo.toml).
+// Selected text gets the app's own copy menu instead (`TextContextMenu`).
+
+/** Event asking `TextContextMenu` to open at the pointer with the selected text. */
+export const TEXT_MENU_EVENT = 'otakusoul-text-menu';
+export interface TextMenuRequest {
+  x: number;
+  y: number;
+  text: string;
+}
 
 /** Text fields keep their native menu: cut, copy, paste and spell check. */
 function isEditable(target: EventTarget | null): boolean {
@@ -29,7 +38,12 @@ function isBrowserShortcut(e: KeyboardEvent): boolean {
 export function installBrowserChromeGuards(): void {
   // Bubble phase on window: React's own onContextMenu handlers (desktop pet menu) run first.
   window.addEventListener('contextmenu', (e) => {
-    if (!isEditable(e.target)) e.preventDefault();
+    if (e.defaultPrevented || isEditable(e.target)) return;
+    e.preventDefault();
+    const text = window.getSelection()?.toString() ?? '';
+    if (!text.trim()) return;
+    const detail: TextMenuRequest = { x: e.clientX, y: e.clientY, text };
+    window.dispatchEvent(new CustomEvent(TEXT_MENU_EVENT, { detail }));
   });
   // During development, reload and the inspector stay available.
   if (import.meta.env.DEV) return;
