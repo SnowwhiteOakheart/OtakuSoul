@@ -1150,6 +1150,8 @@ pub async fn execute_memory_pipeline(
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_secs())
             .unwrap_or(0),
+        kind: String::new(),
+        period: String::new(),
     });
 
     Ok(SoulMemoryPipelineResult {

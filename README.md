@@ -132,6 +132,7 @@ The story gallery shows ready-made adventures with genre, playing time and diffi
 * **Replies you don't like?** Generate a new one (swipe), edit it or continue from any message as a new chat.
 * **Group chats:** invite more characters into a chat – each keeps their own memory and voice. Choose who answers next or let them talk in rounds.
 * **Writes on their own:** If you like, the character writes to you after a pause or follows up when a plan is due ("How did your job interview go?"), and in the morning tells you about a dream woven from your memories – in a group chat instead what they did with a guest meanwhile – with quiet time, a daily limit and a notification; single characters can be muted.
+* **Journaling mode:** if you like, the character reflects on your day in their diary every evening (with your habits and plans in mind), sends a short good-night message and writes a review at the end of each month.
 * **Help with writing:** *What could I say?* suggests replies, *Write for me* drafts your next message, notes in ((double brackets)) steer the AI, the reply length can be set per chat and unwanted words and phrases filtered out.
 * **Long chats** stay fast: the local model keeps its conversation memory compact (q8_0 KV cache, about twice the context in the same graphics memory), older parts are dropped in larger steps so the already processed prompt can be reused, and they are summarised automatically so the character never loses the thread.
 

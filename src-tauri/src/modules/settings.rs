@@ -136,6 +136,33 @@ impl Default for ProactiveSettings {
     }
 }
 
+/// Journaling mode (opt-in, uses the AI unasked): in the evening the character reflects on the
+/// day in their diary and may send a short good-night message; at the start of a month they
+/// write a review of the last one.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
+#[serde(default)]
+#[ts(export)]
+pub struct JournalSettings {
+    pub enabled: bool,
+    /// Local hour from which the evening reflection is written (until midnight).
+    pub evening_hour: u8,
+    /// After the reflection the character writes a short message in the open chat.
+    pub check_in: bool,
+    /// A review of the past month at the start of a new one.
+    pub monthly: bool,
+}
+
+impl Default for JournalSettings {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            evening_hour: 21,
+            check_in: true,
+            monthly: true,
+        }
+    }
+}
+
 /// One message a character wrote on their own.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, TS)]
 #[serde(default)]
@@ -236,6 +263,9 @@ pub struct AppSettings {
     /// The character writes on their own (opt-in).
     #[serde(default)]
     pub proactive: ProactiveSettings,
+    /// Evening reflection and monthly review (opt-in).
+    #[serde(default)]
+    pub journal: JournalSettings,
     /// Buttons above the chat input.
     #[serde(default)]
     pub quick_replies: Vec<QuickReply>,
@@ -339,6 +369,7 @@ impl Default for AppSettings {
             reply_replacements: Vec::new(),
             prompt_template: Default::default(),
             proactive: ProactiveSettings::default(),
+            journal: JournalSettings::default(),
             quick_replies: Vec::new(),
             model_profiles: Default::default(),
         }

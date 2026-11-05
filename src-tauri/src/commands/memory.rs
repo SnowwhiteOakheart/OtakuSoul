@@ -473,6 +473,8 @@ pub async fn generate_manual_diary_entry(
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_secs())
             .unwrap_or(0),
+        kind: String::new(),
+        period: String::new(),
     })
 }
 
@@ -513,6 +515,16 @@ pub fn restore_memory_backup(
         ));
     };
     state.memory_db.restore_memory_backup(&resolved)
+}
+
+/// Evening reflection or monthly review in the diary, once per period (journaling mode).
+#[tauri::command]
+pub async fn write_journal_entry(
+    state: State<'_, AppState>,
+    req: crate::modules::journal::JournalRequest,
+) -> Result<crate::modules::journal::JournalOutcome, String> {
+    crate::modules::journal::write_journal_entry(&state.memory_db, &state.inference_client, req)
+        .await
 }
 
 /// The memory as a graph of beliefs and the experiences that shaped them (memory drawer).

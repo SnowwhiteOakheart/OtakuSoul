@@ -660,26 +660,117 @@ impl MemoryDb {
         char_id: &str,
         limit: usize,
     ) -> Result<Vec<DiaryEntry>, rusqlite::Error> {
+        self.get_diary_entries_between(char_id, 0, u64::MAX, limit)
+    }
+
+    /// Diary entries written in `from..to` (UNIX seconds), newest first.
+    pub fn get_diary_entries_between(
+        &self,
+        char_id: &str,
+        from: u64,
+        to: u64,
+        limit: usize,
+    ) -> Result<Vec<DiaryEntry>, rusqlite::Error> {
         let conn = self.conn.lock();
         let mut stmt = conn.prepare(
-            "SELECT id, title, entry_text, mood, created_at FROM soul_diary WHERE character_id = ?1 ORDER BY created_at DESC, id DESC LIMIT ?2",
+            "SELECT id, title, entry_text, mood, created_at, kind, period FROM soul_diary
+             WHERE character_id = ?1 AND created_at >= ?2 AND created_at < ?3
+             ORDER BY created_at DESC, id DESC LIMIT ?4",
         )?;
+        let rows = stmt.query_map(
+            params![
+                char_id,
+                from as i64,
+                to.min(i64::MAX as u64) as i64,
+                limit as i64
+            ],
+            |row| {
+                Ok(DiaryEntry {
+                    id: row.get(0)?,
+                    title: row.get(1)?,
+                    entry_text: row.get(2)?,
+                    mood: row.get(3)?,
+                    created_at: row.get(4)?,
+                    kind: row.get(5)?,
+                    period: row.get(6)?,
+                })
+            },
+        )?;
+        rows.collect()
+    }
 
-        let rows = stmt.query_map(params![char_id, limit as i64], |row| {
-            Ok(DiaryEntry {
-                id: row.get(0)?,
-                title: row.get(1)?,
-                entry_text: row.get(2)?,
-                mood: row.get(3)?,
-                created_at: row.get(4)?,
-            })
-        })?;
+    /// Whether a journal entry of `kind` for `period` exists.
+    pub fn journal_entry_exists(
+        &self,
+        char_id: &str,
+        kind: &str,
+        period: &str,
+    ) -> Result<bool, rusqlite::Error> {
+        let conn = self.conn.lock();
+        conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM soul_diary WHERE character_id = ?1 AND kind = ?2 AND period = ?3)",
+            params![char_id, kind, period],
+            |row| row.get(0),
+        )
+    }
 
-        let mut entries = Vec::new();
-        for r in rows {
-            entries.push(r?);
-        }
-        Ok(entries)
+    /// Writes a journal entry; an older one of the same kind and period is replaced.
+    pub fn add_journal_entry(
+        &self,
+        char_id: &str,
+        title: &str,
+        entry_text: &str,
+        mood: &str,
+        kind: &str,
+        period: &str,
+    ) -> Result<DiaryEntry, rusqlite::Error> {
+        let conn = self.conn.lock();
+        let tx = conn.unchecked_transaction()?;
+        tx.execute(
+            "DELETE FROM soul_diary WHERE character_id = ?1 AND kind = ?2 AND period = ?3",
+            params![char_id, kind, period],
+        )?;
+        let id = Self::add_diary_entry_on(&tx, char_id, title, entry_text, mood)?;
+        tx.execute(
+            "UPDATE soul_diary SET kind = ?1, period = ?2 WHERE id = ?3",
+            params![kind, period, id],
+        )?;
+        tx.commit()?;
+        Ok(DiaryEntry {
+            id,
+            title: title.trim().to_string(),
+            entry_text: entry_text.trim().to_string(),
+            mood: mood.to_string(),
+            created_at: current_timestamp(),
+            kind: kind.to_string(),
+            period: period.to_string(),
+        })
+    }
+
+    /// Active memories learned in `from..to`, most significant first.
+    pub fn get_memories_between(
+        &self,
+        char_id: &str,
+        from: u64,
+        to: u64,
+        limit: usize,
+    ) -> Result<Vec<EpisodicMemory>, rusqlite::Error> {
+        let conn = self.conn.lock();
+        let mut stmt = conn.prepare(&format!(
+            "SELECT {EPISODIC_COLUMNS} FROM soul_episodic_memory
+             WHERE character_id = ?1 AND superseded_at IS NULL AND created_at >= ?2 AND created_at < ?3
+             ORDER BY significance DESC, created_at ASC LIMIT ?4"
+        ))?;
+        let rows = stmt.query_map(
+            params![
+                char_id,
+                from as i64,
+                to.min(i64::MAX as u64) as i64,
+                limit as i64
+            ],
+            episodic_from_row,
+        )?;
+        rows.collect()
     }
 
     /// Writes everything one memory reflection decided, in one transaction: a failure leaves

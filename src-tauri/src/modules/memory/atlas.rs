@@ -173,7 +173,7 @@ impl MemoryDb {
 
         let diary: Vec<DiaryEntry> = conn
             .prepare(
-                "SELECT id, title, entry_text, mood, created_at FROM soul_diary
+                "SELECT id, title, entry_text, mood, created_at, kind, period FROM soul_diary
                  WHERE character_id = ?1 ORDER BY created_at DESC, id DESC LIMIT ?2",
             )?
             .query_map(params![char_id, ATLAS_MAX_DIARY as i64], |row| {
@@ -183,6 +183,8 @@ impl MemoryDb {
                     entry_text: row.get(2)?,
                     mood: row.get(3)?,
                     created_at: row.get(4)?,
+                    kind: row.get(5)?,
+                    period: row.get(6)?,
                 })
             })?
             .collect::<Result<_, _>>()?;

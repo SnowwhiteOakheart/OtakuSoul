@@ -960,6 +960,17 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `superseded_by` (`replaced`). Erschlossene Kanten (`inferred`, gestrichelt) über `search_episodic_memories_on` mit
   Nachfilter auf gemeinsame Suchwörter (`query_terms`; ab 4 Wörtern mindestens 2 Treffer). Ohne Modellaufruf, schreibt
   nichts. Zeitachse nach Rang (je Punkt ein Schritt), Überzeugungen über dem Mittel ihrer Erlebnisse.
+- Tagebuch-Modus (Migration v10, `modules/journal.rs`, `write_journal_entry`, Hook `useJournal.ts`, Einstellungen
+  `AppSettings.journal`/`JournalSettings.tsx`): `soul_diary.kind` `evening`/`monthly` ('' = normal) und `period`
+  (`2026-11-05`/`2026-10`, lokale Zeit) – je Figur, Art und Zeitraum höchstens ein Eintrag (`add_journal_entry`
+  ersetzt; Snapshot-Wiederherstellung ebenso). Status `exists`/`empty` kommen ohne Modellaufruf zurück; `empty`
+  (heute noch kein Nutzer-Beitrag bzw. Monat ohne Spuren) wird beim nächsten Blick (5 min) erneut gefragt, Fehler erst
+  nach 30 min. Nur für die Figur des offenen Chats; der Abend liest alle Chats der Figur im Zeitraum
+  (`chat_character_id`, ohne Zweig-Suffix), dazu offene/erledigte Vorhaben und Gewohnheiten. Titel kommen übersetzt
+  aus dem Frontend, `period_label` englisch für den Prompt. Die Gute-Nacht-Nachricht läuft über `writeOnOwn`, wird in
+  `proactive.sent` vermerkt (zählt fürs „nicht zweimal hintereinander“) und beachtet stummgeschaltete Figuren, aber
+  nicht `proactive.enabled`/Ruhezeit (die Uhrzeit wählt der Nutzer selbst). Tagebuch-Reiter: Knöpfe schreiben den Tag
+  bzw. den laufenden Monat neu (`replace`).
 - Raw-Strings für Prompts: ein `"#` (z. B. `"#12"`) beendet `r#"…"#` – dann `r##"…"##` nehmen.
 - Router-JSON wird tolerant gelesen (`memory_pipeline::lenient`): lokale Modelle (Qwen 3.6, Mistral Nemo) schreiben
   Textfelder wie `known_attributes` als Liste, Listen als einzelnen Text, Zahlen/IDs als String (`"#27"`). Strenge

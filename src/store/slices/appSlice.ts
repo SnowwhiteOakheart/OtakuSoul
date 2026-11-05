@@ -17,6 +17,8 @@ import { errorMessage } from '../../utils/errors';
 import { SHIPPED_LANGUAGES, forgetLocales, loadLocale, loadOptions, type SupportedLanguage } from '../../i18n/registry';
 import type { UiLanguage } from '../../types/generated/UiLanguage';
 import type { ProactiveSettings } from '../../types/generated/ProactiveSettings';
+import type { JournalSettings } from '../../types/generated/JournalSettings';
+import { JOURNAL_DEFAULTS } from '../../utils/journal';
 import type { ProactiveSent } from '../../types/generated/ProactiveSent';
 import type { QuickReply } from '../../types/generated/QuickReply';
 import { PROACTIVE_DEFAULTS, PROACTIVE_SENT_KEPT } from '../../utils/proactive';
@@ -80,6 +82,9 @@ export interface AppSlice {
   /** The chat character writes on their own after a pause or when a plan is due (opt-in). */
   proactive: ProactiveSettings;
   setProactive: (patch: Partial<ProactiveSettings>) => void;
+  /** Evening reflection and monthly review in the diary (opt-in). */
+  journal: JournalSettings;
+  setJournal: (patch: Partial<JournalSettings>) => void;
   /** Whether `charId` may write on their own (and the switch per character). */
   setProactiveMuted: (charId: string, muted: boolean) => void;
   /** Notes a message the character wrote on their own (keeps the latest few). */
@@ -224,6 +229,7 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         replyReplacements: settings.reply_replacements ?? [],
         chatTools: settings.chat_tools === true,
         proactive: { ...PROACTIVE_DEFAULTS, ...settings.proactive },
+        journal: { ...JOURNAL_DEFAULTS, ...settings.journal },
         quickReplies: settings.quick_replies ?? [],
         modelProfiles: settings.model_profiles ?? {},
         trayHintShown: settings.tray_hint_shown === true,
@@ -356,6 +362,7 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         reply_replacements: state.replyReplacements,
         chat_tools: state.chatTools,
         proactive: state.proactive,
+        journal: state.journal,
         quick_replies: state.quickReplies,
         tray_hint_shown: state.trayHintShown,
         stage_last_scene: state.stageLastScene,
@@ -499,6 +506,13 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
   },
 
   proactive: PROACTIVE_DEFAULTS,
+
+  journal: JOURNAL_DEFAULTS,
+
+  setJournal: (patch) => {
+    set({ journal: { ...get().journal, ...patch } });
+    get().saveCurrentSettings();
+  },
 
   setProactive: (patch) => {
     set({ proactive: { ...get().proactive, ...patch } });

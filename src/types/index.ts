@@ -8,6 +8,9 @@ export interface StageNpcPromotion { scene: SceneState; character: CharacterProf
 // `cargo test`); the rest are still hand-written and checked against Rust in wireCheck.ts.
 import type { AppPaths } from './generated/AppPaths';
 import type { ProactiveSettings } from './generated/ProactiveSettings';
+import type { JournalSettings } from './generated/JournalSettings';
+import type { JournalRequest } from './generated/JournalRequest';
+import type { JournalOutcome } from './generated/JournalOutcome';
 import type { QuickReply } from './generated/QuickReply';
 import type { RuntimeVariant } from './generated/RuntimeVariant';
 import type { RuntimeProgress } from './generated/RuntimeProgress';
@@ -221,6 +224,9 @@ export type {
   IntentionEntry,
   IntentionDraft,
   MemoryAtlas,
+  JournalSettings,
+  JournalRequest,
+  JournalOutcome,
   AtlasNode,
   AtlasEdge,
   CleanupGroup,
@@ -951,6 +957,8 @@ export interface AppSettings {
   prompt_template?: PromptTemplate;
   /** The chat character writes on their own (opt-in). */
   proactive?: ProactiveSettings;
+  /** Evening reflection and monthly review (opt-in). */
+  journal?: JournalSettings;
   /** Buttons above the chat input. */
   quick_replies?: QuickReply[];
   /** Server and sampler settings per local model, by file name. */

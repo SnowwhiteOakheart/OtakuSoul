@@ -161,6 +161,11 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
   wenn …?“) – mit eigenem Gedächtnisstand. Braucht Gedächtnis-Snapshots je Zweig; sinnvoll nach C2.
 - [ ] **C4 · Abend-Reflexion und Monatsrückblick:** Optionaler Journaling-Modus; die Figur reflektiert den Tag, begleitet
   `habits`/`plans` und schreibt am Monatsende einen Rückblick. *Baut auf:* Tagebuch und proaktiven Nachrichten.
+  Umgesetzt (05.11.2026): Einstellung „Abend-Reflexion und Monatsrückblick“ (aus bis zum Einschalten): ab einer
+  wählbaren Uhrzeit schreibt die Figur des offenen Chats einmal am Tag über euren Tag ins Tagebuch (mit Gewohnheiten und
+  Vorhaben), optional mit Gute-Nacht-Nachricht und Erinnerung an Vorhaben für morgen; zu Monatsbeginn ein Rückblick auf
+  den letzten Monat. Im Tagebuch-Reiter von Hand auslösbar. **Noch offen:** E2E-Durchlauf mit Mock-LLM und
+  Screenshots, Klang der Texte mit echten Modellen.
 - [ ] **C5 · Fokus-/Pomodoro-Modus:** Fokus-Timer, bei dem der Avatar mitarbeitet, Pausen ankündigt und erledigte
   Aufgaben feiert (inspiriert von *Spirit City: Lofi Sessions*).
 - [ ] **C6 · Mehrere Pets:** Bei Gruppenchats mehrere Figuren gleichzeitig, die sich anschauen und nacheinander sprechen

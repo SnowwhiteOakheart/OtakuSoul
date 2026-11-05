@@ -14,6 +14,7 @@ pub(super) const MIGRATIONS: &[fn(&Connection) -> rusqlite::Result<()>] = &[
     migrate_v7_memory_fts,
     migrate_v8_memory_versions,
     migrate_v9_memory_intentions,
+    migrate_v10_journal,
 ];
 
 /// Brings the database to the latest schema, one transaction per step. A database written by a
@@ -412,6 +413,25 @@ pub(super) fn migrate_v9_memory_intentions(conn: &Connection) -> rusqlite::Resul
         );
         CREATE INDEX IF NOT EXISTS idx_intentions_char_status
             ON soul_intentions(character_id, user_name, status);",
+    )
+}
+
+/// v10: journal entries in the diary. `kind` is `evening` or `monthly` ('' = an ordinary entry),
+/// `period` the day (`2026-11-05`) or month (`2026-10`) it looks back on; one per kind and period.
+pub(super) fn migrate_v10_journal(conn: &Connection) -> rusqlite::Result<()> {
+    // Very old partial databases may lack the diary; the baseline is not run again for them.
+    let has_diary: bool = conn.query_row(
+        "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'soul_diary')",
+        [],
+        |row| row.get(0),
+    )?;
+    if !has_diary {
+        return Ok(());
+    }
+    add_column_if_missing(conn, "soul_diary", "kind", "TEXT NOT NULL DEFAULT ''")?;
+    add_column_if_missing(conn, "soul_diary", "period", "TEXT NOT NULL DEFAULT ''")?;
+    conn.execute_batch(
+        "CREATE INDEX IF NOT EXISTS idx_diary_journal ON soul_diary(character_id, kind, period);",
     )
 }
 

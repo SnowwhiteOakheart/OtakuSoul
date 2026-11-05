@@ -14,6 +14,7 @@ import { toast } from '../../ui/feedback';
 import { Toggle } from '../../ui/Toggle';
 import { NsfwSettings } from '../NsfwSettings';
 import { ProactiveSettings } from '../ProactiveSettings';
+import { JournalSettings } from '../JournalSettings';
 import { errorMessage } from '../../../utils/errors';
 import { APP_THEMES } from '../themes';
 import {
@@ -360,6 +361,8 @@ export const GeneralSettings = () => {
 
       {/* 4. System-Diagnose & Updates */}
       <ProactiveSettings />
+
+      <JournalSettings />
 
       <NsfwSettings />
 

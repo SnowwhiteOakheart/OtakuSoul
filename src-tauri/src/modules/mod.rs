@@ -26,6 +26,7 @@ pub mod image_generator;
 pub mod image_loras;
 pub mod inference;
 pub mod inochi2d;
+pub mod journal;
 pub mod kokoro;
 #[cfg(target_os = "linux")]
 pub mod kwin_bridge;

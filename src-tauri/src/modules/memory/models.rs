@@ -134,6 +134,12 @@ pub struct DiaryEntry {
     pub entry_text: String,
     pub mood: String,
     pub created_at: u64,
+    /// `evening` (reflection on a day), `monthly` (review of a month) or empty.
+    #[serde(default)]
+    pub kind: String,
+    /// The day or month a journal entry looks back on.
+    #[serde(default)]
+    pub period: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]

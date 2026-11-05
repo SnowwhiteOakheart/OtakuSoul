@@ -166,8 +166,23 @@ impl MemoryDb {
             .map_err(|e| e.to_string())?;
 
         for d in &snapshot.diary_entries {
-            Self::add_diary_entry_on(&tx, char_id, &d.title, &d.entry_text, &d.mood)
+            // A journal entry stays one per period: the restored one replaces today's.
+            if !d.kind.is_empty() {
+                tx.execute(
+                    "DELETE FROM soul_diary WHERE character_id = ?1 AND kind = ?2 AND period = ?3",
+                    params![char_id, d.kind, d.period],
+                )
                 .map_err(|e| e.to_string())?;
+            }
+            let id = Self::add_diary_entry_on(&tx, char_id, &d.title, &d.entry_text, &d.mood)
+                .map_err(|e| e.to_string())?;
+            if !d.kind.is_empty() {
+                tx.execute(
+                    "UPDATE soul_diary SET kind = ?1, period = ?2 WHERE id = ?3",
+                    params![d.kind, d.period, id],
+                )
+                .map_err(|e| e.to_string())?;
+            }
         }
 
         for h in &snapshot.healing_logs {

@@ -4,7 +4,9 @@ import { memoryCharacter } from '../../../utils/groupChat';
 import { translate, useTranslation } from '../../../i18n';
 import { toast } from '../../ui/feedback';
 import { errorMessage } from '../../../utils/errors';
-import { BookHeart, Sparkles } from 'lucide-react';
+import { BookHeart, CalendarDays, Moon, Sparkles } from 'lucide-react';
+import { writeJournal } from '../../../hooks/useJournal';
+import { dayPeriod, monthPeriod } from '../../../utils/journal';
 
 export const DiaryTab = () => {
   const { t } = useTranslation();
@@ -21,6 +23,25 @@ export const DiaryTab = () => {
   const [newDiaryMood, setNewDiaryMood] = useState('Reflective');
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [journalBusy, setJournalBusy] = useState<'evening' | 'monthly' | null>(null);
+  // Written by hand only for the open chat's character (the journal reads its chats).
+  const journalAvailable = !!shown && shown.id === activeCharacter?.id;
+
+  /** Writes (or rewrites) today's reflection or this month's review so far. */
+  const handleJournal = async (kind: 'evening' | 'monthly') => {
+    if (journalBusy) return;
+    setJournalBusy(kind);
+    try {
+      const now = new Date();
+      const outcome = await writeJournal(kind === 'evening' ? dayPeriod(now) : monthPeriod(now, 0), true);
+      if (outcome?.status === 'written') toast.success(translate('memory.diaryGenerated'));
+      else if (outcome?.status === 'empty') toast.info(translate(kind === 'evening' ? 'journal.nothingToday' : 'journal.nothingThisMonth'));
+    } catch (error) {
+      toast.error(translate('memory.saveFailed', { error: errorMessage(error) }));
+    } finally {
+      setJournalBusy(null);
+    }
+  };
 
   const handleAddDiary = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,6 +87,20 @@ export const DiaryTab = () => {
             {t('memory.generateDiary')}
           </button>
         </div>
+        {journalAvailable && (
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => void handleJournal('evening')} disabled={!!journalBusy}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs disabled:opacity-50">
+              <Moon className="w-3.5 h-3.5" />
+              {journalBusy === 'evening' ? t('memory.loading') : t('journal.writeEvening')}
+            </button>
+            <button type="button" onClick={() => void handleJournal('monthly')} disabled={!!journalBusy}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs disabled:opacity-50">
+              <CalendarDays className="w-3.5 h-3.5" />
+              {journalBusy === 'monthly' ? t('memory.loading') : t('journal.writeMonthly')}
+            </button>
+          </div>
+        )}
 
         <form
           onSubmit={handleAddDiary}
@@ -122,7 +157,11 @@ export const DiaryTab = () => {
               className="p-3.5 rounded-xl bg-slate-800/30 border border-slate-700/60 space-y-1.5"
             >
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-bold text-slate-200">{entry.title}</h4>
+                <h4 className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                  {entry.kind === 'evening' && <Moon className="w-3.5 h-3.5 text-sky-300" aria-label={t('journal.kindEvening')} />}
+                  {entry.kind === 'monthly' && <CalendarDays className="w-3.5 h-3.5 text-amber-300" aria-label={t('journal.kindMonthly')} />}
+                  {entry.title}
+                </h4>
                 <span className="text-[11px] px-2 py-0.5 rounded-full bg-accent2-900/40 text-accent2-300 border border-accent2-500/30">
                   {entry.mood}
                 </span>

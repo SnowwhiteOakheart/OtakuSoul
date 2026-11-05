@@ -8,6 +8,7 @@ import { useTabHistory } from './hooks/useTabHistory';
 import { useCloseToTray } from './hooks/useCloseToTray';
 import { useSyncUpdateCheck } from './hooks/useSyncUpdateCheck';
 import { useProactiveMessages } from './hooks/useProactiveMessages';
+import { useJournal } from './hooks/useJournal';
 import { useDesktopPetBridge } from './hooks/useDesktopPetBridge';
 import { useOverlayBridge } from './hooks/useOverlayBridge';
 import { isPetWindow } from './services/desktopPet';
@@ -45,6 +46,7 @@ export function App() {
   useTabHistory(!isPet);
   useCloseToTray(!isPet);
   useProactiveMessages(!isPet);
+  useJournal(!isPet);
   useDesktopPetBridge(!isPet);
   useOverlayBridge(!isPet);
   useSyncUpdateCheck(!isPet && onboardingCompleted);
