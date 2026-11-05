@@ -22,7 +22,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest"><img alt="Version" src="https://img.shields.io/badge/OtakuSoul-v0.7.2-8b5cf6?style=for-the-badge&logo=sparkles&logoColor=white" /></a>
+  <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest"><img alt="Version" src="https://img.shields.io/badge/OtakuSoul-v0.7.5-8b5cf6?style=for-the-badge&logo=sparkles&logoColor=white" /></a>
   <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/SnowwhiteOakheart/OtakuSoul/total?style=for-the-badge&logo=github" /></a>
   <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/SnowwhiteOakheart/OtakuSoul?style=for-the-badge&logo=github" /></a>
   <a href="https://github.com/SnowwhiteOakheart/OtakuSoul/network/members"><img alt="Forks" src="https://img.shields.io/github/forks/SnowwhiteOakheart/OtakuSoul?style=for-the-badge&logo=github" /></a>
@@ -69,10 +69,10 @@ Get the latest version from the **[Releases page](https://github.com/SnowwhiteOa
 
 | System | File | How to start |
 |---|---|---|
-| 🪟 **Windows 10 / 11** | `OtakuSoul_0.7.2_x64-setup.exe` | Double-click and follow the installer. |
-| 🐧 **Linux** (any distribution) | `OtakuSoul_0.7.2_amd64.AppImage` | Make it executable (`chmod +x`) and start it. |
-| 🐧 **Debian / Ubuntu** | `OtakuSoul_0.7.2_amd64.deb` | `sudo apt install ./OtakuSoul_0.7.2_amd64.deb` |
-| 🍏 **macOS** (Apple Silicon) | `OtakuSoul_0.7.2_aarch64.dmg` | Drag OtakuSoul into *Applications*. The app is not notarised: on first start right-click → *Open* (or run `xattr -dr com.apple.quarantine /Applications/OtakuSoul.app`). |
+| 🪟 **Windows 10 / 11** | `OtakuSoul_0.7.5_x64-setup.exe` | Double-click and follow the installer. |
+| 🐧 **Linux** (any distribution) | `OtakuSoul_0.7.5_amd64.AppImage` | Make it executable (`chmod +x`) and start it. |
+| 🐧 **Debian / Ubuntu** | `OtakuSoul_0.7.5_amd64.deb` | `sudo apt install ./OtakuSoul_0.7.5_amd64.deb` |
+| 🍏 **macOS** (Apple Silicon) | `OtakuSoul_0.7.5_aarch64.dmg` | Drag OtakuSoul into *Applications*. The app is not notarised: on first start right-click → *Open* (or run `xattr -dr com.apple.quarantine /Applications/OtakuSoul.app`). |
 
 OtakuSoul updates itself: when a new version is out, a button appears in the title bar.
 
@@ -130,6 +130,7 @@ The story gallery shows ready-made adventures with genre, playing time and diffi
 * The **picture changes with the emotion** of the reply – up to **15 emotion pictures** per character: six moods plus blushing, teasing, fear, disgust, crying and four romance pictures (most Hub characters bring the full set). The AI picks the expression itself; the portrait breathes gently and moves while speaking – and as a **speaking portrait** (Talking Head Anime 3 on the CPU, with no graphics card load) even a single still image moves its mouth in sync with speech, blinks and shows moods. Alternatively a **3D avatar** (VRM, MMD, glTF from games with downloadable motion packs, VRoid Hub models after signing in), **Live2D** or a free **Inochi2D** puppet (.inp/.inx) with lip sync and its own animations. Sample models of every kind are included, and more wait in the Hub under **Avatars**. All models live in **Library → Avatars**: look at them, adjust parameters and framing, rename them and give them to characters with a tick.
 * **Affection, energy, mood:** the bar at the top shows how the character feels – the AI updates it itself.
 * **Replies you don't like?** Generate a new one (swipe), edit it or continue from any message as a new chat.
+* **Pats & pokes:** tap the avatar in the chat – a tap on the head is a headpat, anywhere else a poke, and the character reacts with a moment of embarrassment or surprise.
 * **Group chats:** invite more characters into a chat – each keeps their own memory and voice. Choose who answers next or let them talk in rounds.
 * **Writes on their own:** If you like, the character writes to you after a pause or follows up when a plan is due ("How did your job interview go?"), and in the morning tells you about a dream woven from your memories – in a group chat instead what they did with a guest meanwhile – with quiet time, a daily limit and a notification; single characters can be muted.
 * **Journaling mode:** if you like, the character reflects on your day in their diary every evening (with your habits and plans in mind), sends a short good-night message and writes a review at the end of each month.
@@ -158,13 +159,15 @@ A rules engine based on the SRD 5.1 decides every roll, hit and enemy move – t
 ### 🧠 Memory, voice and more
 
 * **Characters remember you:** after a conversation the memory is updated – beliefs, mood, your relationship, topics and a diary in the first person. For every reply the character recalls the memories that fit the conversation; outdated ones are replaced instead of stored twice (and can be restored). **Plans and promises** (“I'll call you tomorrow”) are kept with a due date and come up again when they are due. *Tidy up memory* merges overlapping entries after you confirm. Every memory shows where it came from and can be corrected, pinned or forgotten. The **relationship atlas** draws the memory as a map: which experiences shaped which beliefs, next to diary and plans on a time axis.
-* **Voices & voice calls:** speech output and recognition run locally (Qwen3-TTS, Chatterbox, Kokoro, TADA) or via Edge-TTS/ElevenLabs. During a **voice call** you can **cut in** at any time – speech output and generation stop immediately, your sentence seamlessly becomes the next turn, and the stored reply is trimmed to what you actually heard. *“Speak once”* checks microphone level, recognition and the character's voice in a single pass. **Clone a voice** from a short recording – the dialog suggests the best clip; only with the speaker's consent. If you like, a **narrator voice** reads the *actions* while the character speaks their own words – like an audio drama.
+* **Voices & voice calls:** speech output and recognition run locally (Qwen3-TTS, Chatterbox, Kokoro, TADA) or via Edge-TTS/ElevenLabs. During a **voice call** you can **cut in** at any time – speech output and generation stop immediately, your sentence seamlessly becomes the next turn, and the stored reply is trimmed to what you actually heard. *“Speak once”* checks microphone level, recognition and the character's voice in a single pass. **Clone a voice** from a short recording – the dialog suggests the best clip; only with the speaker's consent. If you like, a **narrator voice** reads the *actions* while the character speaks their own words – like an audio drama. A small AI (Silero VAD) recognises real speech: keyboard, breathing and noise no longer interrupt the character.
 * **Voices with character:** Qwen3-TTS 1.7B speaks in a chosen style and with feeling – whispering, sad, excited – to suit the reply. A card can describe its voice (tone, age, pace), and VoiceDesign turns such descriptions into several designed voices.
 * **Pictures:** generate scene pictures locally with stable-diffusion.cpp (SD 1.5 to FLUX.2). The character looks like their portrait, and on request sends you a **selfie** in the chat.
 * **Models, adapters & speed test:** downloads run over 8 connections at once and continue after an interruption, even after a restart; split GGUF files and the matching vision file come along. Every model keeps its own settings, can use **adapters (LoRA)** for storytelling style or uncensored roleplay, and can be measured and compared right on your PC with *“Test the speed”*.
 * **Desktop pet & companion:** your character lives freely on your desktop as a **3D avatar, Live2D model, Inochi2D puppet or speaking portrait** (clicks on empty space pass through, smooth resize via `Ctrl + mouse wheel`, soft shadow under the feet). They walk with gravity across multiple monitors, can be dragged and thrown, and on Windows as well as KDE Plasma (Wayland) stand, sit, climb and jump onto window edges or ride along on them. Hormones and time of day shape their behaviour (quieter voice at night if you like, power saving on battery, pause in fullscreen, nodding to the beat of music). They react to headpats, high-fives and holding hands, come to your cursor on *“Come here”*, show replies sentence by sentence in sync with the voice in a speech bubble, and include a quick-chat box right on the pet (*“Say something …”*). Toggle via the tray or a freely assignable shortcut (`Ctrl+Alt+Shift+P`); as a companion they can search the web, read the clipboard or control music – every sensitive action needs your confirmation.
 * **Your language:** German, English, Russian and Japanese are included. More interface languages come from the Hub or as a JSON file you import in the settings – no new app version needed.
 * **On your phone:** chat from your phone or tablet in the same Wi-Fi via QR code.
+* **Share & export:** save Stage acts and chats as a standalone **HTML page** or **EPUB** book, Stage acts also as a **webtoon** (an image column with speech bubbles, mood portraits and scene pictures). Submit your own characters and stories to the Hub right from the app – checked, packed and with a pre-filled submission.
+* **Stream with OBS:** a browser source shows your character's portrait, speech bubble and mood live in your stream (*Integrations*).
 
 <p align="center">
   <img src="docs/assets/screenshots/en/help-glossary.png" alt="Help with glossary" width="48%" />

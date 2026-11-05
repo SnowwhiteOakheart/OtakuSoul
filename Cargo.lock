@@ -4114,7 +4114,7 @@ dependencies = [
 
 [[package]]
 name = "otakusoul"
-version = "0.7.2"
+version = "0.7.5"
 dependencies = [
  "arboard",
  "ash",
