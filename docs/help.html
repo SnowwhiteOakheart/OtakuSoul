@@ -8,19 +8,22 @@
   <title>Help &amp; setup · OtakuSoul</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="site.css">
+  <link rel="alternate" hreflang="de" href="de/help.html">
+  <link rel="alternate" hreflang="en" href="help.html?lang=en">
+  <script src="site-language.js"></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header">
   <nav class="wrap nav" aria-label="Main navigation">
     <a class="brand" href="./"><img src="favicon.svg" width="28" height="28" alt="">OtakuSoul</a>
-    <div class="nav-links"><a href="./#features">Features</a><a href="help.html" aria-current="page">Help</a><a class="nav-cta" href="./#download">Download</a></div>
+    <div class="nav-links"><a href="./#features">Features</a><a href="help.html" aria-current="page">Help</a><a class="nav-cta" href="./#download">Download</a><a href="de/help.html?lang=de" hreflang="de" lang="de">Deutsch</a></div>
   </nav>
 </header>
 <main id="main">
   <header class="help-heading"><div class="wrap"><p class="eyebrow">OTAKUSOUL / HELP CENTER</p><h1>From install to<br><em>your first adventure.</em></h1><p class="lead">Set up an AI model, meet your first character and learn where to look when you get stuck.</p></div></header>
   <div class="wrap help-layout">
-    <aside><nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#install">Install</a><a href="#choose-ai">Choose local or cloud AI</a><a href="#first-chat">Start a chat or story</a><a href="#voice-images">Voice and images</a><a href="#troubleshooting">Troubleshooting</a><a href="#more-help">More help</a></nav></aside>
+    <aside><nav class="toc" aria-label="On this page"><strong>On this page</strong><a href="#install">Install</a><a href="#choose-ai">Choose local or cloud AI</a><a href="#first-chat">Start a chat or story</a><a href="#hub">Add content from the Hub</a><a href="#voice-images">Voice and images</a><a href="#troubleshooting">Troubleshooting</a><a href="#more-help">More help</a></nav></aside>
     <div class="help-body">
       <section id="install">
         <p class="eyebrow">01 / INSTALL</p><h2>Get the installer for your system</h2>
@@ -33,7 +36,7 @@
       </section>
       <section id="choose-ai">
         <p class="eyebrow">02 / FIRST LAUNCH</p><h2>Choose how the AI runs</h2>
-        <p>The setup assistant asks for your language and theme, then lets you select local or cloud AI. You can switch later from <strong>Home → Change AI</strong>.</p>
+        <p>The setup assistant lets you choose English, German, Russian or Japanese for the app interface. After picking a theme, select local or cloud AI. You can switch models later from <strong>Home → Change AI</strong>.</p>
         <div class="choice-grid">
           <article><h3>Local AI</h3><p>Chat processing stays on your device. Choose the setup assistant’s recommendation for your PC and download a model that fits. You can start with chat and add voice or image models later.</p><p>Model downloads can take several gigabytes. If memory is tight, pick a smaller model or enable one capability at a time.</p></article>
           <article><h3>Cloud AI</h3><p>A provider runs the model. Choose one in the assistant, connect your account or paste its API key, and test the connection. This is an option for laptops without a dedicated GPU.</p><p>Your provider processes the requests and sets its own usage limits and pricing.</p></article>
@@ -48,6 +51,13 @@
           <li><strong>Start a story.</strong> Open <strong>Stage</strong>, pick an adventure from the story gallery and select <strong>Start story</strong>. Choose what to say, do or think. You can also whisper to a companion or give the game master a direction.</li>
         </ol>
         <p class="note"><strong>Try this.</strong> Open a message’s menu and choose <strong>Remember this message</strong> to save a detail for future chats.</p>
+        <h3 id="hub">Add content from the Hub</h3>
+        <ol class="steps">
+          <li>Open <strong>Hub</strong> in OtakuSoul and browse the curated characters, stories and scenes, avatars or world lorebooks.</li>
+          <li>Choose an item and use its download or import action. To get a story and its related content together, open a collection and choose <strong>Install everything</strong>.</li>
+          <li>Find added stories in <strong>Stage</strong> and downloaded models in <strong>Library → Avatars</strong>. If an avatar offers <strong>Get it on its page</strong>, download it from the creator’s page and import it in the avatar library.</li>
+        </ol>
+        <p>The curated catalog is available on GitHub. <a href="https://github.com/SnowwhiteOakheart/otakusoul-data">Browse otakusoul-data</a></p>
       </section>
       <section id="voice-images">
         <p class="eyebrow">04 / CUSTOMIZE</p><h2>Speak, listen and illustrate</h2>
