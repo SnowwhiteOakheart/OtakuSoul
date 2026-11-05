@@ -322,6 +322,11 @@ pub struct SceneTurnMessage {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub bg: Option<String>,
+    /// Scene pictures made from the story up to this line (names in the Stage backgrounds); the
+    /// webtoon shows them as panels of their own after it.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[ts(as = "Option<Vec<String>>", optional)]
+    pub images: Vec<String>,
 }
 
 pub(super) fn default_turn_mode() -> String {

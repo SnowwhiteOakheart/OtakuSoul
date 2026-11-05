@@ -6,4 +6,9 @@ export type SceneTurnMessage = { id: string, sender_id: string, sender_name: str
  * The background on screen when the line was said (`SceneState::current_bg`); missing in
  * lines from before it was recorded. The webtoon export follows the places with it.
  */
-bg?: string, };
+bg?: string, 
+/**
+ * Scene pictures made from the story up to this line (names in the Stage backgrounds); the
+ * webtoon shows them as panels of their own after it.
+ */
+images?: Array<string>, };

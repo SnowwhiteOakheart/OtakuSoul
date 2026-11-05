@@ -15,6 +15,9 @@ export const WEBTOON_PAGE_HEIGHT = 12_000;
 const GUTTER = 28;
 const MARGIN = 24;
 const PANEL_MIN = 380;
+/** A scene picture keeps its proportions within these heights. */
+const PICTURE_MIN = 260;
+const PICTURE_MAX = 1100;
 const RADIUS = 18;
 const FONT = '"Segoe UI", "Noto Sans", "Noto Sans CJK JP", "Hiragino Sans", system-ui, sans-serif';
 const COLORS = {
@@ -118,6 +121,13 @@ const PAD = 18;
 /** Height of a bubble's tail below it. */
 const TAIL = 44;
 
+/** A scene picture on its own: full width, its own proportions, no text. */
+function layoutPicture(panel: WebtoonPanel, picture: HTMLImageElement): Layout {
+  const w = WEBTOON_WIDTH - 2 * MARGIN;
+  const height = Math.round(Math.min(PICTURE_MAX, Math.max(PICTURE_MIN, (w * picture.height) / picture.width)));
+  return { panel, lines: [], height, font: '', bubbleWidth: 0 };
+}
+
 function layoutPanel(ctx: Ctx, panel: WebtoonPanel, hasPortrait: boolean): Layout {
   const narrator = panel.voice === 'narrator' || panel.voice === 'system';
   const italic = panel.mode === 'think' || panel.mode === 'do';
@@ -172,6 +182,19 @@ function drawPanel(
   const { panel, lines, height, font, bubbleWidth } = layout;
   const x = MARGIN;
   const w = WEBTOON_WIDTH - 2 * MARGIN;
+
+  if (panel.voice === 'picture') {
+    ctx.save();
+    roundRect(ctx, x, y, w, height, RADIUS);
+    ctx.clip();
+    if (bg) drawCover(ctx, bg, x, y, w, height);
+    ctx.restore();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = COLORS.panelBorder;
+    roundRect(ctx, x, y, w, height, RADIUS);
+    ctx.stroke();
+    return;
+  }
 
   // The frame with the place behind the line.
   ctx.save();
@@ -283,9 +306,14 @@ export async function renderWebtoon(script: WebtoonScript, labels: WebtoonLabels
   const images = await Promise.all(script.images.map(loadImage));
   const measure = document.createElement('canvas').getContext('2d');
   if (!measure) throw new Error('canvas');
-  const layouts = script.panels.map((panel) =>
-    layoutPanel(measure, panel, panel.portrait != null && !!images[panel.portrait]),
-  );
+  const layouts = script.panels.flatMap((panel) => {
+    if (panel.voice !== 'picture') {
+      return [layoutPanel(measure, panel, panel.portrait != null && !!images[panel.portrait])];
+    }
+    // A scene picture that did not load leaves no empty frame behind.
+    const picture = panel.bg != null ? images[panel.bg] : null;
+    return picture ? [layoutPicture(panel, picture)] : [];
+  });
 
   // Pages: whole panels, the title on the first, the footer on the last.
   const pages: Layout[][] = [];

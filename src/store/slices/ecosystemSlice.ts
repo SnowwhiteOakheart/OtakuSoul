@@ -13,6 +13,7 @@ import type {
   WebServerConfig,
   WebServerStatus,
 } from '../../types';
+import { attachStageImage } from '../../utils/stageImages';
 import type { SliceCreator } from '../storeTypes';
 import { trackTask } from './taskSlice';
 import { translate } from '../../i18n';
@@ -195,6 +196,8 @@ export const createEcosystemSlice: SliceCreator<EcosystemSlice> = (set, get) => 
         if (family && family !== 'sdxl' && family !== 'sd15') style = 'natural';
       }
 
+      // The Stage picture shows the story up to this line; it hangs there once it is done.
+      const stageAnchor = target === 'stage' ? state.stageState?.chat_log.at(-1)?.id : undefined;
       const replyLang = languageCode(state.replyLanguage || 'Deutsch');
       const character = state.activeCharacter ? localizeCard(state.activeCharacter.card.data, replyLang) : null;
       let subject: string;
@@ -275,7 +278,11 @@ export const createEcosystemSlice: SliceCreator<EcosystemSlice> = (set, get) => 
       if (target === 'stage' && state.stageState) {
         const name = await api.saveStageBackground(res.file_path);
         const current = get().stageState ?? state.stageState;
-        await get().saveStageScene({ ...current, current_bg: name });
+        await get().saveStageScene({
+          ...current,
+          current_bg: name,
+          chat_log: attachStageImage(current.chat_log, stageAnchor, name),
+        });
       } else if (state.activeChatId) {
         set((s) => ({ chatSceneImages: { ...s.chatSceneImages, [state.activeChatId as string]: res } }));
       }

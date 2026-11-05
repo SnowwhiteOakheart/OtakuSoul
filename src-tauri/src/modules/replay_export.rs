@@ -812,6 +812,7 @@ mod tests {
             event_card: None,
             timestamp: 1_760_000_000,
             bg: None,
+            images: Vec::new(),
         };
         state.chat_log = vec![
             message(

@@ -753,6 +753,8 @@ export interface SceneTurnMessage {
   timestamp: number;
   /** Background on screen when the line was said (missing in older lines). */
   bg?: string;
+  /** Scene pictures made from the story up to this line (Stage background names). */
+  images?: string[];
 }
 
 export interface SceneState {

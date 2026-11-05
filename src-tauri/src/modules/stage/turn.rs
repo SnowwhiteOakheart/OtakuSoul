@@ -78,6 +78,7 @@ pub async fn execute_stage_turn(
             event_card: None,
             timestamp: Utc::now().timestamp() as u64,
             bg: None,
+            images: Vec::new(),
         };
         state.push_message(player_msg);
     }
@@ -1018,6 +1019,7 @@ RULES:
         event_card: dice_event_card,
         timestamp: Utc::now().timestamp() as u64,
         bg: None,
+        images: Vec::new(),
     };
     state.push_message(gm_turn_msg);
 
@@ -1034,6 +1036,7 @@ RULES:
             event_card: Some(card),
             timestamp: Utc::now().timestamp() as u64,
             bg: None,
+            images: Vec::new(),
         });
     }
 
@@ -1241,6 +1244,7 @@ Reply in {reply_language}.{memories}{secrets}"#,
                     event_card: None,
                     timestamp: Utc::now().timestamp() as u64,
                     bg: None,
+                    images: Vec::new(),
                 };
                 state.push_message(companion_msg);
                 if let Some(npc) = npc
@@ -1509,6 +1513,7 @@ pub async fn execute_stage_rest(
         event_card: Some(rest_card),
         timestamp: Utc::now().timestamp() as u64,
         bg: None,
+        images: Vec::new(),
     };
     state.push_message(rest_msg);
 
@@ -1532,6 +1537,7 @@ pub async fn execute_stage_rest(
             }),
             timestamp: Utc::now().timestamp() as u64,
             bg: None,
+            images: Vec::new(),
         });
     }
 
@@ -1551,6 +1557,7 @@ pub async fn execute_stage_rest(
             event_card: None,
             timestamp: Utc::now().timestamp() as u64,
             bg: None,
+            images: Vec::new(),
         };
         state.push_message(comp_msg);
     }

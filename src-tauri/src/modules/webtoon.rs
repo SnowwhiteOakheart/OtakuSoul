@@ -20,7 +20,7 @@ const MAX_PICTURE_BYTES: u64 = 8 * 1024 * 1024;
 #[ts(export)]
 pub struct WebtoonPanel {
     pub speaker: String,
-    /// `narrator`, `player`, `figure` or `system`.
+    /// `narrator`, `player`, `figure`, `system` or `picture` (a scene picture of its own, in `bg`).
     pub voice: String,
     pub text: String,
     /// How the player acts (`say`, `do`, `think`, `whisper`, …).
@@ -124,6 +124,41 @@ fn mood_portrait(profile: &CharacterProfile, text: &str) -> Option<String> {
     portrait_data_url(profile)
 }
 
+/// A Stage picture (a background name) as an image index, looked up once per name.
+fn picture_index(
+    name: &str,
+    images: &mut Images,
+    known: &mut HashMap<String, Option<u32>>,
+    background: &dyn Fn(&str) -> Option<String>,
+) -> Option<u32> {
+    *known.entry(name.to_string()).or_insert_with(|| {
+        background(name)
+            .filter(|p| drawable(p))
+            .map(|p| images.add(p))
+    })
+}
+
+/// The scene pictures made at a line, each as a panel of its own.
+fn picture_panels(
+    names: &[String],
+    images: &mut Images,
+    known: &mut HashMap<String, Option<u32>>,
+    background: &dyn Fn(&str) -> Option<String>,
+) -> Vec<WebtoonPanel> {
+    names
+        .iter()
+        .filter_map(|name| picture_index(name, images, known, background))
+        .map(|i| WebtoonPanel {
+            speaker: String::new(),
+            voice: "picture".into(),
+            text: String::new(),
+            mode: String::new(),
+            bg: Some(i),
+            portrait: None,
+        })
+        .collect()
+}
+
 fn blank(bg: &str) -> bool {
     bg.trim().is_empty() || bg.eq_ignore_ascii_case("none")
 }
@@ -148,18 +183,20 @@ pub fn webtoon_script(
     for message in &state.chat_log {
         let text = clean_text(&message.content);
         if text.is_empty() {
+            panels.extend(picture_panels(
+                &message.images,
+                &mut images,
+                &mut backgrounds,
+                background,
+            ));
             continue;
         }
         if let Some(bg) = message.bg.as_deref().filter(|bg| !blank(bg)) {
             place = Some(bg.to_string());
         }
-        let bg = place.as_ref().and_then(|name| {
-            *backgrounds.entry(name.clone()).or_insert_with(|| {
-                background(name)
-                    .filter(|p| drawable(p))
-                    .map(|p| images.add(p))
-            })
-        });
+        let bg = place
+            .as_ref()
+            .and_then(|name| picture_index(name, &mut images, &mut backgrounds, background));
         let voice = match message.sender_role.as_str() {
             "gm" => "narrator",
             "player" => "player",
@@ -196,6 +233,12 @@ pub fn webtoon_script(
             bg,
             portrait,
         });
+        panels.extend(picture_panels(
+            &message.images,
+            &mut images,
+            &mut backgrounds,
+            background,
+        ));
     }
     WebtoonScript {
         title: def.title.clone(),
@@ -256,6 +299,7 @@ mod tests {
             event_card: None,
             timestamp: 1_760_000_000,
             bg: bg.map(Into::into),
+            images: Vec::new(),
         }
     }
 
@@ -272,12 +316,17 @@ mod tests {
             message("gm", "GM", "Es schneit. [emotion: calm]", None),
             message("player", "Du", "Ich klopfe.", Some("tower.png")),
             message("companion", "Lirwen", "<think>x</think>", Some("tower.png")),
-            message("npc", "Wirt", "Herein!", Some("inn.png")),
+            {
+                let mut line = message("npc", "Wirt", "Herein!", Some("inn.png"));
+                line.images = vec!["moment.png".into(), "missing.png".into()];
+                line
+            },
             message("gm", "GM", "Drinnen ist es warm.", None),
         ];
         let lookup = |name: &str| match name {
             "tower.png" => Some("data:image/png;base64,TOWER".to_string()),
             "inn.png" => Some("data:image/png;base64,INN".to_string()),
+            "moment.png" => Some("data:image/png;base64,MOMENT".to_string()),
             _ => None,
         };
         let script = webtoon_script(&state, &[], &ContentLang::current(), &lookup);
@@ -292,11 +341,15 @@ mod tests {
                 Some("data:image/png;base64,TOWER"),
                 Some("data:image/png;base64,TOWER"),
                 Some("data:image/png;base64,INN"),
+                // The picture made at the innkeeper's line follows it (a missing one is left out).
+                Some("data:image/png;base64,MOMENT"),
                 // A later line without a place stays where the story is.
                 Some("data:image/png;base64,INN"),
             ]
         );
-        assert_eq!(script.images.len(), 2, "each picture once");
+        assert_eq!(script.images.len(), 3, "each picture once");
+        assert_eq!(script.panels[3].voice, "picture");
+        assert!(script.panels[3].text.is_empty() && script.panels[3].portrait.is_none());
         assert_eq!(script.panels[0].voice, "narrator");
         assert_eq!(script.panels[0].text, "Es schneit.");
         assert_eq!(script.panels[2].voice, "figure");

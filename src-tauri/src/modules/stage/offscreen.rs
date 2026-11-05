@@ -195,6 +195,7 @@ pub async fn tell_offscreen(
         event_card: Some(StageEventCard::Offscreen { companions }),
         timestamp: now,
         bg: None,
+        images: Vec::new(),
     });
     observe_npcs(&mut state, observation_start);
     engine.set_state(state.clone());
@@ -219,6 +220,7 @@ mod tests {
             event_card: None,
             timestamp,
             bg: None,
+            images: Vec::new(),
         }
     }
 

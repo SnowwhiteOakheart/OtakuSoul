@@ -127,6 +127,7 @@ extensions: serde_json::Value::Null,
             event_card: None,
             timestamp: Utc::now().timestamp() as u64,
             bg: None,
+            images: Vec::new(),
         };
 
         let state = SceneState {
@@ -546,6 +547,7 @@ extensions: serde_json::Value::Null,
             }),
             timestamp: Utc::now().timestamp() as u64,
             bg: None,
+            images: Vec::new(),
         });
 
         let observation_start = st.chat_log.len().saturating_sub(1);

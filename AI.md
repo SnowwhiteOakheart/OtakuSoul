@@ -1163,7 +1163,10 @@ Hintergrund und Porträt als Index in `images` (jedes Bild einmal). Der Ort komm
 `SceneState::push_message` beim Anhängen aus `current_bg` (sonst `starting_bg`) setzt – **neue Nachrichten immer über
 `push_message`, nie `chat_log.push`**; ältere Zeilen ohne `bg` behalten den zuletzt bekannten Ort, am Anfang den Startort. Das
 Porträt wählt `classify_emotion` je Zeile: Extra-Slot (`portrait`) → Stimmung (`vrm_expression`) → `neutral` → Kartenbild;
-NPCs nehmen `avatar_url`. Bilder gehen nur als `data:`-URL oder App-Pfad (`/npc/…`) hinaus, sonst wäre das Canvas
+NPCs nehmen `avatar_url`. In der Stage erzeugte Szenenbilder (`generateSceneImage('stage')`) hängen an der Zeile, die beim
+Start der Erzeugung die letzte war (`SceneTurnMessage.images`, Namen in den Stage-Hintergründen; `utils/stageImages.ts`
+`attachStageImage`, von hinten gesucht, weil ein Zug inzwischen Zeilen anhängen kann) und werden zusätzlich `current_bg`; der
+Webtoon zeigt sie nach ihrer Zeile als eigenes Panel (`voice: "picture"`, volle Breite, eigenes Seitenverhältnis). Bilder gehen nur als `data:`-URL oder App-Pfad (`/npc/…`) hinaus, sonst wäre das Canvas
 „verunreinigt“ und `toDataURL` schlüge fehl. Gezeichnet wird im Frontend (`services/webtoon.ts`, `renderWebtoon`: 800 px breit,
 Erzählung als Textkasten oben, Figur links mit Blase, Spieler rechts, Denken mit Punkten, Flüstern gestrichelt, CJK bricht
 zwischen Zeichen); Seiten enden nach dem Panel, das 12 000 px überschreitet (Canvas-Grenzen). `save_webtoon_pages` schreibt die

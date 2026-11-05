@@ -24,6 +24,7 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
         event_card: None,
         timestamp: Utc::now().timestamp() as u64,
         bg: None,
+        images: Vec::new(),
     };
 
     let world = WorldState {

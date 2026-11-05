@@ -1563,6 +1563,7 @@ pub(super) async fn narrate_facts(
             event_card: None,
             timestamp: Utc::now().timestamp() as u64,
             bg: None,
+            images: Vec::new(),
         });
     }
 }

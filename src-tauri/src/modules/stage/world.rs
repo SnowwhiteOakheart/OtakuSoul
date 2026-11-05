@@ -559,6 +559,7 @@ mod tests {
             event_card: None,
             timestamp: 0,
             bg: None,
+            images: Vec::new(),
         }
     }
 
