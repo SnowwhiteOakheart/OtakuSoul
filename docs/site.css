@@ -60,6 +60,12 @@ h3 { font-size: 1.21rem; }
 .capabilities { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 2.4rem; }
 .capabilities article { padding-top: .9rem; border-top: 1px solid var(--line); }
 .capabilities span { color: var(--accent); display: block; font-size: .8rem; margin-bottom: .65rem; }
+.pet-feature, .hardware { margin-top: 2rem; padding: clamp(1.25rem, 3vw, 2rem); border: 1px solid var(--line); border-radius: .65rem; background: var(--panel); }
+.pet-feature { border-left: 3px solid var(--accent); background: linear-gradient(115deg, #302042, var(--panel) 80%); }
+.pet-feature h3 { font-size: clamp(1.5rem, 3vw, 2.2rem); }
+.pet-feature p, .hardware p { max-width: 70ch; }
+.pet-feature p:last-child, .hardware p:last-child, .story-extras p { margin-bottom: 0; }
+.story-extras article { border-top: 1px solid var(--line); padding-top: .9rem; }
 .demo { background: radial-gradient(ellipse at 75% 50%, #322043, #191124 72%); border-block: 1px solid var(--line); }
 .split { display: grid; grid-template-columns: .82fr 1.18fr; gap: clamp(1.5rem, 5vw, 4rem); align-items: center; }
 video, figure img { width: 100%; border: 1px solid #655076; border-radius: .6rem; background: var(--bg); }
