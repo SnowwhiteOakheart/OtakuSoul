@@ -685,6 +685,11 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Filter/Suche, Live-Vorschau `AvatarPreview`, Standard, Zuweisung per Haken → `characterSlice.assignCharacterAvatar`
   schreibt `custom_vrm` (Pfad) bzw. `custom_live2d` (Ordner-ID) in die Karte und entfernt `sow_*`); „wer nutzt was“ in
   `avatarMatch.ts` (gleiche Regel wie `AvatarCanvas`), Import geteilt mit den Einstellungen in `avatarImport.ts` (Live2D-ZIPs mit Unterordnern oder mehreren Varianten über `inspect_live2d_zip` + `Live2dZipPickerModal.tsx`, `.cmo3`/`.can3` ausgelassen). E2E `avatar-manager.mjs`.
+  Offizielle Download-Seiten für Modelle, die nicht mitgeliefert werden dürfen: `extensions.otakusoul_model_links`
+  (`[{kind: vrm|live2d|inochi2d, page_url, name?, license?}]`, Feldnamen wie im Avatar-Hub). Nur `https://` wird angeboten
+  (`utils/modelLinks.ts` `readModelLinks`, Rust `characters::invalid_model_links`, Einreichungsprüfung `modelLinkInvalid`);
+  Editor-Abschnitt unter den Avatar-Auswahlen, Buttons in `CharacterPreviewModal`. Zusammen mit einem portablen
+  `custom_live2d`/`custom_vrm` (Ordner/Datei wie im offiziellen ZIP) wird das importierte Modell danach automatisch zugeordnet.
   Vorschaubilder: `services/avatarSnapshot.ts` – der Manager schickt ein Ereignis an den Viewer-Canvas, `avatarStage` bzw.
   `Live2DViewer` rendern im selben Aufruf neu (`answerSnapshots`, WebGL ohne `preserveDrawingBuffer`); zugeschnitten auf die
   sichtbaren Pixel (oberer Teil, 320×240). Automatisch beim ersten Ansehen ohne Bild (zweiter Treffer in Folge), von Hand

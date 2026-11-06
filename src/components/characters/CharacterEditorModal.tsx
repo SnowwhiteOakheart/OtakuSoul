@@ -20,6 +20,7 @@ import { errorMessage } from '../../utils/errors';
 import { fileToDataUrl, pickImageAsDataUrl } from '../../utils/imageFiles';
 import { I18N_EXTENSION } from '../../utils/cardI18n';
 import { CharacterTranslationsTab } from './CharacterTranslationsTab';
+import { cleanModelLinks, MODEL_LINK_KINDS, MODEL_LINKS_KEY, ModelLink, ModelLinkKind, safePageHost } from '../../utils/modelLinks';
 
 interface CharacterEditorModalProps {
   character: CharacterProfile | null; // null means create new
@@ -53,6 +54,18 @@ export const CharacterEditorModal = ({
     ''
   );
   const [inochi2dModel, setInochi2dModel] = useState<string>((character?.card.data.extensions?.custom_inochi2d as string) || '');
+  // Official download pages: kept as written (also unsafe ones, so nothing typed gets lost); the
+  // preview only offers https pages.
+  const [modelLinks, setModelLinks] = useState<ModelLink[]>(() => {
+    const raw = character?.card.data.extensions?.[MODEL_LINKS_KEY];
+    return Array.isArray(raw)
+      ? raw.flatMap((entry) => (entry && typeof entry === 'object' && typeof (entry as ModelLink).page_url === 'string'
+        ? [{ ...(entry as ModelLink), kind: MODEL_LINK_KINDS.includes((entry as ModelLink).kind) ? (entry as ModelLink).kind : 'vrm' }]
+        : []))
+      : [];
+  });
+  const updateModelLink = (index: number, patch: Partial<ModelLink>) =>
+    setModelLinks((links) => links.map((link, i) => (i === index ? { ...link, ...patch } : link)));
   const [name, setName] = useState(character?.card.data.name || '');
   const [title, setTitle] = useState(
     (character?.card.data.extensions?.custom_title as string) ||
@@ -188,6 +201,7 @@ export const CharacterEditorModal = ({
             custom_vrm: vrmPath || undefined,
             custom_live2d: live2dModel || undefined,
             custom_inochi2d: inochi2dModel || undefined,
+            [MODEL_LINKS_KEY]: cleanModelLinks(modelLinks),
             expressions: Object.keys(cleanedExpressionImages).length > 0
               ? cleanedExpressionImages
               : undefined,
@@ -451,6 +465,55 @@ export const CharacterEditorModal = ({
                       </option>
                     ))}
                   </select>
+                </div>
+
+                <div className="w-full mt-2 space-y-1.5 px-2" data-model-links>
+                  <span className="block text-xs font-semibold text-slate-400">{t('editor.modelLinks')}</span>
+                  <p className="text-[11px] text-slate-500">{t('editor.modelLinksHint')}</p>
+                  {modelLinks.map((link, index) => {
+                    const invalid = !!link.page_url.trim() && !safePageHost(link.page_url.trim());
+                    return (
+                      <div key={index} className="space-y-1 rounded-lg border border-slate-800 p-1.5">
+                        <div className="flex items-center gap-1">
+                          <select
+                            aria-label={t('editor.modelLinkKind')}
+                            value={link.kind}
+                            onChange={(e) => updateModelLink(index, { kind: e.target.value as ModelLinkKind })}
+                            className="flex-1 bg-app border border-slate-700/80 rounded-lg px-2 py-1 text-xs text-slate-100 focus:outline-hidden focus:border-accent-500"
+                          >
+                            {MODEL_LINK_KINDS.map((kind) => (
+                              <option key={kind} value={kind}>{t(`editor.modelLinkKind.${kind}`)}</option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => setModelLinks((links) => links.filter((_, i) => i !== index))}
+                            aria-label={t('editor.modelLinkRemove')}
+                            className="rounded p-1 text-slate-500 hover:bg-slate-800 hover:text-rose-400"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                        <input
+                          type="url"
+                          aria-label={t('editor.modelLinkUrl')}
+                          placeholder="https://"
+                          value={link.page_url}
+                          onChange={(e) => updateModelLink(index, { page_url: e.target.value })}
+                          className={`w-full bg-app border rounded-lg px-2 py-1 text-xs text-slate-100 focus:outline-hidden focus:border-accent-500 ${invalid ? 'border-rose-500/70' : 'border-slate-700/80'}`}
+                        />
+                        {invalid && <p className="text-[11px] text-rose-400">{t('editor.modelLinkInvalid')}</p>}
+                      </div>
+                    );
+                  })}
+                  <button
+                    type="button"
+                    onClick={() => setModelLinks((links) => [...links, { kind: 'live2d', page_url: '' }])}
+                    className="inline-flex items-center gap-1 text-xs text-accent-300 hover:text-accent-200"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    {t('editor.modelLinkAdd')}
+                  </button>
                 </div>
               </div>
 
@@ -882,6 +945,7 @@ export const CharacterEditorModal = ({
                         custom_vrm: vrmPath || undefined,
                         custom_live2d: live2dModel || undefined,
                         custom_inochi2d: inochi2dModel || undefined,
+                        [MODEL_LINKS_KEY]: cleanModelLinks(modelLinks),
                         expressions: Object.keys(expressionImages).length > 0
                           ? expressionImages
                           : undefined,

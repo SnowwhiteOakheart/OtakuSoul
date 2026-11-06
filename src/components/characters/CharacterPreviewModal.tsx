@@ -1,10 +1,14 @@
 import React from 'react';
-import { Edit, MessageSquare, Sparkles, X } from 'lucide-react';
+import { Download, Edit, MessageSquare, Sparkles, X } from 'lucide-react';
+import { openUrl } from '@tauri-apps/plugin-opener';
+import { toast } from '../ui/feedback';
 import { useTranslation } from '../../i18n';
 import type { CharacterProfile } from '../../types';
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { fillCardMacros, localizeCard } from '../../utils/cardI18n';
 import { useAppStore } from '../../store/useAppStore';
+import { readModelLinks, safePageHost } from '../../utils/modelLinks';
+import { errorMessage } from '../../utils/errors';
 
 /** Characters shipped with the app (`presets/characters`), recommended for a first chat. */
 export const isStarterCharacter = (character: CharacterProfile) =>
@@ -30,6 +34,7 @@ export const CharacterPreviewModal: React.FC<CharacterPreviewModalProps> = ({ ch
     { key: 'scenario', label: t('characterPreview.scenario'), text: fill(data.scenario) },
     { key: 'greeting', label: t('characterPreview.greeting'), text: fill(data.first_mes) },
   ].filter((section) => section.text.trim());
+  const modelLinks = readModelLinks(character.card.data.extensions);
 
   return (
     <ModalOverlay
@@ -74,6 +79,31 @@ export const CharacterPreviewModal: React.FC<CharacterPreviewModalProps> = ({ ch
                 <p className={`whitespace-pre-line text-slate-300 ${section.key === 'greeting' ? 'italic line-clamp-6' : 'line-clamp-[12]'}`}>{section.text}</p>
               </section>
             ))}
+            {modelLinks.length > 0 && (
+              <section className="space-y-1.5" data-model-links>
+                <h3 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{t('characterPreview.models')}</h3>
+                <p className="text-xs text-slate-400">{t('characterPreview.modelsHint')}</p>
+                <ul className="space-y-1.5">
+                  {modelLinks.map((link) => (
+                    <li key={`${link.kind}:${link.page_url}`}>
+                      <button
+                        type="button"
+                        onClick={() => void openUrl(link.page_url).catch((e) => toast.error(errorMessage(e)))}
+                        title={link.page_url}
+                        className="inline-flex max-w-full items-center gap-2 rounded-lg border border-slate-700 px-3 py-1.5 text-left text-xs text-slate-200 hover:bg-slate-800"
+                      >
+                        <Download className="h-3.5 w-3.5 shrink-0 text-accent-300" />
+                        <span className="truncate">
+                          {link.name ?? t(`editor.modelLinkKind.${link.kind}`)}
+                          <span className="text-slate-500"> · {safePageHost(link.page_url)}</span>
+                          {link.license && <span className="text-slate-500"> · {link.license}</span>}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
           </div>
           <footer className="flex flex-wrap justify-end gap-2 border-t border-slate-800 px-5 py-3">
             <button type="button" onClick={onEdit} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800">

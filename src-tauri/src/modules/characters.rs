@@ -38,6 +38,54 @@ pub struct CharacterData {
 /// it (e.g. imported from the web) simply use their base fields in every language.
 pub const I18N_EXTENSION: &str = "otakusoul_i18n";
 
+/// Key in `extensions` that lists official pages where the card's avatar models can be downloaded:
+/// `[{"kind": "live2d", "page_url": "https://…", "name": "…", "license": "…"}]` (field names as in
+/// the avatar hub). Cards and the hub never carry such models themselves; the user fetches them
+/// from the rights holder and imports them as usual.
+pub const MODEL_LINKS_EXTENSION: &str = "otakusoul_model_links";
+
+/// Model kinds a link in `otakusoul_model_links` may name.
+pub const MODEL_LINK_KINDS: [&str; 3] = ["vrm", "live2d", "inochi2d"];
+
+/// Whether `url` is a web page the app may open: `https://` with a host, no spaces.
+pub fn is_safe_page_url(url: &str) -> bool {
+    url.strip_prefix("https://").is_some_and(|rest| {
+        !rest.is_empty() && !rest.starts_with('/') && !rest.contains(char::is_whitespace)
+    })
+}
+
+/// Entries of `otakusoul_model_links` the app would not offer: no list, an unknown model kind or
+/// a page that is not `https://`. Returns what to show for each (the address, else the kind).
+pub fn invalid_model_links(extensions: &serde_json::Value) -> Vec<String> {
+    let Some(links) = extensions.get(MODEL_LINKS_EXTENSION) else {
+        return Vec::new();
+    };
+    let Some(links) = links.as_array() else {
+        return vec![MODEL_LINKS_EXTENSION.to_string()];
+    };
+    links
+        .iter()
+        .filter_map(|link| {
+            let kind = link
+                .get("kind")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or("");
+            let url = link
+                .get("page_url")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or("");
+            let ok = MODEL_LINK_KINDS.contains(&kind) && is_safe_page_url(url);
+            (!ok).then(|| {
+                if url.is_empty() {
+                    kind.to_string()
+                } else {
+                    url.to_string()
+                }
+            })
+        })
+        .collect()
+}
+
 /// The translation for `lang` in an `otakusoul_i18n` extension: the language's own, otherwise
 /// the English one (understood most widely) – unless `lang` is the declared source language, whose
 /// text is the base itself. `None` keeps the base text.
@@ -1231,7 +1279,8 @@ mod tests {
                     "sow_vrm": "vroid:5225889348359061944",
                     "custom_live2d": "/home/someone/.local/share/otakusoul/live2d/hiyori/hiyori.model3.json",
                     "custom_inochi2d": "Aka.inx",
-                    "custom_title": "C:\\keep\\me"
+                    "custom_title": "C:\\keep\\me",
+                    "otakusoul_model_links": [{"kind": "live2d", "page_url": "https://www.live2d.com/en/learn/sample/"}]
                 }}
         }))
         .unwrap();
@@ -1248,8 +1297,41 @@ mod tests {
             ext["custom_title"], "C:\\keep\\me",
             "other keys are untouched"
         );
+        assert_eq!(
+            ext["otakusoul_model_links"][0]["page_url"], "https://www.live2d.com/en/learn/sample/",
+            "download pages travel with the card"
+        );
         let text = serde_json::to_string(&clean).unwrap();
         assert!(!text.contains("Someone") && !text.contains("someone"));
+    }
+
+    #[test]
+    fn model_links_must_be_https_pages_of_a_known_kind() {
+        let ext = serde_json::json!({"otakusoul_model_links": [
+            {"kind": "live2d", "page_url": "https://www.live2d.com/en/learn/sample/hatsune-miku/"},
+            {"kind": "vrm", "page_url": "http://example.com/model"},
+            {"kind": "vrm", "page_url": "javascript:alert(1)"},
+            {"kind": "pmx", "page_url": "https://example.com/"},
+            {"kind": "inochi2d", "page_url": "https:///etc/passwd"},
+            {"kind": "vrm"}
+        ]});
+        assert_eq!(
+            super::invalid_model_links(&ext),
+            [
+                "http://example.com/model",
+                "javascript:alert(1)",
+                "https://example.com/",
+                "https:///etc/passwd",
+                "vrm"
+            ]
+        );
+        assert!(super::invalid_model_links(&serde_json::json!({})).is_empty());
+        assert_eq!(
+            super::invalid_model_links(
+                &serde_json::json!({"otakusoul_model_links": "https://x.y"})
+            ),
+            ["otakusoul_model_links"]
+        );
     }
 
     #[test]

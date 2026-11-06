@@ -132,6 +132,13 @@ pub fn check_character(profile: &CharacterProfile) -> Vec<Finding> {
     if !has_english(&data.extensions) {
         found.push(warning("noEnglish", ""));
     }
+    for link in crate::modules::characters::invalid_model_links(&data.extensions) {
+        found.push(Finding {
+            error: true,
+            code: "modelLinkInvalid".into(),
+            detail: link,
+        });
+    }
     found
 }
 
