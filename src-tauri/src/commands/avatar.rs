@@ -22,10 +22,18 @@ pub async fn classify_text_emotion(text: String) -> crate::modules::emotions::Em
 }
 
 #[tauri::command(async)]
+pub fn inspect_live2d_zip(
+    source_path: String,
+) -> Result<Vec<crate::modules::live2d::Live2dZipCandidate>, String> {
+    crate::modules::live2d::inspect_live2d_zip(&source_path)
+}
+
+#[tauri::command(async)]
 pub fn import_live2d_model(
     source_path: String,
+    entry_path: Option<String>,
 ) -> Result<crate::modules::live2d::ScannedLive2d, String> {
-    crate::modules::live2d::import_live2d_model(&source_path)
+    crate::modules::live2d::import_live2d_model(&source_path, entry_path.as_deref())
 }
 
 #[tauri::command(async)]

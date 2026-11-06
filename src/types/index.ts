@@ -95,6 +95,7 @@ import type { KokoroDownloadProgress } from './generated/KokoroDownloadProgress'
 import type { KokoroInstallResult } from './generated/KokoroInstallResult';
 import type { LayerRecommendation } from './generated/LayerRecommendation';
 import type { Live2dCatalogItem } from './generated/Live2dCatalogItem';
+import type { Live2dZipCandidate } from './generated/Live2dZipCandidate';
 import type { Inochi2dCatalogItem } from './generated/Inochi2dCatalogItem';
 import type { MusicPackInfo } from './generated/MusicPackInfo';
 import type { StageMusicTrack } from './generated/StageMusicTrack';
@@ -248,6 +249,7 @@ export type {
   KokoroInstallResult,
   LayerRecommendation,
   Live2dCatalogItem,
+  Live2dZipCandidate,
   Inochi2dCatalogItem,
   MusicPackInfo,
   StageMusicTrack,

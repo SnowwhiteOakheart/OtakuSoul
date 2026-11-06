@@ -684,7 +684,7 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Avatar-Manager (Reiter `avatars`, Bibliothek): `components/avatars/AvatarManagerView.tsx` (Raster aller 3D-/Live2D-Modelle,
   Filter/Suche, Live-Vorschau `AvatarPreview`, Standard, Zuweisung per Haken → `characterSlice.assignCharacterAvatar`
   schreibt `custom_vrm` (Pfad) bzw. `custom_live2d` (Ordner-ID) in die Karte und entfernt `sow_*`); „wer nutzt was“ in
-  `avatarMatch.ts` (gleiche Regel wie `AvatarCanvas`), Import geteilt mit den Einstellungen in `avatarImport.ts`. E2E `avatar-manager.mjs`.
+  `avatarMatch.ts` (gleiche Regel wie `AvatarCanvas`), Import geteilt mit den Einstellungen in `avatarImport.ts` (Live2D-ZIPs mit Unterordnern oder mehreren Varianten über `inspect_live2d_zip` + `Live2dZipPickerModal.tsx`, `.cmo3`/`.can3` ausgelassen). E2E `avatar-manager.mjs`.
   Vorschaubilder: `services/avatarSnapshot.ts` – der Manager schickt ein Ereignis an den Viewer-Canvas, `avatarStage` bzw.
   `Live2DViewer` rendern im selben Aufruf neu (`answerSnapshots`, WebGL ohne `preserveDrawingBuffer`); zugeschnitten auf die
   sichtbaren Pixel (oberer Teil, 320×240). Automatisch beim ersten Ansehen ohne Bild (zweiter Treffer in Folge), von Hand

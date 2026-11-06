@@ -15,6 +15,7 @@ import { isPetWindow } from './services/desktopPet';
 import { useTranslation } from './i18n';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { FeedbackHost } from './components/ui/feedback';
+import { Live2dZipPickerHost } from './components/avatars/Live2dZipPickerModal';
 import { TextContextMenu } from './components/ui/TextContextMenu';
 import { CommandPalette } from './components/CommandPalette';
 import { ViewSkeleton } from './components/ui';
@@ -91,6 +92,7 @@ export function App() {
         {!onboardingCompleted && <FirstRunWizard />}
       </Suspense>
       <FeedbackHost />
+      <Live2dZipPickerHost />
       <TextContextMenu />
       <CommandPalette
         open={isCommandPaletteOpen}

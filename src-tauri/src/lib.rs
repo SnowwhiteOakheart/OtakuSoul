@@ -556,6 +556,7 @@ pub fn run() {
             commands::avatar::get_live2d_catalog,
             commands::avatar::download_live2d_model,
             commands::avatar::classify_text_emotion,
+            commands::avatar::inspect_live2d_zip,
             commands::avatar::import_live2d_model,
             commands::avatar::scan_inochi2d_models,
             commands::avatar::get_inochi2d_catalog,

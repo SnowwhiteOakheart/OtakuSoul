@@ -1,4 +1,5 @@
 import type { ContributionResult } from '../types/generated/ContributionResult';
+import type { Live2dZipCandidate } from '../types/generated/Live2dZipCandidate';
 import type { Finding } from '../types/generated/Finding';
 import type { SubmissionInfo } from '../types/generated/SubmissionInfo';
 import type { WebtoonScript } from '../types/generated/WebtoonScript';
@@ -1744,8 +1745,12 @@ export const api = {
     return await invoke<EmotionResult>('classify_text_emotion', { text });
   },
 
-  importLive2dModel: async (sourcePath: string): Promise<ScannedLive2d> => {
-    return await invoke<ScannedLive2d>('import_live2d_model', { sourcePath });
+  inspectLive2dZip: async (sourcePath: string): Promise<Live2dZipCandidate[]> => {
+    return await invoke<Live2dZipCandidate[]>('inspect_live2d_zip', { sourcePath });
+  },
+
+  importLive2dModel: async (sourcePath: string, entryPath?: string): Promise<ScannedLive2d> => {
+    return await invoke<ScannedLive2d>('import_live2d_model', { sourcePath, entryPath: entryPath ?? null });
   },
 
   // Inochi2D puppets (.inp/.inx), rendered by `services/inochi2d`.
