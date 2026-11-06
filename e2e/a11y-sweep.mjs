@@ -57,7 +57,7 @@ try {
     ['Stage', '[data-story-gallery]'],
     ['Charaktere', 'button[aria-label^="Mehr über"]'],
     ['Lorebooks', 'h1'],
-    ['Hub', '#hub-tab-scenes'],
+    ['Hub', '#hub-filter-scenes'],
     ['Companion', 'h1, h2'],
     ['Integrationen', 'h1, h2'],
     ['Einstellungen', '#setting-expert-mode'],

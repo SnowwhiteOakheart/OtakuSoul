@@ -82,18 +82,21 @@ try {
   mock.stats.hubFiles = files;
   await browser.$('button=Hub').waitForExist({ timeout: 20_000 });
   await jsClick(await browser.$('button=Hub'));
-  await browser.$('#hub-tab-lorebooks').waitForExist({ timeout: 15_000 });
-  await jsClick(await browser.$('#hub-tab-lorebooks'));
+  await browser.$('#hub-filter-worlds').waitForExist({ timeout: 15_000 });
+  await jsClick(await browser.$('#hub-filter-worlds'));
 
-  // One card for the story, the unrelated lorebook stays on its own.
+  // One card for the story; the unrelated lorebook stays on its own, the story's parts do not.
   const card = await browser.$('[data-hub-collection="saga"]');
   await card.waitForDisplayed({ timeout: 15_000, timeoutMsg: 'Keine Sammlungskarte' });
-  assert.ok(await browser.$('h3=Einzelband').isExisting(), 'Einzelnes Lorebook fehlt');
+  await browser.$('h3=Einzelband').waitForExist({ timeout: 15_000, timeoutMsg: 'Einzelnes Lorebook fehlt' });
   assert.ok(!(await browser.$('h3=Saga – Welt').isExisting()), 'Lorebook der Sammlung steht zusätzlich einzeln da');
-  // The scenes tab groups the same collection.
-  await jsClick(await browser.$('#hub-tab-scenes'));
-  await browser.$('[data-hub-collection="saga"]').waitForDisplayed({ timeout: 15_000, timeoutMsg: 'Sammlung fehlt bei den Szenarien' });
   assert.ok(!(await browser.$('h3=Sagenfolge 1').isExisting()), 'Szene der Sammlung steht zusätzlich einzeln da');
+  // The scenes filter lists every scene, with a link back to its collection.
+  await jsClick(await browser.$('#hub-filter-scenes'));
+  await browser.$('h3=Sagenfolge 1').waitForDisplayed({ timeout: 15_000, timeoutMsg: 'Szene fehlt im Szenarien-Filter' });
+  assert.ok(await browser.$('[data-hub-collection-link="saga"]').isExisting(), 'Verweis auf die Sammlung fehlt');
+  await jsClick(await browser.$('#hub-filter-worlds'));
+  await browser.$('[data-hub-collection="saga"]').waitForDisplayed({ timeout: 15_000 });
 
   await jsClick(await browser.$('[data-hub-collection="saga"]'));
   const dialog = await browser.$('[data-hub-collection-dialog="saga"]');

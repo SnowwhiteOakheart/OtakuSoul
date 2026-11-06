@@ -12,8 +12,8 @@ const entry = (name, extra = {}) => ({ name, author: 'snow', download_url: `http
 
 const openCharacters = async () => {
   await jsClick(await browser.$('button=Hub'));
-  await browser.$('#hub-tab-soul_gateway').waitForExist({ timeout: 15_000 });
-  await jsClick(await browser.$('#hub-tab-soul_gateway'));
+  await browser.$('#hub-filter-characters').waitForExist({ timeout: 15_000 });
+  await jsClick(await browser.$('#hub-filter-characters'));
 };
 
 try {

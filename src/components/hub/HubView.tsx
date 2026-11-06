@@ -1,28 +1,44 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { useDragScroll } from '../../hooks/useDragScroll';
 import { useShallow } from 'zustand/react/shallow';
-import { BookOpen, Compass, Dice5, Globe, Link as LinkIcon, RotateCcw, Search, Shirt, Sparkles, X, type LucideIcon } from 'lucide-react';
+import { BookOpen, Compass, Dice5, Globe, Library, Link as LinkIcon, RotateCcw, Search, Shirt, Users, X, type LucideIcon } from 'lucide-react';
 import { useStoreFields } from '../../store/useAppStore';
 import { useTranslation, type TranslationKey } from '../../i18n';
 import { useHubStore } from './hubStore';
 import { api } from '../../services/api';
-import { GatewayCharactersTab } from './tabs/GatewayCharactersTab';
 import { ChubFilters, ChubTab } from './tabs/ChubTab';
-import { GatewayLorebooksTab } from './tabs/GatewayLorebooksTab';
-import { GatewayScenesTab } from './tabs/GatewayScenesTab';
+import { WorldsTab, type WorldFilter } from './tabs/WorldsTab';
 import { HubAvatarsTab } from './tabs/HubAvatarsTab';
 import { UrlImportModal } from './UrlImportModal';
 import { CollectionModal } from './CollectionModal';
+import type { HubSubTab } from '../../store/slices/appSlice';
 
-type HubTab = 'soul_gateway' | 'chub_ai' | 'lorebooks' | 'scenes' | 'avatars';
+type HubTab = 'worlds' | 'chub_ai' | 'avatars';
 
-const TABS: { id: HubTab; label: string | TranslationKey; translate: boolean; icon: LucideIcon; iconClass: string; search: TranslationKey }[] = [
-  { id: 'soul_gateway', label: 'hub.tabGateway', translate: true, icon: Sparkles, iconClass: 'text-accent-400', search: 'hub.searchGateway' },
-  { id: 'chub_ai', label: 'Chub AI', translate: false, icon: Globe, iconClass: 'text-cyan-400', search: 'hub.searchChub' },
-  { id: 'lorebooks', label: 'hub.tabLorebooks', translate: true, icon: BookOpen, iconClass: 'text-amber-400', search: 'hub.searchLorebooks' },
-  { id: 'scenes', label: 'hub.tabScenes', translate: true, icon: Dice5, iconClass: 'text-emerald-400', search: 'hub.searchScenes' },
-  { id: 'avatars', label: 'hub.tabAvatars', translate: true, icon: Shirt, iconClass: 'text-pink-400', search: 'hub.searchAvatars' },
+const TABS: { id: HubTab; label: string | TranslationKey; translate: boolean; icon: LucideIcon; iconClass: string }[] = [
+  { id: 'worlds', label: 'hub.tabWorlds', translate: true, icon: Library, iconClass: 'text-accent-400' },
+  { id: 'chub_ai', label: 'Chub AI', translate: false, icon: Globe, iconClass: 'text-cyan-400' },
+  { id: 'avatars', label: 'hub.tabAvatars', translate: true, icon: Shirt, iconClass: 'text-pink-400' },
 ];
+
+/** Filters of the worlds tab: the collections, or one kind of curated content on its own. */
+const WORLD_FILTERS: { id: WorldFilter; label: TranslationKey; icon: LucideIcon; iconClass: string }[] = [
+  { id: 'worlds', label: 'hub.worldsAll', icon: Library, iconClass: 'text-accent-400' },
+  { id: 'characters', label: 'hub.collectionCharacters', icon: Users, iconClass: 'text-accent-400' },
+  { id: 'scenes', label: 'hub.tabScenes', icon: Dice5, iconClass: 'text-emerald-400' },
+  { id: 'lorebooks', label: 'hub.tabLorebooks', icon: BookOpen, iconClass: 'text-amber-400' },
+];
+
+const SEARCH: Record<WorldFilter | 'chub_ai' | 'avatars', TranslationKey> = {
+  worlds: 'hub.searchWorlds',
+  characters: 'hub.searchGateway',
+  scenes: 'hub.searchScenes',
+  lorebooks: 'hub.searchLorebooks',
+  chub_ai: 'hub.searchChub',
+  avatars: 'hub.searchAvatars',
+};
+
+const tabOf = (sub: HubSubTab): HubTab => (sub === 'chub_ai' || sub === 'avatars' ? sub : 'worlds');
 
 const reloadTab = async (tab: HubTab) => {
   // The registries then come from the data repositories' newest commits: GitHub's copy of
@@ -32,8 +48,8 @@ const reloadTab = async (tab: HubTab) => {
   void hub.loadInstalled();
   // The avatars tab reads its lists itself; the counter makes it read them again.
   if (tab === 'avatars') return hub.reloadAvatars();
-  if (tab === 'lorebooks' || tab === 'scenes') void hub.loadCollections();
-  return { soul_gateway: hub.loadGateway, chub_ai: () => hub.loadChub(1, false), lorebooks: hub.loadLorebooks, scenes: hub.loadScenes }[tab]();
+  if (tab === 'chub_ai') return hub.loadChub(1, false);
+  await Promise.all([hub.loadCollections(), hub.loadGateway(), hub.loadScenes(), hub.loadLorebooks()]);
 };
 
 /**
@@ -62,7 +78,7 @@ const useScrollingFlag = (ref: RefObject<HTMLElement | null>) => {
   }, [ref]);
 };
 
-/** Hub: curated gateway content and the chub.ai archive, each in its own tab. */
+/** Hub: curated worlds (collections, characters, scenarios, lorebooks), the chub.ai archive and avatars. */
 export const HubView = () => {
   const { t } = useTranslation();
   const { hubSubTab, setHubSubTab } = useStoreFields('hubSubTab', 'setHubSubTab');
@@ -70,7 +86,8 @@ export const HubView = () => {
     useShallow((s) => ({
       query: s.query,
       setQuery: s.setQuery,
-      soul_gateway: s.gateway.items.length,
+      worlds: s.collections.items.length,
+      characters: s.gateway.items.length,
       lorebooks: s.lorebooks.items.length,
       scenes: s.scenes.items.length,
       openCollection: s.openCollection,
@@ -86,7 +103,9 @@ export const HubView = () => {
   const panelRef = useRef<HTMLDivElement>(null);
   useDragScroll(panelRef);
   useScrollingFlag(panelRef);
-  const activeTab = TABS.find((tab) => tab.id === hubSubTab) ?? TABS[0]!;
+  const activeTab = TABS.find((tab) => tab.id === tabOf(hubSubTab)) ?? TABS[0]!;
+  const worldFilter: WorldFilter = activeTab.id === 'worlds' && hubSubTab !== 'chub_ai' && hubSubTab !== 'avatars' ? hubSubTab : 'worlds';
+  const search = SEARCH[activeTab.id === 'worlds' ? worldFilter : activeTab.id];
 
   return (
     <div className="hub-view flex-1 flex flex-col h-full bg-app overflow-hidden">
@@ -112,8 +131,8 @@ export const HubView = () => {
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="search"
-              placeholder={t(activeTab.search)}
-              aria-label={t(activeTab.search)}
+              placeholder={t(search)}
+              aria-label={t(search)}
               value={hub.query}
               onChange={(e) => hub.setQuery(e.target.value)}
               className="w-full pl-9 pr-8 py-1.5 rounded-xl bg-app/80 border border-slate-800 text-xs text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-accent-500/50 transition-colors"
@@ -157,7 +176,7 @@ export const HubView = () => {
         <div role="tablist" aria-label={t('hub.tabs')} className="flex items-center gap-1 -mb-px">
           {TABS.map(({ id, label, translate, icon: Icon, iconClass }) => {
             const selected = activeTab.id === id;
-            const count = id === 'chub_ai' ? null : id === 'avatars' ? 0 : hub[id];
+            const count = id === 'chub_ai' ? null : id === 'avatars' ? 0 : hub.worlds;
             return (
               <button
                 key={id}
@@ -188,14 +207,38 @@ export const HubView = () => {
           })}
         </div>
         {activeTab.id === 'chub_ai' && <ChubFilters />}
+        {activeTab.id === 'worlds' && (
+          <div role="group" aria-label={t('hub.worldFilters')} className="flex flex-wrap items-center gap-1.5 py-2">
+            {WORLD_FILTERS.map(({ id, label, icon: Icon, iconClass }) => {
+              const selected = worldFilter === id;
+              const count = hub[id];
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  id={`hub-filter-${id}`}
+                  aria-pressed={selected}
+                  onClick={() => setHubSubTab(id)}
+                  className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                    selected
+                      ? 'border-accent-500/60 bg-accent-500/15 text-accent-200'
+                      : 'border-slate-700 bg-slate-800/40 text-slate-400 hover:text-slate-200 hover:border-slate-600'
+                  }`}
+                >
+                  <Icon className={`w-3.5 h-3.5 ${iconClass}`} />
+                  <span>{t(label)}</span>
+                  {count > 0 && <span className="font-mono text-[11px] text-slate-500">{count}</span>}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Content */}
       <div ref={panelRef} id="hub-tabpanel" role="tabpanel" aria-labelledby={`hub-tab-${activeTab.id}`} className="flex-1 overflow-y-auto p-6">
-        {activeTab.id === 'soul_gateway' && <GatewayCharactersTab />}
+        {activeTab.id === 'worlds' && <WorldsTab filter={worldFilter} />}
         {activeTab.id === 'chub_ai' && <ChubTab />}
-        {activeTab.id === 'lorebooks' && <GatewayLorebooksTab />}
-        {activeTab.id === 'scenes' && <GatewayScenesTab />}
         {activeTab.id === 'avatars' && <HubAvatarsTab />}
       </div>
 

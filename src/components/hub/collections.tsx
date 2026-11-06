@@ -1,5 +1,5 @@
-import { memo, useEffect, type ReactNode } from 'react';
-import { BookOpen, Dice5, Users } from 'lucide-react';
+import { memo, useEffect, useMemo, type ReactNode } from 'react';
+import { BookOpen, Dice5, Library, Users } from 'lucide-react';
 import { CoverCard, CoverCount } from '../ui/CoverCard';
 import { useShallow } from 'zustand/react/shallow';
 import { useTranslation } from '../../i18n';
@@ -166,3 +166,62 @@ export const CollectionCard = memo(({ collection }: { collection: GatewayCollect
 export const HubSectionTitle = ({ children }: { children: ReactNode }) => (
   <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">{children}</h2>
 );
+
+/** Search matches of the three gateway kinds; texts in the current language count too. */
+export const characterMatches = (char: GatewayCharacterEntry, query: string) => matchesQuery(query, char.name, char.author);
+
+export const sceneMatches = (scene: GatewaySceneEntry, query: string, lang: string) =>
+  matchesQuery(
+    query,
+    scene.title,
+    registryText(scene, 'title', scene.title, lang),
+    scene.description,
+    registryText(scene, 'description', scene.description, lang),
+    scene.author,
+    registryText(scene, 'starting_location', scene.starting_location, lang)
+  );
+
+export const lorebookMatches = (lb: GatewayLorebookEntry, query: string, lang: string) =>
+  matchesQuery(query, lb.name, registryText(lb, 'name', lb.name, lang), lb.description, registryText(lb, 'description', lb.description, lang), lb.author);
+
+/**
+ * The collection each loaded hub entry belongs to, keyed by the entry object itself: same-named
+ * entries of the general and the adult repository can belong to different collections.
+ */
+export const useCollectionIndex = () => {
+  const lists = useCollectionLists();
+  const { collections, gateway, lorebooks, scenes } = lists;
+  return useMemo(() => {
+    const index = new Map<object, GatewayCollectionEntry>();
+    for (const collection of collections) {
+      const members = collectionMembers(collection, { gateway, lorebooks, scenes });
+      for (const entry of [...members.characters, ...members.scenes, ...members.lorebooks]) {
+        if (!index.has(entry)) index.set(entry, collection);
+      }
+    }
+    return index;
+  }, [collections, gateway, lorebooks, scenes]);
+};
+
+/** Small chip on a single entry naming its collection; opens the collection dialog. */
+export const CollectionLink = ({ collection }: { collection?: GatewayCollectionEntry }) => {
+  const { t, currentLanguage } = useTranslation();
+  const setOpenCollection = useHubStore((s) => s.setOpenCollection);
+  if (!collection) return null;
+  const title = collectionText(collection, 'title', currentLanguage);
+  return (
+    <button
+      type="button"
+      data-hub-collection-link={collection.id}
+      onClick={(event) => {
+        event.stopPropagation();
+        setOpenCollection(collection.id);
+      }}
+      title={t('hub.collectionOpen', { name: title })}
+      className="inline-flex max-w-full items-center gap-1 rounded-full border border-slate-700 bg-slate-800/60 px-2 py-0.5 text-[11px] text-slate-300 hover:border-accent-500/50 hover:text-accent-200 transition-colors"
+    >
+      <Library className="w-3 h-3 shrink-0" />
+      <span className="truncate">{t('hub.fromCollection', { name: title })}</span>
+    </button>
+  );
+};

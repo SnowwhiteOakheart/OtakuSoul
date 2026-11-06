@@ -42,8 +42,8 @@ try {
   };
   await browser.$('button=Hub').waitForExist({ timeout: 20_000 });
   await jsClick(await browser.$('button=Hub'));
-  await browser.$('#hub-tab-scenes').waitForExist({ timeout: 15_000 });
-  await jsClick(await browser.$('#hub-tab-scenes'));
+  await browser.$('#hub-filter-scenes').waitForExist({ timeout: 15_000 });
+  await jsClick(await browser.$('#hub-filter-scenes'));
   const importButton = await browser.$('button*=Szenario importieren');
   await importButton.waitForDisplayed({ timeout: 15_000 });
   await jsClick(importButton);
@@ -66,8 +66,8 @@ try {
   await browser.execute(() => window.location.reload());
   await browser.$('button=Hub').waitForExist({ timeout: 20_000 });
   await jsClick(await browser.$('button=Hub'));
-  await browser.$('#hub-tab-scenes').waitForExist({ timeout: 15_000 });
-  await jsClick(await browser.$('#hub-tab-scenes'));
+  await browser.$('#hub-filter-scenes').waitForExist({ timeout: 15_000 });
+  await jsClick(await browser.$('#hub-filter-scenes'));
   await browser.$('[data-hub-status="update"]').waitForExist({ timeout: 15_000, timeoutMsg: 'Kein Update angezeigt' });
   await browser.$('[data-hub-updates="1"]').waitForExist({ timeout: 5000 });
   await browser.pause(300);

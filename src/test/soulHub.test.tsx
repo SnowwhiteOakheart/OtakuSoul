@@ -22,7 +22,7 @@ beforeEach(() => {
   resetApiMocks();
   useAppStore.setState(appInitial, true);
   useHubStore.setState(hubInitial, true);
-  useAppStore.setState({ appLanguage: 'en', hubSubTab: 'soul_gateway' });
+  useAppStore.setState({ appLanguage: 'en', hubSubTab: 'characters' });
   vi.mocked(api.fetchSoulGatewayRegistry).mockResolvedValue([
     { name: 'Ayu Ikue', author: 'snow', download_url: 'https://example.invalid/ayu.png', revision: 1, updated: '', nsfw: false },
     { name: 'Sakura', author: 'hana', download_url: 'https://example.invalid/sakura.png', revision: 2, updated: '2026-10-16', nsfw: true },
@@ -50,12 +50,13 @@ describe('HubView', () => {
     expect(screen.queryByText('Sakura')).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Ayu Ikue' })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('tab', { name: /World lorebooks/ }));
+    await user.click(screen.getByRole('button', { name: /World lorebooks/ }));
     await user.clear(screen.getByRole('searchbox'));
     expect(await screen.findByText('1 entry')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('tab', { name: /Curated characters/ }));
-    expect(screen.getByRole('tab', { name: /Curated characters/ })).toHaveAttribute('aria-selected', 'true');
+    await user.click(screen.getByRole('button', { name: /^Characters/ }));
+    expect(screen.getByRole('button', { name: /^Characters/ })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('tab', { name: /Worlds/ })).toHaveAttribute('aria-selected', 'true');
     expect(api.fetchSoulGatewayRegistry).toHaveBeenCalledTimes(1);
   });
 
@@ -152,7 +153,7 @@ describe('HubView', () => {
     await user.click(within(sakuraCard).getByRole('button', { name: 'Update' }));
     expect(api.importSoulGatewayCharacter).toHaveBeenCalledWith('Sakura', 'hana', 'https://example.invalid/sakura.png', true, 2, '2026-10-16');
 
-    await user.click(screen.getByRole('tab', { name: /World lorebooks/ }));
+    await user.click(screen.getByRole('button', { name: /World lorebooks/ }));
     // List texts in the app language; the original name stays the key for the update.
     expect(await screen.findByRole('heading', { name: 'World' })).toBeInTheDocument();
     expect(screen.getByText('A world')).toBeInTheDocument();
@@ -168,7 +169,7 @@ describe('HubView', () => {
 
   it('groups a story into one collection and installs it completely', async () => {
     const user = userEvent.setup();
-    useAppStore.setState({ hubSubTab: 'lorebooks' });
+    useAppStore.setState({ hubSubTab: 'worlds' });
     vi.mocked(api.fetchLorebooksGatewayRegistry).mockResolvedValue([
       { name: 'Welt', author: 'snow', description: 'Eine Welt', entry_count: 1, download_url: 'x', revision: 3, updated: '', translations: { en: { name: 'World', description: 'A world' } }, nsfw: false },
       { name: 'Figuren', author: 'snow', description: 'Alle Figuren', entry_count: 2, download_url: 'y', revision: 1, updated: '', translations: {}, nsfw: false },
@@ -188,13 +189,21 @@ describe('HubView', () => {
     vi.mocked(api.importSceneFromGateway).mockResolvedValue({ definition: { id: 'hub_ep1', title: 'Folge 1' } } as never);
     renderHub();
 
-    // One card for the collection; its lorebooks no longer show on their own.
+    // One card for the collection; its members no longer show on their own.
     const card = await screen.findByRole('button', { name: 'Open collection “Saga”' });
     expect(await within(card).findByText('1/4 installed')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'World' })).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Allein' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Folge 1' })).not.toBeInTheDocument();
 
-    await user.click(card);
+    // The lorebook filter lists every lorebook, each with a link to its collection.
+    await user.click(screen.getByRole('button', { name: /World lorebooks/ }));
+    const world = (await screen.findByRole('heading', { name: 'World' })).closest('div.group') as HTMLElement;
+    expect(within(world).getByRole('button', { name: 'from Saga' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Allein' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /All worlds/ }));
+
+    await user.click(await screen.findByRole('button', { name: 'Open collection “Saga”' }));
     const dialog = await screen.findByRole('dialog');
     expect(dialog).toHaveTextContent('The whole saga');
     expect(within(dialog).getByText('World')).toBeInTheDocument();
@@ -216,7 +225,7 @@ describe('HubView', () => {
 
   it('groups characters too and takes same-named entries from the collection\'s own repository', async () => {
     const user = userEvent.setup();
-    useAppStore.setState({ nsfwEnabled: true, adultConfirmed: true });
+    useAppStore.setState({ nsfwEnabled: true, adultConfirmed: true, hubSubTab: 'worlds' });
     vi.mocked(api.fetchSoulGatewayRegistry).mockResolvedValue([
       { name: 'Jibril', author: 'snow', download_url: 'https://example.invalid/jibril.png', revision: 1, updated: '', nsfw: false },
       { name: 'Jibril', author: 'snow', download_url: 'https://example.invalid/jibril-18.png', revision: 1, updated: '', nsfw: true },

@@ -24,13 +24,16 @@ import type { QuickReply } from '../../types/generated/QuickReply';
 import { PROACTIVE_DEFAULTS, PROACTIVE_SENT_KEPT } from '../../utils/proactive';
 import { normalizeColorMode, syncColorMode, type ColorModePreference } from '../../services/theme';
 
+export type HubSubTab = 'worlds' | 'characters' | 'scenes' | 'lorebooks' | 'chub_ai' | 'avatars';
+
 /** Navigation, app lifecycle (init/save settings), language, theme, onboarding, logs and updater. */
 export interface AppSlice {
   activeTab: AppTab;
   setActiveTab: (tab: AppTab) => void;
-  hubSubTab: 'soul_gateway' | 'chub_ai' | 'lorebooks' | 'scenes' | 'avatars';
-  setHubSubTab: (tab: 'soul_gateway' | 'chub_ai' | 'lorebooks' | 'scenes' | 'avatars') => void;
-  openSoulHubTab: (tab: 'soul_gateway' | 'chub_ai' | 'lorebooks' | 'scenes' | 'avatars') => void;
+  /** `worlds`, `characters`, `scenes` and `lorebooks` are filters of the one "Worlds" tab. */
+  hubSubTab: HubSubTab;
+  setHubSubTab: (tab: HubSubTab) => void;
+  openSoulHubTab: (tab: HubSubTab) => void;
   appPaths: AppPaths | null;
   initApp: () => Promise<void>;
   /**
@@ -141,7 +144,7 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
 
   setActiveTab: (activeTab) => set({ activeTab }),
 
-  hubSubTab: 'soul_gateway',
+  hubSubTab: 'worlds',
 
   setHubSubTab: (hubSubTab) => set({ hubSubTab }),
 
