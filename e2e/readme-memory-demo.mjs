@@ -85,7 +85,7 @@ try {
     await invoke('save_persona', {
       persona: { id: 'default_user', name: lang === 'ru' ? 'Кай' : 'Kai', description: '', avatar_data_url: null },
     });
-    await browser.execute(() => window.location.reload());
+    await browser.refresh();
     await caption(firstCaption);
     await send(first, answer);
     await capture(4);

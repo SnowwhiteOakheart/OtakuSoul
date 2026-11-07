@@ -45,6 +45,7 @@ const coverage = (selector) =>
 try {
   await browser.$('textarea[aria-label="Nachricht"]').waitForDisplayed({ timeout: 30_000 });
   await browser.setWindowSize(1400, 900);
+  const shippedModels = await invoke('scan_inochi2d_models');
 
   const file = path.join(home, 'Testpuppe.inp');
   writeFileSync(file, makeInp());
@@ -65,10 +66,15 @@ try {
   }, { timeout: 15_000, timeoutMsg: `Registry aus dem Hub fehlt: ${JSON.stringify(catalog.map((c) => c.name))}` });
   assert.deepEqual(catalog.map((c) => c.name), ['Aka', 'Midori', 'Hubpuppe']);
   assert.equal(catalog[2].description, 'Aus dem Hub');
-  assert.ok(catalog.every((c) => !c.is_installed && c.sha256.length === 64));
+  assert.ok(catalog.every((c) => c.sha256.length === 64));
+  for (const entry of catalog) {
+    assert.equal(entry.is_installed, shippedModels.some((m) => path.basename(m.model_path) === entry.id));
+  }
+  const initialSettings = await invoke('load_settings');
+  await invoke('save_settings', { settings: { ...initialSettings, active_inochi2d_path: model.model_path } });
 
   // Chat: switch the avatar to Inochi2D (the list is read again at the switch's first use).
-  await browser.execute(() => window.location.reload());
+  await browser.refresh();
   await browser.pause(1000);
   await browser.$('textarea[aria-label="Nachricht"]').waitForDisplayed({ timeout: 30_000 });
   await browser.$('button[aria-label="Inochi2D"]').waitForClickable({ timeout: 10_000 });
@@ -92,7 +98,7 @@ try {
   {
     ownCard.card.data.extensions = { ...ownCard.card.data.extensions, custom_inochi2d: 'Hubpuppe.inp' };
     await invoke('save_character_card', { profile: ownCard });
-    await browser.execute(() => window.location.reload());
+    await browser.refresh();
     await browser.pause(1000);
     await browser.$('[data-missing-puppet="Hubpuppe.inp"]').waitForDisplayed({ timeout: 30_000, timeoutMsg: 'Hinweis auf fehlende Puppe fehlt' });
     assert.match(await browser.$('[data-missing-puppet]').getText(), /Hubpuppe/);
@@ -103,8 +109,7 @@ try {
   }
   const settings = await invoke('load_settings');
   assert.equal(settings.avatar_mode, 'inochi2d');
-  // Without an own choice the first puppet is the default (kept as a choice once picked).
-  assert.ok([null, model.model_path].includes(settings.active_inochi2d_path ?? null));
+  assert.equal(settings.active_inochi2d_path, model.model_path);
 
   // Avatar library: filter, preview picture, give to a character.
   await browser.$('button=Einstellungen').click();
@@ -113,7 +118,7 @@ try {
   await browser.$('[data-avatar-manager]').waitForDisplayed({ timeout: 10_000 });
   await browser.$('[data-inochi2d-catalog]').waitForDisplayed({ timeout: 5000, timeoutMsg: 'Beispielmodelle fehlen' });
   await browser.$('[role="radio"][data-radio-value="inochi2d"]').click();
-  await browser.waitUntil(async () => (await browser.$$('[data-avatar-card]')).length === 1, { timeout: 3000, timeoutMsg: 'Filter Inochi2D' });
+  await browser.waitUntil(async () => (await browser.$$('[data-avatar-card]')).length === shippedModels.length + 1, { timeout: 3000, timeoutMsg: 'Filter Inochi2D' });
   const card = await browser.$('[data-avatar-card="inochi2d"][data-avatar-name="Testpuppe"]');
   await card.click();
   await browser.$('[data-avatar-preview="inochi2d"] canvas').waitForExist({ timeout: 20_000, timeoutMsg: 'Keine Vorschau' });
@@ -121,7 +126,7 @@ try {
   const thumbs = path.join(home, 'data', 'avatar_thumbs');
   assert.ok(existsSync(thumbs) && readdirSync(thumbs).some((f) => f.startsWith('inochi2d-')), 'Vorschaubild nicht gespeichert');
 
-  const row = await browser.$('[data-avatar-character]');
+  const [row] = await browser.$$('[data-avatar-character]');
   const name = (await browser.execute((el) => el.querySelector('span.truncate').textContent, row)).trim();
   await row.$('input[type="checkbox"]').click();
   const usesModel = async () => (await invoke('scan_characters')).find((c) => c.card.data.name === name)?.card.data.extensions?.custom_inochi2d;
@@ -131,7 +136,8 @@ try {
   await browser.waitUntil(async () => !(await usesModel()), { timeout: 10_000, timeoutMsg: 'Zuweisung nicht entfernt' });
 
   // Puppet settings: switch the mouth off by hand, saved per puppet, then back to automatic.
-  await browser.$('[data-inochi2d-mapping] summary').click();
+  assert.equal((await browser.$$('[data-inochi2d-mapping]')).length, 1, 'Puppen-Einstellungen nach Zuweisung vervielfacht');
+  await browser.$('[data-inochi2d-mapping] > summary').click();
   const mouthSelect = await browser.$('[data-inochi2d-channel="mouthOpen"] select');
   await mouthSelect.waitForDisplayed({ timeout: 20_000, timeoutMsg: 'Puppen-Einstellungen fehlen' });
   assert.match(await mouthSelect.$('option[value="auto"]').getText(), /Mouth:: Open/);
@@ -161,9 +167,9 @@ try {
 
   // Own name and removal into the trash.
   await invoke('rename_avatar', { kind: 'inochi2d', path: model.model_path, name: 'Puppe Eins' });
-  assert.equal((await invoke('scan_inochi2d_models'))[0].name, 'Puppe Eins');
+  assert.equal((await invoke('scan_inochi2d_models')).find((m) => m.model_path === model.model_path)?.name, 'Puppe Eins');
   await invoke('delete_avatar', { kind: 'inochi2d', path: model.model_path });
-  assert.equal((await invoke('scan_inochi2d_models')).length, 0);
+  assert.equal((await invoke('scan_inochi2d_models')).length, shippedModels.length);
   assert.ok(readdirSync(path.join(home, 'data', '.trash', 'avatars')).some((f) => f.endsWith('Testpuppe.inp')), 'nicht im Papierkorb');
 
   console.log(`Inochi2D: Import, Anzeige im Chat (${Math.round(drawn * 100)} % gezeichnet), Einstellung, Bibliothek, Vorschaubild, Zuweisung, Umbenennen und Entfernen bestanden.`);

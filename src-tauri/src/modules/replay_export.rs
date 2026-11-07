@@ -850,7 +850,7 @@ mod tests {
         {
             // `mimetype` comes first and is stored, as the format demands.
             let first = book.by_index(0).unwrap();
-            assert_eq!(first.name(), "mimetype");
+            assert_eq!(first.name().unwrap(), "mimetype");
             assert_eq!(first.compression(), zip::CompressionMethod::Stored);
         }
         let mut read = |name: &str| {

@@ -118,6 +118,7 @@ fn new_device_id() -> String {
 
 fn host_name() -> String {
     sysinfo::System::host_name()
+        .ok()
         .map(|name| name.trim().to_string())
         .filter(|name| !name.is_empty())
         .unwrap_or_else(|| "OtakuSoul".to_string())

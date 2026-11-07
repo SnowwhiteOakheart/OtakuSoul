@@ -39,6 +39,11 @@ export function startMockLlm() {
     let body = '';
     req.on('data', (chunk) => (body += chunk));
     req.on('end', () => {
+      // Deterministic request failure: a closed TCP port can take seconds to fail on Windows.
+      if (req.url === '/v1/test-error') {
+        res.writeHead(503).end('Planned HTTP failure');
+        return;
+      }
       // OpenAI-compatible text-to-speech: a short silent WAV, so voices can be tested offline.
       if (req.method === 'POST' && req.url.endsWith('/audio/speech')) {
         const { input = '', model = '' } = JSON.parse(body || '{}');

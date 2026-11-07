@@ -22,6 +22,7 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 | A3 | Sync zwischen Geräten und Sprechblasen im Alltag prüfen | ★★ | S | zwei Geräte, Nextcloud o. Ä. |
 | A4 | Nutzertests mit 2–3 Einsteigern | ★★★ | S | Testpersonen |
 | A5 | Signierte Installer (Windows, macOS) | ★★★ | S–M | Zertifikat bzw. Apple-Konto (Kosten) |
+| A6 | Kontrastbefunde der Sammlungskarten im hellen Theme prüfen: Bild-/Gradientenmessung und Badge-Farben | ★ | S | `e2e/contrast.mjs`, Befunde im Abhängigkeitsbericht vom 07.11.2026 |
 | **B** | **Als Nächstes – baut auf Vorhandenem auf** | | | |
 | B4 | Teilen: Lorebooks, automatische Prüfung der Einreichung | ★★ | M | Prüfablauf im Daten-Repo |
 | B5 | ~~Webtoon-Export~~ erledigt (05.11.2026) | – | – | – |

@@ -12,6 +12,7 @@ try {
   const input = await browser.$('textarea[aria-label="Nachricht"]');
   await input.waitForDisplayed({ timeout: 30_000 });
   const toggle = await browser.$('button[aria-label="Werkzeuge"]');
+  await toggle.waitForDisplayed({ timeout: 15_000 });
   await jsClick(toggle);
   await browser.waitUntil(async () => (await toggle.getAttribute('aria-pressed')) === 'true', { timeout: 5000 });
 

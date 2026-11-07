@@ -248,14 +248,15 @@ impl CompanionTools {
 
     /// Collect comprehensive system info via sysinfo
     pub fn get_system_info() -> Result<String, String> {
-        let mut sys = sysinfo::System::new_all();
+        let mut sys = sysinfo::System::new_all()
+            .map_err(|error| format!("Systeminformationen nicht verfügbar: {error}"))?;
         sys.refresh_all();
 
-        let os_name = sysinfo::System::name().unwrap_or_else(|| "Unbekannt".to_string());
-        let os_ver = sysinfo::System::os_version().unwrap_or_else(|| "Unbekannt".to_string());
-        let kernel = sysinfo::System::kernel_version().unwrap_or_else(|| "Unbekannt".to_string());
-        let host = sysinfo::System::host_name().unwrap_or_else(|| "localhost".to_string());
-        let uptime = sysinfo::System::uptime();
+        let os_name = sysinfo::System::name().unwrap_or_else(|_| "Unbekannt".to_string());
+        let os_ver = sysinfo::System::os_version().unwrap_or_else(|_| "Unbekannt".to_string());
+        let kernel = sysinfo::System::kernel_version().unwrap_or_else(|_| "Unbekannt".to_string());
+        let host = sysinfo::System::host_name().unwrap_or_else(|_| "localhost".to_string());
+        let uptime = sysinfo::System::uptime().unwrap_or_default();
         let uptime_hours = uptime / 3600;
         let uptime_mins = (uptime % 3600) / 60;
 
@@ -265,7 +266,8 @@ impl CompanionTools {
         let cpus = sys.cpus();
         let cpu_brand = cpus.first().map(|c| c.brand()).unwrap_or("Unbekannt");
 
-        let disks = sysinfo::Disks::new_with_refreshed_list();
+        let disks = sysinfo::Disks::new_with_refreshed_list()
+            .map_err(|error| format!("Laufwerksinformationen nicht verfügbar: {error}"))?;
         let mut disk_info = Vec::new();
         for disk in disks.iter() {
             disk_info.push(format!(
@@ -447,7 +449,8 @@ impl CompanionTools {
 
         match act.as_str() {
             "list" => {
-                let mut sys = sysinfo::System::new_all();
+                let mut sys = sysinfo::System::new_all()
+                    .map_err(|error| format!("Prozessliste nicht verfügbar: {error}"))?;
                 sys.refresh_all();
                 let mut app_names = std::collections::BTreeSet::new();
                 for proc in sys.processes().values() {
@@ -1109,12 +1112,18 @@ impl CompanionTools {
 
     /// Collect environment vitals snapshot
     pub fn get_environment_snapshot() -> EnvironmentSnapshot {
-        let mut sys = sysinfo::System::new_all();
-        sys.refresh_all();
+        let sys = sysinfo::System::new_all().map(|mut sys| {
+            sys.refresh_all();
+            sys
+        });
+        if let Err(error) = &sys {
+            tracing::warn!(%error, "Could not read environment vitals");
+        }
+        let sys = sys.ok();
 
-        let cpu_usage_percent = sys.global_cpu_usage();
-        let ram_total = sys.total_memory();
-        let ram_used = sys.used_memory();
+        let cpu_usage_percent = sys.as_ref().map_or(0.0, sysinfo::System::global_cpu_usage);
+        let ram_total = sys.as_ref().map_or(0, sysinfo::System::total_memory);
+        let ram_used = sys.as_ref().map_or(0, sysinfo::System::used_memory);
         let ram_total_mb = ram_total / (1024 * 1024);
         let ram_used_mb = ram_used / (1024 * 1024);
         let ram_percent = if ram_total > 0 {
@@ -1126,7 +1135,10 @@ impl CompanionTools {
         let disks = sysinfo::Disks::new_with_refreshed_list();
         let mut disk_free_bytes = 0u64;
         let mut disk_total_bytes = 0u64;
-        for d in disks.iter() {
+        if let Err(error) = &disks {
+            tracing::warn!(%error, "Could not read environment disk space");
+        }
+        for d in disks.as_ref().into_iter().flat_map(|disks| disks.iter()) {
             // Some virtual file systems report absurd sizes: saturate instead of overflowing.
             disk_free_bytes = disk_free_bytes.saturating_add(d.available_space());
             disk_total_bytes = disk_total_bytes.saturating_add(d.total_space());
@@ -1183,8 +1195,8 @@ impl CompanionTools {
             gpu_util_percent,
             gpu_vram_used_mb,
             gpu_vram_total_mb,
-            uptime_seconds: sysinfo::System::uptime(),
-            active_processes_count: sys.processes().len(),
+            uptime_seconds: sysinfo::System::uptime().unwrap_or_default(),
+            active_processes_count: sys.as_ref().map_or(0, |sys| sys.processes().len()),
         }
     }
 

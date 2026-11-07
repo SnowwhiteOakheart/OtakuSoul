@@ -36,7 +36,7 @@ try {
   sql('UPDATE chat_messages SET created_at = created_at - 36000;');
   mock.stats.chatReply = '*grinst* Sota hat mir heute Nacht beigebracht, wie man einen Speedrun durch die Bibliothek macht …';
   const startedWith = mock.stats.chat;
-  await browser.execute(() => window.location.reload());
+  await browser.refresh();
   await input.waitForDisplayed({ timeout: 30_000 });
 
   await browser.waitUntil(() => mock.stats.chat > startedWith && Boolean(offscreenInstruction()), { timeout: 60_000, timeoutMsg: 'Keine Off-Screen-Erzählung' });

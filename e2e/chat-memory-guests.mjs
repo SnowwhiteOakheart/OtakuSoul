@@ -14,9 +14,10 @@ try {
   await browser.$('textarea[aria-label="Nachricht"]').waitForDisplayed({ timeout: 30_000 });
   const host = (await invoke('load_settings')).active_character_id;
   const lirwen = (await invoke('scan_characters')).find((c) => c.card.data.name === 'Lirwen');
+  await browser.waitUntil(async () => (await invoke('list_chat_sessions', { characterId: host })).length > 0, { timeout: 15_000, timeoutMsg: 'Chat noch nicht angelegt' });
   const [session] = await invoke('list_chat_sessions', { characterId: host });
   await invoke('set_chat_members', { chatId: session.id, members: [lirwen.id] });
-  await browser.execute(() => window.location.reload());
+  await browser.refresh();
   await browser.$('textarea[aria-label="Nachricht"]').waitForDisplayed({ timeout: 30_000 });
 
   const open = await browser.$('button[aria-label="Kognitives Gedächtnis öffnen"]');

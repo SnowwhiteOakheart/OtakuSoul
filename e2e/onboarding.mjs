@@ -59,8 +59,8 @@ try {
   // Character: the first one of the list.
   await browser.$('h2=Mit wem möchtest du sprechen?').waitForDisplayed();
   // The character cards of the dialog (the app behind it has pressable buttons too).
-  const firstCharacter = await browser.$('[role="dialog"] .grid button[aria-pressed]');
-  await firstCharacter.waitForExist({ timeout: 20_000, timeoutMsg: 'keine Charaktere im Assistenten' });
+  await browser.waitUntil(async () => (await browser.$$('[role="dialog"] .grid button[aria-pressed]')).length > 0, { timeout: 20_000, timeoutMsg: 'keine Charaktere im Assistenten' });
+  const firstCharacter = (await browser.$$('[role="dialog"] .grid button[aria-pressed]'))[0];
   const name = (await browser.execute((el) => el.textContent, firstCharacter)).trim();
   await firstCharacter.click();
   await next();

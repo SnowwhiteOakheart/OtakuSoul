@@ -29,7 +29,7 @@ try {
 
   await invoke('import_chat_jsonl', { characterId: settings.active_character_id, jsonlContent: readFileSync(target, 'utf8'), titleOverride: 'Rundreise' });
   // An import through IPC bypasses the store: reload so the list shows it.
-  await browser.execute(() => window.location.reload());
+  await browser.refresh();
   await browser.$('textarea[aria-label="Nachricht"]').waitForDisplayed({ timeout: 30_000 });
   await browser.$('button[title^="Gespräche, Author"]').click();
   await browser.$('//aside//*[normalize-space()="Rundreise"]').waitForDisplayed({ timeout: 10_000, timeoutMsg: 'Import fehlt in der Seitenleiste' });

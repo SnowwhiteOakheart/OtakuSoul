@@ -4,6 +4,10 @@
 
 `npm run e2e:run` überspringt den Build-Schritt und führt die Tests direkt gegen das bestehende Test-Binary aus.
 
+Die Suite verwendet WebdriverIO 10 mit strengen Selektoren: `$` muss genau ein Element finden; für eine bewusst gewählte erste Karte `$$` verwenden. Asynchrone Seitenskripte über `execute(async () => …)` ausführen und Navigation über `browser.refresh()` abwarten. Ein sichtbares Eingabefeld garantiert noch keine angelegte Chat-Sitzung; dafür auf den entsprechenden Zustand warten. Die unterstützten Node-Versionen stehen in `package.json` unter `engines`.
+
+`close-to-tray.mjs` prüft native X11-Fensterereignisse und wird außerhalb von Linux ausdrücklich übersprungen; dadurch ist das native Schließen unter Windows/macOS nicht mitgeprüft.
+
 ## Voraussetzungen (Linux)
 
 - `tauri-driver`: `cargo install tauri-driver --locked`

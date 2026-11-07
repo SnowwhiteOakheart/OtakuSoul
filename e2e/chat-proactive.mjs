@@ -38,7 +38,7 @@ try {
   });
   mock.stats.chatReply = '*schreibt dir* Und? Wie lief dein Vorstellungsgespräch?';
   const writtenBefore = mock.stats.chat;
-  await browser.execute(() => window.location.reload());
+  await browser.refresh();
   await browser.$('textarea[aria-label="Nachricht"]').waitForDisplayed({ timeout: 30_000 });
 
   // The first check runs 15 s after the start.
@@ -56,7 +56,7 @@ try {
   // Unanswered: no second message, even though the pause is long enough.
   sql('UPDATE chat_messages SET created_at = created_at - 86400;');
   const afterFirst = mock.stats.chat;
-  await browser.execute(() => window.location.reload());
+  await browser.refresh();
   await browser.$('textarea[aria-label="Nachricht"]').waitForDisplayed({ timeout: 30_000 });
   await browser.pause(25_000);
   assert.equal(mock.stats.chat, afterFirst, 'Figur schreibt erneut, bevor der Nutzer antwortet');

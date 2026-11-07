@@ -46,7 +46,7 @@ async function positiveTabindex(browser, where) {
     await browser.$('button=Stage').click();
     await browser.$('[data-story-gallery]').waitForDisplayed({ timeout: 15_000 });
     await positiveTabindex(browser, 'Story-Galerie');
-    const opener = await browser.$('[data-story-gallery]').$('button*=Eigene Geschichte');
+    const opener = await browser.$('[data-story-gallery] header').$('button*=Eigene Geschichte');
     await enterOn(browser, opener);
     const wizard = await browser.$('[data-story-wizard]');
     await wizard.waitForDisplayed({ timeout: 5000 });
@@ -72,7 +72,8 @@ async function positiveTabindex(browser, where) {
 
     // Character preview from the library.
     await browser.$('button=Charaktere').click();
-    const card = await browser.$('[data-index="0"] button');
+    await browser.waitUntil(async () => (await browser.$$('button[aria-label^="Mehr über"]')).length > 0, { timeout: 10_000 });
+    const [card] = await browser.$$('button[aria-label^="Mehr über"]');
     await card.waitForDisplayed({ timeout: 10_000 });
     await positiveTabindex(browser, 'Charaktere');
     await enterOn(browser, card);

@@ -24,8 +24,13 @@ const { browser, home, close } = await launch({}, { homeFiles: { 'data/llm_bench
 // oxlint-disable-next-line no-underscore-dangle -- Tauri IPC in a disposable profile
 const call = async (command, args = {}) => {
   try {
-    return await browser.executeAsync((cmd, payload, done) => window.__TAURI_INTERNALS__.invoke(cmd, payload)
-      .then((value) => done({ ok: true, value }), (error) => done({ ok: false, error: String(error) })), command, args);
+    return await browser.execute(async (cmd, payload) => {
+      try {
+        return { ok: true, value: await window.__TAURI_INTERNALS__.invoke(cmd, payload) };
+      } catch (error) {
+        return { ok: false, error: String(error) };
+      }
+    }, command, args);
   } catch (error) {
     return { ok: false, error: String(error?.message ?? error) };
   }

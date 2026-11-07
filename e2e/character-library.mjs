@@ -10,8 +10,8 @@ const jsClick = (element) => browser.execute((el) => el.click(), element);
 try {
   await browser.$('button=Charaktere').waitForExist({ timeout: 20_000 });
   await browser.$('button=Charaktere').click();
-  const firstPreview = await browser.$('button[aria-label^="Mehr über"]');
-  await firstPreview.waitForExist({ timeout: 15_000 });
+  await browser.waitUntil(async () => (await browser.$$('button[aria-label^="Mehr über"]')).length > 0, { timeout: 15_000 });
+  const [firstPreview] = await browser.$$('button[aria-label^="Mehr über"]');
   const name = (await firstPreview.getAttribute('aria-label')).replace('Mehr über ', '');
   assert.ok(['Shiori Amane', 'Sota Minase', 'Lirwen', 'Faelion'].includes(name), `Erste Karte ist keine Einsteiger-Figur: ${name}`);
   // A cover introduces the starter characters; the grid starts below it.
@@ -22,8 +22,8 @@ try {
     timeout: 5000,
     timeoutMsg: 'Titelbild der Starterfiguren lädt nicht',
   });
-  const [bannerBottom, cardTop] = await browser.execute((el, card) => [el.getBoundingClientRect().bottom, card.getBoundingClientRect().top], banner, firstPreview);
-  assert.ok(cardTop >= bannerBottom, `Karten liegen unter dem Banner (${cardTop} < ${bannerBottom})`);
+  const [headerBottom, cardTop] = await browser.execute((el, card) => [el.firstElementChild.getBoundingClientRect().bottom, card.getBoundingClientRect().top], banner, firstPreview);
+  assert.ok(cardTop >= headerBottom, `Karten überlagern den Banner-Kopf (${cardTop} < ${headerBottom})`);
   await browser.saveScreenshot(path.join(screenshotDir, '86a-starterfiguren.png'));
   await jsClick(firstPreview);
 

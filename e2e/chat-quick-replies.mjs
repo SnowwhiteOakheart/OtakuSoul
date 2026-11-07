@@ -24,6 +24,11 @@ try {
   await browser.saveScreenshot(path.join(screenshotDir, '124-quick-replies.png'));
 
   await input.clearValue();
+  await browser.waitUntil(() => browser.execute(async () => {
+    const invoke = window.__TAURI_INTERNALS__.invoke;
+    const settings = await invoke('load_settings');
+    return (await invoke('list_chat_sessions', { characterId: settings.active_character_id })).length > 0;
+  }), { timeout: 15_000, timeoutMsg: 'Chat noch nicht angelegt' });
   const before = mock.stats.chat;
   await jsClick(await bar.$('button=Weiter'));
   await browser.waitUntil(() => mock.stats.chat > before, { timeout: 20_000, timeoutMsg: 'Quick-Reply sendet nicht' });

@@ -93,7 +93,7 @@ try {
   // Own story through the wizard.
   await jsClick(await browser.$('button=Geschichten'));
   await browser.$('[data-story-gallery]').waitForDisplayed({ timeout: 5000 });
-  await jsClick(await browser.$('[data-story-gallery]').$('button*=Eigene Geschichte'));
+  await jsClick(await browser.$('[data-story-gallery] header').$('button*=Eigene Geschichte'));
   await browser.$('[data-story-wizard="genre"]').waitForDisplayed({ timeout: 5000 });
   await jsClick(await browser.$('[data-story-wizard]').$('button*=Krimi'));
   for (const step of ['you', 'companions', 'start']) {
@@ -103,6 +103,8 @@ try {
   await jsClick(await browser.$('button*=Tod einer Torte'));
   await browser.pause(300);
   await shot(browser, '85-story-assistent');
+  await jsClick(await browser.$('[data-story-wizard]').$('button=Weiter'));
+  await browser.$('[data-story-wizard="music"]').waitForDisplayed({ timeout: 5000 });
   await jsClick(await browser.$('[data-story-wizard]').$('button*=Geschichte starten'));
   await browser.$('textarea').waitForDisplayed({ timeout: 15_000 });
   const own = await invoke('get_stage_state');

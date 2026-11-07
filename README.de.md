@@ -314,7 +314,7 @@ Der lokale Chat steht 1–4 Sekunden nach einem Bild- oder Sprachauftrag wieder 
 
 ### Aus dem Quellcode bauen
 
-Voraussetzungen: **Node.js** 20+, **Rust** 1.88+; unter Linux WebKitGTK 4.1, GTK 3, libsoup 3, librsvg 2.
+Voraussetzungen: **Node.js** 22.23.4+ (22.x), 24.22.1+ (24.x) oder 26.12.1+ (26+), **Rust** 1.99+; unter Linux WebKitGTK 4.1, GTK 3, libsoup 3, librsvg 2.
 
 ```bash
 npm install

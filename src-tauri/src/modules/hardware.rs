@@ -242,11 +242,16 @@ fn free_space_on(mounts: &[(std::path::PathBuf, u64)], path: &std::path::Path) -
 
 pub fn disk_space() -> DiskSpace {
     let disks = sysinfo::Disks::new_with_refreshed_list();
-    let mounts: Vec<(std::path::PathBuf, u64)> = disks
-        .list()
-        .iter()
-        .map(|d| (d.mount_point().to_path_buf(), d.available_space()))
-        .collect();
+    let mounts: Vec<(std::path::PathBuf, u64)> = match disks {
+        Ok(disks) => disks
+            .iter()
+            .map(|d| (d.mount_point().to_path_buf(), d.available_space()))
+            .collect(),
+        Err(error) => {
+            tracing::warn!(%error, "Could not read disk space");
+            Vec::new()
+        }
+    };
     let paths = crate::modules::paths::resolve_app_paths();
     let resolve = |p: &str| {
         let path = std::path::Path::new(p);
@@ -265,21 +270,27 @@ pub fn disk_space() -> DiskSpace {
 }
 
 pub fn probe_hardware() -> HardwareInfo {
-    let mut sys = System::new();
-    sys.refresh_memory();
-    sys.refresh_cpu_all();
+    let sys = System::new().map(|mut sys| {
+        sys.refresh_memory();
+        sys.refresh_cpu_all();
+        sys
+    });
+    if let Err(error) = &sys {
+        tracing::warn!(%error, "Could not read CPU and RAM information");
+    }
+    let sys = sys.ok();
 
-    let os_name = System::name().unwrap_or_else(|| "Unknown OS".to_string());
+    let os_name = System::name().unwrap_or_else(|_| "Unknown OS".to_string());
     let os_version = System::os_version().unwrap_or_default();
     let cpu_name = sys
-        .cpus()
-        .first()
+        .as_ref()
+        .and_then(|sys| sys.cpus().first())
         .map(|c| c.brand().to_string())
         .unwrap_or_else(|| "Unknown CPU".to_string());
-    let cpu_cores = sys.cpus().len();
+    let cpu_cores = sys.as_ref().map_or(0, |sys| sys.cpus().len());
 
-    let total_ram_mb = sys.total_memory() / (1024 * 1024);
-    let available_ram_mb = sys.available_memory() / (1024 * 1024);
+    let total_ram_mb = sys.as_ref().map_or(0, System::total_memory) / (1024 * 1024);
+    let available_ram_mb = sys.as_ref().map_or(0, System::available_memory) / (1024 * 1024);
 
     let mut gpus = Vec::new();
 

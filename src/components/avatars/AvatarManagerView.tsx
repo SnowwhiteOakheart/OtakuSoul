@@ -548,19 +548,19 @@ export function AvatarManagerView() {
               )}
 
               {isVroidPath(selected.path) && (
-                <VroidDetails key={selected.path} path={selected.path} />
+                <VroidDetails key={`vroid:${selected.path}`} path={selected.path} />
               )}
 
               {selected.kind === 'inochi2d' && (
                 <Inochi2dMappingSettings
-                  key={selected.path}
+                  key={`mapping:${selected.path}`}
                   path={selected.path}
                   info={puppetInfo?.path === selected.path ? puppetInfo.info : null}
                 />
               )}
 
               {/* Desktop pet: 3D models and Inochi2D puppets (Live2D is no pet figure). */}
-              {selected.kind !== 'live2d' && <PetFramingSettings key={selected.path} path={selected.path} />}
+              {selected.kind !== 'live2d' && <PetFramingSettings key={`framing:${selected.path}`} path={selected.path} />}
 
               {selected.kind === 'vrm' && (
                 <button

@@ -152,7 +152,7 @@ async function session(settings, run) {
   const tab = (n) => browser.execute((key) => window.dispatchEvent(new KeyboardEvent('keydown', { key, ctrlKey: true })), String(n));
   const persona = async () => {
     await invoke('save_persona', { persona: { id: 'default_user', name: TEXT.persona, description: '', avatar_data_url: null } });
-    await browser.execute(() => window.location.reload());
+    await browser.refresh();
     await browser.pause(1000);
   };
   try {

@@ -314,7 +314,7 @@ flowchart LR
 
 ### Сборка из исходников
 
-Требования: **Node.js** 20+, **Rust** 1.88+; в Linux – WebKitGTK 4.1, GTK 3, libsoup 3, librsvg 2.
+Требования: **Node.js** 22.23.4+ (22.x), 24.22.1+ (24.x) или 26.12.1+ (26+), **Rust** 1.99+; в Linux – WebKitGTK 4.1, GTK 3, libsoup 3, librsvg 2.
 
 ```bash
 npm install

@@ -45,7 +45,8 @@ try {
   assert.match(await textOf(bookmarks), /Hafen/);
   await shot('39-chat-lesezeichen');
   await jsClick(await bookmarks.$('button'));
-  await browser.$('.message-flash').waitForExist({ timeout: 5000 });
+  const harbourId = await harbour.getAttribute('data-message-id');
+  await browser.$(`[data-message-id="${harbourId}"].message-flash`).waitForExist({ timeout: 5000 });
   await jsClick(await browser.$('button[title^="Gespräche, Author"]'));
 
   // Continue from the harbour question as a new chat.

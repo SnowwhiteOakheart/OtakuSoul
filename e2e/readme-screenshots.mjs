@@ -105,7 +105,7 @@ await session({ start_tab: 'home', stage_last_scene: '', active_character_id: 's
   await browser.$('[data-home]').waitForDisplayed({ timeout: 30_000 });
   // A named player instead of "User" (the persona is read at start).
   await invoke('save_persona', { persona: { id: 'default_user', name: TEXT.persona, description: '', avatar_data_url: null } });
-  await browser.execute(() => window.location.reload());
+  await browser.refresh();
   await browser.pause(1000);
   await browser.$('[data-home]').waitForDisplayed({ timeout: 30_000 });
 
@@ -190,7 +190,7 @@ await session({ onboarding_completed: false, active_character_id: 'shiori_amane'
 await session({}, async ({ browser, mock, shot, click, invoke }) => {
   await browser.$('nav').waitForExist({ timeout: 20_000 });
   await invoke('save_persona', { persona: { id: 'default_user', name: TEXT.persona, description: '', avatar_data_url: null } });
-  await browser.execute(() => window.location.reload());
+  await browser.refresh();
   await browser.pause(1000);
   await browser.$('nav').waitForExist({ timeout: 20_000 });
   const scene = await invoke('get_stage_state');

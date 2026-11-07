@@ -10,14 +10,18 @@ try {
   const input = await browser.$('textarea[aria-label="Nachricht"]');
   await input.waitForDisplayed({ timeout: 30_000 });
   // A global lorebook with a keyword from the message.
-  await browser.executeAsync((done) => {
+  await browser.execute(async () => {
     const invoke = window.__TAURI_INTERNALS__.invoke;
     const book = { id: 'e2e_hits', name: 'Kyoto-Wissen', description: '', is_global: true, entries: [
       { name: 'Fushimi Inari', key: ['schrein'], exclude_key: [], content: 'Tausend rote Tore.', trigger_type: 'keyword', injection_behavior: 'passive', enabled: true },
     ] };
-    invoke('save_lorebook', { lorebook: book }).then(() => done(), (e) => done(String(e)));
+    await invoke('save_lorebook', { lorebook: book });
   });
   await browser.refresh();
+  // A ready chat input does not mean the asynchronous lorebook catalog has loaded.
+  await browser.$('button=Lorebooks').click();
+  await browser.$('span=Kyoto-Wissen').waitForDisplayed({ timeout: 10_000 });
+  await browser.$('button=Chat').click();
   await input.waitForDisplayed({ timeout: 30_000 });
   await browser.$('textarea[aria-label="Nachricht"]').setValue('Gehen wir zum Schrein?');
   const before = mock.stats.chat;

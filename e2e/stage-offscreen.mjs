@@ -72,7 +72,7 @@ try {
       chat_log: state.chat_log.map((m) => ({ ...m, timestamp: longAgo })),
     },
   });
-  await browser.execute(() => window.location.reload());
+  await browser.refresh();
   await browser.$('button=Stage').waitForExist({ timeout: 20_000 });
   await browser.$('button=Stage').click();
   await browser.$('form textarea').waitForDisplayed({ timeout: 15_000 });

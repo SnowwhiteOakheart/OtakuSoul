@@ -30,7 +30,7 @@ try {
     ['A_Idle_Breath', 'idle', ''],
     ['Emote_Wave', 'greeting', ''],
     ['Idle_Happy', 'idle', 'happy'],
-    ['Dance_Spin', '', ''],
+    ['Showcase_Spin', '', ''],
   ]);
 
   await browser.$('button=Einstellungen').click();
@@ -57,10 +57,10 @@ try {
   await browser.$('button[aria-label="Fröhlich"]').click();
   await browser.$(`${viewer}[data-idle-clip="Idle_Happy"]`).waitForExist({ timeout: 10_000, timeoutMsg: 'Ruhe-Schleife folgt der Stimmung nicht' });
 
-  // The dance has no use: it is only offered in the gestures menu.
+  // The showcase clip has no use: it is only offered in the gestures menu.
   await browser.$('button[aria-label="Gesten aus dem Modell"]').click();
-  await browser.$('button[title="Dance_Spin abspielen"]').click();
-  await browser.$(`${viewer}[data-gesture="Dance_Spin"]`).waitForExist({ timeout: 10_000, timeoutMsg: 'Geste aus dem Menü startet nicht' });
+  await browser.$('button[title="Showcase_Spin abspielen"]').click();
+  await browser.$(`${viewer}[data-gesture="Showcase_Spin"]`).waitForExist({ timeout: 10_000, timeoutMsg: 'Geste aus dem Menü startet nicht' });
   await browser.$(`${viewer}[data-gesture=""]`).waitForExist({ timeout: 10_000 });
 
   // The settings list the clips; giving the wave the use "nod" makes *nickt* play it.

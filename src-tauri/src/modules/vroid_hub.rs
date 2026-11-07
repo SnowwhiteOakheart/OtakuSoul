@@ -887,7 +887,11 @@ fn unpack_vrm(bytes: Vec<u8>) -> Result<Vec<u8>, String> {
     if bytes.starts_with(b"PK\x03\x04") {
         let mut archive =
             zip::ZipArchive::new(std::io::Cursor::new(&bytes)).map_err(|e| format!("zip: {e}"))?;
-        let names: Vec<String> = archive.file_names().map(str::to_string).collect();
+        let names: Vec<String> = archive
+            .file_names()
+            .map(|name| name.map(|name| name.into_owned()))
+            .collect::<Result<_, _>>()
+            .map_err(|error| format!("zip: {error}"))?;
         let name = names
             .iter()
             .find(|n| n.to_ascii_lowercase().ends_with(".vrm"))

@@ -25,8 +25,8 @@ try {
   await browser.$('#onboarding-api-key').waitForDisplayed();
   await browser.$('#onboarding-api-key').setValue('sk-test');
   await next();
-  const firstCharacter = await browser.$('[role="dialog"] .grid button[aria-pressed]');
-  await firstCharacter.waitForExist({ timeout: 20_000 });
+  await browser.waitUntil(async () => (await browser.$$('[role="dialog"] .grid button[aria-pressed]')).length > 0, { timeout: 20_000 });
+  const [firstCharacter] = await browser.$$('[role="dialog"] .grid button[aria-pressed]');
   const character = (await browser.execute((el) => el.textContent, firstCharacter)).trim();
   await firstCharacter.click();
   await next();

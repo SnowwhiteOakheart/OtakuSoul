@@ -55,7 +55,7 @@ for (const expert of [false, true]) {
     await browser.$('textarea[aria-label="Nachricht"]').waitForDisplayed({ timeout: 30_000 });
     await browser.setWindowSize(1400, 900);
     await browser.$('button=Einstellungen').click();
-    await browser.$('[role="tab"][id^="settings-tab-"]').waitForDisplayed({ timeout: 10_000 });
+    await browser.$('[role="tab"][id^="settings-tab-"][aria-selected="true"]').waitForDisplayed({ timeout: 10_000 });
     const tabs = await browser.$$('[role="tab"][id^="settings-tab-"]');
     const found = [];
     for (const tab of tabs) found.push([await tab.getAttribute('id'), await tab.getText()]);

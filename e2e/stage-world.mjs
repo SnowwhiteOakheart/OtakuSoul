@@ -48,7 +48,7 @@ try {
   const dialog = await browser.$('[role="dialog"]');
   assert.ok(!(await dialog.getText()).includes('HIDDEN_TRAITOR'), 'verborgener Arc ohne Spoiler-Schalter sichtbar');
   await dialog.$('input[aria-label="Wert"]').setValue('aufgebrochen');
-  await dialog.$('button*=Hinzufügen').click();
+  await dialog.$('.//section[.//input[@aria-label="Stichwort"]]//button[contains(., "Hinzufügen")]').click();
   const keys = await dialog.$$('input[aria-label="Stichwort"]');
   await keys.at(-1).setValue('wache');
   const values = await dialog.$$('input[aria-label="Wert"]');
@@ -66,7 +66,7 @@ try {
   assert.equal(edited.arcs.length, 2, 'Arcs verloren');
 
   // The next turn sees the edits.
-  await browser.$('button*=Abenteuer').click();
+  await browser.$('button=Abenteuer').click();
   const before = mock.stats.stagePlanner;
   await browser.$('form textarea').setValue('Wir schleichen an der Wache vorbei.');
   await browser.keys('Enter');

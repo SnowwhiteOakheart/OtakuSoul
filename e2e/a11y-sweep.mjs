@@ -63,7 +63,7 @@ try {
     ['Einstellungen', '#setting-expert-mode'],
   ]) {
     await jsClick(await browser.$(`button=${nav}`));
-    await browser.$(ready).waitForExist({ timeout: 15_000, timeoutMsg: `${nav} lädt nicht` });
+    await browser.waitUntil(async () => (await browser.$$(ready)).length > 0, { timeout: 15_000, timeoutMsg: `${nav} lädt nicht` });
     await check(nav);
   }
 
@@ -90,7 +90,7 @@ try {
   const focusBack = await browser.execute(() => document.activeElement?.closest('[data-story]')?.getAttribute('data-story'));
   if (focusBack !== 'story_hanami_live') findings.push(`Tastatur: Fokus nach Escape bei ${focusBack ?? 'nichts'}`);
 
-  await jsClick(await browser.$('[data-story-gallery]').$('button*=Eigene Geschichte'));
+  await jsClick(await browser.$('[data-story-gallery] header').$('button*=Eigene Geschichte'));
   await browser.$('[data-story-wizard]').waitForDisplayed({ timeout: 5000 });
   await check('Story-Assistent');
   await browser.saveScreenshot(path.join(screenshotDir, '91-kleines-fenster-assistent.png'));

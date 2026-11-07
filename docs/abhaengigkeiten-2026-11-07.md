@@ -1,5 +1,7 @@
 # Abhängigkeiten: Update und verbleibende Migrationen
 
+> Dieser Bericht dokumentiert die erste konservative Runde. Die anschließend beauftragten größeren Updates und deren aktuellen Status beschreibt der [Major-Update-Nachtrag](abhaengigkeiten-major-2026-11-07.md).
+
 Stand: 07.11.2026. Geprüft wurden alle **37 direkten npm- und 54 direkten Rust-Abhängigkeiten**, einschließlich Entwicklungs-, Build- und plattformspezifischer Pakete. Grundlage sind die offiziellen npm-/crates.io-Metadaten, die tatsächlichen Lockfiles und die unten verlinkten Release- bzw. Migrationshinweise. Zusätzlich wurden kompatible indirekte Abhängigkeiten aktualisiert und verbliebene Resolver-Sperren untersucht.
 
 **Eingespielt: 12 direkte npm-Updates und 22 Rust-Paketupdates**, dazu die dadurch aufgelösten indirekten npm-Änderungen. Bei Rust ist `flate2` direkt; die übrigen 21 Updates betreffen indirekte Pakete. Es wurden keine Vorschauversionen neu eingeführt und keine Resolver-Sperren mit Overrides umgangen. Bereits vorhandene Release Candidates von `ort` bleiben unverändert.

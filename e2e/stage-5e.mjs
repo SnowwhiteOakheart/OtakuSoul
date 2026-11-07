@@ -68,13 +68,16 @@ try {
   // Fight from the panel until the engine declares the end.
   let rounds = 0;
   while ((await invoke('get_stage_state')).combat.is_active && rounds < 25) {
-    const attack = await panel.$('button[aria-label*="gegen"]');
+    await browser.waitUntil(async () => (await panel.$$('button[aria-label*="gegen"]')).length > 0, { timeout: 30_000, timeoutMsg: 'Kein Angriff wählbar' });
+    const [attack] = await panel.$$('button[aria-label*="gegen"]');
     await attack.waitForClickable({ timeout: 30_000, timeoutMsg: 'Kein Angriff wählbar' });
     await attack.click();
     await browser.waitUntil(
       async () => {
         const now = await invoke('get_stage_state');
-        return !now.combat.is_active || (await panel.$('button[aria-label*="gegen"]').isClickable().catch(() => false));
+        if (!now.combat.is_active) return true;
+        const [nextAttack] = await browser.$$('[data-testid="combat-5e"] button[aria-label*="gegen"]');
+        return nextAttack && await nextAttack.isClickable();
       },
       { timeout: 30_000, timeoutMsg: 'Kampfzug endet nicht' },
     );
@@ -95,7 +98,7 @@ try {
   assert.equal(mock.stats.combatActions ?? 0, companionTurns, 'nicht jeder Gefährtenzug fragte das Modell');
 
   // The compact sheet of the player.
-  await browser.$('button[aria-label^="Charakterbogen von"]').click();
+  await browser.$(`button[aria-label="Charakterbogen von ${player.name} öffnen"]`).click();
   const sheet = await browser.$('[role="dialog"]');
   await sheet.waitForDisplayed();
   const sheetText = await sheet.getText();

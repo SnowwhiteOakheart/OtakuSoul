@@ -12,6 +12,7 @@ const shot = (name) => browser.saveScreenshot(path.join(screenshotDir, `${name}.
 // oxlint-disable-next-line no-underscore-dangle -- Tauri IPC in a disposable profile
 const invoke = (command, args = {}) => browser.execute((cmd, payload) => window.__TAURI_INTERNALS__.invoke(cmd, payload), command, args);
 const vrmSelect = 'select[aria-label="3D-Avatar (VRM, glTF oder MMD)"]';
+const vrmActions = 'div.rounded-xl:has(> div > select[aria-label="3D-Avatar (VRM, glTF oder MMD)"])';
 const optionText = (selector) => browser.$(selector).getHTML();
 
 try {
@@ -29,7 +30,7 @@ try {
   await select.selectByAttribute('value', model.path);
 
   // Rename: the list shows the new name, the file keeps its own.
-  await browser.$('[data-avatar-action="rename"]').click();
+  await browser.$(`${vrmActions} [data-avatar-action="rename"]`).click();
   const field = await browser.$('[data-avatar-rename="vrm"]');
   await field.waitForDisplayed();
   assert.equal(await field.getValue(), 'Testrig');
@@ -40,7 +41,7 @@ try {
   await shot('99-avatar-umbenannt');
 
   // Remove with undo: back in the list, nothing deleted.
-  await browser.$('[data-avatar-action="delete"]').click();
+  await browser.$(`${vrmActions} [data-avatar-action="delete"]`).click();
   await browser.waitUntil(async () => !(await optionText(vrmSelect)).includes('Mika im Kimono'), { timeout: 5000, timeoutMsg: 'Avatar bleibt in der Liste' });
   await browser.$('button=Rückgängig').click();
   await browser.waitUntil(async () => (await optionText(vrmSelect)).includes('Mika im Kimono'), { timeout: 5000, timeoutMsg: 'Rückgängig bringt den Avatar nicht zurück' });
@@ -49,7 +50,7 @@ try {
 
   // Remove for good: after the undo time it is in the trash, not gone.
   assert.equal(await select.getValue(), model.path);
-  await browser.$('[data-avatar-action="delete"]').click();
+  await browser.$(`${vrmActions} [data-avatar-action="delete"]`).click();
   await browser.waitUntil(() => !existsSync(model.path), { timeout: 15_000, timeoutMsg: 'Avatar wird nicht entfernt' });
   const trash = path.join(home, 'data', '.trash', 'avatars');
   assert.ok(readdirSync(trash).some((f) => f.endsWith('Testrig.glb')), 'Avatar liegt nicht im Papierkorb');
@@ -59,7 +60,7 @@ try {
   const bundled = (await invoke('scan_vrm_models')).find((v) => !v.removable);
   assert.ok(bundled, 'Kein mitgelieferter 3D-Avatar');
   await select.selectByAttribute('value', bundled.path);
-  assert.equal(await browser.$('[data-avatar-action="delete"]').isEnabled(), false, 'Mitgelieferter Avatar lässt sich entfernen');
+  assert.equal(await browser.$(`${vrmActions} [data-avatar-action="delete"]`).isEnabled(), false, 'Mitgelieferter Avatar lässt sich entfernen');
   const live2d = (await invoke('scan_live2d_models'))[0];
   await invoke('rename_avatar', { kind: 'live2d', path: live2d.model_path, name: 'Meine Haru' });
   const renamed = (await invoke('scan_live2d_models')).find((m) => m.id === live2d.id);

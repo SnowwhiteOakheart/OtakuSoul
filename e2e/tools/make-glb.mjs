@@ -3,7 +3,7 @@
 // metres, with the ARKit blendshapes jawOpen, eyeBlinkLeft/Right and mouthSmileLeft/Right.
 // With `{ clips: true }` the file also carries its own animations, named like game exports:
 // "A_Idle_Breath" and "Idle_Happy" (loops, the second for a happy mood), "Emote_Wave" (a
-// gesture) and "Dance_Spin" (no use, played by hand). With `{ faceBones: true }` the face is rigged
+// gesture) and "Showcase_Spin" (no use, played by hand). With `{ faceBones: true }` the face is rigged
 // like game figures instead: eyelid, lip and mouth-corner bones on the head, no blendshapes.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -137,7 +137,7 @@ function embeddedClips() {
     new THREE.QuaternionKeyframeTrack('Head.quaternion', [0, 0.5, 1], [...turn(z, 0), ...turn(z, 0.1), ...turn(z, 0)]),
   ]);
   const y = new THREE.Vector3(0, 1, 0);
-  const spin = new THREE.AnimationClip('Dance_Spin', 1, [
+  const spin = new THREE.AnimationClip('Showcase_Spin', 1, [
     new THREE.QuaternionKeyframeTrack('Spine.quaternion', [0, 0.5, 1], [...turn(y, 0), ...turn(y, 0.6), ...turn(y, 0)]),
   ]);
   return [idle, wave, happyIdle, spin];

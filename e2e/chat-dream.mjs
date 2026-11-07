@@ -37,14 +37,14 @@ try {
   sql('UPDATE chat_messages SET created_at = created_at - 36000;');
   mock.stats.chatReply = '*reibt sich die Augen* Ich habe von einem Leuchtturm geträumt, der im Regen am Meer stand …';
   let startedWith = mock.stats.chat;
-  await browser.execute(() => window.location.reload());
+  await browser.refresh();
   await input.waitForDisplayed({ timeout: 30_000 });
   await browser.pause(25_000);
   assert.equal(mock.stats.chat, startedWith, 'Traum ohne genug Erinnerungen');
 
   await invoke('add_episodic_memory', { charId, category: 'fact', content: 'DREAM_C: Kai summt beim Lesen', significance: 2 });
   startedWith = mock.stats.chat;
-  await browser.execute(() => window.location.reload());
+  await browser.refresh();
   await input.waitForDisplayed({ timeout: 30_000 });
 
   await browser.waitUntil(() => mock.stats.chat > startedWith && Boolean(dreamInstruction()), { timeout: 60_000, timeoutMsg: 'Kein Traum beim Start' });

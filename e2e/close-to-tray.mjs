@@ -7,6 +7,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { launch, screenshotDir } from './harness.mjs';
 
+if (process.platform !== 'linux') {
+  console.log('Übersprungen: Der native Fenster-Schließtest benötigt Linux und X11.');
+  process.exit(0);
+}
+
 const here = path.dirname(fileURLToPath(import.meta.url));
 const wmclose = path.join(here, 'tools', 'wmclose.py');
 const binary = path.join(here, '..', 'target', 'e2e', 'debug', 'otakusoul');

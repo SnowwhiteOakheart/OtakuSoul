@@ -24,7 +24,9 @@ try {
   // Invite Lirwen from the chat sidebar.
   await browser.$('button[title^="Gespräche, Author"]').click();
   await jsClick(await browser.$('button[role="tab"]=Gruppe'));
-  await jsClick(await browser.$('button=Charakter einladen'));
+  const invite = await browser.$('button=Charakter einladen');
+  await invite.waitForDisplayed({ timeout: 15_000 });
+  await jsClick(invite);
   const picker = await browser.$('[data-guest-picker]');
   await picker.waitForDisplayed({ timeout: 5000 });
   await picker.$('input[type="search"]').setValue('Lirw');

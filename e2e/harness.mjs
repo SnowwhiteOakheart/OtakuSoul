@@ -145,7 +145,6 @@ export async function saveSettingsAndReload(browser, patch) {
     await browser.pause(1500);
     if (applied(await invoke('load_settings'))) break;
   }
-  await browser.execute(() => location.reload());
-  // Asking the page right away can leave WebKit's driver on the old document.
-  await browser.pause(1000);
+  await browser.refresh();
+  // The WebDriver refresh command waits for navigation; callers wait for their app controls.
 }

@@ -21,7 +21,7 @@ try {
     });
   }
   // The chat loads the character's voice on start.
-  await browser.execute(() => window.location.reload());
+  await browser.refresh();
   await browser.$('textarea[aria-label="Nachricht"]').waitForDisplayed({ timeout: 30_000 });
 
   const speak = await browser.$('button[aria-label="Vorlesen"]');

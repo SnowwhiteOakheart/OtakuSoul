@@ -31,10 +31,11 @@ try {
   const all = (await cards()).length;
   const live2d = (await cards('live2d')).length;
   const vrm = (await cards('vrm')).length;
-  assert.equal(all, live2d + vrm);
+  const inochi2d = (await cards('inochi2d')).length;
+  assert.equal(all, live2d + vrm + inochi2d);
   assert.ok(live2d > 0 && vrm > 1, 'mitgelieferte Modelle fehlen');
   await browser.$('[role="radio"][data-radio-value="live2d"]').click();
-  await browser.waitUntil(async () => (await cards('vrm')).length === 0, { timeout: 3000, timeoutMsg: 'Filter Live2D zeigt 3D-Modelle' });
+  await browser.waitUntil(async () => (await cards()).length === live2d && (await cards('live2d')).length === live2d, { timeout: 3000, timeoutMsg: 'Filter Live2D zeigt andere Modellarten' });
   await browser.$('[role="radio"][data-radio-value="all"]').click();
   await browser.$('input[aria-label="Modelle suchen"]').setValue('testr');
   await browser.waitUntil(async () => (await cards()).length === 1, { timeout: 3000, timeoutMsg: 'Suche filtert nicht' });
@@ -74,7 +75,7 @@ try {
   await browser.$('[data-avatar-is-default]').waitForDisplayed({ timeout: 3000 });
 
   // Give it to a character: saved in its card, its face shows on the card; untick → default again.
-  const row = await browser.$('[data-avatar-character]');
+  const [row] = await browser.$$('[data-avatar-character]');
   const name = (await browser.execute((el) => el.querySelector('span.truncate').textContent, row)).trim();
   await row.$('input[type="checkbox"]').click();
   const usesModel = async () => (await invoke('scan_characters')).find((c) => c.card.data.name === name)?.card.data.extensions?.custom_vrm;

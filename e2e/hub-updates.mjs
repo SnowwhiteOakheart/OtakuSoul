@@ -63,7 +63,7 @@ try {
 
   // A newer revision appears in the registry.
   mock.stats.hubFiles = { 'stages_registry.json': registry(2), 'matchball.json': scene(2) };
-  await browser.execute(() => window.location.reload());
+  await browser.refresh();
   await browser.$('button=Hub').waitForExist({ timeout: 20_000 });
   await jsClick(await browser.$('button=Hub'));
   await browser.$('#hub-filter-scenes').waitForExist({ timeout: 15_000 });

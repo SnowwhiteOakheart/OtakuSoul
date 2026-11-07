@@ -17,6 +17,11 @@ const replace = async (selector, value) => {
   await field.addValue(value);
 };
 const failed = async (action, prefix) => {
+  // Remove the previous failure so this assertion observes the new save attempt.
+  for (const notice of await browser.$$('[role="alert"]')) {
+    const dismiss = await notice.$('button[aria-label="Schließen"]');
+    if (await dismiss.isExisting()) await dismiss.click();
+  }
   const button = browser.$(action === 'Titel speichern' ? 'button[aria-label="Titel speichern"]' : `button=${action}`);
   await button.click();
   await browser.$(`p*=${prefix}`).waitForDisplayed();

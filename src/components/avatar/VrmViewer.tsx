@@ -275,7 +275,6 @@ export const VrmViewer = ({
         setLoading(false);
       }
     };
-    void loadModel();
 
     const blink = createBlinker();
     const sway = new BodySway();
@@ -307,6 +306,9 @@ export const VrmViewer = ({
     const poseEuler = new THREE.Euler();
     const poseQuaternion = new THREE.Quaternion();
     const poseVector = new THREE.Vector3();
+
+    // A cached model loads synchronously, so its measured pose state must exist first.
+    void loadModel();
 
     stage.start((delta, elapsed) => {
       if (!vrm) return;

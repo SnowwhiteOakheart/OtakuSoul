@@ -35,6 +35,7 @@ try {
   // Back in the chat the avatar loads it and waves on *winkt*.
   await browser.$('button=Chat').click();
   await browser.$('[data-motions="2"]').waitForExist({ timeout: 30_000, timeoutMsg: 'Bewegung wird im 3D-Avatar nicht geladen' });
+  assert.ok(!(await browser.$('body').getText()).includes('3D-Modell konnte nicht geladen werden:'), 'VRM aus dem Cache zeigt einen Ladefehler');
   mock.stats.chatReply = '*winkt dir fröhlich zu* "Da bist du ja!"';
   await browser.$('textarea[aria-label="Nachricht"]').setValue('Hallo!');
   await clickSend(browser);

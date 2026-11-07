@@ -67,7 +67,7 @@ try {
   await browser.$('button[aria-label="Nachricht senden"]').click();
   await browser.waitUntil(() => mock.stats.chat >= 2);
   await openSessions();
-  await browser.$('button=Neuer Chat').click();
+  await browser.$('aside[aria-label="Gespräche"]').$('button=Neuer Chat').click();
   await browser.waitUntil(() => sql('SELECT count(*) FROM chat_sessions;') === '2');
   await browser.waitUntil(() => mock.stats.cancelledChat >= 2);
   await browser.$('button[title="Schließen"]').click();
@@ -141,11 +141,11 @@ try {
   await browser.waitUntil(() => mock.stats.stageNarrator > narratorBefore, { timeout: 20_000 });
   await browser.$('button=Stopp').waitForExist({ reverse: true, timeout: 20_000 });
   const failedChat = await rejectedCommand('send_chat_message', {
-    request: { endpoint_url: 'http://127.0.0.1:9/v1/chat/completions', api_key: null, model: 'mock', messages: [{ role: 'user', content: 'Fehlerfall' }], sampling: null },
+    request: { endpoint_url: mock.url.replace('/v1/chat/completions', '/v1/test-error'), api_key: null, model: 'mock', messages: [{ role: 'user', content: 'Fehlerfall' }], sampling: null },
     generationId: 'failed-generation',
   });
   assert.equal(failedChat.rejected, true);
-  assert.notEqual(JSON.parse(failedChat.cause).code, 'backend.chat.generationBusy');
+  assert.equal(JSON.parse(failedChat.cause).code, 'backend.llm.server');
   const nextChat = await browser.execute((endpoint) => window.__TAURI_INTERNALS__.invoke('send_chat_message', {
     request: { endpoint_url: endpoint, api_key: null, model: 'mock', messages: [{ role: 'user', content: 'Nach dem Fehler' }], sampling: null },
     generationId: 'after-failure-generation',

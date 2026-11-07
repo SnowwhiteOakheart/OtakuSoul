@@ -40,7 +40,7 @@ try {
 
   // Both survive leaving the chat and coming back.
   await browser.$('button*=Einstellungen').click();
-  await browser.$('button*=Chat').click();
+  await browser.$('button=Chat').click();
   await browser.$('[data-density="compact"]').waitForExist({ timeout: 10_000 });
   assert.equal(await browser.$('button[aria-label="Zustandswerte einblenden"]').isExisting(), true);
 
@@ -82,7 +82,7 @@ try {
   await browser.$('button*=Charaktere').click();
   await browser.$('button[aria-label="Weitere Aktionen"]').waitForDisplayed({ timeout: 10_000 });
   await assertMenuOnTop('Weitere Aktionen', 'Charakterbibliothek');
-  await browser.$('button*=Chat').click();
+  await browser.$('button=Chat').click();
   await browser.$('textarea[aria-label="Nachricht"]').waitForDisplayed({ timeout: 10_000 });
 
   // The sidebar tabs wrap instead of overlapping in the narrow panel.

@@ -11,8 +11,13 @@ const jsClick = (element) => browser.execute((el) => el.click(), element);
 // WebKit's driver reports a rejected command as a script error: both count as a failed call here.
 const call = async (command, args = {}) => {
   try {
-    return await browser.executeAsync((cmd, payload, done) => window.__TAURI_INTERNALS__.invoke(cmd, payload)
-      .then((value) => done({ ok: true, value }), (error) => done({ ok: false, error: String(error) })), command, args);
+    return await browser.execute(async (cmd, payload) => {
+      try {
+        return { ok: true, value: await window.__TAURI_INTERNALS__.invoke(cmd, payload) };
+      } catch (error) {
+        return { ok: false, error: String(error) };
+      }
+    }, command, args);
   } catch (error) {
     return { ok: false, error: String(error?.message ?? error) };
   }
@@ -76,7 +81,7 @@ try {
   await browser.saveScreenshot(path.join(screenshotDir, '109-18plus-ausgeblendet.png'));
 
   // After a restart nothing comes back.
-  await browser.execute(() => location.reload());
+  await browser.refresh();
   await browser.pause(1000);
   await browser.$('textarea[aria-label="Nachricht"]').waitForDisplayed({ timeout: 30_000 });
   await browser.pause(1500);
