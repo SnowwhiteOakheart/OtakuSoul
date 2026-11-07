@@ -115,7 +115,9 @@ pub struct Detector {
 
 impl Detector {
     pub fn open(path: &std::path::Path) -> Result<Self, String> {
-        let session = ort::session::Session::builder()
+        let environment = crate::modules::onnx_runtime::environment()
+            .map_err(|e| crate::err!("backend.vad.model", error = e))?;
+        let session = ort::session::Session::builder(&environment)
             .map_err(|e| crate::err!("backend.vad.model", error = e))?
             .with_intra_threads(1)
             .map_err(|e| crate::err!("backend.vad.model", error = e))?
@@ -244,6 +246,7 @@ mod tests {
     #[test]
     #[ignore = "needs the Silero model file"]
     fn tells_speech_from_noise_and_clicks() {
+        let _runtime = crate::modules::onnx_runtime::OnnxRuntime::shared();
         let path =
             PathBuf::from(std::env::var("OTAKUSOUL_TEST_SILERO").expect("OTAKUSOUL_TEST_SILERO"));
         assert_eq!(hex(&Sha256::digest(fs::read(&path).unwrap())), MODEL_SHA256);

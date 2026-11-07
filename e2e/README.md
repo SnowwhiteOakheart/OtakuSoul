@@ -64,6 +64,7 @@ Die Suite umfasst über 90 spezialisierte Testmodule:
 
 ## Weitere E2E-Werkzeuge
 
+- **Echte ONNX-Inferenz in der gebauten App:** `node e2e/onnx-local.mjs`. Benötigt `OTAKUSOUL_KOKORO_TEST_MODEL` (ONNX-Datei), `OTAKUSOUL_KOKORO_TEST_VOICES` (Stimmenordner mit `af_heart` und `am_michael`) und `OTAKUSOUL_TEST_SILERO` (Silero-ONNX-Datei). Prüft Kokoro-Audio einschließlich Dekodierung im Webview und wiederholte VAD-Sessions im selben Prozess auf CPU; keine Downloads und keine Wiedergabe. Wegen der lokalen Modelle bewusst außerhalb der regulären Mock-Suite.
 - **Langchat-Messung (1000 Nachrichten):** `npm run e2e:perf`
 - **README-Screenshots:** `xvfb-run -a node e2e/readme-screenshots.mjs de|en|ru`
 - **Porträt-Dev-Test:** `npm run e2e:portraits:dev`

@@ -356,6 +356,8 @@ The easiest ways to help:
 
 ## ⚖️ License & ethics
 
+* **Kokoro:** the local compatibility port of `kokoro-en` 0.1.5 is Apache-2.0; [provenance and changes](src-tauri/vendor/kokoro-en/OTAKUSOUL-PATCH.md). Its CMU pronunciation dictionary retains the [CMU license](src-tauri/vendor/kokoro-en/dict/CMUDICT-LICENSE). Both license texts are bundled with the app.
+
 OtakuSoul is free software: Copyright (C) 2026 SnowwhiteOakheart.
 Licensed under the **GNU General Public License v3.0** (`GPL-3.0-only`).
 

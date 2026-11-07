@@ -55,6 +55,9 @@ try {
   await browser.$('button=Spracherkennung').click();
   const start = await browser.$('#mic-check-start');
   await start.waitForDisplayed({ timeout: 10_000 });
+  // The panel renders before its saved voice configuration has finished loading.
+  const endpoint = await browser.$('//label[span[normalize-space()="Transkriptions-Endpunkt"]]/input');
+  await browser.waitUntil(async () => (await endpoint.getValue()) === `${base}/audio/transcriptions`, { timeout: 10_000, timeoutMsg: 'Gespeicherte STT-Konfiguration nicht geladen' });
 
   // 1. Everything works.
   await fakeMicrophone(0.3);
@@ -62,7 +65,11 @@ try {
   await start.scrollIntoView({ block: 'center' });
   await start.click();
   await browser.waitUntil(async () => (await stepState('vad')) === 'ok', { timeout: 10_000, timeoutMsg: 'Sprachaktivität nicht erkannt' });
-  await browser.$('#mic-check-transcript').waitForDisplayed({ timeout: 15_000, timeoutMsg: 'Keine Abschrift' });
+  await browser.$('#mic-check-transcript').waitForDisplayed({ timeout: 15_000, timeoutMsg: 'Keine Abschrift' }).catch(async (error) => {
+    console.log('Mikrofon-Prüfung:', await browser.$('#mic-check').getText(), 'STT-Aufrufe:', mock.stats.stt, 'Audio-Bytes:', mock.stats.sttBytes);
+    await browser.saveScreenshot(path.join(screenshotDir, '81-audio-pruefstand-fehler.png'));
+    throw error;
+  });
   assert.match(await browser.$('#mic-check-transcript').getText(), /Hallo, das ist ein Test\./);
   assert.ok((mock.stats.sttBytes ?? 0) > 10_000, `Aufnahme zu kurz: ${mock.stats.sttBytes} Bytes`);
   await browser.waitUntil(async () => (await stepState('tts')) === 'ok', { timeout: 15_000, timeoutMsg: 'Figur spricht nicht nach' });

@@ -9,6 +9,8 @@ use crate::modules::web_server::WebServerManager;
 use std::sync::Arc;
 
 pub struct AppState {
+    // Keeps the lazy ONNX environment alive until the application shuts down.
+    pub onnx_runtime: Arc<crate::modules::onnx_runtime::OnnxRuntime>,
     pub llama_manager: Arc<LlamaServerManager>,
     pub local_image: Arc<LocalImageEngine>,
     pub inference_client: Arc<InferenceClient>,
@@ -52,6 +54,7 @@ impl AppState {
         discord_rpc.clone().start_background_worker();
 
         Self {
+            onnx_runtime: crate::modules::onnx_runtime::OnnxRuntime::shared(),
             llama_manager,
             local_image: Arc::new(LocalImageEngine::new()),
             inference_client: Arc::new(InferenceClient::new()),

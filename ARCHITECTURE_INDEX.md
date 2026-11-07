@@ -7,6 +7,7 @@
 ## ⚡ Kernregeln auf einen Blick
 
 * **Architektur:** Tauri 2 (Rust-Backend) + React 19 / TypeScript / Vite / Tailwind 4 / Zustand.
+* **ONNX:** `modules/onnx_runtime.rs` verwaltet die von `AppState` gehaltene gemeinsame Umgebung für Kokoro, VAD und Porträts. Kokoros rc.15-Portierung liegt in `src-tauri/vendor/kokoro-en/` mit Herkunfts- und Patchdokumentation.
 * **Kein Python in der App:** Die Desktop-App ist 100 % Rust & TypeScript (Portierung von *Soul of Waifu* ist vollständig entkoppelt).
 * **Benutzer-Anrede & Sprache:** Nutzer immer mit **„Du“** ansprechen. Antworten, Commits und Dokumentation auf Deutsch.
 * **Pfade:** Niemals feste Systempfade hardcoden – ausschließlich `paths::base_dirs()` nutzen (`ProjectDirs` bzw. `$OTAKUSOUL_HOME/config|data`). Betriebssystemspezifischen Code immer mit `#[cfg]` absichern.

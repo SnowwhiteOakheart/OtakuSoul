@@ -811,6 +811,12 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
 
 ### 7. Audio, Lokale TTS, Stimmklonen & Effekte
 
+- ONNX: `ort` exakt rc.15; `AppState.onnx_runtime` besitzt die gemeinsame, verzögert initialisierte `Environment`.
+  `modules::onnx_runtime` reicht explizite Handles an Kokoro, Porträts und Silero-VAD weiter;
+  nur eine schwache Referenz liegt in der globalen Registry. rc.15 erlaubt nur eine Umgebung pro Prozess.
+  Kokoro 0.1.5 ist als Kompatibilitätsportierung unter `src-tauri/vendor/kokoro-en` eingebunden;
+  Herkunft, Prüfsumme und Änderungen stehen in `OTAKUSOUL-PATCH.md`. Asynchrone Inferenz braucht besitzende Tensoren.
+  Bei kompatiblem Upstream-Release auf die Registry zurückwechseln; keine Modellgewichte im Vendor-Verzeichnis.
 - Erzählerstimme für Handlungen (`VoiceConfig.narrator_for_actions`, Schalter im Stimm-Dialog außer beim Erzähler selbst):
   `services/narratorVoice.ts` – `splitActions` trennt `*Handlungen*` (auch `**…**`, offenes Ende) von den eigenen Worten,
   `voiceParts` gibt jedem Teil seine Stimme (Erzähler = Profil `stage_narrator`, gecacht, `forgetNarratorVoice` beim

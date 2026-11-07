@@ -1,5 +1,7 @@
 # Größere Abhängigkeitsupdates vom 07.11.2026
 
+**Späterer Stand:** [Windows-Nachprüfung mit ONNX-/Kokoro-Portierung und Kontrastkorrektur](abhaengigkeiten-windows-2026-11-07.md). Die folgenden Prüfergebnisse dokumentieren den vorherigen Major-Update-Schritt.
+
 Dieser Nachtrag ersetzt den zurückgestellten Status der unten genannten Pakete im [ersten Prüfbericht](abhaengigkeiten-2026-11-07.md).
 
 ## Rust und Entwicklungsumgebung

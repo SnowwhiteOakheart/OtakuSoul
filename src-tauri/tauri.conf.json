@@ -56,7 +56,9 @@
       "../assets/vrm/Gene/": "assets/vrm/Gene/",
       "../assets/vrm/lizenzen.txt": "assets/vrm/lizenzen.txt",
       "../assets/inochi2d/Aka.inx": "assets/inochi2d/Aka.inx",
-      "../assets/inochi2d/lizenzen.txt": "assets/inochi2d/lizenzen.txt"
+      "../assets/inochi2d/lizenzen.txt": "assets/inochi2d/lizenzen.txt",
+      "vendor/kokoro-en/LICENSE": "licenses/kokoro-en-LICENSE.txt",
+      "vendor/kokoro-en/dict/CMUDICT-LICENSE": "licenses/CMUDICT-LICENSE.txt"
     },
     "windows": {
       "nsis": {

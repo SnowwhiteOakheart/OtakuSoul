@@ -47,6 +47,7 @@ pub mod models_hub;
 pub mod motion_packs;
 pub mod music_gen;
 pub mod nsfw;
+pub mod onnx_runtime;
 pub mod ooc;
 pub mod openrouter_auth;
 pub mod paths;

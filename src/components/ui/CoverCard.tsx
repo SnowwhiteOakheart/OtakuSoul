@@ -34,12 +34,12 @@ export const CoverCard = ({ cover, title, description, label, chips, status, cla
           <Library className="w-10 h-10 text-accent-400/60" />
         </div>
       )}
-      <div className="absolute inset-0 bg-linear-to-t from-slate-950/95 via-slate-950/30 to-transparent" />
-      <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-md bg-black/60 backdrop-blur px-2 py-0.5 text-[11px] font-semibold text-accent-200 border border-white/10">
+      <div className="absolute inset-0 bg-linear-to-t from-black/95 via-black/30 to-transparent" />
+      <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-md bg-black/60 backdrop-blur px-2 py-0.5 text-[11px] font-semibold text-white border border-white/10">
         <Library className="w-3 h-3" />
         {label}
       </span>
-      <h3 className="absolute bottom-2.5 left-3 right-3 font-bold text-base text-white drop-shadow-md group-hover:text-accent-200 transition-colors">
+      <h3 className="absolute bottom-2.5 left-3 right-3 rounded-md bg-black/75 px-2 py-1 font-bold text-base text-white drop-shadow-md">
         {title}
       </h3>
     </div>

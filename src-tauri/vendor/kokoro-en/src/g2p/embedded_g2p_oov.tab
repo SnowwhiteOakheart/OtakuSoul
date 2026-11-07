@@ -1,0 +1,5 @@
+# Optional built-in word<TAB>ipa overrides (extend via KOKORO_G2P_LEXICON).
+# Guterson: Misaki-only lean builds spell this OOV; keep until espeak path always covers it.
+Guterson	ˈɡʌtɚsən
+# DALL-E: hyphenated brand; without a whole-token override G2P letter-spells "DALL".
+DALL-E	dˈæli

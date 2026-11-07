@@ -117,7 +117,9 @@ async fn load_engine(config: &KokoroConfig) -> Result<Arc<KokoroTts>, String> {
         return Ok(Arc::clone(&entry.engine));
     }
 
-    let engine = KokoroTts::new(&model_path, &voices_path)
+    let environment = crate::modules::onnx_runtime::environment()
+        .map_err(|e| crate::err!("backend.kokoro.load", error = e))?;
+    let engine = KokoroTts::new_with_environment(&environment, &model_path, &voices_path)
         .await
         .map_err(|e| crate::err!("backend.kokoro.load", error = e))?;
     let engine = Arc::new(engine);
@@ -550,16 +552,46 @@ mod tests {
     #[tokio::test]
     #[ignore = "requires downloaded Kokoro ONNX model and voice files"]
     async fn test_live_kokoro_synthesis() {
+        let _runtime = crate::modules::onnx_runtime::OnnxRuntime::shared();
         let config = KokoroConfig {
             model_path: std::env::var("OTAKUSOUL_KOKORO_TEST_MODEL")
                 .expect("OTAKUSOUL_KOKORO_TEST_MODEL is required"),
             voices_path: std::env::var("OTAKUSOUL_KOKORO_TEST_VOICES")
                 .expect("OTAKUSOUL_KOKORO_TEST_VOICES is required"),
         };
-        let audio = synthesize("Hello from offline Kokoro.", "af_heart", "+0%", &config)
-            .await
-            .unwrap();
-        assert!(audio.starts_with("data:audio/wav;base64,"));
-        assert!(audio.len() > 10_000);
+        println!("ONNX Runtime: {}", ort::info());
+        for (voice, rate) in [
+            ("af_heart", "+0%"),
+            ("am_michael", "+25%"),
+            ("af_heart", "-25%"),
+        ] {
+            let audio = synthesize("Hello from offline Kokoro.", voice, rate, &config)
+                .await
+                .unwrap();
+            let wav = base64::prelude::BASE64_STANDARD
+                .decode(audio.strip_prefix("data:audio/wav;base64,").unwrap())
+                .unwrap();
+            let mut reader = hound::WavReader::new(Cursor::new(&wav)).unwrap();
+            assert_eq!(reader.spec().sample_rate, SAMPLE_RATE);
+            assert_eq!(reader.spec().channels, 1);
+            let samples: Vec<i16> = reader.samples().map(Result::unwrap).collect();
+            assert!(samples.len() > SAMPLE_RATE as usize / 2, "audio too short");
+            assert!(samples.len() < SAMPLE_RATE as usize * 30, "audio too long");
+            let rms = (samples.iter().map(|&s| (s as f64).powi(2)).sum::<f64>()
+                / samples.len() as f64)
+                .sqrt();
+            assert!(rms > 50.0, "silent audio: RMS {rms}");
+            println!("{voice} {rate}: {} samples, RMS {rms:.1}", samples.len());
+            if let Ok(output) = std::env::var("OTAKUSOUL_KOKORO_TEST_OUTPUT") {
+                let output = PathBuf::from(output);
+                fs::create_dir_all(&output).unwrap();
+                fs::write(output.join(format!("{voice}-{rate}.wav")), wav).unwrap();
+            }
+        }
+        assert!(
+            synthesize("Hello.", "missing_test_voice", "+0%", &config)
+                .await
+                .is_err()
+        );
     }
 }

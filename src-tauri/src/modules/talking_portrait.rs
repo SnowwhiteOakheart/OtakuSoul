@@ -622,7 +622,9 @@ fn session(file: &str) -> Result<ort::session::Session, String> {
     let threads = std::thread::available_parallelism()
         .map(|n| n.get())
         .unwrap_or(4);
-    ort::session::Session::builder()
+    let environment = crate::modules::onnx_runtime::environment()
+        .map_err(|e| crate::err!("backend.talkingPortrait.model", error = e))?;
+    ort::session::Session::builder(&environment)
         .map_err(|e| crate::err!("backend.talkingPortrait.model", error = e))?
         .with_intra_threads(threads)
         .map_err(|e| crate::err!("backend.talkingPortrait.model", error = e))?
@@ -883,6 +885,7 @@ mod tests {
     #[test]
     #[ignore]
     fn real_models_make_a_set() {
+        let _runtime = crate::modules::onnx_runtime::OnnxRuntime::shared();
         let path = std::env::var("TALKING_PORTRAIT_IMAGE").expect("TALKING_PORTRAIT_IMAGE");
         let bytes = fs::read(&path).unwrap();
         let guess = guess_placement(&bytes).unwrap();
@@ -911,7 +914,9 @@ mod tests {
             started.elapsed().as_secs_f32()
         );
         let base = image::load_from_memory(&bytes).unwrap().to_rgba8();
-        let out = std::env::temp_dir().join("talking-portrait-check");
+        let out = std::env::var_os("TALKING_PORTRAIT_TEST_OUTPUT")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| std::env::temp_dir().join("talking-portrait-check"));
         fs::create_dir_all(&out).unwrap();
         for (name, frame) in &set.frames {
             let data = frame.image.split_once(",").unwrap().1;
@@ -928,6 +933,7 @@ mod tests {
             );
         }
         assert!(set.frames.contains_key("aa") && set.frames.contains_key("blink"));
+        assert_ne!(set.frames["aa"].image, set.frames["blink"].image);
     }
 
     #[test]
