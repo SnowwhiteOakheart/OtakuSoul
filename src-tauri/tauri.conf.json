@@ -58,7 +58,8 @@
       "../assets/inochi2d/Aka.inx": "assets/inochi2d/Aka.inx",
       "../assets/inochi2d/lizenzen.txt": "assets/inochi2d/lizenzen.txt",
       "vendor/kokoro-en/LICENSE": "licenses/kokoro-en-LICENSE.txt",
-      "vendor/kokoro-en/dict/CMUDICT-LICENSE": "licenses/CMUDICT-LICENSE.txt"
+      "vendor/kokoro-en/dict/CMUDICT-LICENSE": "licenses/CMUDICT-LICENSE.txt",
+      "vendor/pdf-extract/LICENSE-MIT.txt": "licenses/pdf-extract-LICENSE.txt"
     },
     "windows": {
       "nsis": {

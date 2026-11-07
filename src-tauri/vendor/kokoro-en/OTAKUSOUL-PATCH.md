@@ -9,6 +9,7 @@ Enthalten sind die tatsächlich eingebundenen Quellen unter `src/`, das benötig
 Änderungen gegenüber dem Crate:
 
 - `Cargo.toml`: `ort` exakt auf `2.0.0-rc.15` angehoben; nicht mitkopierte Beispiele und deren ungenutzte `voxudio`-Entwicklungsabhängigkeit entfernt.
+- `Cargo.toml`: das nicht mehr gepflegte `bincode` durch den gepflegten 2.x-Fork `cu-bincode` 2.2 mit `std` ohne ungenutzte Derive-Makros ersetzt (lokaler Importalias weiterhin `bincode`). Golden-Tests aus dem ursprünglichen bincode 2.0.1 prüfen Einzel-/Sammelstimmen und fehlerhafte Längen. Das bisherige 16-MiB-Limit bleibt bestehen.
 - `src/lib.rs`: neue Konstruktoren `new_with_environment` und `new_from_bytes_with_environment` nehmen die von der App verwaltete Umgebung entgegen. Auch der CPU-Fallback verwendet dieselbe Umgebung. Die bisherigen Konstruktoren erzeugen eine eigene Umgebung und sind nur für die alleinige Verwendung von Kokoro geeignet; die App nutzt ausschließlich den neuen Konstruktor, da rc.15 nur eine Umgebung pro Prozess zulässt. Upstream-Stillints von Clippy sind für dieses Fremdmodul erlaubt, damit die App weiterhin mit `-D warnings` geprüft wird, ohne unabhängige Upstream-Stiländerungen einzumischen.
 - `src/synthesizer.rs`: besitzende `Tensor::from_array` statt geliehener `TensorRef` in beiden asynchronen Synthesepfaden. Das ist seit rc.15 vorgeschrieben und verhindert ungültige Eingabe-Lebenszeiten.
 

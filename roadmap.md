@@ -43,6 +43,7 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 | D3 | Desktop-Pet unter Linux – Folgestufe | ★ | M | X11-, GNOME-, KDE-Systeme |
 | D4 | E2E-Test fürs Pet-Fenster, Speicher des Pet-Webviews | ★ | M | – |
 | D5 | Wackelige E2E-Tests beobachten | ★ | – | – |
+| D6 | Nicht mehr gepflegte Linux-Abhängigkeiten ersetzen: GTK-Makros (`proc-macro-error`), D-Bus-Eltern gemeinsam auf zbus 6; glib-Speicherfehler berücksichtigen | ★★ | M | Linux-Prüfplatz, abgestimmte Tauri-/Plugin-/Schlüsselbund-Updates; Details `docs/ungepflegte-abhaengigkeiten-2026-11-07.md` |
 | **E** | **Geparkt – wartet auf andere oder nur bei Bedarf** | | | |
 | E1 | `tauri-specta` (wartet auf stabile 2.0) | – | L | – |
 | E2 | TADA 3B Deutsch (wartet auf CrispASR) | – | S | – |

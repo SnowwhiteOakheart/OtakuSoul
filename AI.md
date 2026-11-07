@@ -48,6 +48,7 @@ Backend `src-tauri/src/`: `lib.rs` (Plugins, Command-Registrierung), `state.rs` 
 | Chat-Pipeline | `inference.rs` (SSE-Streaming, `<think>`-Filter), `providers.rs` (OpenAI-Format/llama-server, Anthropic, …), `prompt_builder.rs` (System-Prompt, `PromptTemplate`), `context_window.rs`, `chat_summary.rs`, `attachments.rs`, `translate.rs` |
 | Lokale Server | `runtimes.rs` (Download/Prüfung llama.cpp, PrismML, sd.cpp, CrispASR; vorheriger Build für Rollback), `llama_manager.rs` (llama-server), `local_image.rs` (sd-server + VRAM-Planer, LoRAs in `image_loras.rs`), `tts_local.rs` (crispasr --server), `model_files.rs` (HF-Downloads), `segmented_download.rs` (parallele Range-Abschnitte), `gguf.rs`, `hardware.rs` (GPU-Probe) |
 | Daten | `memory/` (SQLite: Kognitives Gedächtnis, `chats.rs`, Snapshots), `settings.rs` (`settings.json`), `paths.rs`, `secrets.rs` (Schlüsselbund), `characters.rs` (V2-Karten PNG/JSON, Personas), `lorebook.rs`, `profile_backup.rs`, `device_sync.rs` (Sync über Ordner/WebDAV) |
+| Dateianhänge | `attachments.rs`; PDF-Extraktion über die dokumentierte Kompatibilitätskopie `vendor/pdf-extract` mit lopdf 0.47 ohne Font-Einbettung/ttf-parser. Bei passendem Upstream-Release wieder auf die Registry wechseln. |
 | Features | `memory_pipeline.rs` (Router/Archivist/Diary), `stage/` (Game-Master; `stage/rules5e/` = 5e-Regel-Engine, SRD-Daten in `presets/srd5/`), `companion.rs` + `companion_tools.rs` + `mcp_client.rs`, `voice.rs`/`kokoro.rs` (TTS/STT), `image_generator.rs`, `models_hub.rs`, `hub.rs`, `web_server.rs`, `discord.rs`, `updater.rs`, `logger.rs` |
 
 Frontend `src/`: `services/api.ts` (ein Wrapper je Command), `store/slices/*.ts` (Zustand, Zugriff per
@@ -816,6 +817,8 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   nur eine schwache Referenz liegt in der globalen Registry. rc.15 erlaubt nur eine Umgebung pro Prozess.
   Kokoro 0.1.5 ist als Kompatibilitätsportierung unter `src-tauri/vendor/kokoro-en` eingebunden;
   Herkunft, Prüfsumme und Änderungen stehen in `OTAKUSOUL-PATCH.md`. Asynchrone Inferenz braucht besitzende Tensoren.
+  Alte gepackte Stimmen werden über `cu-bincode` 2.2 (Importalias `bincode`) gelesen; Originalformat und 16-MiB-Limit
+  erhalten. Legacy-Golden-Tests und echte Synthese mit einer alten gepackten Stimme vor weiteren Codec-Wechseln prüfen.
   Bei kompatiblem Upstream-Release auf die Registry zurückwechseln; keine Modellgewichte im Vendor-Verzeichnis.
 - Erzählerstimme für Handlungen (`VoiceConfig.narrator_for_actions`, Schalter im Stimm-Dialog außer beim Erzähler selbst):
   `services/narratorVoice.ts` – `splitActions` trennt `*Handlungen*` (auch `**…**`, offenes Ende) von den eigenen Worten,

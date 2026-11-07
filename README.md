@@ -356,6 +356,8 @@ The easiest ways to help:
 
 ## ⚖️ License & ethics
 
+* **PDF import:** `pdf-extract` 0.12.1 (Jeff Muizelaar and contributors, MIT) uses an updated lopdf; [provenance and changes](src-tauri/vendor/pdf-extract/OTAKUSOUL-PATCH.md). Its license is bundled with the app.
+
 * **Kokoro:** the local compatibility port of `kokoro-en` 0.1.5 is Apache-2.0; [provenance and changes](src-tauri/vendor/kokoro-en/OTAKUSOUL-PATCH.md). Its CMU pronunciation dictionary retains the [CMU license](src-tauri/vendor/kokoro-en/dict/CMUDICT-LICENSE). Both license texts are bundled with the app.
 
 OtakuSoul is free software: Copyright (C) 2026 SnowwhiteOakheart.

@@ -52,6 +52,14 @@ try {
   }
   const again = await invoke('synthesize_speech', { text: 'Hello again.', config: { ...config, voice_id: 'am_michael' } });
   assert.ok(again.length > 10_000);
+  if (process.env.OTAKUSOUL_KOKORO_TEST_LEGACY_VOICES) {
+    const legacy = await invoke('synthesize_speech', {
+      text: 'Hello from a legacy voice file.',
+      config: { ...config, kokoro: { ...config.kokoro, voices_path: process.env.OTAKUSOUL_KOKORO_TEST_LEGACY_VOICES } },
+    });
+    assert.ok(legacy.length > 10_000);
+    console.log('Windows-App: ursprüngliche Bincode-2-Sammelstimme mit neuem Decoder synthetisiert.');
+  }
   console.log(`Windows-App: Kokoro-Audio dekodiert (${decoded.duration.toFixed(2)} s), VAD mehrfach geöffnet und zweite Stimme synthetisiert.`);
 } finally {
   await close();

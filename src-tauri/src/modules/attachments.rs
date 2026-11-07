@@ -326,6 +326,103 @@ mod tests {
     use super::*;
     use crate::modules::inference::ChatMessage;
 
+    fn pdf_fixture(pages: &[&[u8]], unicode: bool) -> Vec<u8> {
+        use pdf_extract::{
+            Document, Object, Stream,
+            content::{Content, Operation},
+            dictionary,
+        };
+        let mut doc = Document::with_version("1.5");
+        let pages_id = doc.new_object_id();
+        let mut font = dictionary! {
+            "Type" => "Font", "Subtype" => "Type1", "BaseFont" => "Helvetica", "Encoding" => "WinAnsiEncoding"
+        };
+        if unicode {
+            let cmap = b"/CIDInit /ProcSet findresource begin\n12 dict begin\nbegincmap\n/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def\n/CMapName /TestUnicode def\n/CMapType 2 def\n1 begincodespacerange\n<00> <FF>\nendcodespacerange\n3 beginbfchar\n<41> <65E5>\n<42> <672C>\n<43> <8A9E>\nendbfchar\nendcmap\nCMapName currentdict /CMap defineresource pop\nend\nend";
+            let cmap_id = doc.add_object(Stream::new(dictionary! {}, cmap.to_vec()));
+            font.set("ToUnicode", cmap_id);
+        }
+        let font_id = doc.add_object(font);
+        let mut kids = Vec::<Object>::new();
+        for text in pages {
+            let content = Content {
+                operations: vec![
+                    Operation::new("BT", vec![]),
+                    Operation::new("Tf", vec![Object::Name(b"F1".to_vec()), 12.into()]),
+                    Operation::new("Td", vec![72.into(), 700.into()]),
+                    Operation::new(
+                        "Tj",
+                        vec![Object::String(
+                            text.to_vec(),
+                            pdf_extract::StringFormat::Literal,
+                        )],
+                    ),
+                    Operation::new("ET", vec![]),
+                ],
+            }
+            .encode()
+            .unwrap();
+            let content_id = doc.add_object(Stream::new(dictionary! {}, content));
+            let page = doc.add_object(
+                dictionary! { "Type" => "Page", "Parent" => pages_id, "Contents" => content_id },
+            );
+            kids.push(page.into());
+        }
+        doc.objects.insert(
+            pages_id,
+            Object::Dictionary(dictionary! {
+                "Type" => "Pages", "Count" => kids.len() as i64, "Kids" => kids,
+                "MediaBox" => vec![0.into(), 0.into(), 595.into(), 842.into()],
+                "Resources" => dictionary! { "Font" => dictionary! { "F1" => font_id } }
+            }),
+        );
+        let catalog = doc.add_object(dictionary! { "Type" => "Catalog", "Pages" => pages_id });
+        doc.trailer.set("Root", catalog);
+        doc.compress();
+        let mut bytes = Vec::new();
+        doc.save_to(&mut bytes).unwrap();
+        bytes
+    }
+
+    fn save_pdf_fixture(name: &str, bytes: &[u8]) {
+        if let Some(dir) = std::env::var_os("OTAKUSOUL_PDF_TEST_OUTPUT") {
+            let dir = PathBuf::from(dir);
+            fs::create_dir_all(&dir).unwrap();
+            fs::write(dir.join(name), bytes).unwrap();
+        }
+    }
+
+    #[test]
+    fn pdf_extracts_compressed_pages_and_winansi_in_order() {
+        let bytes = pdf_fixture(&[b"Gr\xfc\xdfe aus K\xf6ln", b"Zweite Seite"], false);
+        let text = pdf_extract::extract_text_from_mem(&bytes).unwrap();
+        assert!(text.contains("Grüße aus Köln"), "{text:?}");
+        assert!(text.find("Grüße").unwrap() < text.find("Zweite Seite").unwrap());
+        save_pdf_fixture("mehrseitig.pdf", &bytes);
+    }
+
+    #[test]
+    fn pdf_extracts_unicode_font_mapping() {
+        let bytes = pdf_fixture(&[b"ABC"], true);
+        let text = pdf_extract::extract_text_from_mem(&bytes).unwrap();
+        assert!(text.contains("日本語"), "{text:?}");
+        save_pdf_fixture("unicode.pdf", &bytes);
+    }
+
+    #[test]
+    fn pdf_rejects_corrupt_input_and_keeps_image_only_documents_empty() {
+        let result = std::panic::catch_unwind(|| pdf_extract::extract_text_from_mem(b"not a PDF"));
+        assert!(result.unwrap().is_err());
+        let empty = pdf_fixture(&[b""], false);
+        assert!(
+            pdf_extract::extract_text_from_mem(&empty)
+                .unwrap()
+                .trim()
+                .is_empty()
+        );
+        save_pdf_fixture("ohne-text.pdf", &empty);
+    }
+
     #[test]
     fn orphan_cleanup_keeps_referenced_and_recent_files() {
         let root =

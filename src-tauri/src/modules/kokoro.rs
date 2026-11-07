@@ -588,6 +588,25 @@ mod tests {
                 fs::write(output.join(format!("{voice}-{rate}.wav")), wav).unwrap();
             }
         }
+        if let Ok(voices_path) = std::env::var("OTAKUSOUL_KOKORO_TEST_LEGACY_VOICES") {
+            let legacy = KokoroConfig {
+                voices_path,
+                ..config.clone()
+            };
+            let audio = synthesize(
+                "Hello from a legacy voice file.",
+                "af_heart",
+                "+0%",
+                &legacy,
+            )
+            .await
+            .unwrap();
+            assert!(audio.len() > 10_000);
+            println!(
+                "Legacy bincode-2 voice file: {} audio characters",
+                audio.len()
+            );
+        }
         assert!(
             synthesize("Hello.", "missing_test_voice", "+0%", &config)
                 .await

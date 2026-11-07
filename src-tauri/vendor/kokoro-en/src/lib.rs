@@ -1,4 +1,5 @@
 // OtakuSoul: accept the app-owned ONNX environment for ort rc.15.
+// OtakuSoul: cu-bincode replaces the abandoned codec; original-format fixtures are tested below.
 // Keep upstream style lints out of the application's -D warnings policy.
 #![allow(clippy::all)]
 
@@ -36,6 +37,40 @@ pub struct KokoroTts {
     /// `true` when the loaded model expects the v1.1 phoneme/token vocabulary
     /// (its `speed` input is `i32`); `false` for v1.0 models that use `f32`.
     is_v11: bool,
+}
+
+#[cfg(test)]
+mod legacy_voice_compatibility {
+    use super::*;
+
+    // Produced with original bincode 2.0.1, standard configuration; no model weights.
+    const SINGLE: &[u8] = &[1, 1, 3, 0, 0, 128, 63, 0, 0, 0, 191, 0, 0, 0, 0];
+    const COMBINED: &[u8] = &[1, 8, 97, 102, 95, 104, 101, 97, 114, 116, 1, 1, 3, 0, 0, 128, 63, 0, 0, 0, 191, 0, 0, 0, 0];
+
+    #[test]
+    fn reads_original_bincode_single_voice() {
+        assert_eq!(decode_voice_pack(SINGLE).unwrap(), vec![vec![vec![1.0, -0.5, 0.0]]]);
+    }
+
+    #[tokio::test]
+    async fn reads_original_bincode_combined_voice_file() {
+        let dir = std::env::temp_dir().join(format!("kokoro-legacy-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("voices.bin");
+        std::fs::write(&path, COMBINED).unwrap();
+        let voices = load_voices(&path).await.unwrap();
+        assert_eq!(voices["af_heart"], vec![vec![vec![1.0, -0.5, 0.0]]]);
+        std::fs::remove_file(path).unwrap();
+        std::fs::remove_dir(dir).unwrap();
+    }
+
+    #[test]
+    fn rejects_truncated_and_excessive_legacy_lengths() {
+        assert!(decode_voice_pack(&SINGLE[..SINGLE.len() - 1]).is_err());
+        // u64::MAX declared vector length in the original variable-integer format.
+        let excessive = [253, 255, 255, 255, 255, 255, 255, 255, 255];
+        assert!(decode_voice_pack(&excessive).is_err());
+    }
 }
 
 #[cfg(target_os = "macos")]

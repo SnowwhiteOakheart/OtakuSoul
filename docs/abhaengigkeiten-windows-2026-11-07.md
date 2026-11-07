@@ -1,5 +1,7 @@
 # Windows-Nachprüfung der Abhängigkeiten – 07.11.2026
 
+**Späterer Stand:** [Ersetzung nicht mehr gepflegter Pakete und verbleibende Linux-Eltern](ungepflegte-abhaengigkeiten-2026-11-07.md).
+
 Dieser Nachtrag aktualisiert die verbliebenen Windows-Punkte aus der [Major-Übersicht](abhaengigkeiten-major-2026-11-07.md).
 
 ## ONNX und Kokoro umgesetzt

@@ -356,6 +356,8 @@ npm run e2e:perf   # замер длинного чата (1000 сообщени
 
 ## ⚖️ Лицензия и этика
 
+* **Импорт PDF:** `pdf-extract` 0.12.1 (Jeff Muizelaar и участники проекта, MIT) использует обновлённый lopdf; [происхождение и изменения](src-tauri/vendor/pdf-extract/OTAKUSOUL-PATCH.md). Лицензия включена в приложение.
+
 * **Kokoro:** локальная адаптация `kokoro-en` 0.1.5 распространяется под Apache-2.0; [происхождение и изменения](src-tauri/vendor/kokoro-en/OTAKUSOUL-PATCH.md). Словарь произношения CMU сохраняет [лицензию CMU](src-tauri/vendor/kokoro-en/dict/CMUDICT-LICENSE). Оба текста лицензий включены в приложение.
 
 OtakuSoul – свободное ПО: Copyright (C) 2026 SnowwhiteOakheart.
