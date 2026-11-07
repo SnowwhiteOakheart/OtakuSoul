@@ -39,7 +39,8 @@ describe('living portrait', () => {
       expect(speech.style.transform).toMatch(/translateY\(-0\.[1-9]/);
       rerender(<MorphingPortrait src="data:a" alt="Ayu" isSpeaking={false} breath={3} />);
       act(() => vi.advanceTimersByTime(1000));
-      expect(speech.style.transform).toContain('translateY(0.000%)');
+      // CSSOM may normalize trailing zeroes; the resting pose must stay unchanged.
+      expect(speech.style.transform).toMatch(/^translateY\(0(?:\.0+)?%\) scale\(1(?:\.0+)?\)$/);
       expect(sway.style.transform).not.toBe(swayed);
 
       act(() => useAppStore.getState().setPortraitMotion(false));
