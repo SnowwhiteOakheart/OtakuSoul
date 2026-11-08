@@ -5,6 +5,7 @@ mod card_files;
 mod character_draft;
 mod connection;
 mod icons;
+mod library;
 mod message_content;
 mod model;
 mod profile;
@@ -139,6 +140,8 @@ enum Message {
     Navigate(Page),
     SelectCharacter(usize),
     LibrarySearch(String),
+    LibraryTag(Option<String>),
+    ResetLibraryFilters,
     EditCharacter(usize),
     NewCharacter,
     DuplicateCharacter(usize),
@@ -233,6 +236,7 @@ struct App {
     prompt_system: text_editor::Content,
     prompt_post: text_editor::Content,
     library_search: String,
+    library_tag: Option<String>,
     character_draft: Option<character_draft::Draft>,
     character_source: Option<usize>,
     character_field: character_draft::Field,
@@ -313,6 +317,7 @@ impl Default for App {
             prompt_system,
             prompt_post,
             library_search: String::new(),
+            library_tag: None,
             character_draft: None,
             character_source: None,
             character_field: character_draft::Field::Description,
@@ -541,6 +546,7 @@ impl App {
                 self.character_source = None;
                 self.character_error.clear();
                 self.library_search.clear();
+                self.library_tag = None;
                 self.page = Page::Characters;
                 self.notice =
                     "Charakter im Arbeitsspeicher übernommen. Die Profilkopie bleibt unverändert."
@@ -806,6 +812,7 @@ impl App {
                         });
                         self.portraits = Self::portraits(&self.preview);
                         self.library_search.clear();
+                        self.library_tag = None;
                         self.page = Page::Characters;
                         "Charakter importiert. Er bleibt bis zum Export im Arbeitsspeicher.".into()
                     }
@@ -860,6 +867,11 @@ impl App {
                 };
             }
             Message::LibrarySearch(value) => self.library_search = value,
+            Message::LibraryTag(tag) => self.library_tag = tag,
+            Message::ResetLibraryFilters => {
+                self.library_search.clear();
+                self.library_tag = None;
+            }
             Message::NewCharacter => self.open_character(None, false),
             Message::EditCharacter(index) => self.open_character(Some(index), false),
             Message::DuplicateCharacter(index) => self.open_character(Some(index), true),
@@ -1105,6 +1117,8 @@ impl App {
                         );
                         self.warnings = profile.warnings.clone();
                         self.preview = Preview::from_profile(profile);
+                        self.library_search.clear();
+                        self.library_tag = None;
                         self.portraits = Self::portraits(&self.preview);
                         self.profile_home = Some(home);
                         self.epoch += 1;
@@ -1233,6 +1247,47 @@ mod tests {
 #[cfg(test)]
 mod character_editor_tests {
     use super::*;
+    #[test]
+    fn resetting_library_filters_preserves_chat_and_character_draft() {
+        let mut app = App::default();
+        let _ = app.update(Message::EditCharacter(0));
+        let _ = app.update(Message::CharacterName("Offener Entwurf".into()));
+        let _ = app.update(Message::LibrarySearch("keine Treffer".into()));
+        let _ = app.update(Message::LibraryTag(Some("Unbekannt".into())));
+        let selected = app.preview.selected;
+        let _ = app.update(Message::ResetLibraryFilters);
+        assert!(app.library_search.is_empty());
+        assert!(app.library_tag.is_none());
+        assert_eq!(app.preview.selected, selected);
+        assert_eq!(
+            app.character_draft
+                .as_ref()
+                .unwrap()
+                .get(character_draft::Field::Name),
+            "Offener Entwurf"
+        );
+    }
+
+    #[test]
+    fn saving_a_card_clears_filters_so_its_new_tags_do_not_hide_it() {
+        let mut app = App::default();
+        let _ = app.update(Message::EditCharacter(0));
+        app.character_draft
+            .as_mut()
+            .unwrap()
+            .set(character_draft::Field::Tags, "Neuer Tag".into());
+        let _ = app.update(Message::LibrarySearch("Alte Suche".into()));
+        let _ = app.update(Message::LibraryTag(Some("Alter Tag".into())));
+        let _ = app.update(Message::SaveCharacter);
+        assert!(app.library_search.is_empty());
+        assert!(app.library_tag.is_none());
+        assert!(library::matches(
+            &app.preview.characters[0],
+            "Neuer Tag",
+            None
+        ));
+    }
+
     #[test]
     fn macros_that_expand_to_empty_are_not_chat_choices() {
         let mut app = with_alternate_greetings();

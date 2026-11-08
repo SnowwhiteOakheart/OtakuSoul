@@ -8,6 +8,9 @@ Dieses Dokument ist der Einstieg für spätere Arbeit am Prototyp. Allgemeine Re
 Wir entwickeln gemeinsam eine separat startbare native GUI ohne WebView. Zunächst zählt ausschließlich
 Windows auf dem vorhandenen Rechner. Der Assistent implementiert und prüft; der Nutzer beurteilt die
 laufende Oberfläche. Fortschritt wird an nutzbaren Etappen gemessen, nicht an Personentagen.
+Vor jeder Desktopübernahme ausdrücklich fragen und Zustimmung abwarten (Nutzerwunsch 08.11.2026).
+Das umfasst die Vorbereitung mit Schließen/Neustarten der GUI-Testinstanz. Keine parallelen Eingaben;
+Codearbeit und Prüfungen ohne Desktopsteuerung können währenddessen weiterlaufen.
 Linux und macOS bleiben Architekturziele, sind bis zu tatsächlichen Tests aber nicht als unterstützt bestätigt.
 WSL kann später Linux-Builds/erste WSLg-Tests ermöglichen; es ersetzt weder Linux-Desktopabnahme noch einen Mac.
 
@@ -308,7 +311,8 @@ Kein vollständiger E2E-Lauf, kein echtes Modell und kein Cloud-Anbieter aufgeru
 - [x] Weitere Metadatenfelder: Titel, Tags (eine Zeile je Tag) und Erstellernotizen.
 - [x] Alternative Begrüßungen hinzufügen/bearbeiten/entfernen, JSON-Vorschau des aktuellen Entwurfs.
 - [x] Begrüßungsvarianten in leeren lokalen Testchats auswählen; Detailansicht mit weiteren Kartentexten.
-- [ ] Weitere Editorbereiche: Ausdrucksbilder und Lorebook-Bindungen; Kartenraster/Tagfilter wie im Tauri-Frontend.
+- [x] Kartenraster und Tagfilter nach Vorbild des Tauri-Frontends.
+- [ ] Weitere Editorbereiche: Ausdrucksbilder und Lorebook-Bindungen.
 - [x] Expliziter JSON-/PNG-Dateiimport/-export über native Öffnen-/Speichern-Dialoge.
 - [ ] Dauerhafte Integration von Kartenänderungen in ein eigenes isoliertes Schreibprofil.
 
@@ -409,6 +413,34 @@ Reiter Kartentexte/Begrüßungen/JSON durchgeklickt; Hauptbegrüßung und vollst
 sichtbar, Export-/Übernehmenknöpfe erreichbar. Kein Speichern und kein produktiver Profilzugriff.
 Neue Instanz bleibt auf der JSON-Vorschau einer gebündelten Karte geöffnet. Hinzufügen/Entfernen und
 Schreibschutz sind automatisiert geprüft; keine vollständige Tastatur-/DPI-/Screenreaderabnahme.
+
+### GUI-Zwischenschritt: Porträtraster und kombinierte Filter
+
+Die Bibliothek ersetzt die Zeilenliste durch Porträtkarten nach `CharacterLibraryView.tsx`: Bild im
+4:5-Ausschnitt, aktive Figur markiert, Name/Titel über dem Bild, Bearbeiten/Duplizieren/PNG-Export,
+anklickbares Porträt für Kartendetails, kurze Beschreibung, bis zu drei Tagchips und Chatknopf.
+Iced `responsive` (Feature `lazy`) misst die verfügbare Breite; `src/library.rs` bestimmt 1–5 Spalten
+an den Tauri-Schwellen 640/768/1024/1280. Originalindizes bleiben beim Filtern erhalten, damit Aktionen
+auch nach Suche/Tagwahl die richtige Karte öffnen. Noch keine Virtualisierung großer Bibliotheken.
+
+Textsuche prüft Name, Beschreibung, Persönlichkeit und Tags; der einzelne Tagfilter wird zusätzlich
+exakt angewendet. Tags werden zur Darstellung getrimmt, Leerwerte/fehlerhafte Typen ignoriert und
+doppelte Werte entfernt, ohne Kartendaten zu verändern. Alle Tags sind über die horizontal scrollbare
+Filterleiste erreichbar; Kartenchips wählen denselben Filter. Titel-Fallback: custom_title, sow_title,
+erster Tag, „Charakter“. Trefferzahl und Leerzustand mit Zurücksetzen sind vorhanden. Zurücksetzen
+behält Chat und Editorentwurf. Nach erfolgreichem Import, Kartenübernahme oder Profilwechsel werden
+beide Filter gelöscht, damit neue/geänderte Karten nicht unbemerkt verborgen bleiben.
+
+Prüfstand: 63 Native-Tests erfolgreich; sechs neue Tests für kombinierte Filter, Tagprojektion,
+Titel-Fallbacks/fehlerhafte Metadaten, Breakpoints sowie Schutz des Entwurfs beim Zurücksetzen und
+Sichtbarkeit nach geänderten Tags. Clippy und Formatprüfung erfolgreich; Agentenreview ohne konkrete
+Befunde. Desktop-/Fensterprüfung erst nach ausdrücklicher Freigabe des Nutzers.
+Nach ausdrücklicher Freigabe Windows-Build erstellt und praktisch geprüft (1027 × 799): zwei
+Spalten mit voller Navigation, drei nach Einklappen; Tag „Buchwurm“ zeigt nur Shiori, „Gamer“ nur
+Sota. Porträtklick aus gefiltertem Raster öffnet Sotas Details, Zurücksetzen stellt alle vier Karten
+wieder her. Scrollen und Chatknopf öffnen die richtige Figur. Danach Bibliothek offen gelassen und
+Desktopkontrolle ausdrücklich zurückgegeben. Keine privaten Daten/Profiländerungen/Modellaufrufe.
+Textsuche und Kombination mit Tags sind automatisiert abgedeckt; keine komplette DPI-/Tastaturabnahme.
 
 - [ ] Einstellungen/Onboarding, Charakter-/Lorebook-Editoren, Gedächtnis, Hub und Im-/Export.
 - [ ] Stage und 5e einschließlich Battlemap; Fachlogik wiederverwenden.

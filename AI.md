@@ -15,6 +15,9 @@ Separater Start: `cargo run -p otakusoul-native`. Kein Desktop-Pet; kein automat
 Profilkopien nur ausdrücklich und schreibgeschützt laden; synthetisches Beispiel über Einstellungen oder
 `--create-demo-profile <Ordner>`. Gemeinsame Basis-Pfadauflösung: `crates/otakusoul-paths`.
 Für diesen Prototyp auf dem Experiment-Branch committen/pushen, nicht auf `main`.
+Nutzerwunsch: Vor jeder Übernahme der Windows-Bedienung ausdrücklich fragen und die Antwort abwarten,
+damit keine parallelen Maus-/Tastatureingaben entstehen. Auch GUI-Testinstanzen nicht ungefragt
+neu starten oder schließen. Codearbeit und Tests ohne Desktopsteuerung laufen unabhängig weiter.
 Nutzerentscheidung 08.11.2026: Zuerst vollständige, funktionierende GUI-Elemente; Übersetzungen danach
 integrieren, sobald der Oberflächenstand dafür geeignet ist. Layout und Gestaltung der nativen
 GUI möglichst identisch zum vorhandenen Tauri-Frontend halten; aktuelle React-/CSS-Quellen als Referenz.
@@ -23,8 +26,9 @@ Die native Diagnose sendet nur einen festen Testprompt; echte Charakter-Prompt-/
 Gemeinsame Makros und Prompt-Renderer: `crates/otakusoul-macros` und `crates/otakusoul-prompt`.
 Tauri bleibt Adapter; native Prompt-Vorschau mit Persona, Vorlage, Autorennotiz und Antwortlänge.
 Die Auswahl von Lore/Gedächtnis/Verlauf in TypeScript ist noch nicht in einen gemeinsamen Service portiert.
-Charakterbibliothek mit Suche, Karteneditor im RAM und explizitem JSON-/PNG-Dateiimport/-export
-über native Dialoge (`rfd`); PNG bewahrt das Porträt. Profilkopien und Archivnachrichten bleiben
+Charakterbibliothek im adaptiven Porträt-Kartenraster mit kombinierter Textsuche und exaktem Tagfilter.
+Karteneditor im RAM und expliziter JSON-/PNG-Dateiimport/-export über native Dialoge (`rfd`);
+PNG bewahrt das Porträt. Profilkopien und Archivnachrichten bleiben
 schreibgeschützt, Exportziel muss außerhalb des produktiven und geladenen Profils liegen.
 Editorreiter: Kartentexte, Begrüßungen (mehrzeilige Alternativen hinzufügen/bearbeiten/entfernen),
 schreibgeschützte JSON-Vorschau. Alternative Begrüßungen nur in leeren lokalen Testchats auswählen;

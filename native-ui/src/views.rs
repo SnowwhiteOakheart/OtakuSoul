@@ -743,112 +743,277 @@ impl App {
     }
 
     fn characters(&self) -> Element<'_, Message> {
-        let mut cards = column![row![
-            text("Deine Charaktere").size(26).width(Fill),
-            control(Icon::Plus, "Neu", Message::NewCharacter),
-            control(Icon::Attachment, "Importieren", Message::ImportCharacter),
-            control(
-                Icon::Settings,
-                "Profilkopie laden",
-                Message::Navigate(Page::Settings)
+        iced::widget::responsive(move |size| self.character_library(size.width)).into()
+    }
+
+    fn character_library(&self, width: f32) -> Element<'_, Message> {
+        let content_width = (width - 48.0).max(1.0);
+        let cols = crate::library::columns(content_width);
+        let card_width = ((content_width - 16.0 * (cols - 1) as f32) / cols as f32).max(1.0);
+        let mut content = column![
+            row![
+                text("Deine Charaktere").size(26).width(Fill),
+                control(Icon::Plus, "Neu", Message::NewCharacter),
+                control(Icon::Attachment, "Importieren", Message::ImportCharacter),
+                control(
+                    Icon::Settings,
+                    "Profilkopie laden",
+                    Message::Navigate(Page::Settings)
+                )
+            ]
+            .align_y(Alignment::Center),
+            muted(&self.notice, 12, &self.theme()),
+            text_input(
+                "Name, Beschreibung, Persönlichkeit oder Tags …",
+                &self.library_search
             )
-        ]]
+            .on_input(Message::LibrarySearch)
+            .padding(10)
+            .style(appearance::input)
+        ]
         .spacing(16);
-        cards = cards.push(muted(&self.notice, 12, &self.theme()));
-        cards = cards.push(
-            text_input("Charaktere durchsuchen …", &self.library_search)
-                .on_input(Message::LibrarySearch)
-                .padding(10)
-                .style(appearance::input),
+        let mut tags = row![
+            button(text("Alle").size(12))
+                .padding([6, 10])
+                .style(if self.library_tag.is_none() {
+                    appearance::primary_button
+                } else {
+                    appearance::subtle_button
+                })
+                .on_press(Message::LibraryTag(None))
+        ]
+        .spacing(8);
+        for tag in crate::library::available_tags(&self.preview.characters) {
+            let selected = self.library_tag.as_ref() == Some(&tag);
+            tags = tags.push(
+                button(text(tag.clone()).size(12))
+                    .padding([6, 10])
+                    .style(if selected {
+                        appearance::primary_button
+                    } else {
+                        appearance::subtle_button
+                    })
+                    .on_press(Message::LibraryTag(Some(tag))),
+            );
+        }
+        content = content.push(
+            scrollable(tags)
+                .width(Fill)
+                .style(appearance::scrollbar)
+                .direction(scrollable::Direction::Horizontal(
+                    scrollable::Scrollbar::new().width(6).scroller_width(6),
+                ))
+                .height(44),
         );
+        let filtered = self
+            .preview
+            .characters
+            .iter()
+            .enumerate()
+            .filter(|(_, character)| {
+                crate::library::matches(
+                    character,
+                    &self.library_search,
+                    self.library_tag.as_deref(),
+                )
+            })
+            .map(|(index, _)| index)
+            .collect::<Vec<_>>();
+        let mut summary = row![
+            muted(
+                format!(
+                    "{} von {} Charakteren",
+                    filtered.len(),
+                    self.preview.characters.len()
+                ),
+                12,
+                &self.theme()
+            )
+            .width(Fill)
+        ]
+        .align_y(Alignment::Center);
+        if !self.library_search.is_empty() || self.library_tag.is_some() {
+            summary = summary.push(control(
+                Icon::Close,
+                "Filter zurücksetzen",
+                Message::ResetLibraryFilters,
+            ));
+        }
+        content = content.push(summary);
         if self.character_draft.is_some() {
-            cards = cards.push(control(
+            content = content.push(control(
                 Icon::Characters,
                 "Charakterentwurf fortsetzen",
                 Message::Navigate(Page::CharacterEditor),
             ));
         }
-        let query = self.library_search.trim().to_lowercase();
-        let mut count = 0;
-        for (index, character) in self.preview.characters.iter().enumerate() {
-            let data = character
-                .card
-                .as_ref()
-                .map(|card| card.get("data").unwrap_or(card));
-            let searchable = format!(
-                "{} {} {} {}",
-                character.name,
-                character.description,
-                data.and_then(|data| data.get("personality"))
-                    .and_then(serde_json::Value::as_str)
-                    .unwrap_or_default(),
-                data.and_then(|data| data.get("tags"))
-                    .and_then(serde_json::Value::as_array)
-                    .map(|tags| tags
-                        .iter()
-                        .filter_map(serde_json::Value::as_str)
-                        .collect::<Vec<_>>()
-                        .join(" "))
-                    .unwrap_or_default()
-            )
-            .to_lowercase();
-            if !query.is_empty() && !searchable.contains(&query) {
-                continue;
-            }
-            count += 1;
-            cards = cards.push(
+        if filtered.is_empty() {
+            content = content.push(
                 container(
-                    row![
-                        self.portrait(index, 76, 96),
-                        column![
-                            text(&character.name).size(20),
-                            muted(
-                                shorten(
-                                    &character.description.replace("{{char}}", &character.name),
-                                    140
-                                ),
-                                13,
-                                &self.theme()
-                            )
-                        ]
-                        .spacing(8)
-                        .width(Fill),
-                        column![
-                            control(
-                                Icon::Characters,
-                                "Bearbeiten",
-                                Message::EditCharacter(index)
-                            ),
-                            control(Icon::Eye, "Ansehen", Message::InspectCharacter(index)),
-                            control(
-                                Icon::Copy,
-                                "Duplizieren",
-                                Message::DuplicateCharacter(index)
-                            ),
-                            button(row![icon(Icon::Chat, 16), text("Chat").size(13)].spacing(8))
-                                .padding(10)
-                                .style(appearance::primary_button)
-                                .on_press(Message::SelectCharacter(index))
-                        ]
-                        .spacing(6)
+                    column![
+                        icon(Icon::Search, 32),
+                        text("Keine passenden Charaktere gefunden.").size(20),
+                        muted(
+                            "Ändere die Suche oder setze die Filter zurück.",
+                            14,
+                            &self.theme()
+                        ),
+                        control(
+                            Icon::Back,
+                            "Alle Charaktere anzeigen",
+                            Message::ResetLibraryFilters
+                        )
                     ]
-                    .spacing(18)
-                    .align_y(Alignment::Center),
+                    .spacing(16),
                 )
-                .padding(16)
+                .padding(32)
                 .width(Fill)
                 .style(appearance::card),
             );
         }
-        cards = cards.push(muted(
-            format!("{count} von {} Charakteren", self.preview.characters.len()),
-            12,
-            &self.theme(),
-        ));
-        if count == 0 {
-            cards = cards.push(text("Keine passenden Charaktere gefunden. Ändere die Suche oder lege einen neuen Charakter an."));
+        for chunk in filtered.chunks(cols) {
+            let mut cards = row![].spacing(16).align_y(Alignment::Start);
+            for index in chunk {
+                cards = cards.push(self.library_card(*index, card_width));
+            }
+            content = content.push(cards);
         }
-        scroll(cards.padding(24)).height(Fill).width(Fill).into()
+        scroll(content.padding(24)).height(Fill).width(Fill).into()
+    }
+
+    fn library_card(&self, index: usize, width: f32) -> Element<'_, Message> {
+        let character = &self.preview.characters[index];
+        let active = character.id == self.preview.current().character_id;
+        let portrait_height = width * 1.25;
+        let portrait: Element<'_, Message> = if let Some(handle) = &self.portraits[index] {
+            image(handle.clone())
+                .width(Fill)
+                .height(portrait_height)
+                .content_fit(iced::ContentFit::Cover)
+                .into()
+        } else {
+            container(text(character.name.chars().next().unwrap_or('?')).size(48))
+                .center_x(Fill)
+                .center_y(portrait_height)
+                .style(appearance::panel)
+                .into()
+        };
+        let cover = button(portrait)
+            .padding(0)
+            .width(Fill)
+            .height(portrait_height)
+            .style(appearance::subtle_button)
+            .on_press(Message::InspectCharacter(index));
+        let mut actions = row![].spacing(4).align_y(Alignment::Center);
+        if active {
+            actions = actions.push(
+                container(text("Aktiv").size(11))
+                    .padding([4, 8])
+                    .style(appearance::selected_navigation_icon),
+            );
+        }
+        actions = actions
+            .push(Space::new().width(Fill))
+            .push(icon_control(
+                Icon::Characters,
+                "Charakter bearbeiten",
+                Some(Message::EditCharacter(index)),
+            ))
+            .push(icon_control(
+                Icon::Copy,
+                "Charakter duplizieren",
+                Some(Message::DuplicateCharacter(index)),
+            ))
+            .push(icon_control(
+                Icon::Attachment,
+                "Als PNG exportieren",
+                Some(Message::ExportCharacter(
+                    index,
+                    crate::card_files::Format::Png,
+                )),
+            ));
+        let labels = container(
+            column![
+                text(shorten(&character.name, 32)).size(17),
+                muted(
+                    shorten(&crate::library::title(character), 42),
+                    12,
+                    &self.theme()
+                )
+            ]
+            .spacing(4),
+        )
+        .padding(12)
+        .width(Fill)
+        .style(appearance::panel);
+        let overlay = column![
+            container(actions).padding(8),
+            Space::new().height(Fill),
+            labels
+        ]
+        .height(portrait_height);
+        let tags = crate::library::tags(character);
+        let mut badges = row![].spacing(4);
+        let tag_limit = ((((width - 32.0) / 3.0 - 10.0) / 10.0) as usize)
+            .saturating_sub(1)
+            .max(1);
+        for tag in tags.into_iter().take(3) {
+            badges = badges.push(
+                tooltip(
+                    button(text(shorten(&tag, tag_limit)).size(10))
+                        .padding([3, 5])
+                        .style(appearance::subtle_button)
+                        .on_press(Message::LibraryTag(Some(tag.clone()))),
+                    text(tag).size(12),
+                    tooltip::Position::Bottom,
+                )
+                .style(appearance::card),
+            );
+        }
+        let description = character
+            .description
+            .replace("{{char}}", &character.name)
+            .replace("{{user}}", self.prompt_settings.persona_name.trim());
+        let body = column![
+            muted(shorten(&description, 70), 12, &self.theme()).width(Fill),
+            badges,
+            Space::new().height(Fill),
+            button(
+                row![
+                    icon(Icon::Chat, 15),
+                    text(if active {
+                        "Chat öffnen"
+                    } else {
+                        "Auswählen und chatten"
+                    })
+                    .size(12)
+                ]
+                .spacing(6)
+                .align_y(Alignment::Center)
+            )
+            .padding([8, 10])
+            .width(Fill)
+            .style(if active {
+                appearance::primary_button
+            } else {
+                appearance::subtle_button
+            })
+            .on_press(Message::SelectCharacter(index))
+        ]
+        .spacing(10)
+        .padding(12)
+        .height(176);
+        container(column![stack![cover, overlay], body])
+            .width(width)
+            .clip(true)
+            .style(move |theme| {
+                let mut style = appearance::card(theme);
+                if active {
+                    style.border.color = Color::from_rgb8(168, 85, 247);
+                }
+                style
+            })
+            .into()
     }
 
     fn character_editor(&self) -> Element<'_, Message> {
