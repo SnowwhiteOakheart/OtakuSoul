@@ -1,5 +1,5 @@
 //! Native Ansichten nach Header, Sidebar und ChatView des Tauri-Frontends.
-use super::{App, EditorTab, GreetingChoice, Message, Page, appearance};
+use super::{App, EditorTab, GreetingChoice, LoreEntryChoice, Message, Page, appearance};
 use crate::icons::{Icon, icon};
 use iced::keyboard::{Key, key::Named};
 use iced::widget::{
@@ -131,6 +131,7 @@ impl App {
             Page::Prompt => self.prompt_view(),
             Page::Lorebooks => self.lorebooks_view(),
             Page::LorebookDetails => self.lorebook_details(),
+            Page::LorebookEditor => self.lorebook_editor(),
             Page::Planned(label) => self.planned(label),
         };
         column![self.header(), row![self.navigation(), content].height(Fill)]
@@ -234,7 +235,8 @@ impl App {
                 let active = self.page == *page
                     || (matches!(self.page, Page::Details | Page::CharacterEditor)
                         && *page == Page::Characters)
-                    || (self.page == Page::LorebookDetails && *page == Page::Lorebooks)
+                    || (matches!(self.page, Page::LorebookDetails | Page::LorebookEditor)
+                        && *page == Page::Lorebooks)
                     || (self.page == Page::Prompt && *page == Page::Chat);
                 let symbol =
                     container(
@@ -1022,8 +1024,9 @@ impl App {
     fn lorebooks_view(&self) -> Element<'_, Message> {
         let mut content = column![
             row![text("Lorebooks").size(26).width(Fill),
+                control(Icon::Plus,"Neu",Message::NewLorebook),
                 control(Icon::Attachment,"JSON laden",Message::ImportLorebook)].align_y(Alignment::Center),
-            muted("Lesender Katalog im Arbeitsspeicher. Die Dateien bleiben unverändert. Bindungen wählst Du im Charaktereditor; native Promptauswahl folgt später.",13,&self.theme()),
+            muted("Katalog und Bearbeitung im Arbeitsspeicher. Dateien bleiben bis zum ausdrücklichen Export unverändert. Bindungen wählst Du im Charaktereditor; native Promptauswahl folgt später.",13,&self.theme()),
             muted(&self.notice,12,&self.theme()),
         ].spacing(16);
         if self.character_draft.is_some() {
@@ -1031,6 +1034,13 @@ impl App {
                 Icon::Back,
                 "Charakterentwurf fortsetzen",
                 Message::Navigate(Page::CharacterEditor),
+            ));
+        }
+        if self.lore_draft.is_some() {
+            content = content.push(control(
+                Icon::Lorebooks,
+                "Lorebookentwurf fortsetzen",
+                Message::Navigate(Page::LorebookEditor),
             ));
         }
         if self.lorebooks.is_empty() {
@@ -1057,7 +1067,11 @@ impl App {
                         ]
                         .spacing(6)
                         .width(Fill),
-                        control(Icon::Eye, "Ansehen", Message::InspectLorebook(index))
+                        column![
+                            control(Icon::Eye, "Ansehen", Message::InspectLorebook(index)),
+                            control(Icon::Characters, "Bearbeiten", Message::EditLorebook(index))
+                        ]
+                        .spacing(8)
                     ]
                     .spacing(14)
                     .align_y(Alignment::Center),
@@ -1088,12 +1102,44 @@ impl App {
             })
             .collect::<Vec<_>>();
         let mut content = column![
-            row![text(&book.name).size(26).width(Fill),control(Icon::Back,"Katalog",Message::Navigate(Page::Lorebooks)),control(Icon::Copy,"JSON kopieren",Message::CopyLorebook(index))].spacing(10).align_y(Alignment::Center),
+            row![
+                text(&book.name).size(26).width(Fill),
+                control(Icon::Back, "Katalog", Message::Navigate(Page::Lorebooks)),
+                control(Icon::Copy, "JSON kopieren", Message::CopyLorebook(index))
+            ]
+            .spacing(10)
+            .align_y(Alignment::Center),
+            row![
+                control(Icon::Characters, "Bearbeiten", Message::EditLorebook(index)),
+                control(
+                    Icon::Attachment,
+                    "Als JSON speichern",
+                    Message::ExportLorebook(index)
+                )
+            ]
+            .spacing(10),
             text(&book.description).size(14),
-            muted("Unveränderte Dateiinhalte · lesende Vorschau, keine Auswertung der Aktivierungsregeln.",12,&self.theme()),
-            text_input("Einträge durchsuchen …",&self.lore_entry_search).on_input(Message::LoreEntrySearch).padding(10).style(appearance::input),
-            muted(format!("{} von {} Einträgen · maximal 200 Treffer gleichzeitig sichtbar",entries.len(),book.entries.len()),12,&self.theme()),
-        ].spacing(16);
+            muted(
+                "Aktueller Katalogstand · keine Auswertung der Aktivierungsregeln.",
+                12,
+                &self.theme()
+            ),
+            muted(&self.notice, 12, &self.theme()),
+            text_input("Einträge durchsuchen …", &self.lore_entry_search)
+                .on_input(Message::LoreEntrySearch)
+                .padding(10)
+                .style(appearance::input),
+            muted(
+                format!(
+                    "{} von {} Einträgen · maximal 200 Treffer gleichzeitig sichtbar",
+                    entries.len(),
+                    book.entries.len()
+                ),
+                12,
+                &self.theme()
+            ),
+        ]
+        .spacing(16);
         if entries.is_empty() {
             content = content.push(text("Keine passenden Einträge gefunden."));
         }
@@ -1124,6 +1170,94 @@ impl App {
             );
         }
         scroll(content.padding(24)).height(Fill).width(Fill).into()
+    }
+
+    fn lorebook_editor(&self) -> Element<'_, Message> {
+        let Some(draft) = &self.lore_draft else {
+            return self.lorebooks_view();
+        };
+        let choices = draft
+            .entry_names()
+            .into_iter()
+            .enumerate()
+            .map(|(index, name)| {
+                LoreEntryChoice(index, format!("{}. {}", index + 1, shorten(&name, 36)))
+            })
+            .collect::<Vec<_>>();
+        let selected = choices.get(self.lore_selected_entry).cloned();
+        let mut content=column![
+            row![text("Lorebook bearbeiten").size(26).width(Fill),control(Icon::Back,"Katalog",Message::Navigate(Page::Lorebooks))].align_y(Alignment::Center),
+            muted("Entwurf im Arbeitsspeicher · vorhandene Regeln und unbekannte Felder bleiben erhalten. Noch keine native Kontextevaluation.",12,&self.theme()),
+            row![text_input("Lorebook-Name",&draft.name).on_input(Message::LoreName).padding(10).style(appearance::input),
+                text_input("Beschreibung (optional)",&draft.description).on_input(Message::LoreDescription).padding(10).style(appearance::input)].spacing(10),
+            row![iced::widget::pick_list(choices,selected,Message::LoreSelectEntry).placeholder("Noch kein Eintrag").padding(8).style(appearance::select).width(Fill),
+                control(Icon::Plus,"Eintrag",Message::AddLoreEntry),
+                icon_control(Icon::Close,"Eintrag entfernen",(draft.count()>0).then_some(Message::RemoveLoreEntry))].spacing(10).align_y(Alignment::Center)
+        ].spacing(10);
+        if self.lore_selected_entry < draft.count() {
+            content = content.push(
+                text_input("Name des Eintrags", &self.lore_entry_name)
+                    .on_input(Message::LoreEntryName)
+                    .padding(10)
+                    .style(appearance::input),
+            );
+            content = content.push(
+                row![
+                    iced::widget::checkbox(draft.enabled(self.lore_selected_entry))
+                        .label("Eintrag eingeschaltet")
+                        .on_toggle(Message::LoreEnabled),
+                    iced::widget::checkbox(draft.always(self.lore_selected_entry))
+                        .label("Immer aufnehmen")
+                        .on_toggle(Message::LoreAlways)
+                ]
+                .spacing(20),
+            );
+            content = content.push(
+                iced::widget::pick_list(
+                    crate::lore_draft::Field::ALL,
+                    Some(self.lore_field),
+                    Message::LoreField,
+                )
+                .padding(8)
+                .style(appearance::select),
+            );
+            content = content.push(
+                text_editor(&self.lore_text)
+                    .height(Fill)
+                    .padding(12)
+                    .size(14)
+                    .style(appearance::editor)
+                    .key_binding(read_only_keys)
+                    .on_action(Message::LoreText),
+            );
+        } else {
+            content = content.push(
+                container(text("Füge den ersten Eintrag hinzu.").size(18))
+                    .center_x(Fill)
+                    .center_y(Fill),
+            );
+        }
+        content = content.push(text(&self.lore_error).size(13));
+        content = content.push(
+            row![
+                button("Übernehmen")
+                    .padding(10)
+                    .style(appearance::primary_button)
+                    .on_press(Message::SaveLorebook),
+                control(Icon::Close, "Entwurf verwerfen", Message::DiscardLorebook),
+                Space::new().width(Fill),
+                control(Icon::Attachment, "JSON speichern", Message::ExportLoreDraft)
+            ]
+            .spacing(10)
+            .align_y(Alignment::Center),
+        );
+        content = content.push(muted(&self.notice, 11, &self.theme()));
+        content=content.push(muted("Schlüssel: eine Zeile je Begriff. Übernehmen ändert nur RAM; JSON speichern exportiert den aktuellen Entwurf. ID bleibt stabil, reine Namens-/Pfadbindungen nach Umbenennen prüfen.",11,&self.theme()));
+        container(content)
+            .padding(24)
+            .width(Fill)
+            .height(Fill)
+            .into()
     }
 
     fn lorebook_bindings(&self) -> Element<'_, Message> {

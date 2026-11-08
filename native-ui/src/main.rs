@@ -5,9 +5,11 @@ mod card_files;
 mod character_draft;
 mod connection;
 mod expressions;
+mod file_export;
 mod icons;
 mod library;
 mod lore_catalog;
+mod lore_draft;
 mod message_content;
 mod model;
 mod profile;
@@ -117,6 +119,7 @@ enum Page {
     Prompt,
     Lorebooks,
     LorebookDetails,
+    LorebookEditor,
     Planned(&'static str),
 }
 
@@ -131,6 +134,13 @@ enum EditorTab {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct GreetingChoice(usize);
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct LoreEntryChoice(usize, String);
+impl std::fmt::Display for LoreEntryChoice {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.1)
+    }
+}
 impl std::fmt::Display for GreetingChoice {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if self.0 == 0 {
@@ -149,6 +159,23 @@ enum Message {
     LibraryTag(Option<String>),
     ResetLibraryFilters,
     ImportLorebook,
+    NewLorebook,
+    EditLorebook(usize),
+    LoreName(String),
+    LoreDescription(String),
+    LoreSelectEntry(LoreEntryChoice),
+    LoreEntryName(String),
+    LoreField(lore_draft::Field),
+    LoreText(text_editor::Action),
+    LoreEnabled(bool),
+    LoreAlways(bool),
+    AddLoreEntry,
+    RemoveLoreEntry,
+    SaveLorebook,
+    DiscardLorebook,
+    ExportLoreDraft,
+    ExportLorebook(usize),
+    LorebookExported(Result<bool, String>),
     LorebookImported(Result<Option<lore_catalog::Book>, String>),
     InspectLorebook(usize),
     CopyLorebook(usize),
@@ -270,6 +297,13 @@ struct App {
     lorebook_selected: Option<usize>,
     lore_entry_search: String,
     lore_reference_input: String,
+    lore_draft: Option<lore_draft::Draft>,
+    lore_selected_entry: usize,
+    lore_entry_name: String,
+    lore_field: lore_draft::Field,
+    lore_text: text_editor::Content,
+    lore_error: String,
+    next_lore_id: u64,
     character_draft: Option<character_draft::Draft>,
     character_draft_id: u64,
     expression_slot: expressions::Slot,
@@ -361,6 +395,13 @@ impl Default for App {
             lorebook_selected: None,
             lore_entry_search: String::new(),
             lore_reference_input: String::new(),
+            lore_draft: None,
+            lore_selected_entry: 0,
+            lore_entry_name: String::new(),
+            lore_field: lore_draft::Field::Content,
+            lore_text: text_editor::Content::new(),
+            lore_error: String::new(),
+            next_lore_id: 0,
             character_draft: None,
             character_draft_id: 0,
             expression_slot: expressions::SLOTS[0],
@@ -381,6 +422,115 @@ impl Default for App {
 }
 
 impl App {
+    fn sync_lore_text(&mut self) {
+        self.lore_entry_name = self
+            .lore_draft
+            .as_ref()
+            .map(|draft| draft.entry_name(self.lore_selected_entry))
+            .unwrap_or_default();
+        let text = self
+            .lore_draft
+            .as_ref()
+            .map(|draft| draft.field(self.lore_selected_entry, self.lore_field))
+            .unwrap_or_default();
+        self.lore_text = text_editor::Content::with_text(&text);
+    }
+    fn open_lorebook(&mut self, target: Option<usize>) {
+        if self.card_busy || self.profile_busy {
+            return;
+        }
+        if self.lore_draft.is_none() {
+            let draft = if let Some(index) = target {
+                let Some(book) = self.lorebooks.get(index) else {
+                    return;
+                };
+                lore_draft::Draft::from_book(index, book)
+            } else {
+                let id = loop {
+                    self.next_lore_id += 1;
+                    let id = format!("native-lorebook-{}", self.next_lore_id);
+                    if !self
+                        .lorebooks
+                        .iter()
+                        .any(|book| book.matches_reference(&id))
+                    {
+                        break id;
+                    }
+                };
+                lore_draft::Draft::new(id)
+            };
+            self.lore_draft = Some(draft);
+            self.lore_selected_entry = 0;
+            self.lore_field = lore_draft::Field::Content;
+            self.lore_error.clear();
+            self.sync_lore_text();
+        }
+        self.page = Page::LorebookEditor;
+    }
+    fn save_lorebook(&mut self) {
+        let Some(draft) = &self.lore_draft else {
+            return;
+        };
+        let target = draft.target;
+        match draft.apply() {
+            Ok(book) => {
+                if self.lorebooks.iter().enumerate().any(|(index, existing)| {
+                    Some(index) != target && existing.matches_reference(book.binding_key())
+                }) {
+                    self.lore_error = "Diese Lorebook-ID ist bereits im Katalog vorhanden.".into();
+                    return;
+                }
+                let index = if let Some(index) = target {
+                    self.lorebooks[index] = book;
+                    index
+                } else {
+                    let index = self.lorebooks.len();
+                    self.lorebooks.push(book);
+                    index
+                };
+                self.lorebook_selected = Some(index);
+                self.lore_draft = None;
+                self.lore_error.clear();
+                self.lore_entry_search.clear();
+                self.page = Page::LorebookDetails;
+                self.notice = "Lorebook im Arbeitsspeicher übernommen. Erst der Dateiexport sichert Änderungen dauerhaft. Namens-/Pfadbindungen nach Umbenennen prüfen; die ID bleibt gleich.".into();
+            }
+            Err(error) => self.lore_error = error,
+        }
+    }
+    fn export_lorebook(&mut self, book: lore_catalog::Book) -> Task<Message> {
+        if self.card_busy || self.profile_busy {
+            return Task::none();
+        }
+        self.card_busy = true;
+        self.lore_error.clear();
+        self.notice = "Lorebook-Exportziel wählen …".into();
+        let home = self.profile_home.clone();
+        Task::perform(
+            async move {
+                let Some(file) = rfd::AsyncFileDialog::new()
+                    .set_title("Lorebook exportieren")
+                    .add_filter("Lorebook-JSON", &["json"])
+                    .set_file_name("lorebook.json")
+                    .save_file()
+                    .await
+                else {
+                    return Ok(false);
+                };
+                let path = file.path().to_path_buf();
+                if !path
+                    .extension()
+                    .is_some_and(|extension| extension.eq_ignore_ascii_case("json"))
+                {
+                    return Err("Bitte eine Datei mit der Endung .json wählen.".into());
+                }
+                background(move || file_export::write_json(&path, &book.raw, home.as_deref()))
+                    .await
+                    .map(|()| true)
+            },
+            Message::LorebookExported,
+        )
+    }
     fn embedded_lorebook(&self) -> Option<&serde_json::Value> {
         let card = self
             .character_source
@@ -866,6 +1016,134 @@ impl App {
     }
     fn update(&mut self, message: Message) -> Task<Message> {
         match message {
+            Message::NewLorebook => self.open_lorebook(None),
+            Message::EditLorebook(index) => self.open_lorebook(Some(index)),
+            Message::LoreName(value) => {
+                if let Some(draft) = &mut self.lore_draft {
+                    draft.name = value;
+                }
+            }
+            Message::LoreDescription(value) => {
+                if let Some(draft) = &mut self.lore_draft {
+                    draft.description = value;
+                }
+            }
+            Message::LoreSelectEntry(choice) => {
+                if self
+                    .lore_draft
+                    .as_ref()
+                    .is_some_and(|draft| choice.0 < draft.count())
+                {
+                    self.lore_selected_entry = choice.0;
+                    self.sync_lore_text();
+                }
+            }
+            Message::LoreField(field) => {
+                self.lore_field = field;
+                self.sync_lore_text();
+            }
+            Message::LoreEntryName(value) => {
+                self.lore_entry_name = value.clone();
+                if let Some(draft) = &mut self.lore_draft {
+                    self.lore_error = draft
+                        .set_entry_name(self.lore_selected_entry, value)
+                        .err()
+                        .unwrap_or_default();
+                }
+            }
+            Message::LoreText(action) => {
+                if let Some(draft) = &mut self.lore_draft
+                    && self.lore_selected_entry < draft.count()
+                {
+                    let editing = action.is_edit();
+                    self.lore_text.perform(action);
+                    if editing {
+                        self.lore_error = draft
+                            .set_field(
+                                self.lore_selected_entry,
+                                self.lore_field,
+                                self.lore_text.text(),
+                            )
+                            .err()
+                            .unwrap_or_default();
+                    }
+                }
+            }
+            Message::LoreEnabled(value) => {
+                if let Some(draft) = &mut self.lore_draft {
+                    self.lore_error = draft
+                        .set_enabled(self.lore_selected_entry, value)
+                        .err()
+                        .unwrap_or_default();
+                }
+            }
+            Message::LoreAlways(value) => {
+                if let Some(draft) = &mut self.lore_draft {
+                    self.lore_error = draft
+                        .set_always(self.lore_selected_entry, value)
+                        .err()
+                        .unwrap_or_default();
+                }
+            }
+            Message::AddLoreEntry => {
+                if let Some(draft) = &mut self.lore_draft {
+                    match draft.add_entry() {
+                        Ok(index) => {
+                            self.lore_selected_entry = index;
+                            self.lore_error.clear();
+                            self.sync_lore_text();
+                        }
+                        Err(error) => self.lore_error = error,
+                    }
+                }
+            }
+            Message::RemoveLoreEntry => {
+                if let Some(draft) = &mut self.lore_draft {
+                    match draft.remove_entry(self.lore_selected_entry) {
+                        Ok(()) => {
+                            self.lore_selected_entry = self
+                                .lore_selected_entry
+                                .min(draft.count().saturating_sub(1));
+                            self.lore_error.clear();
+                            self.sync_lore_text();
+                        }
+                        Err(error) => self.lore_error = error,
+                    }
+                }
+            }
+            Message::SaveLorebook => self.save_lorebook(),
+            Message::DiscardLorebook => {
+                self.lore_draft = None;
+                self.lore_error.clear();
+                self.page = Page::Lorebooks;
+            }
+            Message::ExportLoreDraft => {
+                if let Some(draft) = &self.lore_draft {
+                    match draft.apply() {
+                        Ok(book) => return self.export_lorebook(book),
+                        Err(error) => self.lore_error = error,
+                    }
+                }
+            }
+            Message::ExportLorebook(index) => {
+                if let Some(book) = self.lorebooks.get(index) {
+                    match lore_draft::Draft::from_book(index, book).apply() {
+                        Ok(book) => return self.export_lorebook(book),
+                        Err(error) => self.notice = error,
+                    }
+                }
+            }
+            Message::LorebookExported(result) => {
+                self.card_busy = false;
+                self.notice = match result {
+                    Ok(true) => {
+                        "Lorebook-Datei exportiert. Die geladene Profilkopie bleibt unverändert."
+                            .into()
+                    }
+                    Ok(false) => "Lorebook-Export abgebrochen.".into(),
+                    Err(error) => format!("Lorebook-Export fehlgeschlagen: {error}"),
+                };
+            }
             Message::ImportLorebook => {
                 if self.card_busy || self.profile_busy {
                     return Task::none();
@@ -1596,6 +1874,71 @@ mod tests {
 #[cfg(test)]
 mod character_editor_tests {
     use super::*;
+    #[test]
+    fn lorebook_edits_stay_with_their_target_until_saved() {
+        let mut app = App::default();
+        app.lorebooks.push(lorebook_fixture("Original"));
+        let _ = app.update(Message::EditLorebook(0));
+        let _ = app.update(Message::LoreText(text_editor::Action::SelectAll));
+        let _ = app.update(Message::LoreText(text_editor::Action::Edit(
+            text_editor::Edit::Insert('X'),
+        )));
+        assert_eq!(app.lorebooks[0].entries[0].content, "Original");
+        let _ = app.update(Message::SelectCharacter(1));
+        let _ = app.update(Message::SaveLorebook);
+        assert!(app.lorebooks[0].entries[0].content.contains('X'));
+        assert_eq!(app.lorebooks[0].id, "book-1");
+    }
+
+    #[test]
+    fn selecting_text_does_not_normalize_legacy_keyword_fields() {
+        let mut app = App::default();
+        let raw = serde_json::json!({"id":"legacy","name":"Legacy","entries":[{"name":"Ort","key":"A, B","content":"Text","foreign":42}]});
+        app.lorebooks
+            .push(lore_catalog::Book::from_json(raw, "legacy.json".into(), "Fallback").unwrap());
+        let _ = app.update(Message::EditLorebook(0));
+        let _ = app.update(Message::LoreField(lore_draft::Field::Keys));
+        let _ = app.update(Message::LoreText(text_editor::Action::SelectAll));
+        let projected = app.lore_draft.as_ref().unwrap().apply().unwrap();
+        assert_eq!(projected.raw["entries"][0]["key"], "A, B");
+        assert_eq!(projected.raw["entries"][0]["foreign"], 42);
+    }
+
+    #[test]
+    fn invalid_or_colliding_lorebook_drafts_do_not_open_exports_or_replace_books() {
+        let mut app = App::default();
+        let _ = app.update(Message::NewLorebook);
+        let _ = app.update(Message::ExportLoreDraft);
+        assert!(!app.card_busy);
+        assert!(!app.lore_error.is_empty());
+        let _ = app.update(Message::LoreName("Neues Buch".into()));
+        let duplicate = lore_catalog::Book::from_json(
+            serde_json::json!({"id":"native-lorebook-1","name":"Importiert","entries":[]}),
+            "import.json".into(),
+            "Fallback",
+        )
+        .unwrap();
+        let _ = app.update(Message::LorebookImported(Ok(Some(duplicate))));
+        let _ = app.update(Message::SaveLorebook);
+        assert_eq!(app.lorebooks.len(), 1);
+        assert_eq!(app.lorebooks[0].name, "Importiert");
+        assert!(app.lore_draft.is_some());
+        assert!(!app.lore_error.is_empty());
+    }
+
+    #[test]
+    fn opening_another_book_keeps_the_existing_draft_and_discard_preserves_catalog() {
+        let mut app = App::default();
+        app.lorebooks.push(lorebook_fixture("Original"));
+        let _ = app.update(Message::EditLorebook(0));
+        let _ = app.update(Message::LoreName("Entwurf".into()));
+        let _ = app.update(Message::NewLorebook);
+        assert_eq!(app.lore_draft.as_ref().unwrap().name, "Entwurf");
+        let _ = app.update(Message::DiscardLorebook);
+        assert_eq!(app.lorebooks[0].name, "Mein Buch");
+        assert!(app.lore_draft.is_none());
+    }
+
     fn lorebook_fixture(content: &str) -> lore_catalog::Book {
         lore_catalog::Book::from_json(serde_json::json!({"id":"book-1","name":"Mein Buch","entries":[{"name":"Ort","content":content}]}),"fixture.json".into(),"Fallback").unwrap()
     }

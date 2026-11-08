@@ -38,17 +38,7 @@ pub fn write(
         Format::Json => json,
         Format::Png => encode_png(export, &json)?,
     };
-    let parent = target.parent().ok_or("Das Exportziel ist ungültig.")?;
-    let mut temporary = tempfile::NamedTempFile::new_in(parent)
-        .map_err(|_| "Im Zielordner konnte keine temporäre Exportdatei angelegt werden.")?;
-    temporary
-        .write_all(&bytes)
-        .and_then(|()| temporary.as_file().sync_all())
-        .map_err(|_| "Die Exportdatei konnte nicht vollständig geschrieben werden.")?;
-    temporary
-        .persist(target)
-        .map_err(|_| "Die Exportdatei konnte nicht am gewählten Ziel gespeichert werden.")?;
-    Ok(())
+    crate::file_export::write_bytes(&target, &bytes, protected_home)
 }
 
 fn encode_png(export: &Export, json: &[u8]) -> Result<Vec<u8>, String> {

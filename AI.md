@@ -38,7 +38,8 @@ begonnene Chats behalten ihren Begrüßungssnapshot, Archive werden nie aus Kart
 Ausdrucksbilder-Reiter mit 15 Slots, PNG-/WebP-Auswahl und Hauptporträtübernahme. Bekannte Presetbilder
 sowie eingebettete Bilder sind offline sichtbar; andere Verweise bleiben erhalten und ungeladen.
 Dateiexport bettet bekannte Preset-Ausdrucksbilder portabel ein. Details/Grenzen: native-ui/ROADMAP.md.
-Lorebooks: ausdrücklich geladener lesender RAM-Katalog, Eintragssuche und Kartenbindungen im Editor.
+Lorebooks: ausdrücklich geladener RAM-Katalog, Eintragssuche, eigener Eintragseditor und Kartenbindungen.
+Quelldateien bleiben unverändert; expliziter JSON-Export sichert Lorebook-Entwürfe atomar über file_export.rs.
 Original-JSON/eingebettete Bücher bleiben erhalten; noch keine native Lore-Evaluation/Promptaktivierung.
 
 ### Allgemeine Arbeitsregeln

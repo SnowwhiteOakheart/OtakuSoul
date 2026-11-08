@@ -316,7 +316,8 @@ Kein vollständiger E2E-Lauf, kein echtes Modell und kein Cloud-Anbieter aufgeru
 - [x] Kartenraster und Tagfilter nach Vorbild des Tauri-Frontends.
 - [x] Ausdrucksbilder-Reiter mit 15 Plätzen, Offlinevorschau, Auswahl/Entfernen und Hauptporträtübernahme.
 - [x] Lorebook-Bindungen im Charaktereditor und lesender Katalog mit Eintragssuche.
-- [ ] Weitere Editorbereiche: vollständiger Lorebook-Editor und Auflösung fremder relativer Bildverweise.
+- [x] Lorebook-Basiseditor mit Eintragsverwaltung und atomarem JSON-Export.
+- [ ] Weitere Editorbereiche: erweiterte Lorebook-Aktivierungsregeln und Auflösung fremder relativer Bildverweise.
 - [x] Expliziter JSON-/PNG-Dateiimport/-export über native Öffnen-/Speichern-Dialoge.
 - [ ] Dauerhafte Integration von Kartenänderungen in ein eigenes isoliertes Schreibprofil.
 
@@ -524,6 +525,40 @@ Synchronisierung; bestehende JSON-/PNG-Karten-Roundtrip-Fixtures enthalten nun L
 und ein eingebettetes Buch. Clippy und gezielte Formatprüfung bestanden. Agentenreview korrigierte
 die fehlende Datei-ID. Keine Desktopsteuerung und kein Stoppen/Neustarten der laufenden Vorschau;
 neue normale Windows-EXE und Sichtabnahme bleiben wie gewünscht für später offen.
+
+### GUI-Zwischenschritt: Lorebook-Editor und gemeinsamer atomarer Export
+
+Katalog/Detailansicht bieten Neu/Bearbeiten/JSON speichern. `src/lore_draft.rs` verwaltet einen eigenen
+RAM-Entwurf unabhängig vom Charakterentwurf: Name/Beschreibung, Einträge hinzufügen/entfernen,
+Eintragsname, Inhalt, Schlüsselwörter, zusätzliche Schlüssel, Ausschlusswörter, RegEx-Zeilen sowie
+ein-/ausgeschaltet und „Immer aufnehmen“. Erweiterte Prioritäts-/Zustands-/Kettenregeln sind noch
+nicht als Formulare portiert; vorhandene Werte bleiben erhalten. Keine Triggerauswertung im Editor.
+
+OtakuSoul-Arrays und SillyTavern-Objekte behalten ihre Form, vorhandene Objektkeys, UIDs und unbekannte
+Felder. Neue Einträge bekommen kollisionsfreie UIDs/Objektkeys. Bearbeitete Aliasfelder werden konsistent
+gesetzt; bloße Cursor-/Auswahlaktionen dürfen nichts normalisieren. Schlüssel sind zeilenweise Strings,
+Regex-Zeilen behalten relevante Leerzeichen. Der Auswahlaufbau für Objekteinträge läuft linear.
+Dateistamm-Fallback-ID und projizierter Name werden im Export festgeschrieben; anderes Ziel/Dateiname
+ändert damit die Buchidentität nicht. Reine Namens-/Pfadbindungen nach Umbenennen bleiben vom Nutzer
+zu prüfen; es gibt keine automatische Massenänderung bereits gespeicherter Charakterkarten.
+
+Navigation zu anderen Ansichten oder ein weiterer Editorauftrag bewahrt den offenen Lorebookentwurf.
+Übernehmen ändert nur den Katalog im RAM, Verwerfen lässt ihn unverändert. Doppelte IDs werden beim
+Übernehmen abgefangen, auch wenn inzwischen ein gleichnamiger Import hinzukam. Charakterbindungen
+bleiben unabhängig. Export ist eine Momentaufnahme des aktuellen Entwurfs oder Katalogbuchs und kann
+auch vor Übernehmen erfolgen. Name ist Pflicht; Quelldateien werden nicht automatisch überschrieben.
+
+`src/file_export.rs` enthält jetzt den gemeinsamen atomaren Schreibweg für Karten- und Lorebookexport:
+Zielschutz, temporäre Datei im Zielordner, vollständiges Schreiben/sync_all, danach persist. JSON maximal
+4 MiB. Karten behalten vorherige Bildtransformationen und Zielvalidierung. Speicherdialogziele werden
+unverändert verwendet, Endung .json erforderlich; produktives und geladenes Profil bleiben geschützt.
+Exportmeldungen sind auch in Lorebookdetails sichtbar. Kein automatischer Profil-/Dateischreibzugriff.
+
+Prüfstand: 103 Native-Tests erfolgreich; 14 zusätzliche Tests für Array-/Objekt-/UID-/Aliaserhalt,
+Pflichtfelder, Entwurfsschutz/ID-Kollision, Auswählen ohne Normalisierung, atomaren Export sowie
+Roundtrip unter anderem Dateinamen mit unveränderter Quelle. Clippy/Formatprüfung erfolgreich.
+Review korrigierte fehlende Exportmeldungen und den projizierten Namen ohne Rohfeld. Kein Desktopzugriff,
+kein Schließen/Starten der Vorschau. Normale Windows-EXE und gesammelte Sichtabnahme weiter offen.
 
 - [ ] Einstellungen/Onboarding, Charakter-/Lorebook-Editoren, Gedächtnis, Hub und Im-/Export.
 - [ ] Stage und 5e einschließlich Battlemap; Fachlogik wiederverwenden.
