@@ -11,7 +11,8 @@
   Gemeinsame Crates: `otakusoul-paths` (Profilpfade), `otakusoul-stream` (SSE-/Think-Decoder ohne GUI).
   `otakusoul-macros` und `otakusoul-prompt`: gemeinsamer Renderer für Tauri und native Prompt-Vorschau;
   Lore-/Gedächtnis-/Verlaufsauswahl noch im bisherigen Ablauf, noch kein nativer Charakterchat.
-  Charakterbibliothek: Suche, RAM-Kartenentwurf, Neu/Duplizieren und JSON kopieren; noch keine Dateispeicherung.
+  Charakterbibliothek: Suche, RAM-Kartenentwurf, Neu/Duplizieren, JSON kopieren und expliziter JSON-/PNG-Dateiexport/-import.
+  Native Dateidialoge über `rfd`; keine Schreibzugriffe auf das produktive oder geladene Profil.
   Native Verbindungsdiagnose vorhanden, echter Charakterchat noch offen; Übersetzungen zuletzt.
 * **ONNX:** `modules/onnx_runtime.rs` verwaltet die von `AppState` gehaltene gemeinsame Umgebung für Kokoro, VAD und Porträts. Kokoros rc.15-Portierung liegt in `src-tauri/vendor/kokoro-en/` mit Herkunfts- und Patchdokumentation.
 * **PDF-Anhänge:** `vendor/pdf-extract` behält die bisherige Extraktion bei und verwendet lopdf 0.47 ohne ttf-parser. Herkunft und minimale Portierung stehen in `OTAKUSOUL-PATCH.md`; Kokoros altes Bincode-Format wird durch `cu-bincode` gelesen.

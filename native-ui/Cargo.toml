@@ -21,6 +21,6 @@ otakusoul-prompt = { path = "../crates/otakusoul-prompt" }
 otakusoul-stream = { path = "../crates/otakusoul-stream" }
 reqwest = { version = "0.13", features = ["json", "stream"] }
 tokio = { version = "1", features = ["rt", "time", "net", "sync", "macros"] }
+rfd = "0.18"
 
-[dev-dependencies]
 tempfile = "3"

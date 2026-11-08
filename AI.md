@@ -23,8 +23,9 @@ Die native Diagnose sendet nur einen festen Testprompt; echte Charakter-Prompt-/
 Gemeinsame Makros und Prompt-Renderer: `crates/otakusoul-macros` und `crates/otakusoul-prompt`.
 Tauri bleibt Adapter; native Prompt-Vorschau mit Persona, Vorlage, Autorennotiz und Antwortlänge.
 Die Auswahl von Lore/Gedächtnis/Verlauf in TypeScript ist noch nicht in einen gemeinsamen Service portiert.
-Charakterbibliothek mit Suche und Karteneditor im RAM (Neu/Bearbeiten/Duplizieren/JSON kopieren).
-Keine dauerhafte Kartenspeicherung; Profilkopien und archivierte Nachrichten bleiben schreibgeschützt.
+Charakterbibliothek mit Suche, Karteneditor im RAM und explizitem JSON-/PNG-Dateiimport/-export
+über native Dialoge (`rfd`); PNG bewahrt das Porträt. Profilkopien und Archivnachrichten bleiben
+schreibgeschützt, Exportziel muss außerhalb des produktiven und geladenen Profils liegen.
 
 ### Allgemeine Arbeitsregeln
 

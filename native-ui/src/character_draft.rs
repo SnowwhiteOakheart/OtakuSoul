@@ -13,6 +13,9 @@ pub enum Field {
     ExampleMessages,
     SystemPrompt,
     PostHistory,
+    Title,
+    Tags,
+    CreatorNotes,
 }
 
 impl fmt::Display for Field {
@@ -26,12 +29,15 @@ impl fmt::Display for Field {
             Self::ExampleMessages => "Beispieldialoge",
             Self::SystemPrompt => "System-Prompt",
             Self::PostHistory => "Nachspann nach dem Verlauf",
+            Self::Title => "Titel",
+            Self::Tags => "Tags (eine Zeile je Tag)",
+            Self::CreatorNotes => "Erstellernotizen",
         })
     }
 }
 
 impl Field {
-    pub const ALL: [Self; 8] = [
+    pub const ALL: [Self; 11] = [
         Self::Name,
         Self::Description,
         Self::Personality,
@@ -40,6 +46,9 @@ impl Field {
         Self::ExampleMessages,
         Self::SystemPrompt,
         Self::PostHistory,
+        Self::Title,
+        Self::Tags,
+        Self::CreatorNotes,
     ];
 
     fn key(self) -> &'static str {
@@ -52,6 +61,9 @@ impl Field {
             Self::ExampleMessages => "mes_example",
             Self::SystemPrompt => "system_prompt",
             Self::PostHistory => "post_history_instructions",
+            Self::Title => "custom_title",
+            Self::Tags => "tags",
+            Self::CreatorNotes => "creator_notes",
         }
     }
 }
@@ -59,7 +71,7 @@ impl Field {
 #[derive(Debug, Clone)]
 pub struct Draft {
     pub target: Option<usize>,
-    values: [String; 8],
+    values: [String; 11],
 }
 
 impl Draft {
@@ -73,7 +85,7 @@ impl Draft {
     pub fn from_character(index: usize, character: &Character) -> Self {
         Self {
             target: Some(index),
-            values: Field::ALL.map(|field| value(character, field).to_owned()),
+            values: Field::ALL.map(|field| value(character, field)),
         }
     }
 
@@ -116,7 +128,34 @@ impl Draft {
             if existing.is_none_or(|character| value(character, field) != text)
                 || existing.is_some_and(|character| character.card.is_none())
             {
-                data.insert(field.key().into(), text.into());
+                match field {
+                    Field::Title => {
+                        let extensions = data.entry("extensions").or_insert_with(|| json!({}));
+                        let extensions = extensions.as_object_mut().ok_or(
+                            "Der Titel kann nicht geändert werden: Die Erweiterungen der Karte enthalten kein gültiges JSON-Objekt.",
+                        )?;
+                        extensions.insert("custom_title".into(), text.into());
+                        if extensions.contains_key("sow_title") {
+                            extensions.insert("sow_title".into(), text.into());
+                        }
+                        changed.push("sow_title");
+                    }
+                    Field::Tags => {
+                        data.insert(
+                            "tags".into(),
+                            Value::Array(
+                                text.lines()
+                                    .map(str::trim)
+                                    .filter(|tag| !tag.is_empty())
+                                    .map(|tag| Value::String(tag.into()))
+                                    .collect(),
+                            ),
+                        );
+                    }
+                    _ => {
+                        data.insert(field.key().into(), text.into());
+                    }
+                }
                 // Der gemeinsame Renderer akzeptiert auch diese Import-Aliase. Bei einer
                 // Bearbeitung darf kein zweiter Wert desselben Felds übrig bleiben.
                 if field == Field::ExampleMessages {
@@ -151,16 +190,40 @@ impl Draft {
     }
 }
 
-fn value(character: &Character, field: Field) -> &str {
+fn value(character: &Character, field: Field) -> String {
     match field {
-        Field::Name => &character.name,
-        Field::Description => &character.description,
-        Field::FirstMessage => &character.first_message,
+        Field::Name => character.name.clone(),
+        Field::Description => character.description.clone(),
+        Field::FirstMessage => character.first_message.clone(),
         _ => {
             let Some(card) = &character.card else {
-                return "";
+                return String::new();
             };
             let data = card.get("data").unwrap_or(card);
+            if field == Field::Tags {
+                return data
+                    .get("tags")
+                    .and_then(Value::as_array)
+                    .map(|tags| {
+                        tags.iter()
+                            .filter_map(Value::as_str)
+                            .collect::<Vec<_>>()
+                            .join("\n")
+                    })
+                    .unwrap_or_default();
+            }
+            if field == Field::Title {
+                return data
+                    .get("extensions")
+                    .and_then(|extensions| {
+                        extensions
+                            .get("custom_title")
+                            .or_else(|| extensions.get("sow_title"))
+                    })
+                    .and_then(Value::as_str)
+                    .unwrap_or_default()
+                    .to_owned();
+            }
             data.get(field.key())
                 .or_else(|| {
                     (field == Field::ExampleMessages)
@@ -172,6 +235,7 @@ fn value(character: &Character, field: Field) -> &str {
                 })
                 .and_then(Value::as_str)
                 .unwrap_or_default()
+                .to_owned()
         }
     }
 }
@@ -251,5 +315,55 @@ mod tests {
         assert!(translations["ja"].get("description").is_none());
         assert_eq!(translations["de"]["name"], "Alice DE");
         assert_eq!(translations["de"]["scenario"], "Szene");
+    }
+
+    #[test]
+    fn metadata_edit_preserves_foreign_extensions_and_updates_title_aliases() {
+        let original = character(json!({"data":{"name":"Alice","description":"Original",
+            "first_mes":"Hallo","tags":["fantasy","ruhig"],"creator_notes":"Alt",
+            "extensions":{"sow_title":"Alter Titel","foreign":{"keep":[1,2]},
+                "otakusoul_i18n":{"translations":{"de":{"custom_title":"Übersetzt",
+                    "sow_title":"Alt","description":"Beschreibung"}}}}}}));
+        let mut draft = Draft::from_character(0, &original);
+        assert_eq!(draft.get(Field::Title), "Alter Titel");
+        assert_eq!(draft.get(Field::Tags), "fantasy\nruhig");
+        assert_eq!(draft.get(Field::CreatorNotes), "Alt");
+        draft.set(Field::Title, "Neuer Titel".into());
+        draft.set(Field::Tags, " Romanze \n\n Japan, modern \n".into());
+        draft.set(Field::CreatorNotes, "Notizen\nmit Zeilenumbruch".into());
+        let edited = draft.apply(Some(&original), "original".into()).unwrap();
+        let data = &edited.card.as_ref().unwrap()["data"];
+        assert_eq!(data["tags"], json!(["Romanze", "Japan, modern"]));
+        assert_eq!(data["creator_notes"], "Notizen\nmit Zeilenumbruch");
+        assert_eq!(data["extensions"]["custom_title"], "Neuer Titel");
+        assert_eq!(data["extensions"]["sow_title"], "Neuer Titel");
+        assert_eq!(data["extensions"]["foreign"], json!({"keep":[1,2]}));
+        let translation = &data["extensions"]["otakusoul_i18n"]["translations"]["de"];
+        assert!(translation.get("custom_title").is_none());
+        assert!(translation.get("sow_title").is_none());
+        assert_eq!(translation["description"], "Beschreibung");
+        let roundtrip = Draft::from_character(0, &edited);
+        assert_eq!(roundtrip.get(Field::Tags), "Romanze\nJapan, modern");
+    }
+
+    #[test]
+    fn unchanged_metadata_stays_absent_and_malformed_extensions_are_not_replaced() {
+        let original = character(
+            json!({"name":"Alice","description":"Original","first_mes":"Hallo",
+            "extensions":["fremde Daten"]}),
+        );
+        let mut draft = Draft::from_character(0, &original);
+        draft.set(Field::CreatorNotes, "Notiz".into());
+        let edited = draft.apply(Some(&original), "original".into()).unwrap();
+        let card = edited.card.unwrap();
+        assert!(card.get("tags").is_none());
+        assert_eq!(card["extensions"], json!(["fremde Daten"]));
+        draft.set(Field::Title, "Titel".into());
+        assert!(draft.apply(Some(&original), "original".into()).is_err());
+
+        let mut new = Draft::new();
+        new.set(Field::Name, "Neu".into());
+        let created = new.apply(None, "new".into()).unwrap();
+        assert_eq!(created.card.unwrap()["data"]["tags"], json!([]));
     }
 }

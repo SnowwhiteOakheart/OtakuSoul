@@ -723,6 +723,7 @@ impl App {
         let mut cards = column![row![
             text("Deine Charaktere").size(26).width(Fill),
             control(Icon::Plus, "Neu", Message::NewCharacter),
+            control(Icon::Attachment, "Importieren", Message::ImportCharacter),
             control(
                 Icon::Settings,
                 "Profilkopie laden",
@@ -730,6 +731,7 @@ impl App {
             )
         ]]
         .spacing(16);
+        cards = cards.push(muted(&self.notice, 12, &self.theme()));
         cards = cards.push(
             text_input("Charaktere durchsuchen …", &self.library_search)
                 .on_input(Message::LibrarySearch)
@@ -850,12 +852,21 @@ impl App {
                 Space::new().width(Fill),
                 control(Icon::Copy,"JSON kopieren",Message::CopyCharacterDraft),
             ].spacing(12).align_y(Alignment::Center),
-            muted("JSON kopieren sichert den aktuellen Entwurf in der Zwischenablage. Bei bearbeiteten Feldern werden alte Kartenübersetzungen im Entwurf entfernt. Noch keine dauerhafte Speicherung.",12,&self.theme())
+            row![control(Icon::Attachment,"Als JSON speichern",Message::ExportDraft(crate::card_files::Format::Json)),
+                control(Icon::Image,"Als PNG speichern",Message::ExportDraft(crate::card_files::Format::Png))].spacing(12),
+            muted(&self.notice,12,&self.theme()),
+            muted("Export sichert den aktuellen Entwurf als Datei, ohne ihn zu übernehmen. JSON enthält kein Porträt; PNG enthält Karte und Bild. Tags: eine Zeile je Tag. Bei bearbeiteten Feldern werden alte Kartenübersetzungen im Entwurf entfernt.",12,&self.theme())
         ].spacing(14)).padding(24).height(Fill).width(Fill).into()
     }
 
     fn details(&self) -> Element<'_, Message> {
         let character = self.preview.character();
+        let index = self
+            .preview
+            .characters
+            .iter()
+            .position(|candidate| candidate.id == character.id)
+            .unwrap_or_default();
         let mut details = column![
             row![
                 text(&character.name).size(28).width(Fill),
@@ -868,12 +879,33 @@ impl App {
         ]
         .spacing(18);
         if character.card.is_some() {
+            details = details.push(
+                row![
+                    control(
+                        Icon::Characters,
+                        "Bearbeiten",
+                        Message::EditCharacter(index)
+                    ),
+                    control(
+                        Icon::Attachment,
+                        "JSON speichern",
+                        Message::ExportCharacter(index, crate::card_files::Format::Json)
+                    ),
+                    control(
+                        Icon::Image,
+                        "PNG speichern",
+                        Message::ExportCharacter(index, crate::card_files::Format::Png)
+                    )
+                ]
+                .spacing(10),
+            );
             details = details.push(control(
                 Icon::Copy,
                 "Vollständige Karte als JSON kopieren",
                 Message::CopyCard,
             ));
         }
+        details = details.push(muted(&self.notice, 12, &self.theme()));
         scroll(details.padding(24).width(Fill))
             .height(Fill)
             .width(Fill)

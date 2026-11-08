@@ -21,7 +21,8 @@ Konzept. Vergleichsquelle ist der aktuelle React-/CSS-Code; vorhandene Screensho
 - Zunächst Navigation, Charakterauswahl, Chatverlauf, Eingabe, grundlegende Einstellungen und echte Chat-Anbindung.
 - Kein Desktop-Pet. Animierte Avatare, Audio, Hub, Stage und komplexe Editoren sind spätere Ausbaustufen.
 - Vorhandene Porträts dürfen in der Vorschau verwendet werden; keine neuen Modellgewichte herunterladen.
-- Aktuelle Vorschau ist ausdrücklich ohne KI und speichert ausschließlich im Arbeitsspeicher.
+- Aktuelle Vorschau ist ausdrücklich ohne KI; Laufzeitänderungen bleiben im RAM. Expliziter Kartenexport
+  sichert JSON-/PNG-Dateien außerhalb des produktiven und geladenen Profils.
 - Tauri bleibt baubar. Keine vorschnelle Ablösung und keine großflächige Backend-Umschreibung.
 - Keine Änderungen am produktiven Profil oder Datenformat. Vor echten Datenzugriffen isolierte Profilkopie
   über `OTAKUSOUL_HOME` vorbereiten. Ein Branch schützt keine Datenbank.
@@ -304,9 +305,11 @@ Kein vollständiger E2E-Lauf, kein echtes Modell und kein Cloud-Anbieter aufgeru
   System-Prompt und Nachspann. Mehrzeilige Felder, Übernehmen/Verwerfen, JSON des Entwurfs kopieren.
 - [x] Entwurf bleibt bei Navigation erhalten; anderer Editorauftrag setzt ihn fort. Profilwechsel bleibt
   bis Übernehmen/Verwerfen gesperrt. Bei laufendem Profilimport keinen neuen Kartenentwurf beginnen.
-- [ ] Weitere Editorbereiche: Titel, Tags/Erstellernotizen, alternative Begrüßungen, Ausdrucksbilder,
+- [x] Weitere Metadatenfelder: Titel, Tags (eine Zeile je Tag) und Erstellernotizen.
+- [ ] Weitere Editorbereiche: alternative Begrüßungen, Ausdrucksbilder,
   Lorebook-Bindungen und vollständige JSON-Ansicht; Kartenraster/Tagfilter wie im Tauri-Frontend.
-- [ ] Expliziter Dateiimport/-export und dauerhafte Speicherung ausschließlich im isolierten Profil.
+- [x] Expliziter JSON-/PNG-Dateiimport/-export über native Öffnen-/Speichern-Dialoge.
+- [ ] Dauerhafte Integration von Kartenänderungen in ein eigenes isoliertes Schreibprofil.
 
 `src/character_draft.rs` ist reine Kartenlogik ohne GUI/Dateizugriff. Bestehende V2-/flache Form,
 unbekannte Metadaten, Lorebook und Bild bleiben erhalten. Nur bearbeitete Textfelder werden ersetzt;
@@ -315,7 +318,8 @@ nicht in der Prompt-Vorschau verdecken. Die Oberfläche weist darauf hin. Unver�
 bleiben erhalten. Die Formulare sind noch keine vollständige Portierung des Tauri-Karteneditors.
 
 Übernehmen aktualisiert nur RAM, Porträtdarstellung und Begrüßungs-/Promptcache; Neustart verliert diese
-Änderungen. JSON kopieren ist eine bewusst ausgelöste Zwischenablageaktion, noch kein Dateiexport.
+Änderungen, sofern sie nicht ausdrücklich als Datei exportiert wurden. JSON kopieren bleibt eine
+Zwischenablageaktion; „Als JSON/PNG speichern“ exportiert den aktuellen Entwurf auch ohne Übernehmen.
 Importierte Archivnachrichten bleiben unverändert. Ein Kartenentwurf hat seinen eigenen Zielindex;
 Chatnavigation kann ihn nicht auf einen anderen Charakter umlenken. Bei Duplikaten Quellkarte separat
 behalten, um unbekannte Metadaten und Porträt zu übernehmen. Tauri importiert Karten nach Namen,
@@ -327,6 +331,46 @@ und Laden eines Archivchats über die Kartenansicht. Letzterer Ladeweg wurde im 
 Gezieltes Clippy, Formatprüfung und Windows-Build erfolgreich. Neuer Build bis zur Chatansicht gestartet;
 Bedienabnahme der Bibliothek/des Editors bleibt offen, da parallele Benutzereingaben die Fenstersteuerung
 erneut unterbrochen haben. Keine weiteren Eingaben in den Desktop versucht; keine Profiländerungen.
+
+### GUI-Zwischenschritt: Metadaten und Karten-Dateifluss
+
+`src/card_files.rs` kodiert JSON/PNG außerhalb des UI-Threads; `rfd` 0.18 stellt native asynchrone
+Dateidialoge bereit. Laufende Karten-I/O sperrt weitere Dialogaufträge, Profilwechsel und neue
+Editoraufträge. Import bei offenem Entwurf verlangt zuerst Übernehmen/Verwerfen. Wiederholter Import
+legt stets einen neuen RAM-Charakter mit eigenständiger ID und Testchat an, ersetzt also keine Karte.
+Einzeldateien verwenden dieselbe JSON-/PNG-Validierung und Grenzen wie die Profilprojektion;
+PNG chara/ccv3 und vollständige unbekannte Kartenfelder bleiben beim Import erhalten.
+
+Export ist eine Momentaufnahme: im Editor der aktuelle Entwurf, auf der Kartenseite die übernommene
+Karte. JSON enthält kein Bild, PNG enthält aktuelle Kartenmetadaten und Bildpixel. PNG wird neu kodiert,
+alte Metadatenchunks werden nicht mitkopiert. JSON maximal 4 MiB, PNG-Metadaten Base64 maximal 4 MiB,
+Bild maximal 4096 × 4096 Pixel/64 MiB Decoderbudget, Ausgabedatei maximal 32 MiB. Dateiendung wird
+geprüft. Erst vollständig kodieren, dann temporär im Zielordner schreiben/synchronisieren und atomar
+ersetzen; bestehende Exporte dürfen nach Speicherdialogbestätigung ersetzt werden. Produktives Profil
+und geladene Profilkopie bleiben geschützte Exportziele, auch über aufgelöste Pfadverweise.
+
+Titel verwendet `extensions.custom_title`, synchronisiert ein vorhandenes `sow_title` und bewahrt
+fremde Erweiterungen. Ungültige Erweiterungsobjekte werden bei Titeländerung nicht still ersetzt.
+Tags werden als Array gespeichert, Erstellernotizen als `creator_notes`. Unveränderte fehlende Felder
+werden nicht unnötig ergänzt. Quellen der Dialog-API: https://docs.rs/rfd/0.18.0/rfd/ .
+
+Prüfstand 08.11.2026: 49 Native-Tests erfolgreich. Neu: Metadaten-/Alias-Erhalt, JSON- und PNG-Roundtrip
+(vollständige Kartenfelder und Bildpixel), atomarer Fehlerfall mit unveränderter Zieldatei, geschütztes
+Exportziel, Metadatengrenze, konkurrierende GUI-Aufträge und wiederholter Einzelimport ohne Ersetzen.
+Clippy mit Warnungen als Fehler, Formatprüfung und Windows-Build erfolgreich. Review korrigierte eine
+zu strenge Elternordnerprüfung beim Einzelimport. Eine fehlende Dateiendung wird nicht nachträglich
+angehängt, damit genau das im Speicherdialog bestätigte Ziel benutzt wird.
+
+Praktisch unter Windows bei 1027 × 799 Fensterpixeln gesehen: Bibliothek mit Aktionen, Duplizieren
+im Editor, sichtbare Übernehmen-/Exportknöpfe und die gemeinsame Prompt-Vorschau. JSON-Speicherdialog
+ausgefüllt und Export erfolgreich zurückgemeldet; synthetische Karte unter
+`output/native-gui-filecheck-20261108/shiori-copy.json` (gitignored) enthält den Kopienamen.
+PNG-Speicherdialog geöffnet; Nutzer hat den PNG-Export anschließend selbst erfolgreich abgeschlossen
+und die Datei abgelegt (08.11.2026 bestätigt). Wiederimport per GUI bleibt offen; automatisierte
+Roundtrip-Tests decken ihn ab. Testinstanz nach dem Durchlauf beendet. Keine privaten Karten/Chats
+benutzt, keine Profiländerung und kein Modellaufruf. Keine vollständige GUI-Abnahme.
+Die tatsächlich abgelegte `output/native-gui-filecheck-20261108/charakter.png` wurde zusätzlich
+gelesen: 975.053 Bytes, eingebettete vollständige Kartenmetadaten identisch zum JSON-Export.
 
 - [ ] Einstellungen/Onboarding, Charakter-/Lorebook-Editoren, Gedächtnis, Hub und Im-/Export.
 - [ ] Stage und 5e einschließlich Battlemap; Fachlogik wiederverwenden.

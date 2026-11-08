@@ -214,6 +214,52 @@ fn load_character(root: &Path, path: &Path) -> Result<ProfileCharacter, String> 
     })
 }
 
+/// Einzelne ausdrücklich gewählte Karte; dieselben Grenzen wie bei Profilkopien.
+pub fn import_card_file(path: &Path) -> Result<ProfileCharacter, String> {
+    let path = canonical(path)?;
+    let extension = path
+        .extension()
+        .and_then(|value| value.to_str())
+        .unwrap_or_default();
+    if !extension.eq_ignore_ascii_case("json") && !extension.eq_ignore_ascii_case("png") {
+        return Err("Bitte eine JSON- oder PNG-Charakterkarte auswählen.".into());
+    }
+    let root = canonical(
+        path.parent()
+            .ok_or("Die Kartendatei hat keinen gültigen Ordner.")?,
+    )?;
+    load_character(&root, &path)
+}
+
+/// Export verändert weder das produktive Profil noch die aktuell geladene Profilkopie.
+pub fn validate_export_target(
+    path: &Path,
+    protected_home: Option<&Path>,
+) -> Result<PathBuf, String> {
+    let parent = path
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+        .unwrap_or(Path::new("."));
+    let parent = canonical(parent)?;
+    let name = path
+        .file_name()
+        .ok_or("Bitte einen gültigen Dateinamen wählen.")?;
+    let target = parent.join(name);
+    let resolved = normalized_location(&target);
+    if production_overlap(&target)
+        || protected_home.is_some_and(|home| {
+            resolved.starts_with(normalized_location(home))
+                || target.starts_with(normalized_location(home))
+        })
+    {
+        return Err(
+            "Bitte außerhalb des produktiven Profils und der geladenen Profilkopie exportieren."
+                .into(),
+        );
+    }
+    Ok(target)
+}
+
 fn open_database(root: &Path) -> Result<Connection, String> {
     let path = contained(root, &root.join("data/otakusoul.db"))?;
     let wal = path.with_extension("db-wal");

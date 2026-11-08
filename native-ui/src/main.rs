@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod appearance;
+mod card_files;
 mod character_draft;
 mod connection;
 mod icons;
@@ -124,6 +125,11 @@ enum Message {
     DuplicateCharacter(usize),
     InspectCharacter(usize),
     CopyCharacterDraft,
+    ImportCharacter,
+    CharacterImported(Result<Option<profile::ProfileCharacter>, String>),
+    ExportDraft(card_files::Format),
+    ExportCharacter(usize, card_files::Format),
+    CharacterExported(Result<bool, String>),
     CharacterName(String),
     CharacterField(character_draft::Field),
     CharacterText(text_editor::Action),
@@ -209,6 +215,7 @@ struct App {
     character_text: text_editor::Content,
     character_error: String,
     next_character_id: u64,
+    card_busy: bool,
 }
 
 impl Default for App {
@@ -281,13 +288,84 @@ impl Default for App {
             character_text: text_editor::Content::new(),
             character_error: String::new(),
             next_character_id: 0,
+            card_busy: false,
         }
     }
 }
 
 impl App {
+    fn fresh_character_id(&mut self) -> String {
+        loop {
+            self.next_character_id += 1;
+            let id = format!("native-character-{}", self.next_character_id);
+            if !self
+                .preview
+                .characters
+                .iter()
+                .any(|character| character.id == id)
+            {
+                return id;
+            }
+        }
+    }
+
+    fn export_card(
+        &mut self,
+        export: card_files::Export,
+        format: card_files::Format,
+    ) -> Task<Message> {
+        if self.profile_busy || self.card_busy {
+            return Task::none();
+        }
+        if matches!(format, card_files::Format::Png) && export.portrait.is_none() {
+            self.character_error =
+                "Für einen PNG-Export benötigt der Charakter ein Porträt. Bitte JSON wählen."
+                    .into();
+            self.notice = self.character_error.clone();
+            return Task::none();
+        }
+        self.card_busy = true;
+        self.character_error.clear();
+        self.notice = "Exportziel wählen …".into();
+        let protected_home = self.profile_home.clone();
+        Task::perform(
+            async move {
+                let (label, extension) = match format {
+                    card_files::Format::Json => ("JSON-Charakterkarte", "json"),
+                    card_files::Format::Png => ("PNG-Charakterkarte mit Porträt", "png"),
+                };
+                let Some(file) = rfd::AsyncFileDialog::new()
+                    .set_title("Charakter exportieren")
+                    .add_filter(label, &[extension])
+                    .set_file_name(format!("charakter.{extension}"))
+                    .save_file()
+                    .await
+                else {
+                    return Ok(false);
+                };
+                // Die bestätigte Zieldatei unverändert verwenden. Nachträgliches Anhängen
+                // könnte eine andere vorhandene Datei ohne Überschreibbestätigung treffen.
+                let path = file.path().to_path_buf();
+                if !path
+                    .extension()
+                    .is_some_and(|value| value.eq_ignore_ascii_case(extension))
+                {
+                    return Err(format!(
+                        "Bitte eine Datei mit der Endung .{extension} wählen."
+                    ));
+                }
+                background(move || {
+                    card_files::write(&path, &export, format, protected_home.as_deref())
+                })
+                .await
+                .map(|()| true)
+            },
+            Message::CharacterExported,
+        )
+    }
+
     fn open_character(&mut self, source: Option<usize>, duplicate: bool) {
-        if self.profile_busy {
+        if self.profile_busy || self.card_busy {
             self.notice = "Bitte zuerst das Laden der Profilkopie abwarten.".into();
             return;
         }
@@ -468,6 +546,10 @@ impl App {
         );
     }
     fn load(&mut self, create: bool) -> Task<Message> {
+        if self.card_busy {
+            self.notice = "Bitte den laufenden Kartenimport oder -export abwarten.".into();
+            return Task::none();
+        }
         if self.character_draft.is_some() {
             self.character_error = "Bitte den Charakterentwurf zuerst übernehmen oder verwerfen, bevor Du ein anderes Profil lädst.".into();
             self.page = Page::CharacterEditor;
@@ -519,6 +601,104 @@ impl App {
     }
     fn update(&mut self, message: Message) -> Task<Message> {
         match message {
+            Message::ImportCharacter => {
+                if self.card_busy || self.profile_busy {
+                    return Task::none();
+                }
+                if self.character_draft.is_some() {
+                    self.character_error =
+                        "Bitte den offenen Entwurf zuerst übernehmen oder verwerfen.".into();
+                    self.page = Page::CharacterEditor;
+                    return Task::none();
+                }
+                self.card_busy = true;
+                self.notice = "Charakterkarte auswählen …".into();
+                return Task::perform(
+                    async {
+                        let Some(file) = rfd::AsyncFileDialog::new()
+                            .set_title("Charakter importieren")
+                            .add_filter("Charakterkarte", &["json", "png"])
+                            .pick_file()
+                            .await
+                        else {
+                            return Ok(None);
+                        };
+                        let path = file.path().to_path_buf();
+                        background(move || profile::import_card_file(&path))
+                            .await
+                            .map(Some)
+                    },
+                    Message::CharacterImported,
+                );
+            }
+            Message::CharacterImported(result) => {
+                self.card_busy = false;
+                self.notice = match result {
+                    Ok(Some(character)) => {
+                        let id = self.fresh_character_id();
+                        self.preview.add_character(model::Character {
+                            id,
+                            name: character.name,
+                            description: character.description,
+                            first_message: character.first_message,
+                            card: Some(character.card),
+                            portrait: character.portrait,
+                        });
+                        self.portraits = Self::portraits(&self.preview);
+                        self.library_search.clear();
+                        self.page = Page::Characters;
+                        "Charakter importiert. Er bleibt bis zum Export im Arbeitsspeicher.".into()
+                    }
+                    Ok(None) => "Import abgebrochen.".into(),
+                    Err(error) => format!("Import fehlgeschlagen: {error}"),
+                };
+            }
+            Message::ExportDraft(format) => {
+                if let Some(draft) = &self.character_draft {
+                    match draft.apply(
+                        self.character_source
+                            .and_then(|index| self.preview.characters.get(index)),
+                        "export".into(),
+                    ) {
+                        Ok(character) => {
+                            return self.export_card(
+                                card_files::Export {
+                                    card: character.card.unwrap(),
+                                    portrait: character.portrait,
+                                },
+                                format,
+                            );
+                        }
+                        Err(error) => self.character_error = error,
+                    }
+                }
+            }
+            Message::ExportCharacter(index, format) => {
+                if let Some(character) = self.preview.characters.get(index) {
+                    if let Some(card) = &character.card {
+                        return self.export_card(
+                            card_files::Export {
+                                card: card.clone(),
+                                portrait: character.portrait.clone(),
+                            },
+                            format,
+                        );
+                    }
+                    self.notice =
+                        "Zu diesem Charakter fehlt die Karte; bitte zuerst im Editor ergänzen."
+                            .into();
+                }
+            }
+            Message::CharacterExported(result) => {
+                self.card_busy = false;
+                self.notice = match result {
+                    Ok(true) => {
+                        "Charakterkarte exportiert. Die Profilkopie bleibt unverändert.".into()
+                    }
+                    Ok(false) => "Export abgebrochen.".into(),
+                    Err(error) => format!("Export fehlgeschlagen: {error}"),
+                };
+            }
             Message::LibrarySearch(value) => self.library_search = value,
             Message::NewCharacter => self.open_character(None, false),
             Message::EditCharacter(index) => self.open_character(Some(index), false),
@@ -874,6 +1054,58 @@ mod tests {
 #[cfg(test)]
 mod character_editor_tests {
     use super::*;
+    #[test]
+    fn card_io_blocks_conflicting_profile_and_editor_operations() {
+        let mut app = App {
+            card_busy: true,
+            ..App::default()
+        };
+        let _ = app.update(Message::LoadProfile);
+        let _ = app.update(Message::NewCharacter);
+        let _ = app.update(Message::ImportCharacter);
+        assert!(!app.profile_busy);
+        assert!(app.character_draft.is_none());
+        assert!(app.card_busy);
+    }
+
+    #[test]
+    fn repeated_single_card_imports_never_replace_existing_characters() {
+        let mut app = App::default();
+        let count = app.preview.characters.len();
+        let source = &app.preview.characters[0];
+        let imported = profile::ProfileCharacter {
+            id: source.id.clone(),
+            name: source.name.clone(),
+            description: source.description.clone(),
+            first_message: source.first_message.clone(),
+            card: source.card.clone().unwrap(),
+            portrait: source.portrait.clone(),
+        };
+        let _ = app.update(Message::CharacterImported(Ok(Some(imported.clone()))));
+        let _ = app.update(Message::CharacterImported(Ok(Some(imported))));
+        assert_eq!(app.preview.characters.len(), count + 2);
+        assert_ne!(
+            app.preview.characters[count].id,
+            app.preview.characters[count + 1].id
+        );
+        let _ = app.update(Message::SelectCharacter(count + 1));
+        assert!(!app.preview.current().is_read_only());
+    }
+
+    #[test]
+    fn invalid_draft_or_missing_png_portrait_fails_before_a_dialog() {
+        let mut app = App::default();
+        let _ = app.update(Message::NewCharacter);
+        let _ = app.update(Message::ExportDraft(card_files::Format::Json));
+        assert!(!app.card_busy);
+        assert!(!app.character_error.is_empty());
+        let _ = app.update(Message::CharacterName("Neue Karte".into()));
+        let _ = app.update(Message::ExportDraft(card_files::Format::Png));
+        assert!(!app.card_busy);
+        assert!(app.character_error.contains("Porträt"));
+        assert!(app.character_draft.is_some());
+    }
+
     #[test]
     fn inspecting_a_card_also_prepares_its_unloaded_archive_chat() {
         let mut app = App::default();
