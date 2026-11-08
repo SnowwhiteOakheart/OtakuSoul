@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod appearance;
+mod connection;
 mod icons;
 mod message_content;
 mod model;
@@ -126,6 +127,16 @@ enum Message {
     ToggleSearch,
     SearchChanged(String),
     InspectLink(String),
+    EndpointChanged(String),
+    ModelChanged(String),
+    KeyChanged(connection::Secret),
+    FormatChanged(connection::Format),
+    TestConnection,
+    CancelConnection,
+    ConnectionFinished {
+        id: u64,
+        result: Result<connection::Report, String>,
+    },
     Copy(String),
     CopyCard,
     Focus(bool),
@@ -161,6 +172,10 @@ struct App {
     search: String,
     rendered: Vec<message_content::Content>,
     greeting: message_content::Content,
+    connection: connection::Settings,
+    diagnostic: Option<connection::ActiveTest>,
+    diagnostic_id: u64,
+    connection_status: String,
 }
 
 impl Default for App {
@@ -203,6 +218,10 @@ impl Default for App {
             search: String::new(),
             rendered: Vec::new(),
             greeting,
+            connection: connection::Settings::default(),
+            diagnostic: None,
+            diagnostic_id: 0,
+            connection_status: "Noch kein Verbindungstest ausgeführt.".into(),
         }
     }
 }
@@ -355,6 +374,63 @@ impl App {
             }
             Message::SearchChanged(value) => self.search = value,
             Message::InspectLink(link) => self.notice = format!("Link aus der Nachricht: {link}"),
+            Message::EndpointChanged(value) => {
+                if self.diagnostic.is_none() {
+                    self.connection.endpoint = value;
+                }
+            }
+            Message::ModelChanged(value) => {
+                if self.diagnostic.is_none() {
+                    self.connection.model = value;
+                }
+            }
+            Message::KeyChanged(value) => {
+                if self.diagnostic.is_none() {
+                    self.connection.key = value;
+                }
+            }
+            Message::FormatChanged(value) => {
+                if self.diagnostic.is_none() {
+                    self.connection.format = value;
+                }
+            }
+            Message::TestConnection => {
+                if self.diagnostic.is_some() {
+                    return Task::none();
+                }
+                self.diagnostic_id += 1;
+                let id = self.diagnostic_id;
+                let cancellation = connection::Cancellation::new();
+                self.diagnostic = Some(connection::ActiveTest {
+                    id,
+                    cancellation: cancellation.clone(),
+                });
+                self.connection_status = "Testanfrage läuft …".into();
+                let settings = self.connection.clone();
+                return Task::perform(
+                    background(move || connection::run(settings, cancellation)),
+                    move |result| Message::ConnectionFinished { id, result },
+                );
+            }
+            Message::CancelConnection => {
+                if let Some(active) = &self.diagnostic {
+                    active.cancellation.cancel();
+                    self.connection_status = "Verbindungstest wird abgebrochen …".into();
+                }
+            }
+            Message::ConnectionFinished { id, result } => {
+                if self.diagnostic.as_ref().map(|active| active.id) != Some(id) {
+                    return Task::none();
+                }
+                self.diagnostic = None;
+                self.connection_status = match result {
+                    Ok(report) => format!(
+                        "Verbindung erfolgreich · {} Textsegmente\nAntwort: {}",
+                        report.segments, report.answer
+                    ),
+                    Err(error) => error,
+                };
+            }
             Message::Copy(value) => return iced::clipboard::write(value),
             Message::Focus(backwards) => {
                 return if backwards {
@@ -435,6 +511,27 @@ impl App {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn stale_connection_report_cannot_finish_the_active_test() {
+        let mut app = App {
+            diagnostic: Some(connection::ActiveTest {
+                id: 2,
+                cancellation: connection::Cancellation::new(),
+            }),
+            connection_status: "Aktueller Test".into(),
+            ..App::default()
+        };
+        let _ = app.update(Message::ConnectionFinished {
+            id: 1,
+            result: Ok(connection::Report {
+                answer: "Alter Test".into(),
+                segments: 1,
+            }),
+        });
+        assert_eq!(app.connection_status, "Aktueller Test");
+        assert_eq!(app.diagnostic.as_ref().unwrap().id, 2);
+    }
 
     #[test]
     fn late_message_results_cannot_replace_a_new_profile() {

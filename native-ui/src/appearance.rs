@@ -1,6 +1,6 @@
 //! Farben und wiederverwendbare Iced-Stile passend zur Obsidian-Oberfläche.
 
-use iced::widget::{button, container, scrollable, text_editor};
+use iced::widget::{button, container, pick_list, scrollable, text_editor, text_input};
 use iced::{Background, Color, Theme};
 
 const SLATE_950: Color = Color::from_rgb8(2, 6, 23);
@@ -294,6 +294,49 @@ pub fn primary_button(theme: &Theme, status: button::Status) -> button::Style {
 
 fn is_dark(theme: &Theme) -> bool {
     theme.extended_palette().is_dark
+}
+
+pub fn input(theme: &Theme, status: text_input::Status) -> text_input::Style {
+    let focused = matches!(status, text_input::Status::Focused { .. });
+    text_input::Style {
+        background: if is_dark(theme) { SLATE_950 } else { SLATE_50 }.into(),
+        border: iced::Border {
+            color: if focused {
+                PURPLE_500
+            } else if is_dark(theme) {
+                SLATE_700
+            } else {
+                Color::from_rgb8(203, 213, 225)
+            },
+            width: 1.0,
+            radius: 8.into(),
+        },
+        icon: muted(theme),
+        placeholder: muted(theme),
+        value: if matches!(status, text_input::Status::Disabled) {
+            muted(theme)
+        } else {
+            theme.palette().text
+        },
+        selection: PURPLE_600,
+    }
+}
+
+pub fn select(theme: &Theme, status: pick_list::Status) -> pick_list::Style {
+    let mut style = pick_list::default(theme, status);
+    style.background = if is_dark(theme) { SLATE_800 } else { SLATE_50 }.into();
+    style.text_color = theme.palette().text;
+    style.handle_color = muted(theme);
+    style.border = iced::Border {
+        color: if is_dark(theme) {
+            SLATE_700
+        } else {
+            Color::from_rgb8(203, 213, 225)
+        },
+        width: 1.0,
+        radius: 8.into(),
+    };
+    style
 }
 
 /// Schmale Slate-Scrollleisten wie im Web-Frontend, ohne akzentfarbene Schiene.

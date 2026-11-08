@@ -16,6 +16,9 @@ serde_json = "1"
 url = "2"
 otakusoul-paths = { path = "../crates/otakusoul-paths" }
 directories = "6.0"
+otakusoul-stream = { path = "../crates/otakusoul-stream" }
+reqwest = { version = "0.13", features = ["json", "stream"] }
+tokio = { version = "1", features = ["rt", "time", "net", "sync", "macros"] }
 
 [dev-dependencies]
 tempfile = "3"

@@ -36,6 +36,11 @@ Konzept. Vergleichsquelle ist der aktuelle React-/CSS-Code; vorhandene Screensho
   `src/icons.rs` + `assets/icons/`: eingebettete Lucide-SVGs derselben Bibliothek wie im React-Frontend.
   `src/message_content.rs`: einmalig geparste Rollenspielsegmente bzw. native Markdown-Elemente;
   Cache wird bei Chatwechsel, Import, geladenem Verlauf und hinzugefügter Testnachricht aktualisiert.
+- `crates/otakusoul-stream`: GUI-/HTTP-unabhängiger Decoder für OpenAI-kompatible und Anthropic-SSEs,
+  UTF-8-Zeilen und `<think>`-Trennung. Der vorhandene Tauri-Inferenzcode und die native Diagnose
+  verwenden denselben Decoder; die bisherige Parsingkopie im Tauri-Code wurde entfernt.
+- `src/connection.rs`: ausdrücklich gestartete feste Testanfrage, keine zweite Charakter-Chat-Pipeline.
+  Eigener Tokio-Hintergrunddienst mit Abbruch, begrenzter Antwort und klaren Verbindungsfehlern.
 - `crates/otakusoul-paths`: gemeinsame Funktionen `base_dirs`, `isolated_home`, `production_dirs`.
   Das Tauri-Modul re-exportiert die bisherigen Namen, die Standardpfade bleiben unverändert.
 - Ressourcen über `include_bytes!`, keine absoluten Rechnerpfade. Keine derzeitige Verbindung zum Tauri-Crate.
@@ -190,6 +195,10 @@ Die Formatabnahme erfolgt gezielt für die App-Pakete und die neue Pfad-Crate.
 
 ## Etappe 3 – Ein echter Chat
 
+- [x] Gemeinsamen SSE-/Think-Decoder in `crates/otakusoul-stream` extrahieren und in Tauri wiederverwenden.
+- [x] Native Einstellungen: expliziter Verbindungstest mit Endpunkt, optionalem Modell/API-Schlüssel
+  und Formatwahl (OpenAI-kompatibel oder Anthropic), Rückmeldung und Abbruch.
+
 - [ ] Chat-Vorbereitung und Inferenz aus Tauri lösen; Referenzen:
   `src-tauri/src/commands/chat.rs`, `modules/inference.rs`, `state.rs`,
   `src/store/slices/chatSlice.ts` und `src/store/helpers.ts`.
@@ -202,6 +211,48 @@ Die Formatabnahme erfolgt gezielt für die App-Pakete und die neue Pfad-Crate.
 
 Abnahme: echter Chat, Verlauf nach Neustart, sauberer Abbruch und verständliche Verbindungsfehler.
 An diesem Punkt gemeinsam entscheiden, ob die Migration fortgesetzt wird.
+
+### Zwischenstand: gemeinsame Streams und Verbindungsdiagnose
+
+Der Verbindungstest sendet ausschließlich den festen Text `Reply with the word OK.` mit maximal
+32 Ausgabetokens. Keine Charakterkarten, Chatverläufe, Einstellungen oder Secrets aus einem Profil
+werden geladen/übertragen. Ein eingetragener Schlüssel bleibt nur im Arbeitsspeicher, ist im Eingabefeld
+maskiert und in Debug-Darstellung redigiert. Kein automatischer Test beim Start, kein automatisches
+Starten/Herunterladen von Modellservern. Der Standardendpunkt ist der bisherige lokale
+`http://127.0.0.1:48596/v1/chat/completions`; ein Server muss bereits laufen.
+
+Für Anthropic muss der passende `/v1/messages`-Endpunkt samt Modellnamen manuell eingetragen werden.
+Die Formatwahl ändert die Adresse nicht automatisch. Die Diagnose erfasst Textsegmente, keine Tokenzahlen.
+Antworten werden nach dem Test angezeigt, noch nicht laufend als Chatnachricht dargestellt.
+
+Technik: HTTP-Verbindungsaufbau maximal 5 s, Anfrage insgesamt maximal 30 s; Watch-Abbruch vor Headern
+und beim Warten auf weitere Body-Daten. Die laufende Diagnose sperrt ihre Eingabefelder; alte Ergebnis-IDs
+können keinen neueren Test überschreiben. Schließen der App bricht eine laufende Diagnose ab.
+Keine Redirects (auch kein Weiterreichen von `x-api-key`), keine rohen Serverfehlertexte mit möglichen
+Zugangsdaten. Ohne Abschlussmarker gilt die native Diagnose als unvollständig. Grenzen: maximal 1 MiB
+empfangene Daten und 16 KiB sichtbarer Antworttext. Das bestehende Tauri-Fehler-/Request-/Toolverhalten
+bleibt im bisherigen Adapter; hier wird nur die gemeinsame Dekodierung benutzt.
+
+Prüfstand 08.11.2026: 29 GUI-Tests, 6 Stream-Core-Tests, 10 bestehende/ergänzte Inferenztests und
+5 Providertests erfolgreich (50 gesamt). Clippy für GUI/Core und Backend-Library, Formatprüfung und
+Windows-Build erfolgreich. Lokale HTTP-Tests benötigen hier Ausführung außerhalb der Netzwerk-Sandbox,
+weil dort Loopback-Verbindungen blockiert sind. Im Windows-Fenster wurde mit `e2e/mock-llm.mjs` eine
+erfolgreiche Antwort mit 10 Textsegmenten beobachtet. Der Mock-Server wurde anschließend beendet.
+Kein echtes Modell oder Cloud-Anbieter wurde aufgerufen. Kein vollständiger E2E-Lauf.
+
+Nächster enger Arbeitsschritt für **echte Charakterchats**:
+
+1. Prompt-Eingaben und Request-/Event-Typen ohne Tauri herauslösen; vorhandene Rust- und TypeScript-
+   Verantwortlichkeiten explizit abbilden. `PromptContext` hängt an CharacterData, LorebookEntry,
+   CognitiveOverview/PromptMemories, Makros, Emotionen, OOC-Regeln und Inhalts-Sprachauflösung.
+2. Insbesondere `src/store/helpers.ts` und `src/store/slices/chatSlice.ts` prüfen: Auswahl von Lore,
+   Persona, Vorlage und Verlauf nicht durch eine kurze zweite System-Prompt-Funktion ersetzen.
+3. Gemeinsamen Prompt-/Inferenz-Service mit typisierten Ereignissen herstellen; Tauri bleibt Adapter.
+   Abbruch und Generierungs-ID müssen Vorbereitung, Streaming und Abschluss gemeinsam absichern.
+4. Erst dann „Hinzufügen“ im lokalen Testchat um einen ausdrücklichen echten Sendemodus erweitern;
+   importierte Archivchats weiterhin schreibgeschützt. Persistenz nur im eigenen isolierten Profil.
+
+Die Charakter-Chat-Anbindung ist durch die Diagnose **noch nicht erledigt**. Übersetzungen weiterhin zuletzt.
 
 ## Spätere Ausbaustufen
 

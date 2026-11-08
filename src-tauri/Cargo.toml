@@ -33,6 +33,7 @@ reqwest = { version = "0.13", features = ["json", "stream", "multipart"] }
 futures-util = "0.3"
 sysinfo = "0.40"
 otakusoul-paths = { path = "../crates/otakusoul-paths" }
+otakusoul-stream = { path = "../crates/otakusoul-stream" }
 directories = "6.0"
 rusqlite = { version = "0.41", features = ["bundled", "fallible_uint"] }
 tracing = "0.1"

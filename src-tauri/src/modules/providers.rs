@@ -63,12 +63,7 @@ pub struct OpenRouterModelInfo {
     pub completion_pricing: Option<String>,
 }
 
-#[derive(Debug, Clone, Default)]
-pub struct ParsedDelta {
-    pub text: Option<String>,
-    pub thought: Option<String>,
-    pub is_done: bool,
-}
+pub use otakusoul_stream::ParsedDelta;
 
 pub struct ProviderRegistry;
 
@@ -114,10 +109,7 @@ impl ProviderRegistry {
 
     /// Parses SSE delta according to provider format
     pub fn parse_sse_line(line: &str, provider: &LlmProviderType) -> ParsedDelta {
-        match provider {
-            LlmProviderType::Anthropic => Self::parse_anthropic_sse(line),
-            _ => Self::parse_openai_sse(line),
-        }
+        otakusoul_stream::parse_sse_line(line, stream_format(provider))
     }
 
     fn build_anthropic_request(
@@ -331,99 +323,6 @@ impl ProviderRegistry {
         }
 
         Ok(req_builder.json(&body))
-    }
-
-    fn parse_anthropic_sse(line: &str) -> ParsedDelta {
-        let trimmed = line.trim();
-        if !trimmed.starts_with("data:") {
-            return ParsedDelta::default();
-        }
-
-        let json_str = trimmed["data:".len()..].trim();
-        if json_str.is_empty() || json_str == "[DONE]" {
-            return ParsedDelta {
-                text: None,
-                thought: None,
-                is_done: json_str == "[DONE]",
-            };
-        }
-
-        if let Ok(v) = serde_json::from_str::<serde_json::Value>(json_str) {
-            let event_type = v.get("type").and_then(|t| t.as_str()).unwrap_or("");
-            if event_type == "content_block_delta" {
-                if let Some(delta) = v.get("delta") {
-                    let delta_type = delta.get("type").and_then(|t| t.as_str()).unwrap_or("");
-                    if delta_type == "text_delta" {
-                        if let Some(t) = delta.get("text").and_then(|s| s.as_str()) {
-                            return ParsedDelta {
-                                text: Some(t.to_string()),
-                                thought: None,
-                                is_done: false,
-                            };
-                        }
-                    } else if delta_type == "thinking_delta"
-                        && let Some(th) = delta.get("thinking").and_then(|s| s.as_str())
-                    {
-                        return ParsedDelta {
-                            text: None,
-                            thought: Some(th.to_string()),
-                            is_done: false,
-                        };
-                    }
-                }
-            } else if event_type == "message_stop" {
-                return ParsedDelta {
-                    text: None,
-                    thought: None,
-                    is_done: true,
-                };
-            }
-        }
-
-        ParsedDelta::default()
-    }
-
-    fn parse_openai_sse(line: &str) -> ParsedDelta {
-        let trimmed = line.trim();
-        if !trimmed.starts_with("data:") {
-            return ParsedDelta::default();
-        }
-
-        let json_str = trimmed["data:".len()..].trim();
-        if json_str == "[DONE]" {
-            return ParsedDelta {
-                text: None,
-                thought: None,
-                is_done: true,
-            };
-        }
-
-        if let Ok(v) = serde_json::from_str::<serde_json::Value>(json_str)
-            && let Some(choices) = v.get("choices").and_then(|c| c.as_array())
-            && let Some(first) = choices.first()
-        {
-            let mut delta_res = ParsedDelta::default();
-            if let Some(delta) = first.get("delta") {
-                if let Some(content) = delta.get("content").and_then(|c| c.as_str()) {
-                    delta_res.text = Some(content.to_string());
-                }
-                if let Some(thought) = delta
-                    .get("reasoning_content")
-                    .or_else(|| delta.get("thought"))
-                    .and_then(|th| th.as_str())
-                {
-                    delta_res.thought = Some(thought.to_string());
-                }
-            }
-            if let Some(finish) = first.get("finish_reason").and_then(|f| f.as_str())
-                && !finish.is_empty()
-            {
-                delta_res.is_done = true;
-            }
-            return delta_res;
-        }
-
-        ParsedDelta::default()
     }
 }
 
@@ -695,5 +594,13 @@ mod tests {
         assert_eq!(delta.text.as_deref(), Some("Guten Morgen"));
         assert_eq!(delta.thought.as_deref(), Some("Denke nach"));
         assert!(!delta.is_done);
+    }
+}
+
+/// Wireformat des Antwortstroms; Requestdetails bleiben im Provideradapter.
+pub fn stream_format(provider: &LlmProviderType) -> otakusoul_stream::WireFormat {
+    match provider {
+        LlmProviderType::Anthropic => otakusoul_stream::WireFormat::Anthropic,
+        _ => otakusoul_stream::WireFormat::OpenAi,
     }
 }

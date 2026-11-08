@@ -4,6 +4,7 @@
 > `cargo run -p otakusoul-native`; Arbeitsplan und Grenzen in [`native-ui/ROADMAP.md`](native-ui/ROADMAP.md).
 > Die Vorschau bietet lokale Testnachrichten ohne KI-Anbindung und kann ausdrücklich gewählte Profilkopien
 > schreibgeschützt laden. In den Einstellungen kannst Du ein Beispielprofil mit erfundenen Verläufen erstellen.
+> Ein separater Verbindungstest prüft einen bereits laufenden KI-Endpunkt mit einer kurzen Testanfrage.
 
 [English](README.md) · **Deutsch** · [Русский](README.ru.md)
 

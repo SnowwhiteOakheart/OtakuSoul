@@ -5279,6 +5279,7 @@ dependencies = [
  "ndarray",
  "ort",
  "otakusoul-paths",
+ "otakusoul-stream",
  "parking_lot 0.13.0",
  "pdf-extract",
  "png 0.18.1",
@@ -5327,10 +5328,13 @@ dependencies = [
  "iced",
  "image",
  "otakusoul-paths",
+ "otakusoul-stream",
  "png 0.18.1",
+ "reqwest",
  "rusqlite",
  "serde_json",
  "tempfile",
+ "tokio",
  "url",
 ]
 
@@ -5339,6 +5343,13 @@ name = "otakusoul-paths"
 version = "0.1.0"
 dependencies = [
  "directories",
+]
+
+[[package]]
+name = "otakusoul-stream"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
 ]
 
 [[package]]

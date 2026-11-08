@@ -17,6 +17,8 @@ Profilkopien nur ausdrücklich und schreibgeschützt laden; synthetisches Beispi
 Für diesen Prototyp auf dem Experiment-Branch committen/pushen, nicht auf `main`.
 Nutzerentscheidung 08.11.2026: Übersetzungen erst ganz zum Schluss. Layout und Gestaltung der nativen
 GUI möglichst identisch zum vorhandenen Tauri-Frontend halten; aktuelle React-/CSS-Quellen als Referenz.
+Gemeinsamer Antwortdecoder: `crates/otakusoul-stream` (Tauri-Inferenz und native Verbindungsdiagnose).
+Die native Diagnose sendet nur einen festen Testprompt; echte Charakter-Prompt-/Chatlogik ist noch offen.
 
 ### Allgemeine Arbeitsregeln
 

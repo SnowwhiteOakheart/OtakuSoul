@@ -129,79 +129,8 @@ pub struct InferenceClient {
     abort_signal: tokio::sync::watch::Sender<u64>,
 }
 
-#[derive(Default)]
-struct SseLines {
-    bytes: Vec<u8>,
-}
-
-impl SseLines {
-    fn push(&mut self, chunk: &[u8]) -> Result<Vec<String>, String> {
-        self.bytes.extend_from_slice(chunk);
-        let mut lines = Vec::new();
-        while let Some(end) = self.bytes.iter().position(|byte| *byte == b'\n') {
-            let line = self.bytes.drain(..=end).collect::<Vec<_>>();
-            lines.push(String::from_utf8(line).map_err(|error| error.to_string())?);
-        }
-        Ok(lines)
-    }
-
-    fn finish(&mut self) -> Result<Option<String>, String> {
-        if self.bytes.is_empty() {
-            return Ok(None);
-        }
-        String::from_utf8(std::mem::take(&mut self.bytes))
-            .map(Some)
-            .map_err(|error| error.to_string())
-    }
-}
-
-#[derive(Default)]
-struct ThinkTagFilter {
-    pending: String,
-    in_think_block: bool,
-}
-
-impl ThinkTagFilter {
-    /// Returns `(is_thought, text)` segments that can be emitted immediately.
-    fn push(&mut self, content: &str) -> Vec<(bool, String)> {
-        self.pending.push_str(content);
-        let mut segments = Vec::new();
-        loop {
-            let tag = if self.in_think_block {
-                "</think>"
-            } else {
-                "<think>"
-            };
-            if let Some(position) = self.pending.find(tag) {
-                if position > 0 {
-                    segments.push((self.in_think_block, self.pending[..position].to_string()));
-                }
-                self.pending.drain(..position + tag.len());
-                self.in_think_block = !self.in_think_block;
-                continue;
-            }
-
-            let keep = (1..tag.len())
-                .rev()
-                .find(|length| self.pending.ends_with(&tag[..*length]))
-                .unwrap_or(0);
-            let emit_len = self.pending.len() - keep;
-            if emit_len > 0 {
-                segments.push((self.in_think_block, self.pending[..emit_len].to_string()));
-                self.pending.drain(..emit_len);
-            }
-            return segments;
-        }
-    }
-
-    fn finish(&mut self) -> Option<(bool, String)> {
-        if self.pending.is_empty() {
-            None
-        } else {
-            Some((self.in_think_block, std::mem::take(&mut self.pending)))
-        }
-    }
-}
+#[cfg(test)]
+use otakusoul_stream::{SseLines, ThinkTagFilter};
 
 impl Default for InferenceClient {
     fn default() -> Self {
@@ -505,60 +434,32 @@ impl InferenceClient {
         }
 
         let mut stream = response.bytes_stream();
-        let mut lines = SseLines::default();
-        let mut think_filter = ThinkTagFilter::default();
-
-        'stream: while let Some(chunk_res) = stream.next().await {
+        let mut decoder = otakusoul_stream::StreamDecoder::new(
+            crate::modules::providers::stream_format(&provider),
+        );
+        while let Some(chunk_res) = stream.next().await {
             if self.abort_flag.load(Ordering::Relaxed) {
                 info!("Inferenz durch Benutzer abgebrochen");
                 break;
             }
-
             let chunk = chunk_res.map_err(|e| crate::err!("backend.llm.stream", error = e))?;
-            for line in lines
+            for (is_thought, text) in decoder
                 .push(&chunk)
                 .map_err(|error| crate::err!("backend.llm.stream", error = error))?
             {
-                let line = line.trim();
-                if line.is_empty() || line.starts_with(':') {
-                    continue;
-                }
-
-                let delta =
-                    crate::modules::providers::ProviderRegistry::parse_sse_line(line, &provider);
-                if let Some(th) = delta.thought
-                    && !th.is_empty()
-                {
-                    on_segment(true, th);
-                }
-
-                if let Some(content) = delta.text {
-                    for (is_thought, text) in think_filter.push(&content) {
-                        on_segment(is_thought, text);
-                    }
-                }
-                if delta.is_done {
-                    break 'stream;
-                }
+                on_segment(is_thought, text);
+            }
+            if decoder.is_done() {
+                break;
             }
         }
-
-        if let Some(line) = lines
+        for (is_thought, text) in decoder
             .finish()
             .map_err(|error| crate::err!("backend.llm.stream", error = error))?
         {
-            let delta =
-                crate::modules::providers::ProviderRegistry::parse_sse_line(line.trim(), &provider);
-            if let Some(content) = delta.text {
-                for (is_thought, text) in think_filter.push(&content) {
-                    on_segment(is_thought, text);
-                }
-            }
-        }
-
-        if let Some((is_thought, text)) = think_filter.finish() {
             on_segment(is_thought, text);
         }
+
         Ok(())
     }
 
@@ -591,50 +492,30 @@ impl InferenceClient {
 
         let mut stream = response.bytes_stream();
         let mut full_text = String::new();
-        let mut lines = SseLines::default();
-        let mut think_filter = ThinkTagFilter::default();
-
-        'stream: while let Some(chunk_res) = stream.next().await {
+        let mut decoder = otakusoul_stream::StreamDecoder::new(
+            crate::modules::providers::stream_format(&provider),
+        );
+        while let Some(chunk_res) = stream.next().await {
             let chunk = chunk_res.map_err(|e| crate::err!("backend.llm.stream", error = e))?;
-            for line in lines
+            for (is_thought, text) in decoder
                 .push(&chunk)
                 .map_err(|error| crate::err!("backend.llm.stream", error = error))?
             {
-                let line = line.trim();
-                if line.is_empty() || line.starts_with(':') {
-                    continue;
-                }
-
-                let delta =
-                    crate::modules::providers::ProviderRegistry::parse_sse_line(line, &provider);
-                if let Some(content) = delta.text {
-                    for (is_thought, text) in think_filter.push(&content) {
-                        if !is_thought {
-                            full_text.push_str(&text);
-                        }
-                    }
-                }
-                if delta.is_done {
-                    break 'stream;
+                if !is_thought {
+                    full_text.push_str(&text);
                 }
             }
+            if decoder.is_done() {
+                break;
+            }
         }
-        if let Some(line) = lines
+        for (is_thought, text) in decoder
             .finish()
             .map_err(|error| crate::err!("backend.llm.stream", error = error))?
         {
-            let delta =
-                crate::modules::providers::ProviderRegistry::parse_sse_line(line.trim(), &provider);
-            if let Some(content) = delta.text {
-                for (is_thought, text) in think_filter.push(&content) {
-                    if !is_thought {
-                        full_text.push_str(&text);
-                    }
-                }
+            if !is_thought {
+                full_text.push_str(&text);
             }
-        }
-        if let Some((false, text)) = think_filter.finish() {
-            full_text.push_str(&text);
         }
 
         Ok(full_text.trim().to_string())
@@ -679,6 +560,47 @@ mod tests {
 
     fn dry(request: &super::ChatRequest) -> Option<i32> {
         request.sampling.as_ref().unwrap().dry_penalty_last_n
+    }
+
+    #[tokio::test]
+    async fn shared_decoder_preserves_backend_text_and_discards_terminal_tail() {
+        let wire = concat!(
+            "data: {\"choices\":[{\"delta\":{\"content\":\"<think>Plan</think>Grüße\"}}]}\n\n",
+            "data: [DONE]\n\n",
+            "data: {\"choices\":[{\"delta\":{\"content\":\"ignorieren\"}}]}"
+        );
+        let app = axum::Router::new().route(
+            "/v1/chat/completions",
+            axum::routing::post(move || async move {
+                axum::response::Response::builder()
+                    .header("content-type", "text/event-stream")
+                    .body(axum::body::Body::from(wire))
+                    .unwrap()
+            }),
+        );
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let endpoint = format!(
+            "http://{}/v1/chat/completions",
+            listener.local_addr().unwrap()
+        );
+        let server = tokio::spawn(async move { axum::serve(listener, app).await });
+        let client = super::InferenceClient::new();
+        let mut pieces = Vec::new();
+        client
+            .stream_segments(request(&endpoint, None), |thought, text| {
+                pieces.push((thought, text))
+            })
+            .await
+            .unwrap();
+        assert_eq!(pieces, vec![(true, "Plan".into()), (false, "Grüße".into())]);
+        assert_eq!(
+            client
+                .generate_direct(request(&endpoint, None))
+                .await
+                .unwrap(),
+            "Grüße"
+        );
+        server.abort();
     }
 
     #[tokio::test]
