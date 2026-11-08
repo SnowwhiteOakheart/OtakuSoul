@@ -7,6 +7,7 @@ mod connection;
 mod expressions;
 mod icons;
 mod library;
+mod lore_catalog;
 mod message_content;
 mod model;
 mod profile;
@@ -114,6 +115,8 @@ enum Page {
     Details,
     Settings,
     Prompt,
+    Lorebooks,
+    LorebookDetails,
     Planned(&'static str),
 }
 
@@ -122,6 +125,7 @@ enum EditorTab {
     Fields,
     Greetings,
     Expressions,
+    Lorebooks,
     Json,
 }
 
@@ -144,6 +148,16 @@ enum Message {
     LibrarySearch(String),
     LibraryTag(Option<String>),
     ResetLibraryFilters,
+    ImportLorebook,
+    LorebookImported(Result<Option<lore_catalog::Book>, String>),
+    InspectLorebook(usize),
+    CopyLorebook(usize),
+    CopyEmbeddedLorebook,
+    LoreEntrySearch(String),
+    ToggleLorebook(usize),
+    LoreReferenceInput(String),
+    AddLoreReference,
+    RemoveLoreReference(usize),
     EditCharacter(usize),
     NewCharacter,
     DuplicateCharacter(usize),
@@ -252,6 +266,10 @@ struct App {
     prompt_post: text_editor::Content,
     library_search: String,
     library_tag: Option<String>,
+    lorebooks: Vec<lore_catalog::Book>,
+    lorebook_selected: Option<usize>,
+    lore_entry_search: String,
+    lore_reference_input: String,
     character_draft: Option<character_draft::Draft>,
     character_draft_id: u64,
     expression_slot: expressions::Slot,
@@ -339,6 +357,10 @@ impl Default for App {
             prompt_post,
             library_search: String::new(),
             library_tag: None,
+            lorebooks: Vec::new(),
+            lorebook_selected: None,
+            lore_entry_search: String::new(),
+            lore_reference_input: String::new(),
             character_draft: None,
             character_draft_id: 0,
             expression_slot: expressions::SLOTS[0],
@@ -359,6 +381,18 @@ impl Default for App {
 }
 
 impl App {
+    fn embedded_lorebook(&self) -> Option<&serde_json::Value> {
+        let card = self
+            .character_source
+            .and_then(|index| self.preview.characters.get(index))?
+            .card
+            .as_ref()?;
+        let data = card.get("data").unwrap_or(card);
+        data.get("character_book")
+            .filter(|book| !book.is_null())
+            .or_else(|| data.get("extensions")?.get("character_book"))
+            .or_else(|| data.get("extensions")?.get("embedded_lorebook"))
+    }
     fn load_expression_preview(&mut self) -> Task<Message> {
         self.expression_epoch += 1;
         let id = self.expression_epoch;
@@ -464,6 +498,7 @@ impl App {
                 }
             }
             EditorTab::Expressions => String::new(),
+            EditorTab::Lorebooks => String::new(),
             EditorTab::Json => match draft.apply(
                 self.character_source
                     .and_then(|index| self.preview.characters.get(index)),
@@ -588,6 +623,7 @@ impl App {
             self.editor_greeting = 0;
             self.character_text = text_editor::Content::with_text(draft.get(self.character_field));
             self.character_draft = Some(draft);
+            self.lore_reference_input.clear();
             self.character_draft_id += 1;
             self.expression_slot = expressions::SLOTS[0];
             self.expression_image = None;
@@ -830,6 +866,110 @@ impl App {
     }
     fn update(&mut self, message: Message) -> Task<Message> {
         match message {
+            Message::ImportLorebook => {
+                if self.card_busy || self.profile_busy {
+                    return Task::none();
+                }
+                self.card_busy = true;
+                self.notice = "Lorebook-Datei auswählen …".into();
+                return Task::perform(
+                    async {
+                        let Some(file) = rfd::AsyncFileDialog::new()
+                            .set_title("Lorebook lesend laden")
+                            .add_filter("Lorebook-JSON", &["json"])
+                            .pick_file()
+                            .await
+                        else {
+                            return Ok(None);
+                        };
+                        let path = file.path().to_path_buf();
+                        background(move || lore_catalog::Book::read(&path))
+                            .await
+                            .map(Some)
+                    },
+                    Message::LorebookImported,
+                );
+            }
+            Message::LorebookImported(result) => {
+                self.card_busy = false;
+                self.notice = match result {
+                    Ok(Some(book)) => {
+                        if let Some(index) = self.lorebooks.iter().position(|existing| {
+                            existing.matches_reference(book.binding_key())
+                                || existing.source == book.source
+                        }) {
+                            self.lorebook_selected = Some(index);
+                            "Ein Lorebook mit dieser Referenz ist bereits geladen; es wurde nicht ersetzt.".into()
+                        } else {
+                            self.lorebook_selected = Some(self.lorebooks.len());
+                            self.lorebooks.push(book);
+                            "Lorebook lesend in den Arbeitsspeicher geladen. Keine automatische Bindung oder Promptaktivierung.".into()
+                        }
+                    }
+                    Ok(None) => "Lorebook-Auswahl abgebrochen.".into(),
+                    Err(error) => format!("Lorebook konnte nicht geladen werden: {error}"),
+                };
+            }
+            Message::InspectLorebook(index) => {
+                if index < self.lorebooks.len() {
+                    self.lorebook_selected = Some(index);
+                    self.lore_entry_search.clear();
+                    self.page = Page::LorebookDetails;
+                }
+            }
+            Message::CopyLorebook(index) => {
+                if let Some(book) = self.lorebooks.get(index) {
+                    return iced::clipboard::write(
+                        serde_json::to_string_pretty(&book.raw).unwrap_or_default(),
+                    );
+                }
+            }
+            Message::CopyEmbeddedLorebook => {
+                if let Some(book) = self.embedded_lorebook() {
+                    return iced::clipboard::write(
+                        serde_json::to_string_pretty(book).unwrap_or_default(),
+                    );
+                }
+            }
+            Message::LoreEntrySearch(value) => self.lore_entry_search = value,
+            Message::LoreReferenceInput(value) => self.lore_reference_input = value,
+            Message::AddLoreReference => {
+                let reference = self.lore_reference_input.trim();
+                if !reference.is_empty()
+                    && reference != "None"
+                    && let Some(draft) = &mut self.character_draft
+                {
+                    let mut bindings = draft.bound_lorebooks().to_vec();
+                    bindings.push(reference.to_owned());
+                    draft.set_bound_lorebooks(bindings);
+                    self.lore_reference_input.clear();
+                }
+            }
+            Message::RemoveLoreReference(index) => {
+                if let Some(draft) = &mut self.character_draft {
+                    let mut bindings = draft.bound_lorebooks().to_vec();
+                    if index < bindings.len() {
+                        bindings.remove(index);
+                        draft.set_bound_lorebooks(bindings);
+                    }
+                }
+            }
+            Message::ToggleLorebook(index) => {
+                if let (Some(book), Some(draft)) =
+                    (self.lorebooks.get(index), &mut self.character_draft)
+                {
+                    let mut bindings = draft.bound_lorebooks().to_vec();
+                    if bindings
+                        .iter()
+                        .any(|reference| book.matches_reference(reference))
+                    {
+                        bindings.retain(|reference| !book.matches_reference(reference));
+                    } else {
+                        bindings.push(book.binding_key().to_owned());
+                    }
+                    draft.set_bound_lorebooks(bindings);
+                }
+            }
             Message::ExpressionSlot(slot) => {
                 self.expression_slot = slot;
                 return self.load_expression_preview();
@@ -1108,7 +1248,10 @@ impl App {
                 self.sync_character_text();
             }
             Message::CharacterText(action) => {
-                if self.editor_tab == EditorTab::Expressions {
+                if matches!(
+                    self.editor_tab,
+                    EditorTab::Expressions | EditorTab::Lorebooks
+                ) {
                     return Task::none();
                 }
                 if self.editor_tab == EditorTab::Json {
@@ -1132,6 +1275,7 @@ impl App {
                         }
                         EditorTab::Json => unreachable!(),
                         EditorTab::Expressions => unreachable!(),
+                        EditorTab::Lorebooks => unreachable!(),
                     }
                 }
             }
@@ -1452,6 +1596,75 @@ mod tests {
 #[cfg(test)]
 mod character_editor_tests {
     use super::*;
+    fn lorebook_fixture(content: &str) -> lore_catalog::Book {
+        lore_catalog::Book::from_json(serde_json::json!({"id":"book-1","name":"Mein Buch","entries":[{"name":"Ort","content":content}]}),"fixture.json".into(),"Fallback").unwrap()
+    }
+
+    #[test]
+    fn viewing_a_lorebook_does_not_bind_or_replace_it() {
+        let mut app = App::default();
+        let _ = app.update(Message::EditCharacter(0));
+        let _ = app.update(Message::LorebookImported(Ok(Some(lorebook_fixture(
+            "Original",
+        )))));
+        let _ = app.update(Message::InspectLorebook(0));
+        assert!(
+            app.character_draft
+                .as_ref()
+                .unwrap()
+                .bound_lorebooks()
+                .is_empty()
+        );
+        let _ = app.update(Message::LorebookImported(Ok(Some(lorebook_fixture(
+            "Anderer Inhalt",
+        )))));
+        assert_eq!(app.lorebooks.len(), 1);
+        assert_eq!(app.lorebooks[0].entries[0].content, "Original");
+    }
+
+    #[test]
+    fn unbinding_a_loaded_book_removes_all_aliases_but_preserves_unknown_refs() {
+        let mut app = App::default();
+        app.preview.characters[0].card.as_mut().unwrap()["data"]["extensions"]["bound_lorebooks"] =
+            serde_json::json!(["Mein Buch", "BOOK-1", "fixture.json", "nicht-geladen"]);
+        let _ = app.update(Message::EditCharacter(0));
+        let _ = app.update(Message::LorebookImported(Ok(Some(lorebook_fixture(
+            "Original",
+        )))));
+        let _ = app.update(Message::ToggleLorebook(0));
+        assert_eq!(
+            app.character_draft.as_ref().unwrap().bound_lorebooks(),
+            ["nicht-geladen"]
+        );
+        let _ = app.update(Message::SaveCharacter);
+        let card = app.preview.characters[0].card.as_ref().unwrap();
+        assert_eq!(
+            card["data"]["extensions"]["selected_lorebook"],
+            "nicht-geladen"
+        );
+    }
+
+    #[test]
+    fn lorebook_binding_stays_with_its_draft_after_chat_navigation() {
+        let mut app = App::default();
+        let _ = app.update(Message::EditCharacter(0));
+        let _ = app.update(Message::LorebookImported(Ok(Some(lorebook_fixture(
+            "Original",
+        )))));
+        let _ = app.update(Message::ToggleLorebook(0));
+        let _ = app.update(Message::SelectCharacter(1));
+        let _ = app.update(Message::SaveCharacter);
+        assert_eq!(
+            app.preview.characters[0].card.as_ref().unwrap()["data"]["extensions"]["bound_lorebooks"],
+            serde_json::json!(["book-1"])
+        );
+        assert!(
+            app.preview.characters[1].card.as_ref().unwrap()["data"]["extensions"]
+                .get("bound_lorebooks")
+                .is_none()
+        );
+    }
+
     #[test]
     fn empty_neutral_reference_uses_the_main_portrait() {
         let mut app = App::default();

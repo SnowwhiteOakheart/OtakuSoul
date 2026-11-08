@@ -173,7 +173,7 @@ mod tests {
             card: json!({"spec":"chara_card_v2","spec_version":"2.0","data":{
                 "name":"Änne", "description":"Text", "first_mes":"Hallo",
                 "alternate_greetings":["Zweite Begrüßung\nmit {{user}}", "Dritte Begrüßung"],
-                "extensions":{"foreign":{"kept":42}},"character_book":{"entries":[]}
+                "extensions":{"foreign":{"kept":42},"selected_lorebook":"book-1","bound_lorebooks":["book-1","unresolved"]},"character_book":{"entries":[]}
             },"foreign_top":true}),
             portrait: None,
         }

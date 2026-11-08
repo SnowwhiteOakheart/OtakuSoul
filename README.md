@@ -7,6 +7,7 @@
 > The editor includes alternate greetings and a read-only JSON preview. Empty local test chats can select a greeting variant.
 > The character library uses a responsive portrait grid with combined text search and tag filtering.
 > Its expression editor supports 15 portrait slots, PNG/WebP embedding and main portrait selection; file exports embed bundled expression assets for portability.
+> Lorebook JSON files can be viewed in a read-only in-memory catalog and assigned to character cards; native chat context evaluation is still pending.
 > The preview uses in-memory test messages without AI integration and can read explicitly selected profile copies.
 > Settings can create a demo profile with fictional conversations; imported conversations remain read-only.
 > A separate connection test checks an existing AI endpoint with a short fixed request.

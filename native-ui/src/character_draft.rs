@@ -76,6 +76,8 @@ pub struct Draft {
     alternate_greetings_changed: bool,
     expressions: serde_json::Map<String, Value>,
     expressions_changed: bool,
+    bound_lorebooks: Vec<String>,
+    bound_lorebooks_changed: bool,
     portrait_override: Option<Vec<u8>>,
 }
 
@@ -91,6 +93,8 @@ impl Draft {
             alternate_greetings_changed: false,
             expressions: serde_json::Map::new(),
             expressions_changed: false,
+            bound_lorebooks: Vec::new(),
+            bound_lorebooks_changed: false,
             portrait_override: None,
         }
     }
@@ -115,6 +119,8 @@ impl Draft {
             alternate_greetings_changed: false,
             expressions: expression_map(character),
             expressions_changed: false,
+            bound_lorebooks: lorebook_bindings(character),
+            bound_lorebooks_changed: false,
             portrait_override: None,
         }
     }
@@ -154,6 +160,27 @@ impl Draft {
 
     pub fn expressions(&self) -> &serde_json::Map<String, Value> {
         &self.expressions
+    }
+
+    pub fn bound_lorebooks(&self) -> &[String] {
+        &self.bound_lorebooks
+    }
+
+    pub fn set_bound_lorebooks(&mut self, references: Vec<String>) {
+        let mut normalized = Vec::new();
+        for reference in references {
+            let reference = reference.trim();
+            if !reference.is_empty()
+                && reference != "None"
+                && !normalized.iter().any(|existing| existing == reference)
+            {
+                normalized.push(reference.to_owned());
+            }
+        }
+        if normalized != self.bound_lorebooks {
+            self.bound_lorebooks = normalized;
+            self.bound_lorebooks_changed = true;
+        }
     }
 
     pub fn set_portrait(&mut self, bytes: Vec<u8>) {
@@ -276,6 +303,18 @@ impl Draft {
                 Value::Object(self.expressions.clone()),
             );
         }
+        if self.bound_lorebooks_changed {
+            let extensions = data.entry("extensions").or_insert_with(|| json!({}));
+            let extensions = extensions.as_object_mut().ok_or(
+                "Die Lorebook-Bindungen können nicht geändert werden: Die Erweiterungen der Karte enthalten kein gültiges JSON-Objekt.",
+            )?;
+            extensions.insert("bound_lorebooks".into(), json!(self.bound_lorebooks));
+            if let Some(first) = self.bound_lorebooks.first() {
+                extensions.insert("selected_lorebook".into(), first.clone().into());
+            } else {
+                extensions.remove("selected_lorebook");
+            }
+        }
         // Sonst würde eine alte Übersetzung den gerade bearbeiteten Text in der
         // deutschen Prompt-Vorschau wieder verdecken. Unveränderte Übersetzungen bleiben.
         if let Some(translations) = data
@@ -302,6 +341,34 @@ impl Draft {
                 .or_else(|| existing.and_then(|character| character.portrait.clone())),
         })
     }
+}
+
+/// Dieselbe Reihenfolge wie `load_character_profile`: Legacy-Auswahl vor weiteren Bindungen.
+fn lorebook_bindings(character: &Character) -> Vec<String> {
+    let Some(extensions) = character
+        .card
+        .as_ref()
+        .and_then(|card| card.get("data").unwrap_or(card).get("extensions"))
+    else {
+        return Vec::new();
+    };
+    let mut bindings = Vec::new();
+    if let Some(selected) = extensions.get("selected_lorebook").and_then(Value::as_str)
+        && !selected.trim().is_empty()
+        && selected != "None"
+    {
+        bindings.push(selected.to_owned());
+    }
+    if let Some(references) = extensions.get("bound_lorebooks").and_then(Value::as_array) {
+        for reference in references.iter().filter_map(Value::as_str) {
+            if !reference.trim().is_empty()
+                && !bindings.iter().any(|existing| existing == reference)
+            {
+                bindings.push(reference.to_owned());
+            }
+        }
+    }
+    bindings
 }
 
 /// Dieselbe Nullish-/Legacy-Präzedenz wie `getPortraitExpressions` im Tauri-Frontend.
@@ -377,6 +444,94 @@ fn value(character: &Character, field: Field) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn lorebook_bindings_normalize_changes_and_remove_the_legacy_selection() {
+        let original = character(
+            json!({"name":"Alice","description":"Original","first_mes":"Hallo",
+            "extensions":{"selected_lorebook":"legacy","bound_lorebooks":["other","legacy",42,""]}}),
+        );
+        let mut draft = Draft::from_character(0, &original);
+        assert_eq!(draft.bound_lorebooks(), ["legacy", "other"]);
+        draft.set_bound_lorebooks(vec![
+            " new ".into(),
+            "new".into(),
+            "None".into(),
+            " ".into(),
+            "second".into(),
+        ]);
+        assert_eq!(draft.bound_lorebooks(), ["new", "second"]);
+        let edited = draft.apply(Some(&original), "original".into()).unwrap();
+        let card = edited.card.unwrap();
+        assert_eq!(card["extensions"]["selected_lorebook"], "new");
+        assert_eq!(
+            card["extensions"]["bound_lorebooks"],
+            json!(["new", "second"])
+        );
+        draft.set_bound_lorebooks(Vec::new());
+        let edited = draft.apply(Some(&original), "original".into()).unwrap();
+        let card = edited.card.unwrap();
+        assert!(card["extensions"].get("selected_lorebook").is_none());
+        assert_eq!(card["extensions"]["bound_lorebooks"], json!([]));
+        assert!(
+            Draft::from_character(
+                0,
+                &Character {
+                    card: Some(card),
+                    ..original
+                }
+            )
+            .bound_lorebooks()
+            .is_empty()
+        );
+    }
+
+    #[test]
+    fn untouched_malformed_lorebook_metadata_stays_unchanged() {
+        for extensions in [
+            Value::Null,
+            json!(["foreign"]),
+            json!({"selected_lorebook":42,"bound_lorebooks":{"foreign":true}}),
+        ] {
+            let original = character(
+                json!({"name":"Alice","description":"Original","first_mes":"Hallo","extensions":extensions}),
+            );
+            let mut draft = Draft::from_character(0, &original);
+            draft.set_bound_lorebooks(Vec::new());
+            let edited = draft.apply(Some(&original), "original".into()).unwrap();
+            assert_eq!(edited.card, original.card);
+            if !extensions.is_object() {
+                draft.set_bound_lorebooks(vec!["book".into()]);
+                assert!(draft.apply(Some(&original), "original".into()).is_err());
+            }
+        }
+    }
+
+    #[test]
+    fn binding_changes_preserve_embedded_books_and_foreign_extensions() {
+        let original = character(
+            json!({"spec":"chara_card_v2","data":{"name":"Alice","description":"Original","first_mes":"Hallo",
+            "character_book":{"entries":[{"content":"Embedded"}],"foreign":42},
+            "extensions":{"foreign":{"kept":true},"embedded_lorebook":{"entries":[]},"bound_lorebooks":["book"]}}}),
+        );
+        let mut draft = Draft::from_character(0, &original);
+        draft.set_bound_lorebooks(vec!["other".into()]);
+        let edited = draft.apply(Some(&original), "original".into()).unwrap();
+        let card = edited.card.unwrap();
+        let source = original.card.unwrap();
+        assert_eq!(
+            card["data"]["character_book"],
+            source["data"]["character_book"]
+        );
+        assert_eq!(
+            card["data"]["extensions"]["foreign"],
+            source["data"]["extensions"]["foreign"]
+        );
+        assert_eq!(
+            card["data"]["extensions"]["embedded_lorebook"],
+            source["data"]["extensions"]["embedded_lorebook"]
+        );
+        assert_eq!(card["data"]["extensions"]["selected_lorebook"], "other");
+    }
 
     #[test]
     fn portrait_override_supports_new_cards_without_changing_existing_metadata() {

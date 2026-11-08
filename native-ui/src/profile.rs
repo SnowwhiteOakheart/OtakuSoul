@@ -233,6 +233,26 @@ pub fn import_card_file(path: &Path) -> Result<ProfileCharacter, String> {
     load_character(&root, &path)
 }
 
+/// Ausdrücklich gewählte JSON-Datei, lesend und mit denselben Pfad-/Größengrenzen.
+pub fn read_standalone_json(path: &Path) -> Result<Value, String> {
+    let path = canonical(path)?;
+    if !path
+        .extension()
+        .is_some_and(|extension| extension.eq_ignore_ascii_case("json"))
+    {
+        return Err("Bitte eine JSON-Datei auswählen.".into());
+    }
+    let root = canonical(
+        path.parent()
+            .ok_or("Die JSON-Datei hat keinen gültigen Ordner.")?,
+    )?;
+    let bytes = read_file(&root, &path)?;
+    if bytes.len() > MAX_CARD_BYTES {
+        return Err("Die JSON-Datei überschreitet 4 MiB.".into());
+    }
+    serde_json::from_slice(&bytes).map_err(|_| "Die Datei enthält kein gültiges JSON.".into())
+}
+
 /// Export verändert weder das produktive Profil noch die aktuell geladene Profilkopie.
 pub fn validate_export_target(
     path: &Path,

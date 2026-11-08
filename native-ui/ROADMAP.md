@@ -11,6 +11,8 @@ laufende Oberfläche. Fortschritt wird an nutzbaren Etappen gemessen, nicht an P
 Vor jeder Desktopübernahme ausdrücklich fragen und Zustimmung abwarten (Nutzerwunsch 08.11.2026).
 Das umfasst die Vorbereitung mit Schließen/Neustarten der GUI-Testinstanz. Keine parallelen Eingaben;
 Codearbeit und Prüfungen ohne Desktopsteuerung können währenddessen weiterlaufen.
+Aktuell ausdrücklich ohne Sichtprüfung weiterarbeiten; offene Sicht-/Windows-Prüfungen gesammelt
+später durchführen. Eine frühere Freigabe gilt nicht als Erlaubnis für einen neuen Durchlauf.
 Linux und macOS bleiben Architekturziele, sind bis zu tatsächlichen Tests aber nicht als unterstützt bestätigt.
 WSL kann später Linux-Builds/erste WSLg-Tests ermöglichen; es ersetzt weder Linux-Desktopabnahme noch einen Mac.
 
@@ -313,7 +315,8 @@ Kein vollständiger E2E-Lauf, kein echtes Modell und kein Cloud-Anbieter aufgeru
 - [x] Begrüßungsvarianten in leeren lokalen Testchats auswählen; Detailansicht mit weiteren Kartentexten.
 - [x] Kartenraster und Tagfilter nach Vorbild des Tauri-Frontends.
 - [x] Ausdrucksbilder-Reiter mit 15 Plätzen, Offlinevorschau, Auswahl/Entfernen und Hauptporträtübernahme.
-- [ ] Weitere Editorbereiche: Lorebook-Bindungen und vollständige Auflösung fremder relativer Bildverweise.
+- [x] Lorebook-Bindungen im Charaktereditor und lesender Katalog mit Eintragssuche.
+- [ ] Weitere Editorbereiche: vollständiger Lorebook-Editor und Auflösung fremder relativer Bildverweise.
 - [x] Expliziter JSON-/PNG-Dateiimport/-export über native Öffnen-/Speichern-Dialoge.
 - [ ] Dauerhafte Integration von Kartenänderungen in ein eigenes isoliertes Schreibprofil.
 
@@ -484,6 +487,43 @@ Desktopfreigabe für diesen Durchlauf angefragt, noch nicht erteilt. Die laufend
 unangetastet; die normale Windows-EXE wurde in diesem Schritt noch nicht neu gebaut. Native Test-EXE
 und alle Ansichten wurden kompiliert/geprüft. Nach Freigabe: eigene Instanz schließen, Windows-Build,
 Editor → Ausdrucksbilder → neutral/fröhlich/fehlenden Slot prüfen; danach Kontrolle explizit zurückgeben.
+
+### GUI-Zwischenschritt: Lorebook-Katalog und Kartenbindungen
+
+Der Lorebooks-Navigationseintrag öffnet jetzt einen lesenden RAM-Katalog statt eines Platzhalters.
+JSON-Dateien werden ausdrücklich über einen Öffnendialog gewählt; keine automatische Suche im
+produktiven Profil. `src/lore_catalog.rs` ist nur eine Anzeigeprojektion: OtakuSoul-Eintragsarrays
+und SillyTavern-Eintragsobjekte, Name/Beschreibung/Text und Aktivierungsanzeige aus der Datei. Keine
+Triggernormalisierung, kein Legacyupgrade und keine Kontextevaluation duplizieren. Unbekannte Felder
+und das komplette JSON bleiben erhalten und lassen sich kopieren. Gemeinsame Parser-/Evaluations-
+Extraktion aus `modules/lorebook.rs` ist die Voraussetzung für echte native Loreaktivierung.
+
+Grenzen: JSON 4 MiB, maximal 10.000 Einträge, bis 200 gefilterte Treffer gleichzeitig dargestellt.
+Suche prüft Eintragsnamen und Inhalt; Rohdaten bleiben vollständig. Explizites Dateilesen benutzt die
+bestehenden kanonischen Pfad-/Produktivschutzprüfungen. Fehlende Datei-ID fällt wie Tauri auf den
+Dateistamm zurück; Laden gleicher Referenz/Quelle ersetzt kein bestehendes RAM-Buch. Der Katalog
+bleibt unabhängig vom ausgewählten Charakter/Profil und geht beim Neustart verloren. Keine Datei-
+oder Datenbankschreibzugriffe und keine Normalisierung des importierten Originals.
+
+Editorreiter „Lorebooks“: Checkboxen für geladene Bücher, Anzeige/Entfernen bestehender ungelöster
+Referenzen und Eingabe einer bekannten ID/eines Namens. Laden/Ansehen bindet nichts automatisch.
+Abwählen entfernt alle passenden ID-/Namens-/Pfadaliase (trim/casefold wie `lorebookUsage.ts`), bewahrt
+fremde Referenzen. Entwurf bleibt beim Wechsel zum Katalog/Chat erhalten. Übernehmen schreibt
+`extensions.bound_lorebooks` und `selected_lorebook` konsistent; leere Bindungen entfernen den Legacy-
+Schlüssel. Keine DB-Bindungen erfinden. Unveränderte fehlerhafte Metadaten bleiben erhalten;
+Änderungen an fehlerhaften Erweiterungsobjekten werden abgewiesen.
+
+Eingebettetes `character_book` / `extensions.character_book` / `embedded_lorebook` wird separat als
+vorhanden angezeigt und kann als unverändertes JSON kopiert werden. Kein automatisches Herausschreiben,
+Importieren oder Binden eingebetteter Bücher. Externe Bindungen betten die Lorebooks nicht in die
+Charakterkarte ein. Die Oberfläche kennzeichnet, dass die native Promptvorschau sie noch nicht nutzt.
+
+Prüfstand: 89 Native-Tests erfolgreich, darunter zehn neue Tests zu Array-/Objektprojektion,
+Dateistamm-Fallback, unverändertem Dateilesen, Grenzen, Aliasentfernung, Entwurfsziel und Legacy-
+Synchronisierung; bestehende JSON-/PNG-Karten-Roundtrip-Fixtures enthalten nun Lorebook-Bindungen
+und ein eingebettetes Buch. Clippy und gezielte Formatprüfung bestanden. Agentenreview korrigierte
+die fehlende Datei-ID. Keine Desktopsteuerung und kein Stoppen/Neustarten der laufenden Vorschau;
+neue normale Windows-EXE und Sichtabnahme bleiben wie gewünscht für später offen.
 
 - [ ] Einstellungen/Onboarding, Charakter-/Lorebook-Editoren, Gedächtnis, Hub und Im-/Export.
 - [ ] Stage und 5e einschließlich Battlemap; Fachlogik wiederverwenden.

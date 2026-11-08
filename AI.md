@@ -18,6 +18,8 @@ Für diesen Prototyp auf dem Experiment-Branch committen/pushen, nicht auf `main
 Nutzerwunsch: Vor jeder Übernahme der Windows-Bedienung ausdrücklich fragen und die Antwort abwarten,
 damit keine parallelen Maus-/Tastatureingaben entstehen. Auch GUI-Testinstanzen nicht ungefragt
 neu starten oder schließen. Codearbeit und Tests ohne Desktopsteuerung laufen unabhängig weiter.
+Aktueller Nutzerwunsch: vorerst ohne Sichtprüfung weiterarbeiten; offene Windows-/Sichtprüfungen
+für einen späteren gemeinsamen Durchlauf sammeln. Keine erneute Desktopübernahme ohne Freigabe.
 Nutzerentscheidung 08.11.2026: Zuerst vollständige, funktionierende GUI-Elemente; Übersetzungen danach
 integrieren, sobald der Oberflächenstand dafür geeignet ist. Layout und Gestaltung der nativen
 GUI möglichst identisch zum vorhandenen Tauri-Frontend halten; aktuelle React-/CSS-Quellen als Referenz.
@@ -36,6 +38,8 @@ begonnene Chats behalten ihren Begrüßungssnapshot, Archive werden nie aus Kart
 Ausdrucksbilder-Reiter mit 15 Slots, PNG-/WebP-Auswahl und Hauptporträtübernahme. Bekannte Presetbilder
 sowie eingebettete Bilder sind offline sichtbar; andere Verweise bleiben erhalten und ungeladen.
 Dateiexport bettet bekannte Preset-Ausdrucksbilder portabel ein. Details/Grenzen: native-ui/ROADMAP.md.
+Lorebooks: ausdrücklich geladener lesender RAM-Katalog, Eintragssuche und Kartenbindungen im Editor.
+Original-JSON/eingebettete Bücher bleiben erhalten; noch keine native Lore-Evaluation/Promptaktivierung.
 
 ### Allgemeine Arbeitsregeln
 

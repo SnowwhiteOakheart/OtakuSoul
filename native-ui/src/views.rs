@@ -129,6 +129,8 @@ impl App {
             Page::Details => self.details(),
             Page::Settings => self.settings(),
             Page::Prompt => self.prompt_view(),
+            Page::Lorebooks => self.lorebooks_view(),
+            Page::LorebookDetails => self.lorebook_details(),
             Page::Planned(label) => self.planned(label),
         };
         column![self.header(), row![self.navigation(), content].height(Fill)]
@@ -206,7 +208,7 @@ impl App {
                 &[
                     (Page::Characters, Icon::Characters, "Charaktere"),
                     (Page::Planned("Avatare"), Icon::Avatars, "Avatare"),
-                    (Page::Planned("Lorebooks"), Icon::Lorebooks, "Lorebooks"),
+                    (Page::Lorebooks, Icon::Lorebooks, "Lorebooks"),
                     (Page::Planned("Hub"), Icon::Hub, "Hub"),
                 ],
             ),
@@ -232,6 +234,7 @@ impl App {
                 let active = self.page == *page
                     || (matches!(self.page, Page::Details | Page::CharacterEditor)
                         && *page == Page::Characters)
+                    || (self.page == Page::LorebookDetails && *page == Page::Lorebooks)
                     || (self.page == Page::Prompt && *page == Page::Chat);
                 let symbol =
                     container(
@@ -1016,6 +1019,224 @@ impl App {
             .into()
     }
 
+    fn lorebooks_view(&self) -> Element<'_, Message> {
+        let mut content = column![
+            row![text("Lorebooks").size(26).width(Fill),
+                control(Icon::Attachment,"JSON laden",Message::ImportLorebook)].align_y(Alignment::Center),
+            muted("Lesender Katalog im Arbeitsspeicher. Die Dateien bleiben unverändert. Bindungen wählst Du im Charaktereditor; native Promptauswahl folgt später.",13,&self.theme()),
+            muted(&self.notice,12,&self.theme()),
+        ].spacing(16);
+        if self.character_draft.is_some() {
+            content = content.push(control(
+                Icon::Back,
+                "Charakterentwurf fortsetzen",
+                Message::Navigate(Page::CharacterEditor),
+            ));
+        }
+        if self.lorebooks.is_empty() {
+            content = content.push(container(column![icon(Icon::Lorebooks,32),text("Noch keine Lorebooks geladen.").size(20),
+                muted("Lade eine Lorebook-JSON-Datei. Vorhandene Bindungen bleiben auch ohne geladenes Buch erhalten.",13,&self.theme())].spacing(16)).padding(24).width(Fill).style(appearance::card));
+        }
+        for (index, book) in self.lorebooks.iter().enumerate() {
+            content = content.push(
+                container(
+                    row![
+                        icon(Icon::Lorebooks, 24),
+                        column![
+                            text(&book.name).size(20),
+                            muted(shorten(&book.description, 180), 12, &self.theme()),
+                            muted(
+                                format!(
+                                    "{} Einträge · Referenz: {}",
+                                    book.entries.len(),
+                                    book.binding_key()
+                                ),
+                                11,
+                                &self.theme()
+                            )
+                        ]
+                        .spacing(6)
+                        .width(Fill),
+                        control(Icon::Eye, "Ansehen", Message::InspectLorebook(index))
+                    ]
+                    .spacing(14)
+                    .align_y(Alignment::Center),
+                )
+                .padding(16)
+                .width(Fill)
+                .style(appearance::card),
+            );
+        }
+        scroll(content.padding(24)).height(Fill).width(Fill).into()
+    }
+
+    fn lorebook_details(&self) -> Element<'_, Message> {
+        let Some(index) = self.lorebook_selected else {
+            return self.lorebooks_view();
+        };
+        let Some(book) = self.lorebooks.get(index) else {
+            return self.lorebooks_view();
+        };
+        let query = self.lore_entry_search.trim().to_lowercase();
+        let entries = book
+            .entries
+            .iter()
+            .filter(|entry| {
+                query.is_empty()
+                    || entry.name.to_lowercase().contains(&query)
+                    || entry.content.to_lowercase().contains(&query)
+            })
+            .collect::<Vec<_>>();
+        let mut content = column![
+            row![text(&book.name).size(26).width(Fill),control(Icon::Back,"Katalog",Message::Navigate(Page::Lorebooks)),control(Icon::Copy,"JSON kopieren",Message::CopyLorebook(index))].spacing(10).align_y(Alignment::Center),
+            text(&book.description).size(14),
+            muted("Unveränderte Dateiinhalte · lesende Vorschau, keine Auswertung der Aktivierungsregeln.",12,&self.theme()),
+            text_input("Einträge durchsuchen …",&self.lore_entry_search).on_input(Message::LoreEntrySearch).padding(10).style(appearance::input),
+            muted(format!("{} von {} Einträgen · maximal 200 Treffer gleichzeitig sichtbar",entries.len(),book.entries.len()),12,&self.theme()),
+        ].spacing(16);
+        if entries.is_empty() {
+            content = content.push(text("Keine passenden Einträge gefunden."));
+        }
+        for entry in entries.into_iter().take(200) {
+            content = content.push(
+                container(
+                    column![
+                        row![
+                            text(&entry.name).size(18).width(Fill),
+                            muted(
+                                if entry.enabled {
+                                    "In Datei aktiv"
+                                } else {
+                                    "In Datei deaktiviert"
+                                },
+                                11,
+                                &self.theme()
+                            )
+                        ]
+                        .spacing(10),
+                        text(&entry.content).size(14).width(Fill)
+                    ]
+                    .spacing(10),
+                )
+                .padding(16)
+                .width(Fill)
+                .style(appearance::card),
+            );
+        }
+        scroll(content.padding(24)).height(Fill).width(Fill).into()
+    }
+
+    fn lorebook_bindings(&self) -> Element<'_, Message> {
+        let Some(draft) = &self.character_draft else {
+            return text("Kein Entwurf geöffnet.").into();
+        };
+        let mut content = column![
+            row![control(Icon::Attachment,"Lorebook-JSON laden",Message::ImportLorebook),control(Icon::Lorebooks,"Katalog",Message::Navigate(Page::Lorebooks))].spacing(10),
+            muted("Geladene Lorebooks zuordnen oder eine bekannte ID/einen Namen eintragen. Die Bücher selbst werden dadurch nicht in die Charakterkarte eingebettet.",12,&self.theme()),
+        ].spacing(12);
+        for (index, book) in self.lorebooks.iter().enumerate() {
+            let bound = draft
+                .bound_lorebooks()
+                .iter()
+                .any(|reference| book.matches_reference(reference));
+            content = content.push(
+                container(
+                    row![
+                        iced::widget::checkbox(bound)
+                            .label(format!("{} · {} Einträge", book.name, book.entries.len()))
+                            .on_toggle(move |_| Message::ToggleLorebook(index))
+                            .width(Fill),
+                        control(Icon::Eye, "Ansehen", Message::InspectLorebook(index))
+                    ]
+                    .spacing(12)
+                    .align_y(Alignment::Center),
+                )
+                .padding(12)
+                .width(Fill)
+                .style(appearance::card),
+            );
+        }
+        content = content.push(
+            row![
+                text_input("Lorebook-ID oder Name", &self.lore_reference_input)
+                    .on_input(Message::LoreReferenceInput)
+                    .on_submit(Message::AddLoreReference)
+                    .padding(10)
+                    .style(appearance::input),
+                control(Icon::Plus, "Hinzufügen", Message::AddLoreReference)
+            ]
+            .spacing(10),
+        );
+        for (index, reference) in draft.bound_lorebooks().iter().enumerate() {
+            let resolved = self
+                .lorebooks
+                .iter()
+                .any(|book| book.matches_reference(reference));
+            content = content.push(
+                row![
+                    column![
+                        text(reference).size(13),
+                        muted(
+                            if resolved {
+                                "Im Katalog geladen"
+                            } else {
+                                "Nicht im Katalog geladen · Referenz bleibt erhalten"
+                            },
+                            11,
+                            &self.theme()
+                        )
+                    ]
+                    .spacing(4)
+                    .width(Fill),
+                    icon_control(
+                        Icon::Close,
+                        "Bindung entfernen",
+                        Some(Message::RemoveLoreReference(index))
+                    )
+                ]
+                .spacing(10)
+                .align_y(Alignment::Center),
+            );
+        }
+        if let Some(book) = self.embedded_lorebook() {
+            let count = book.get("entries").and_then(|entries| {
+                entries
+                    .as_array()
+                    .map(Vec::len)
+                    .or_else(|| entries.as_object().map(serde_json::Map::len))
+            });
+            content = content.push(
+                container(
+                    column![
+                        text("Eingebettetes Lorebook").size(16),
+                        muted(
+                            count
+                                .map(|count| format!(
+                                    "{count} Einträge · unverändert in der Karte enthalten"
+                                ))
+                                .unwrap_or_else(|| {
+                                    "Eingebettete Daten vorhanden · Format noch nicht geprüft"
+                                        .into()
+                                }),
+                            12,
+                            &self.theme()
+                        ),
+                        control(
+                            Icon::Copy,
+                            "Eingebettetes JSON kopieren",
+                            Message::CopyEmbeddedLorebook
+                        )
+                    ]
+                    .spacing(8),
+                )
+                .padding(12)
+                .width(Fill)
+                .style(appearance::card),
+            );
+        }
+        scroll(content).height(Fill).width(Fill).into()
+    }
+
     fn character_editor(&self) -> Element<'_, Message> {
         use crate::character_draft::Field;
         let Some(draft) = &self.character_draft else {
@@ -1031,6 +1252,7 @@ impl App {
             (EditorTab::Fields, "Kartentexte"),
             (EditorTab::Greetings, "Begrüßungen"),
             (EditorTab::Expressions, "Ausdrucksbilder"),
+            (EditorTab::Lorebooks, "Lorebooks"),
             (EditorTab::Json, "JSON"),
         ] {
             tabs = tabs.push(
@@ -1045,6 +1267,15 @@ impl App {
             );
         }
         let selector: Element<'_, Message> = match self.editor_tab {
+            EditorTab::Lorebooks => muted(
+                format!(
+                    "{} Bindungen · nur Kartenmetadaten, noch keine native Promptaktivierung",
+                    draft.bound_lorebooks().len()
+                ),
+                12,
+                &self.theme(),
+            )
+            .into(),
             EditorTab::Expressions => row![
                 iced::widget::pick_list(
                     crate::expressions::SLOTS,
@@ -1098,7 +1329,9 @@ impl App {
             )
             .into(),
         };
-        let editor: Element<'_, Message> = if self.editor_tab == EditorTab::Expressions {
+        let editor: Element<'_, Message> = if self.editor_tab == EditorTab::Lorebooks {
+            self.lorebook_bindings()
+        } else if self.editor_tab == EditorTab::Expressions {
             let preview: Element<'_, Message> = if let Some(handle) = &self.expression_image {
                 image(handle.clone())
                     .width(Fill)

@@ -16,6 +16,7 @@
   Karteneditor mit Begrüßungs-/JSON-Reitern; Variantenwahl nur im leeren lokalen Chat, danach Snapshot.
   Bibliothek: adaptives Porträtraster, Tagfilter plus Suche; vor Desktopsteuerung Nutzerzustimmung abwarten.
   Ausdrucksbilder: 15 Editorplätze, WebP/PNG und Hauptporträtübernahme; portable Presetbilder im Dateiexport.
+  Lorebooks: lesender RAM-Katalog, Eintragssuche und Kartenbindungen; noch keine native Kontextauswertung.
   Native Verbindungsdiagnose vorhanden, echter Charakterchat noch offen; Übersetzungen zuletzt.
 * **ONNX:** `modules/onnx_runtime.rs` verwaltet die von `AppState` gehaltene gemeinsame Umgebung für Kokoro, VAD und Porträts. Kokoros rc.15-Portierung liegt in `src-tauri/vendor/kokoro-en/` mit Herkunfts- und Patchdokumentation.
 * **PDF-Anhänge:** `vendor/pdf-extract` behält die bisherige Extraktion bei und verwendet lopdf 0.47 ohne ttf-parser. Herkunft und minimale Portierung stehen in `OTAKUSOUL-PATCH.md`; Kokoros altes Bincode-Format wird durch `cu-bincode` gelesen.
