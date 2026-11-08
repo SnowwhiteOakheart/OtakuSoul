@@ -11,6 +11,10 @@ laufende Oberfläche. Fortschritt wird an nutzbaren Etappen gemessen, nicht an P
 Linux und macOS bleiben Architekturziele, sind bis zu tatsächlichen Tests aber nicht als unterstützt bestätigt.
 WSL kann später Linux-Builds/erste WSLg-Tests ermöglichen; es ersetzt weder Linux-Desktopabnahme noch einen Mac.
 
+Aktuelle Nutzerentscheidung (08.11.2026): **Übersetzungen erst ganz zum Schluss**. Bis dahin Deutsch.
+Die native Oberfläche soll der bestehenden Tauri-Oberfläche möglichst nahekommen, kein neues visuelles
+Konzept. Vergleichsquelle ist der aktuelle React-/CSS-Code; vorhandene Screenshots dienen als Ergänzung.
+
 ## Verbindlicher Umfang
 
 - Zunächst Navigation, Charakterauswahl, Chatverlauf, Eingabe, grundlegende Einstellungen und echte Chat-Anbindung.
@@ -28,6 +32,10 @@ WSL kann später Linux-Builds/erste WSLg-Tests ermöglichen; es ersetzt weder Li
 - `default-members = ["src-tauri"]` bewahrt das bisherige Ziel bei Cargo-Aufrufen ohne Paketauswahl.
 - `src/main.rs`: Iced-Ansichten, Darstellung und UI-Ereignisse. `src/model.rs`: flüchtiger Vorschauzustand.
   `src/profile.rs`: begrenzte lesende Projektion von Karten und SQLite-Verläufen; keine Migrationen.
+- `src/views.rs`: Layout und Oberflächenansichten; `src/appearance.rs`: gemeinsame Slate-/Violett-Stile.
+  `src/icons.rs` + `assets/icons/`: eingebettete Lucide-SVGs derselben Bibliothek wie im React-Frontend.
+  `src/message_content.rs`: einmalig geparste Rollenspielsegmente bzw. native Markdown-Elemente;
+  Cache wird bei Chatwechsel, Import, geladenem Verlauf und hinzugefügter Testnachricht aktualisiert.
 - `crates/otakusoul-paths`: gemeinsame Funktionen `base_dirs`, `isolated_home`, `production_dirs`.
   Das Tauri-Modul re-exportiert die bisherigen Namen, die Standardpfade bleiben unverändert.
 - Ressourcen über `include_bytes!`, keine absoluten Rechnerpfade. Keine derzeitige Verbindung zum Tauri-Crate.
@@ -120,9 +128,40 @@ Lockfile-Vergleich: keine zuvor vorhandene Paketversion entfernt; GUI ergänzt z
 - [x] Mehrzeilige Eingabe: Enter = neue Zeile, Strg+Enter = hinzufügen; Entwürfe pro Testchat.
 - [x] Tab/Shift+Tab für Fokusnavigation, Kopierknöpfe für Nachrichten und vollständiges Karten-JSON.
 - [ ] Anhänge, Swipes, Gedanken und Gruppensprecher gezielt darstellen; aktuell nur Rolle und Text.
-- [ ] UI-Lokalisierung aus vorhandenen `presets/locales/ui/` übernehmen; deutsche Vorschautexte ablösen.
 - [ ] Freie Textauswahl in dargestellten Nachrichten und umfassende Tastatur-/IME-Abnahme.
 - [ ] Markdown und lange Chats prüfen; Listenvirtualisierung/Begrenzung anhand Messungen entscheiden.
+
+### Angleichung an Tauri – Stand 08.11.2026
+
+- [x] Kopfzeile (56 px) mit vorhandenem Logo, Brand, Vorschauhinweis und Hell-/Dunkelumschalter.
+- [x] Gruppierte Navigation „Spielen / Bibliothek / System“ in gleicher Reihenfolge und mit gleichen
+  Lucide-Symbolen; Breiten 240 px bzw. eingeklappt 60 px. Aktiver Bereich violett hervorgehoben.
+- [x] Obsidian-nahe Slate-Flächen, violette Akzente, passende Rahmen/Rundungen und Segoe UI unter Windows.
+- [x] Chat-Werkzeugleiste (44 px), Charakterzeile, statische Porträtspalte und Nachrichten rechts.
+- [x] Porträt ein-/ausblenden, Kompaktansicht, Gesprächsliste als linke Einblendung und Textsuche.
+- [x] Nutzerblasen rechts mit Violett-/Indigoverlauf; Antworten links mit Slate-Hintergrund.
+- [x] Rollenspiel-Handlungen wie in `RoleplayMessage.tsx` kursiv/violett, Rede warm hervorgehoben;
+  Sternchen und Zeilenumbrüche bleiben sichtbar. Kartenvorschau der Begrüßung bleibt auch nach Testnachrichten.
+- [x] Native Markdown-Blöcke (z. B. Listen, Überschriften, Code) ohne WebView; keine externen Bilder laden.
+- [x] Charakterübersicht, Kartenansicht und Profileinstellungen verwenden dieselben Flächenstile.
+- [ ] Visuelle Abnahme am entsperrten Windows-Desktop, einschließlich schmalem Fenster und hellem Theme.
+- [ ] Feinschliff nach Vergleich mit laufender Tauri-App: Farben/Abstände, Textumbruch, Fokus und Scrollen.
+
+Referenzen: `src/components/Header.tsx`, `Sidebar.tsx`, `navigation.ts`, `chat/ChatView.tsx`,
+`chat/ChatComposer.tsx`, `chat/MessageList.tsx`, `chat/RoleplayMessage.tsx`, `src/App.css`.
+Bildvorlage `docs/assets/screenshots/de/chat.png` zeigt Version 0.7.2; aktueller Quellcode hat Vorrang.
+
+Navigationseinträge für noch nicht portierte Bereiche führen zu einem klar bezeichneten Hinweis;
+sie sind kein Funktionsnachweis für Stage, Companion, Hub usw. Sprach- und Anhangsknöpfe sind deaktiviert.
+Die Chat-Suche filtert nur die geladenen Nachrichten; noch keine globale Suche oder Treffer-Navigation.
+Ein Markdown-Link zeigt beim Klick seine Adresse in der Statuszeile; kein automatisches Öffnen im Browser.
+OOC-Badges, Vorlesen, Spezialtags, freie Nachrichtentextauswahl und animierte Avatare bleiben offen.
+
+Technische Abnahme dieses Schritts: 21 GUI-Tests, Clippy mit `-D warnings`, Formatprüfung und
+Windows-Build bestanden. Die erste visuelle Prüfung wurde durch den gesperrten Windows-Desktop
+verhindert; diese Überarbeitung ist **noch nicht visuell abgenommen**. Die zuvor laufende Test-EXE
+wurde ausschließlich für den Abschlussbuild beendet. Nutzer um Entsperren gebeten; bis dahin keine
+weiteren Maus-/Tastaturaktionen. Keine Pixelgleichheit behaupten, bevor der praktische Vergleich erfolgt ist.
 
 Abnahme: kopierte Daten lesbar, Originalprofil unverändert; langer Chat bleibt bedienbar.
 
@@ -166,6 +205,12 @@ An diesem Punkt gemeinsam entscheiden, ob die Migration fortgesetzt wird.
 - [ ] macOS: echter Mac, Apple Silicon, Berechtigungen, Retina und Menüintegration; Intel separat entscheiden.
 - [ ] Installer, Updatepfad, Signierung/Notarisierung und Datenkompatibilität vor einer Veröffentlichung.
 - [ ] Tauri erst nach Funktionsvergleich und Abnahme ablösen.
+
+## Abschluss – Übersetzungen (ausdrücklich zuletzt)
+
+- [ ] Nach Abschluss der Oberfläche vorhandene `presets/locales/ui/` anbinden und deutsche Literaltexte ablösen.
+- [ ] Mehrstufige Sprachauflösung/Fallbacks übernehmen; Layout mit längeren Texten und japanischer Eingabe prüfen.
+- [ ] Übersetzungsprüfung und abschließende Plattform-/Bedienabnahme durchführen.
 
 ## Risiken und offene Entscheidungen
 

@@ -15,6 +15,8 @@ Separater Start: `cargo run -p otakusoul-native`. Kein Desktop-Pet; kein automat
 Profilkopien nur ausdrücklich und schreibgeschützt laden; synthetisches Beispiel über Einstellungen oder
 `--create-demo-profile <Ordner>`. Gemeinsame Basis-Pfadauflösung: `crates/otakusoul-paths`.
 Für diesen Prototyp auf dem Experiment-Branch committen/pushen, nicht auf `main`.
+Nutzerentscheidung 08.11.2026: Übersetzungen erst ganz zum Schluss. Layout und Gestaltung der nativen
+GUI möglichst identisch zum vorhandenen Tauri-Frontend halten; aktuelle React-/CSS-Quellen als Referenz.
 
 ### Allgemeine Arbeitsregeln
 

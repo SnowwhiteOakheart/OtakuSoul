@@ -1,19 +1,32 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod appearance;
+mod icons;
+mod message_content;
 mod model;
 mod profile;
+mod views;
 
 use iced::keyboard::{Key, key::Named};
-use iced::widget::{
-    button, column, container, image, row, scrollable, text, text_editor, text_input,
-};
-use iced::{Alignment, Element, Fill, Task, Theme};
+use iced::widget::{image, text_editor};
+use iced::{Task, Theme};
 use model::Preview;
 use profile::{Profile, StoredMessage};
 use std::collections::HashSet;
 use std::path::PathBuf;
 
 const MESSAGE_LIMIT: usize = 200;
+
+fn ui_font() -> iced::Font {
+    #[cfg(target_os = "windows")]
+    {
+        iced::Font::with_name("Segoe UI")
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        iced::Font::DEFAULT
+    }
+}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<_> = std::env::args_os().skip(1).collect();
@@ -48,6 +61,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             _ => return Err("Unbekanntes Argument.".into()),
         }
     }
+    let brand =
+        ::image::load_from_memory(include_bytes!("../../src/assets/brand/otakusoul-icon.png"))?
+            .into_rgba8();
+    let window_icon =
+        iced::window::icon::from_rgba(brand.to_vec(), brand.width(), brand.height()).ok();
     iced::application(
         move || App::new(initial_profile.clone()),
         App::update,
@@ -55,9 +73,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     )
     .title("OtakuSoul · Native Vorschau")
     .theme(App::theme)
+    .default_font(ui_font())
     .subscription(App::subscription)
-    .window_size((1180.0, 780.0))
+    .window_size((1440.0, 900.0))
     .window(iced::window::Settings {
+        icon: window_icon,
         min_size: Some(iced::Size::new(900.0, 680.0)),
         ..Default::default()
     })
@@ -80,11 +100,13 @@ async fn background<T: Send + 'static>(
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 enum Page {
+    Home,
     #[default]
     Chat,
     Characters,
     Details,
     Settings,
+    Planned(&'static str),
 }
 
 #[derive(Debug, Clone)]
@@ -97,6 +119,13 @@ enum Message {
     Clear,
     LocalChat,
     ToggleTheme,
+    ToggleNavigation,
+    ToggleAvatar,
+    ToggleCompact,
+    ToggleSessions,
+    ToggleSearch,
+    SearchChanged(String),
+    InspectLink(String),
     Copy(String),
     CopyCard,
     Focus(bool),
@@ -124,6 +153,14 @@ struct App {
     pending: HashSet<usize>,
     notice: String,
     warnings: Vec<String>,
+    collapsed: bool,
+    show_avatar: bool,
+    compact: bool,
+    show_sessions: bool,
+    show_search: bool,
+    search: String,
+    rendered: Vec<message_content::Content>,
+    greeting: message_content::Content,
 }
 
 impl Default for App {
@@ -138,6 +175,13 @@ impl Default for App {
                     .map(|dirs| dirs.data_dir().join("preview-profile"))
                     .unwrap_or_else(|| PathBuf::from("native-ui-demo"))
             });
+        let greeting = message_content::Content::new(
+            &preview
+                .character()
+                .first_message
+                .replace("{{char}}", &preview.character().name)
+                .replace("{{user}}", "Du"),
+        );
         Self {
             preview,
             page: Page::Chat,
@@ -151,6 +195,14 @@ impl Default for App {
             pending: HashSet::new(),
             notice: "Vorschau ohne KI · Testnachrichten bleiben im Arbeitsspeicher.".into(),
             warnings: Vec::new(),
+            collapsed: false,
+            show_avatar: true,
+            compact: false,
+            show_sessions: false,
+            show_search: false,
+            search: String::new(),
+            rendered: Vec::new(),
+            greeting,
         }
     }
 }
@@ -189,14 +241,24 @@ impl App {
             .collect()
     }
     fn theme(&self) -> Theme {
-        if self.dark {
-            Theme::TokyoNight
-        } else {
-            Theme::Light
-        }
+        appearance::theme(self.dark)
     }
     fn sync_editor(&mut self) {
         self.editor = text_editor::Content::with_text(&self.preview.current().draft);
+        self.rendered = self
+            .preview
+            .current()
+            .messages
+            .iter()
+            .map(|m| message_content::Content::new(&m.content))
+            .collect();
+        let character = self.preview.character();
+        self.greeting = message_content::Content::new(
+            &character
+                .first_message
+                .replace("{{char}}", &character.name)
+                .replace("{{user}}", "Du"),
+        );
     }
     fn load(&mut self, create: bool) -> Task<Message> {
         if self.profile_busy {
@@ -255,6 +317,7 @@ impl App {
             Message::SelectConversation(index) => {
                 if index < self.preview.conversations.len() {
                     self.preview.selected = index;
+                    self.show_sessions = false;
                     self.sync_editor();
                     return self.load_current();
                 }
@@ -275,10 +338,23 @@ impl App {
                 self.sync_editor();
             }
             Message::LocalChat => {
+                self.show_sessions = false;
                 self.preview.select_local();
                 self.sync_editor();
             }
             Message::ToggleTheme => self.dark = !self.dark,
+            Message::ToggleNavigation => self.collapsed = !self.collapsed,
+            Message::ToggleAvatar => self.show_avatar = !self.show_avatar,
+            Message::ToggleCompact => self.compact = !self.compact,
+            Message::ToggleSessions => self.show_sessions = !self.show_sessions,
+            Message::ToggleSearch => {
+                self.show_search = !self.show_search;
+                if !self.show_search {
+                    self.search.clear();
+                }
+            }
+            Message::SearchChanged(value) => self.search = value,
+            Message::InspectLink(link) => self.notice = format!("Link aus der Nachricht: {link}"),
             Message::Copy(value) => return iced::clipboard::write(value),
             Message::Focus(backwards) => {
                 return if backwards {
@@ -340,6 +416,9 @@ impl App {
                             conversation.messages = messages;
                             conversation.loaded = true;
                         }
+                        if index == self.preview.selected {
+                            self.sync_editor();
+                        }
                     }
                     Err(error) => {
                         if index == self.preview.selected {
@@ -350,307 +429,6 @@ impl App {
             }
         }
         Task::none()
-    }
-    fn portrait(&self, index: usize, width: u32, height: u32) -> Element<'_, Message> {
-        if let Some(handle) = &self.portraits[index] {
-            image(handle.clone())
-                .width(width)
-                .height(height)
-                .content_fit(iced::ContentFit::Cover)
-                .into()
-        } else {
-            container(text("?").size(24))
-                .center_x(width)
-                .center_y(height)
-                .style(container::rounded_box)
-                .into()
-        }
-    }
-    fn view(&self) -> Element<'_, Message> {
-        let mut navigation = column![
-            text("OtakuSoul").size(28),
-            text("Deine Geschichten. Dein Raum.").size(13),
-            text("")
-        ]
-        .spacing(10);
-        for (page, label) in [
-            (Page::Chat, "Gespräche"),
-            (Page::Characters, "Charaktere"),
-            (Page::Settings, "Einstellungen"),
-        ] {
-            navigation = navigation.push(
-                button(text(label).size(16))
-                    .width(Fill)
-                    .padding(12)
-                    .style(if self.page == page {
-                        button::primary
-                    } else {
-                        button::text
-                    })
-                    .on_press(Message::Navigate(page)),
-            );
-        }
-        navigation = navigation.push(text("DEINE FIGUREN").size(12));
-        for (index, character) in self.preview.characters.iter().enumerate() {
-            navigation = navigation.push(
-                button(
-                    row![self.portrait(index, 38, 46), text(&character.name).size(14)]
-                        .spacing(10)
-                        .align_y(Alignment::Center),
-                )
-                .width(Fill)
-                .padding(8)
-                .style(if character.id == self.preview.current().character_id {
-                    button::secondary
-                } else {
-                    button::text
-                })
-                .on_press(Message::SelectCharacter(index)),
-            );
-        }
-        let sidebar = container(
-            column![
-                scrollable(navigation).height(Fill),
-                text("NATIVE VORSCHAU · 0.2").size(12),
-                text("Ohne KI · Profilkopien nur lesen").size(12)
-            ]
-            .spacing(12),
-        )
-        .padding(18)
-        .width(245)
-        .height(Fill)
-        .style(container::rounded_box);
-        let content = match self.page {
-            Page::Chat => self.chat(),
-            Page::Characters => self.characters(),
-            Page::Details => self.details(),
-            Page::Settings => self.settings(),
-        };
-        container(
-            row![
-                sidebar,
-                container(column![content, text(&self.notice).size(12)].spacing(12))
-                    .padding(20)
-                    .width(Fill)
-                    .height(Fill)
-            ]
-            .spacing(4),
-        )
-        .padding(12)
-        .width(Fill)
-        .height(Fill)
-        .into()
-    }
-    fn chat(&self) -> Element<'_, Message> {
-        let character = self.preview.character();
-        let conversation = self.preview.current();
-        let index = self
-            .preview
-            .characters
-            .iter()
-            .position(|c| c.id == character.id)
-            .unwrap_or(0);
-        let heading = row![
-            self.portrait(index, 48, 58),
-            text(&character.name).size(27).width(Fill),
-            button("Charakterkarte")
-                .style(button::text)
-                .on_press(Message::Navigate(Page::Details))
-        ]
-        .spacing(12)
-        .align_y(Alignment::Center);
-        let mut sessions = row![].spacing(8);
-        for (index, candidate) in self
-            .preview
-            .conversations
-            .iter()
-            .enumerate()
-            .filter(|(_, c)| c.character_id == character.id)
-        {
-            sessions = sessions.push(
-                button(text(&candidate.title).size(13))
-                    .style(if self.preview.selected == index {
-                        button::primary
-                    } else {
-                        button::secondary
-                    })
-                    .on_press(Message::SelectConversation(index)),
-            );
-        }
-        let mut messages = column![].spacing(14).width(Fill);
-        if !conversation.loaded {
-            messages = messages.push(
-                row![
-                    text(if self.pending.contains(&self.preview.selected) {
-                        "Verlauf wird geladen …"
-                    } else {
-                        "Verlauf noch nicht geladen."
-                    }),
-                    button("Erneut laden")
-                        .on_press(Message::SelectConversation(self.preview.selected))
-                ]
-                .spacing(12),
-            );
-        } else if conversation.messages.is_empty() {
-            messages = messages.push(container(column![text("Ein Raum für Deine Geschichten").size(20),
-                text(if conversation.is_read_only() { "Dieser importierte Verlauf enthält keine Nachrichten." } else { "Hier kannst Du die Eingabe testen. Die KI-Anbindung folgt in der nächsten Etappe." }).size(15)].spacing(10))
-                .padding(18).width(Fill).style(container::rounded_box));
-        }
-        if conversation.message_count > conversation.messages.len() && conversation.loaded {
-            messages = messages.push(
-                text(format!(
-                    "Die letzten {} von {} Nachrichten werden angezeigt.",
-                    conversation.messages.len(),
-                    conversation.message_count
-                ))
-                .size(13),
-            );
-        }
-        for message in &conversation.messages {
-            let label = match message.role.as_str() {
-                "user" => "Du",
-                "assistant" => character.name.as_str(),
-                "system" => "System",
-                other => other,
-            };
-            messages = messages.push(
-                container(
-                    column![
-                        row![
-                            text(label).size(13).width(Fill),
-                            button("Kopieren")
-                                .style(button::text)
-                                .on_press(Message::Copy(message.content.clone()))
-                        ]
-                        .align_y(Alignment::Center),
-                        text(&message.content).size(16),
-                    ]
-                    .spacing(8),
-                )
-                .padding(14)
-                .width(Fill)
-                .style(container::rounded_box),
-            );
-        }
-        let footer: Element<'_, Message> = if conversation.is_read_only() {
-            row![
-                text("Importierter Verlauf · schreibgeschützt")
-                    .size(13)
-                    .width(Fill),
-                button("Zum Testchat").on_press(Message::LocalChat)
-            ]
-            .align_y(Alignment::Center)
-            .into()
-        } else {
-            let editor = text_editor(&self.editor)
-                .id("composer")
-                .placeholder("Schreibe eine Testnachricht …")
-                .on_action(Message::Edit)
-                .height(100)
-                .padding(12)
-                .size(16)
-                .key_binding(|press| {
-                    if press.key == Key::Named(Named::Enter) && press.modifiers.control() {
-                        Some(text_editor::Binding::Custom(Message::Submit))
-                    } else if press.key == Key::Named(Named::Tab) {
-                        Some(text_editor::Binding::Custom(Message::Focus(
-                            press.modifiers.shift(),
-                        )))
-                    } else {
-                        text_editor::Binding::from_key_press(press)
-                    }
-                });
-            column![
-                editor,
-                row![
-                    text("Enter: neue Zeile · Strg+Enter: hinzufügen")
-                        .size(12)
-                        .width(Fill),
-                    button("Leeren")
-                        .style(button::text)
-                        .on_press(Message::Clear),
-                    button("Hinzufügen").on_press_maybe(
-                        (!conversation.draft.trim().is_empty()).then_some(Message::Submit)
-                    ),
-                ]
-                .spacing(8)
-                .align_y(Alignment::Center)
-            ]
-            .spacing(8)
-            .into()
-        };
-        column![
-            heading,
-            scrollable(sessions).direction(scrollable::Direction::Horizontal(
-                scrollable::Scrollbar::new()
-            )),
-            scrollable(messages).id("conversation").height(Fill),
-            footer
-        ]
-        .spacing(16)
-        .height(Fill)
-        .into()
-    }
-    fn characters(&self) -> Element<'_, Message> {
-        let mut cards = column![
-            text("Deine Charaktere").size(30),
-            text("Charakterkarten und Profilkopien erkunden.")
-        ]
-        .spacing(16);
-        for (index, character) in self.preview.characters.iter().enumerate() {
-            cards = cards.push(
-                container(
-                    row![
-                        self.portrait(index, 70, 88),
-                        text(&character.name).size(22).width(Fill),
-                        button("Gespräch öffnen").on_press(Message::SelectCharacter(index))
-                    ]
-                    .spacing(16)
-                    .align_y(Alignment::Center),
-                )
-                .padding(16)
-                .width(Fill)
-                .style(container::rounded_box),
-            );
-        }
-        scrollable(cards).height(Fill).into()
-    }
-    fn details(&self) -> Element<'_, Message> {
-        let character = self.preview.character();
-        let mut details = column![
-            row![
-                text(&character.name).size(28).width(Fill),
-                button("Zurück zum Chat").on_press(Message::Navigate(Page::Chat))
-            ],
-            text("Beschreibung").size(20),
-            text(&character.description).width(Fill),
-            text("Begrüßung aus der Karte").size(20),
-            text(&character.first_message).width(Fill)
-        ]
-        .spacing(16);
-        if character.card.is_some() {
-            details = details
-                .push(button("Vollständige Karte als JSON kopieren").on_press(Message::CopyCard));
-        }
-        scrollable(details.width(Fill).padding([0, 10]))
-            .width(Fill)
-            .height(Fill)
-            .into()
-    }
-    fn settings(&self) -> Element<'_, Message> {
-        let mut settings = column![text("Einstellungen").size(30),
-            button(if self.dark {"Helles Design verwenden"} else {"Dunkles Design verwenden"}).padding(12).on_press(Message::ToggleTheme),
-            text("Profilkopie laden").size(22),
-            text("Wähle einen separaten Profilordner mit data/characters und optional data/otakusoul.db. Die Kopie muss vollständig und die Datenbank geschlossen sein. Es werden keine Einstellungen oder Zugangsdaten geladen."),
-            text_input("Pfad zur Profilkopie",&self.profile_input).on_input_maybe((!self.profile_busy).then_some(Message::ProfilePathChanged)).padding(12),
-            row![button("Profilkopie laden").on_press_maybe((!self.profile_busy).then_some(Message::LoadProfile)),
-                button("Beispielprofil erstellen").on_press_maybe((!self.profile_busy).then_some(Message::CreateDemo))].spacing(12),
-            text("Das Beispielprofil enthält nur mitgelieferte Figuren und erfundene Testnachrichten. Es wird ausschließlich in einem neuen oder leeren Ordner angelegt."),
-        ].spacing(18);
-        for warning in &self.warnings {
-            settings = settings.push(text(warning).size(13));
-        }
-        scrollable(settings).height(Fill).into()
     }
 }
 
