@@ -125,6 +125,7 @@ impl App {
             Page::Home => self.home(),
             Page::Chat => self.chat(),
             Page::Characters => self.characters(),
+            Page::CharacterEditor => self.character_editor(),
             Page::Details => self.details(),
             Page::Settings => self.settings(),
             Page::Prompt => self.prompt_view(),
@@ -229,7 +230,8 @@ impl App {
             }
             for (page, symbol, label) in entries {
                 let active = self.page == *page
-                    || (self.page == Page::Details && *page == Page::Characters)
+                    || (matches!(self.page, Page::Details | Page::CharacterEditor)
+                        && *page == Page::Characters)
                     || (self.page == Page::Prompt && *page == Page::Chat);
                 let symbol =
                     container(
@@ -720,6 +722,7 @@ impl App {
     fn characters(&self) -> Element<'_, Message> {
         let mut cards = column![row![
             text("Deine Charaktere").size(26).width(Fill),
+            control(Icon::Plus, "Neu", Message::NewCharacter),
             control(
                 Icon::Settings,
                 "Profilkopie laden",
@@ -727,7 +730,47 @@ impl App {
             )
         ]]
         .spacing(16);
+        cards = cards.push(
+            text_input("Charaktere durchsuchen …", &self.library_search)
+                .on_input(Message::LibrarySearch)
+                .padding(10)
+                .style(appearance::input),
+        );
+        if self.character_draft.is_some() {
+            cards = cards.push(control(
+                Icon::Characters,
+                "Charakterentwurf fortsetzen",
+                Message::Navigate(Page::CharacterEditor),
+            ));
+        }
+        let query = self.library_search.trim().to_lowercase();
+        let mut count = 0;
         for (index, character) in self.preview.characters.iter().enumerate() {
+            let data = character
+                .card
+                .as_ref()
+                .map(|card| card.get("data").unwrap_or(card));
+            let searchable = format!(
+                "{} {} {} {}",
+                character.name,
+                character.description,
+                data.and_then(|data| data.get("personality"))
+                    .and_then(serde_json::Value::as_str)
+                    .unwrap_or_default(),
+                data.and_then(|data| data.get("tags"))
+                    .and_then(serde_json::Value::as_array)
+                    .map(|tags| tags
+                        .iter()
+                        .filter_map(serde_json::Value::as_str)
+                        .collect::<Vec<_>>()
+                        .join(" "))
+                    .unwrap_or_default()
+            )
+            .to_lowercase();
+            if !query.is_empty() && !searchable.contains(&query) {
+                continue;
+            }
+            count += 1;
             cards = cards.push(
                 container(
                     row![
@@ -745,10 +788,24 @@ impl App {
                         ]
                         .spacing(8)
                         .width(Fill),
-                        button(row![icon(Icon::Chat, 16), text("Chat").size(13)].spacing(8))
-                            .padding(10)
-                            .style(appearance::primary_button)
-                            .on_press(Message::SelectCharacter(index))
+                        column![
+                            control(
+                                Icon::Characters,
+                                "Bearbeiten",
+                                Message::EditCharacter(index)
+                            ),
+                            control(Icon::Eye, "Ansehen", Message::InspectCharacter(index)),
+                            control(
+                                Icon::Copy,
+                                "Duplizieren",
+                                Message::DuplicateCharacter(index)
+                            ),
+                            button(row![icon(Icon::Chat, 16), text("Chat").size(13)].spacing(8))
+                                .padding(10)
+                                .style(appearance::primary_button)
+                                .on_press(Message::SelectCharacter(index))
+                        ]
+                        .spacing(6)
                     ]
                     .spacing(18)
                     .align_y(Alignment::Center),
@@ -758,7 +815,43 @@ impl App {
                 .style(appearance::card),
             );
         }
+        cards = cards.push(muted(
+            format!("{count} von {} Charakteren", self.preview.characters.len()),
+            12,
+            &self.theme(),
+        ));
+        if count == 0 {
+            cards = cards.push(text("Keine passenden Charaktere gefunden. Ändere die Suche oder lege einen neuen Charakter an."));
+        }
         scroll(cards.padding(24)).height(Fill).width(Fill).into()
+    }
+
+    fn character_editor(&self) -> Element<'_, Message> {
+        use crate::character_draft::Field;
+        let Some(draft) = &self.character_draft else {
+            return self.characters();
+        };
+        let fields = Field::ALL
+            .iter()
+            .copied()
+            .filter(|field| *field != Field::Name)
+            .collect::<Vec<_>>();
+        container(column![
+            row![text("Charakter bearbeiten").size(26).width(Fill),
+                control(Icon::Back,"Bibliothek",Message::Navigate(Page::Characters))].align_y(Alignment::Center),
+            muted("Entwurf im Arbeitsspeicher · Profilkopien und importierte Verläufe werden nicht verändert.",12,&self.theme()),
+            text_input("Name des Charakters",draft.get(Field::Name)).padding(10).style(appearance::input).on_input(Message::CharacterName),
+            row![text("Kartenfeld").size(14),iced::widget::pick_list(fields,Some(self.character_field),Message::CharacterField).padding(10).style(appearance::select)].spacing(12).align_y(Alignment::Center),
+            text_editor(&self.character_text).height(Fill).padding(14).size(14).style(appearance::editor).key_binding(read_only_keys).on_action(Message::CharacterText),
+            text(&self.character_error).size(13),
+            row![
+                button("Übernehmen").padding(10).style(appearance::primary_button).on_press(Message::SaveCharacter),
+                control(Icon::Close,"Entwurf verwerfen",Message::DiscardCharacter),
+                Space::new().width(Fill),
+                control(Icon::Copy,"JSON kopieren",Message::CopyCharacterDraft),
+            ].spacing(12).align_y(Alignment::Center),
+            muted("JSON kopieren sichert den aktuellen Entwurf in der Zwischenablage. Bei bearbeiteten Feldern werden alte Kartenübersetzungen im Entwurf entfernt. Noch keine dauerhafte Speicherung.",12,&self.theme())
+        ].spacing(14)).padding(24).height(Fill).width(Fill).into()
     }
 
     fn details(&self) -> Element<'_, Message> {

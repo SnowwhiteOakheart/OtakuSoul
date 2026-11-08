@@ -11,7 +11,8 @@ laufende Oberfläche. Fortschritt wird an nutzbaren Etappen gemessen, nicht an P
 Linux und macOS bleiben Architekturziele, sind bis zu tatsächlichen Tests aber nicht als unterstützt bestätigt.
 WSL kann später Linux-Builds/erste WSLg-Tests ermöglichen; es ersetzt weder Linux-Desktopabnahme noch einen Mac.
 
-Aktuelle Nutzerentscheidung (08.11.2026): **Übersetzungen erst ganz zum Schluss**. Bis dahin Deutsch.
+Aktuelle Nutzerentscheidung (08.11.2026): **Vollständige, funktionierende GUI vor Übersetzungen**.
+Übersetzungen integrieren, sobald die wesentlichen Oberflächen und Abläufe stehen; bis dahin Deutsch.
 Die native Oberfläche soll der bestehenden Tauri-Oberfläche möglichst nahekommen, kein neues visuelles
 Konzept. Vergleichsquelle ist der aktuelle React-/CSS-Code; vorhandene Screenshots dienen als Ergänzung.
 
@@ -294,6 +295,38 @@ Fensteraktivierung wurde durch parallele Benutzereingaben unterbrochen; keine we
 Kein vollständiger E2E-Lauf, kein echtes Modell und kein Cloud-Anbieter aufgerufen.
 
 ## Spätere Ausbaustufen
+
+### GUI-Zwischenschritt: Charakterbibliothek und Kartenentwurf
+
+- [x] Bibliothekssuche über Name, Beschreibung, Persönlichkeit und Tags mit Trefferzahl/Leerzustand.
+- [x] Neu, Bearbeiten, Duplizieren mit eigenständigen IDs/eindeutigen Kopienamen und lokaler Chatzuordnung.
+- [x] Karteneditor für Name, Beschreibung, Persönlichkeit, Szenario, Hauptbegrüßung, Beispieldialoge,
+  System-Prompt und Nachspann. Mehrzeilige Felder, Übernehmen/Verwerfen, JSON des Entwurfs kopieren.
+- [x] Entwurf bleibt bei Navigation erhalten; anderer Editorauftrag setzt ihn fort. Profilwechsel bleibt
+  bis Übernehmen/Verwerfen gesperrt. Bei laufendem Profilimport keinen neuen Kartenentwurf beginnen.
+- [ ] Weitere Editorbereiche: Titel, Tags/Erstellernotizen, alternative Begrüßungen, Ausdrucksbilder,
+  Lorebook-Bindungen und vollständige JSON-Ansicht; Kartenraster/Tagfilter wie im Tauri-Frontend.
+- [ ] Expliziter Dateiimport/-export und dauerhafte Speicherung ausschließlich im isolierten Profil.
+
+`src/character_draft.rs` ist reine Kartenlogik ohne GUI/Dateizugriff. Bestehende V2-/flache Form,
+unbekannte Metadaten, Lorebook und Bild bleiben erhalten. Nur bearbeitete Textfelder werden ersetzt;
+deren vorhandene Kartenübersetzungen werden im Entwurf entfernt, damit alte Übersetzungen Änderungen
+nicht in der Prompt-Vorschau verdecken. Die Oberfläche weist darauf hin. Unveränderte Übersetzungen
+bleiben erhalten. Die Formulare sind noch keine vollständige Portierung des Tauri-Karteneditors.
+
+Übernehmen aktualisiert nur RAM, Porträtdarstellung und Begrüßungs-/Promptcache; Neustart verliert diese
+Änderungen. JSON kopieren ist eine bewusst ausgelöste Zwischenablageaktion, noch kein Dateiexport.
+Importierte Archivnachrichten bleiben unverändert. Ein Kartenentwurf hat seinen eigenen Zielindex;
+Chatnavigation kann ihn nicht auf einen anderen Charakter umlenken. Bei Duplikaten Quellkarte separat
+behalten, um unbekannte Metadaten und Porträt zu übernehmen. Tauri importiert Karten nach Namen,
+die native Profilprojektion nach Dateistamm; zusätzliche erfundene Karten-ID-Felder schützen nicht.
+
+Prüfstand: 40 Native-Tests erfolgreich, darunter sieben neue Karten-/Bedienlogiktests für Metadatenerhalt,
+Namensvalidierung, Übersetzungsbereinigung, unabhängige Duplikate, Zielbindung, Schutz offener Entwürfe
+und Laden eines Archivchats über die Kartenansicht. Letzterer Ladeweg wurde im Agentenreview korrigiert.
+Gezieltes Clippy, Formatprüfung und Windows-Build erfolgreich. Neuer Build bis zur Chatansicht gestartet;
+Bedienabnahme der Bibliothek/des Editors bleibt offen, da parallele Benutzereingaben die Fenstersteuerung
+erneut unterbrochen haben. Keine weiteren Eingaben in den Desktop versucht; keine Profiländerungen.
 
 - [ ] Einstellungen/Onboarding, Charakter-/Lorebook-Editoren, Gedächtnis, Hub und Im-/Export.
 - [ ] Stage und 5e einschließlich Battlemap; Fachlogik wiederverwenden.

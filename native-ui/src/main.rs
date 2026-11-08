@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod appearance;
+mod character_draft;
 mod connection;
 mod icons;
 mod message_content;
@@ -106,6 +107,7 @@ enum Page {
     #[default]
     Chat,
     Characters,
+    CharacterEditor,
     Details,
     Settings,
     Prompt,
@@ -116,6 +118,17 @@ enum Page {
 enum Message {
     Navigate(Page),
     SelectCharacter(usize),
+    LibrarySearch(String),
+    EditCharacter(usize),
+    NewCharacter,
+    DuplicateCharacter(usize),
+    InspectCharacter(usize),
+    CopyCharacterDraft,
+    CharacterName(String),
+    CharacterField(character_draft::Field),
+    CharacterText(text_editor::Action),
+    SaveCharacter,
+    DiscardCharacter,
     SelectConversation(usize),
     Edit(text_editor::Action),
     Submit,
@@ -189,6 +202,13 @@ struct App {
     prompt: Result<otakusoul_prompt::AssembledPrompt, String>,
     prompt_system: text_editor::Content,
     prompt_post: text_editor::Content,
+    library_search: String,
+    character_draft: Option<character_draft::Draft>,
+    character_source: Option<usize>,
+    character_field: character_draft::Field,
+    character_text: text_editor::Content,
+    character_error: String,
+    next_character_id: u64,
 }
 
 impl Default for App {
@@ -254,11 +274,114 @@ impl Default for App {
             prompt,
             prompt_system,
             prompt_post,
+            library_search: String::new(),
+            character_draft: None,
+            character_source: None,
+            character_field: character_draft::Field::Description,
+            character_text: text_editor::Content::new(),
+            character_error: String::new(),
+            next_character_id: 0,
         }
     }
 }
 
 impl App {
+    fn open_character(&mut self, source: Option<usize>, duplicate: bool) {
+        if self.profile_busy {
+            self.notice = "Bitte zuerst das Laden der Profilkopie abwarten.".into();
+            return;
+        }
+        if self.character_draft.is_none() {
+            let mut draft = match source {
+                Some(index) => {
+                    let Some(character) = self.preview.characters.get(index) else {
+                        return;
+                    };
+                    character_draft::Draft::from_character(index, character)
+                }
+                None => character_draft::Draft::new(),
+            };
+            if duplicate {
+                draft.target = None;
+                let base = format!("{} – Kopie", draft.get(character_draft::Field::Name));
+                let mut name = base.clone();
+                let mut number = 2;
+                while self
+                    .preview
+                    .characters
+                    .iter()
+                    .any(|character| character.name == name)
+                {
+                    name = format!("{base} {number}");
+                    number += 1;
+                }
+                draft.set(character_draft::Field::Name, name);
+            }
+            self.character_field = character_draft::Field::Description;
+            self.character_text = text_editor::Content::with_text(draft.get(self.character_field));
+            self.character_draft = Some(draft);
+            self.character_source = source;
+            self.character_error.clear();
+        }
+        self.page = Page::CharacterEditor;
+    }
+
+    fn save_character(&mut self) {
+        let Some(draft) = &self.character_draft else {
+            return;
+        };
+        let target = draft.target;
+        let id = if let Some(index) = target {
+            let Some(character) = self.preview.characters.get(index) else {
+                return;
+            };
+            character.id.clone()
+        } else {
+            loop {
+                self.next_character_id += 1;
+                let id = format!("native-character-{}", self.next_character_id);
+                if !self
+                    .preview
+                    .characters
+                    .iter()
+                    .any(|character| character.id == id)
+                {
+                    break id;
+                }
+            }
+        };
+        match draft.apply(
+            self.character_source
+                .and_then(|index| self.preview.characters.get(index)),
+            id,
+        ) {
+            Ok(character) => {
+                let id = character.id.clone();
+                if let Some(index) = target {
+                    self.preview.characters[index] = character;
+                    for conversation in &mut self.preview.conversations {
+                        if conversation.character_id == id {
+                            conversation.greeting = None;
+                        }
+                    }
+                } else {
+                    self.preview.add_character(character);
+                }
+                self.portraits = Self::portraits(&self.preview);
+                self.sync_editor();
+                self.character_draft = None;
+                self.character_source = None;
+                self.character_error.clear();
+                self.library_search.clear();
+                self.page = Page::Characters;
+                self.notice =
+                    "Charakter im Arbeitsspeicher übernommen. Die Profilkopie bleibt unverändert."
+                        .into();
+            }
+            Err(error) => self.character_error = error,
+        }
+    }
+
     fn subscription(&self) -> iced::Subscription<Message> {
         iced::event::listen_with(|event, status, _| {
             if status == iced::event::Status::Ignored
@@ -345,6 +468,11 @@ impl App {
         );
     }
     fn load(&mut self, create: bool) -> Task<Message> {
+        if self.character_draft.is_some() {
+            self.character_error = "Bitte den Charakterentwurf zuerst übernehmen oder verwerfen, bevor Du ein anderes Profil lädst.".into();
+            self.page = Page::CharacterEditor;
+            return Task::none();
+        }
         if self.profile_busy {
             return Task::none();
         }
@@ -391,6 +519,55 @@ impl App {
     }
     fn update(&mut self, message: Message) -> Task<Message> {
         match message {
+            Message::LibrarySearch(value) => self.library_search = value,
+            Message::NewCharacter => self.open_character(None, false),
+            Message::EditCharacter(index) => self.open_character(Some(index), false),
+            Message::DuplicateCharacter(index) => self.open_character(Some(index), true),
+            Message::InspectCharacter(index) => {
+                self.preview.select_character(index);
+                self.sync_editor();
+                self.page = Page::Details;
+                return self.load_current();
+            }
+            Message::CopyCharacterDraft => {
+                if let Some(draft) = &self.character_draft {
+                    match draft.apply(
+                        self.character_source
+                            .and_then(|index| self.preview.characters.get(index)),
+                        "draft".into(),
+                    ) {
+                        Ok(character) => {
+                            return iced::clipboard::write(
+                                serde_json::to_string_pretty(&character.card).unwrap_or_default(),
+                            );
+                        }
+                        Err(error) => self.character_error = error,
+                    }
+                }
+            }
+            Message::CharacterName(value) => {
+                if let Some(draft) = &mut self.character_draft {
+                    draft.set(character_draft::Field::Name, value);
+                }
+            }
+            Message::CharacterField(field) => {
+                self.character_field = field;
+                if let Some(draft) = &self.character_draft {
+                    self.character_text = text_editor::Content::with_text(draft.get(field));
+                }
+            }
+            Message::CharacterText(action) => {
+                if let Some(draft) = &mut self.character_draft {
+                    self.character_text.perform(action);
+                    draft.set(self.character_field, self.character_text.text());
+                }
+            }
+            Message::DiscardCharacter => {
+                self.character_draft = None;
+                self.character_error.clear();
+                self.page = Page::Characters;
+            }
+            Message::SaveCharacter => self.save_character(),
             Message::Navigate(page) => {
                 if page == Page::Prompt {
                     self.refresh_prompt();
@@ -692,5 +869,76 @@ mod tests {
         let path = app.profile_input.clone();
         let _ = app.update(Message::ProfilePathChanged("anderer Ordner".into()));
         assert_eq!(app.profile_input, path);
+    }
+}
+#[cfg(test)]
+mod character_editor_tests {
+    use super::*;
+    #[test]
+    fn inspecting_a_card_also_prepares_its_unloaded_archive_chat() {
+        let mut app = App::default();
+        app.preview.current_mut().source_id = Some("archive".into());
+        app.preview.current_mut().loaded = false;
+        app.profile_home = Some(PathBuf::from("unused-test-profile"));
+        let _ = app.update(Message::InspectCharacter(0));
+        assert_eq!(app.page, Page::Details);
+        assert!(app.pending.contains(&0));
+    }
+    #[test]
+    fn character_edit_keeps_its_target_after_chat_navigation() {
+        let mut app = App::default();
+        let old_second = app.preview.characters[1].name.clone();
+        let _ = app.update(Message::EditCharacter(0));
+        let _ = app.update(Message::CharacterName("Bearbeitete Figur".into()));
+        let _ = app.update(Message::SelectCharacter(1));
+        let _ = app.update(Message::SaveCharacter);
+        assert_eq!(app.preview.characters[0].name, "Bearbeitete Figur");
+        assert_eq!(app.preview.characters[1].name, old_second);
+        assert!(app.character_draft.is_none());
+    }
+
+    #[test]
+    fn draft_blocks_profile_changes_and_other_edits_until_resolved() {
+        let mut app = App::default();
+        let _ = app.update(Message::EditCharacter(0));
+        let _ = app.update(Message::CharacterName("Mein Entwurf".into()));
+        let _ = app.update(Message::EditCharacter(1));
+        let _ = app.update(Message::LoadProfile);
+        assert!(!app.profile_busy);
+        assert_eq!(app.page, Page::CharacterEditor);
+        assert_eq!(
+            app.character_draft
+                .as_ref()
+                .unwrap()
+                .get(character_draft::Field::Name),
+            "Mein Entwurf"
+        );
+        let _ = app.update(Message::DiscardCharacter);
+        assert!(app.character_draft.is_none());
+        assert_ne!(app.preview.characters[0].name, "Mein Entwurf");
+    }
+
+    #[test]
+    fn duplicates_have_distinct_names_ids_and_local_chats() {
+        let mut app = App::default();
+        let count = app.preview.characters.len();
+        for _ in 0..2 {
+            let _ = app.update(Message::DuplicateCharacter(0));
+            let _ = app.update(Message::SaveCharacter);
+        }
+        let first = &app.preview.characters[count];
+        let second = &app.preview.characters[count + 1];
+        assert_ne!(first.id, second.id);
+        assert_ne!(first.name, second.name);
+        assert_eq!(first.portrait, app.preview.characters[0].portrait);
+        let _ = app.update(Message::SelectCharacter(count + 1));
+        assert!(!app.preview.current().is_read_only());
+        assert!(
+            app.prompt
+                .as_ref()
+                .unwrap()
+                .system
+                .contains(&app.preview.characters[count + 1].name)
+        );
     }
 }

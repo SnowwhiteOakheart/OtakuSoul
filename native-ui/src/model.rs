@@ -99,6 +99,11 @@ impl Default for Preview {
 }
 
 impl Preview {
+    pub fn add_character(&mut self, character: Character) {
+        self.conversations.push(Conversation::local(&character.id));
+        self.characters.push(character);
+    }
+
     pub fn from_profile(profile: Profile) -> Self {
         let mut characters: Vec<_> = profile
             .characters
