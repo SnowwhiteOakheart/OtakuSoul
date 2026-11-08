@@ -348,6 +348,16 @@ impl App {
     fn chat(&self) -> Element<'_, Message> {
         let character = self.preview.character();
         let conversation = self.preview.current();
+        let query_active = !self.search.trim().is_empty();
+        let greeting = (!conversation.is_read_only())
+            .then(|| {
+                conversation
+                    .greeting
+                    .as_ref()
+                    .map(|(_, text)| text.as_str())
+            })
+            .flatten();
+        let matches = crate::chat_search::find(&conversation.messages, greeting, &self.search);
         let index = self
             .preview
             .characters
@@ -427,10 +437,11 @@ impl App {
                 .spacing(8),
             );
         } else {
-            if conversation
-                .greeting
-                .as_ref()
-                .is_some_and(|(_, text)| !text.trim().is_empty())
+            if matches.greeting
+                && conversation
+                    .greeting
+                    .as_ref()
+                    .is_some_and(|(_, text)| !text.trim().is_empty())
                 && !conversation.is_read_only()
             {
                 let choices = self.chat_greeting_choices();
@@ -462,7 +473,7 @@ impl App {
                         .width(Fill)
                         .style(|theme| bubble_style(theme, false)),
                 );
-            } else if conversation.messages.is_empty() {
+            } else if conversation.messages.is_empty() && !query_active {
                 messages = messages.push(muted(
                     "Dieser Verlauf enthält noch keine Nachrichten.",
                     14,
@@ -481,11 +492,27 @@ impl App {
                 &self.theme(),
             ));
         }
-        let query = self.search.to_lowercase();
-        for (index, message) in conversation.messages.iter().enumerate() {
-            if !query.is_empty() && !message.content.to_lowercase().contains(&query) {
-                continue;
-            }
+        if query_active && matches.count() == 0 && conversation.loaded {
+            messages = messages.push(
+                container(
+                    column![
+                        text("Keine passenden Nachrichten gefunden.").size(18),
+                        muted(
+                            "Die Suche umfasst nur den geladenen Verlauf.",
+                            12,
+                            &self.theme()
+                        ),
+                        control(Icon::Back, "Suche zurücksetzen", Message::ClearSearch)
+                    ]
+                    .spacing(12),
+                )
+                .padding(20)
+                .width(Fill)
+                .style(appearance::card),
+            );
+        }
+        for &index in &matches.indices {
+            let message = &conversation.messages[index];
             let user = message.role == "user";
             let label = match message.role.as_str() {
                 "user" => "Du",
@@ -538,8 +565,23 @@ impl App {
                     row![
                         icon(Icon::Search, 16),
                         text_input("Nachrichten durchsuchen …", &self.search)
+                            .id("chat-search")
                             .on_input(Message::SearchChanged)
                             .padding(8),
+                        muted(
+                            if query_active {
+                                format!("{} Treffer", matches.count())
+                            } else {
+                                "Geladener Verlauf".into()
+                            },
+                            11,
+                            &self.theme()
+                        ),
+                        icon_control(
+                            Icon::Back,
+                            "Suche zurücksetzen",
+                            (!self.search.is_empty()).then_some(Message::ClearSearch)
+                        ),
                         icon_control(Icon::Close, "Suche schließen", Some(Message::ToggleSearch))
                     ]
                     .spacing(8)

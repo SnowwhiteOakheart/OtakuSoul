@@ -591,6 +591,26 @@ Der Dateiroundtrip prüft nun ebenfalls Suchbereich, Globalmarkierung, Prioritä
 Spannung und Aktivierung. Clippy und Formatprüfung bestanden. Review führte zu drei Legacy-Alias-
 Korrekturen. Keine Desktopsteuerung/kein Neustart; Windows-Build und Sichtprüfungen bleiben gesammelt offen.
 
+### GUI-Zwischenschritt: Chatsuche und aktueller Windows-Build
+
+Vor dem ausdrücklich gewünschten neuen EXE-Build wurde die vorhandene Chatsuche ausgebaut:
+Strg+F öffnet/fokussiert das Suchfeld ausschließlich im Chat, Trefferzahl zählt Nachrichten und den
+sichtbaren lokalen Begrüßungssnapshot. Archive bekommen keine Kartenbegrüßung als Suchtreffer.
+Suchtext wird getrimmt, Groß-/Kleinschreibung ignoriert. Keine Treffer zeigt einen klaren Leerzustand
+mit Zurücksetzen. Schließen/Zurücksetzen löscht nur den Filter, keine Nachrichten oder Eingabeentwürfe.
+Wechsel zu einem anderen Gespräch setzt den Begriff zurück; erneute Auswahl/das Nachladen desselben
+Chats bewahrt ihn. Ein neuer Profilimport entfernt die vorherige Suche. Maximal geladene 200 Archiv-
+Nachrichten bleiben die Grenze; keine Behauptung einer vollständigen Archivsuche und kein Nachladen.
+
+`src/chat_search.rs` liefert Originalindizes, damit Nachrichtencaches/Kopieraktionen nach Filtern
+korrekt zugeordnet bleiben. 115 Native-Tests erfolgreich (vier neue Such-/Bedienlogiktests),
+Clippy und Formatprüfung bestanden. Keine Desktopsteuerung; Sichtprüfung weiterhin gesammelt offen.
+Windows-Testbuild am 08.11.2026 erfolgreich: `cargo build -p otakusoul-native --offline` erzeugte
+`target/debug/otakusoul-native.exe` mit sämtlichen bisherigen Änderungen (einschließlich Ausdrucksbildern,
+Lorebook-Editor/-Regeln und Chatsuche). Die alte Vorschau lief nicht mehr; kein Schließen erforderlich.
+Die neue EXE wurde nicht automatisch gestartet. Dieser neue Build ersetzt die zuvor offenen EXE-Builds;
+deren Sicht-/Bedienprüfungen bleiben weiter gesammelt für einen ausdrücklich freigegebenen Durchlauf.
+
 - [ ] Einstellungen/Onboarding, Charakter-/Lorebook-Editoren, Gedächtnis, Hub und Im-/Export.
 - [ ] Stage und 5e einschließlich Battlemap; Fachlogik wiederverwenden.
 - [ ] Native Audioausgabe/-aufnahme separat planen, danach Avatarintegration separat bewerten.

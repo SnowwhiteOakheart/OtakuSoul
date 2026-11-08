@@ -43,6 +43,8 @@ Quelldateien bleiben unverändert; expliziter JSON-Export sichert Lorebook-Entw�
 Lorebook-Regeln: Aktivierung/Einfügeart, Priorität/Wahrscheinlichkeit/Spannung, Wort-/Großschreibung,
 Verkettungen, Suchbereich/global. Ungültige Zahleneingaben sperren Übernehmen/Entwurfsexport/Eintragswechsel.
 Original-JSON/eingebettete Bücher bleiben erhalten; noch keine native Lore-Evaluation/Promptaktivierung.
+Chatsuche: Strg+F im Chat, Trefferzahl einschließlich lokaler Begrüßung, Leerzustand/Zurücksetzen;
+untersucht nur geladene Nachrichten (kein Nachladen alter Archive).
 
 ### Allgemeine Arbeitsregeln
 

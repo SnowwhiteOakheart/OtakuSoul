@@ -3,6 +3,7 @@
 mod appearance;
 mod card_files;
 mod character_draft;
+mod chat_search;
 mod connection;
 mod expressions;
 mod file_export;
@@ -238,6 +239,8 @@ enum Message {
     ToggleCompact,
     ToggleSessions,
     ToggleSearch,
+    OpenSearch,
+    ClearSearch,
     SearchChanged(String),
     InspectLink(String),
     PersonaChanged(String),
@@ -896,12 +899,20 @@ impl App {
         iced::event::listen_with(|event, status, _| {
             if status == iced::event::Status::Ignored
                 && let iced::Event::Keyboard(iced::keyboard::Event::KeyPressed {
-                    key: Key::Named(Named::Tab),
+                    key,
                     modifiers,
                     ..
                 }) = event
             {
-                Some(Message::Focus(modifiers.shift()))
+                match key {
+                    Key::Named(Named::Tab) => Some(Message::Focus(modifiers.shift())),
+                    Key::Character(value)
+                        if modifiers.control() && value.eq_ignore_ascii_case("f") =>
+                    {
+                        Some(Message::OpenSearch)
+                    }
+                    _ => None,
+                }
             } else {
                 None
             }
@@ -1615,7 +1626,11 @@ impl App {
             Message::EditCharacter(index) => self.open_character(Some(index), false),
             Message::DuplicateCharacter(index) => self.open_character(Some(index), true),
             Message::InspectCharacter(index) => {
+                let previous = self.preview.selected;
                 self.preview.select_character(index);
+                if previous != self.preview.selected {
+                    self.search.clear();
+                }
                 self.sync_editor();
                 self.page = Page::Details;
                 return self.load_current();
@@ -1696,13 +1711,20 @@ impl App {
                 self.page = page;
             }
             Message::SelectCharacter(index) => {
+                let previous = self.preview.selected;
                 self.preview.select_character(index);
+                if previous != self.preview.selected {
+                    self.search.clear();
+                }
                 self.page = Page::Chat;
                 self.sync_editor();
                 return self.load_current();
             }
             Message::SelectConversation(index) => {
                 if index < self.preview.conversations.len() {
+                    if index != self.preview.selected {
+                        self.search.clear();
+                    }
                     self.preview.selected = index;
                     self.show_sessions = false;
                     self.sync_editor();
@@ -1722,11 +1744,16 @@ impl App {
             }
             Message::Clear => {
                 self.preview.clear();
+                self.search.clear();
                 self.sync_editor();
             }
             Message::LocalChat => {
                 self.show_sessions = false;
+                let previous = self.preview.selected;
                 self.preview.select_local();
+                if previous != self.preview.selected {
+                    self.search.clear();
+                }
                 self.sync_editor();
             }
             Message::ToggleTheme => self.dark = !self.dark,
@@ -1739,6 +1766,16 @@ impl App {
                 if !self.show_search {
                     self.search.clear();
                 }
+            }
+            Message::OpenSearch => {
+                if self.page == Page::Chat {
+                    self.show_search = true;
+                    return iced::widget::operation::focus("chat-search");
+                }
+            }
+            Message::ClearSearch => {
+                self.search.clear();
+                return iced::widget::operation::focus("chat-search");
             }
             Message::SearchChanged(value) => self.search = value,
             Message::InspectLink(link) => self.notice = format!("Link aus der Nachricht: {link}"),
@@ -1867,6 +1904,8 @@ impl App {
                         );
                         self.warnings = profile.warnings.clone();
                         self.preview = Preview::from_profile(profile);
+                        self.search.clear();
+                        self.show_search = false;
                         self.library_search.clear();
                         self.library_tag = None;
                         self.portraits = Self::portraits(&self.preview);
@@ -1997,6 +2036,41 @@ mod tests {
 #[cfg(test)]
 mod character_editor_tests {
     use super::*;
+    #[test]
+    fn resetting_search_preserves_messages_draft_and_nonchat_views() {
+        let mut app = App::default();
+        app.preview.current_mut().draft = "Offener Entwurf".into();
+        app.preview.current_mut().messages.push(StoredMessage {
+            role: "user".into(),
+            content: "Nachricht".into(),
+        });
+        let _ = app.update(Message::OpenSearch);
+        let _ = app.update(Message::SearchChanged("nicht gefunden".into()));
+        let _ = app.update(Message::ClearSearch);
+        assert!(app.show_search);
+        assert!(app.search.is_empty());
+        assert_eq!(app.preview.current().draft, "Offener Entwurf");
+        assert_eq!(app.preview.current().messages.len(), 1);
+        app.page = Page::Lorebooks;
+        app.show_search = false;
+        let _ = app.update(Message::OpenSearch);
+        assert_eq!(app.page, Page::Lorebooks);
+        assert!(!app.show_search);
+    }
+
+    #[test]
+    fn search_resets_only_when_switching_to_another_conversation() {
+        let mut app = App::default();
+        let _ = app.update(Message::SearchChanged("alte Suche".into()));
+        let _ = app.update(Message::SelectCharacter(1));
+        assert!(app.search.is_empty());
+        let _ = app.update(Message::SearchChanged("neue Suche".into()));
+        let _ = app.update(Message::SelectCharacter(1));
+        assert_eq!(app.search, "neue Suche");
+        let _ = app.update(Message::ToggleSearch);
+        let _ = app.update(Message::ToggleSearch);
+        assert!(app.search.is_empty());
+    }
     #[test]
     fn invalid_rule_numbers_block_save_export_and_entry_changes_until_reset() {
         let mut app = App::default();
