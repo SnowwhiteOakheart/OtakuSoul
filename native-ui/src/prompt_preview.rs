@@ -1,0 +1,217 @@
+//! Vorschau mit demselben Renderer wie Tauri; noch keine Lore-/Gedächtnisauswahl.
+use crate::model::Character;
+use otakusoul_prompt::{AssembledPrompt, Context, Services};
+use std::fmt;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Template {
+    Roleplay,
+    Narrator,
+    Companion,
+}
+impl Template {
+    fn id(self) -> &'static str {
+        match self {
+            Self::Roleplay => "roleplay",
+            Self::Narrator => "narrator",
+            Self::Companion => "companion",
+        }
+    }
+}
+impl fmt::Display for Template {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str(match self {
+            Self::Roleplay => "Rollenspiel",
+            Self::Narrator => "Erzähler",
+            Self::Companion => "Alltagsgespräch",
+        })
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReplyLength {
+    Standard,
+    Short,
+    Medium,
+    Long,
+}
+impl fmt::Display for ReplyLength {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str(match self {
+            Self::Standard => "Standard",
+            Self::Short => "Kurz",
+            Self::Medium => "Mittel",
+            Self::Long => "Ausführlich",
+        })
+    }
+}
+
+pub struct Settings {
+    pub persona_name: String,
+    pub author_note: String,
+    pub template: Template,
+    pub reply_length: ReplyLength,
+}
+impl Default for Settings {
+    fn default() -> Self {
+        Self {
+            persona_name: "User".into(),
+            author_note: String::new(),
+            template: Template::Roleplay,
+            reply_length: ReplyLength::Standard,
+        }
+    }
+}
+
+struct NativeServices;
+impl Services for NativeServices {
+    fn language_code(&self, language: &str) -> String {
+        match language.trim().to_lowercase().as_str() {
+            "deutsch" | "german" => "de".into(),
+            "english" | "englisch" => "en".into(),
+            "русский" | "russian" => "ru".into(),
+            "日本語" | "japanese" => "ja".into(),
+            other => other.into(),
+        }
+    }
+    fn expand(&self, text: &str, input: &otakusoul_macros::MacroInput) -> String {
+        otakusoul_macros::expand(text, input, &self.language_code(&input.language))
+    }
+    fn picture_exists(&self, _source: &str) -> bool {
+        // Noch keine validierten Ausdrucksbilder in der Vorschau, daher keine Dateizugriffe.
+        false
+    }
+}
+
+pub fn greeting(character: &Character, settings: &Settings, seed: &str) -> String {
+    otakusoul_macros::expand(
+        &character.first_message,
+        &otakusoul_macros::MacroInput {
+            char_name: character.name.clone(),
+            user_name: settings.persona_name.trim().into(),
+            language: "Deutsch".into(),
+            pick_seed: Some(seed.into()),
+            idle_seconds: None,
+        },
+        "de",
+    )
+}
+
+pub fn build(
+    character: &Character,
+    settings: &Settings,
+    seed: &str,
+) -> Result<AssembledPrompt, String> {
+    if settings.persona_name.trim().is_empty() {
+        return Err("Bitte einen Persona-Namen eingeben.".into());
+    }
+    let card = character
+        .card
+        .as_ref()
+        .ok_or("Für diese Figur fehlt die Charakterkarte.")?;
+    let char_name = character.name.clone();
+    let character: otakusoul_prompt::Character = serde_json::from_value(
+        card.get("data").unwrap_or(card).clone(),
+    )
+    .map_err(|_| "Die Charakterkarte kann noch nicht in die Prompt-Vorschau übernommen werden.")?;
+    let template = otakusoul_prompt::builtin_prompt_templates()
+        .into_iter()
+        .find(|template| template.id == settings.template.id())
+        .ok_or("Die gewählte Prompt-Vorlage ist nicht verfügbar.")?
+        .template;
+    let system_character = Some(otakusoul_prompt::localized_character(&character, "de"));
+    let context = Context {
+        system_character,
+        char_name,
+        user_name: settings.persona_name.trim().into(),
+        character,
+        reply_language: Some("Deutsch".into()),
+        allow_reasoning: Some(false),
+        author_note: (!settings.author_note.trim().is_empty())
+            .then(|| settings.author_note.clone()),
+        template: Some(template),
+        macro_seed: Some(seed.into()),
+        reply_length: match settings.reply_length {
+            ReplyLength::Standard => None,
+            ReplyLength::Short => Some("short".into()),
+            ReplyLength::Medium => Some("medium".into()),
+            ReplyLength::Long => Some("long".into()),
+        },
+        ..Context::default()
+    };
+    Ok(otakusoul_prompt::assemble(&context, &NativeServices))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::model::Preview;
+
+    #[test]
+    fn preview_uses_card_override_persona_note_and_reply_length() {
+        let mut preview = Preview::default();
+        preview.characters[0].card.as_mut().unwrap()["data"]["system_prompt"] =
+            "{{original}}\nKein Vergessen, {{user}}.".into();
+        let settings = Settings {
+            persona_name: "Kai".into(),
+            author_note: "{{char}} wartet am Tor.".into(),
+            reply_length: ReplyLength::Short,
+            ..Settings::default()
+        };
+        let prompt = build(&preview.characters[0], &settings, "chat-test").unwrap();
+        assert!(prompt.system.contains("You are talking with **Kai**"));
+        assert!(prompt.system.contains("Kein Vergessen, Kai."));
+        assert!(prompt.system.contains("Shiori Amane wartet am Tor."));
+        assert!(
+            prompt
+                .post_history
+                .as_deref()
+                .unwrap()
+                .contains("Keep this reply short")
+        );
+        assert!(greeting(&preview.characters[0], &settings, "chat-test").contains("Kai"));
+    }
+
+    #[test]
+    fn narrator_template_and_missing_persona_are_explicit() {
+        let preview = Preview::default();
+        let settings = Settings {
+            template: Template::Narrator,
+            ..Settings::default()
+        };
+        assert!(
+            build(preview.character(), &settings, "chat-test")
+                .unwrap()
+                .system
+                .contains("narrator of an interactive story")
+        );
+        assert!(
+            build(
+                preview.character(),
+                &Settings {
+                    persona_name: String::new(),
+                    ..Settings::default()
+                },
+                "chat-test"
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn greeting_and_prompt_use_the_same_trimmed_persona() {
+        let mut preview = Preview::default();
+        preview.characters[0].first_message = "{{user}}".into();
+        let settings = Settings {
+            persona_name: " Kai ".into(),
+            ..Settings::default()
+        };
+        assert_eq!(greeting(&preview.characters[0], &settings, "test"), "Kai");
+        assert!(
+            build(&preview.characters[0], &settings, "test")
+                .unwrap()
+                .system
+                .contains("**Kai**")
+        );
+    }
+}

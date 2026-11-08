@@ -12,6 +12,7 @@ pub struct Character {
 }
 
 pub struct Conversation {
+    pub greeting: Option<(String, String)>,
     pub source_id: Option<String>,
     pub character_id: String,
     pub title: String,
@@ -24,6 +25,7 @@ pub struct Conversation {
 impl Conversation {
     fn local(character_id: &str) -> Self {
         Self {
+            greeting: None,
             source_id: None,
             character_id: character_id.into(),
             title: "Testchat".into(),
@@ -124,6 +126,7 @@ impl Preview {
                 });
             }
             conversations.push(Conversation {
+                greeting: None,
                 source_id: Some(session.id),
                 character_id: session.character_id,
                 title: session.title,

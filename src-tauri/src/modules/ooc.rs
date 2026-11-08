@@ -2,14 +2,7 @@
 //! the AI as the author ("make the scene darker"), not part of the story. The chat model sees it
 //! with a rule in the system prompt; summaries and memories leave it out.
 
-/// The rule for the system prompt.
-pub fn prompt_rule(user_name: &str) -> String {
-    format!(
-        "- Text from {user_name} in ((double parentheses)) is an out-of-character direction to you as \
-         the author: follow it in your next replies, but never answer it in character, quote it or \
-         mention it."
-    )
-}
+pub use otakusoul_prompt::ooc_prompt_rule as prompt_rule;
 
 /// The message without its `((…))` directions (an unclosed `((` stays as written).
 pub fn strip(text: &str) -> String {

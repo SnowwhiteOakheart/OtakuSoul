@@ -5278,7 +5278,9 @@ dependencies = [
  "libc",
  "ndarray",
  "ort",
+ "otakusoul-macros",
  "otakusoul-paths",
+ "otakusoul-prompt",
  "otakusoul-stream",
  "parking_lot 0.13.0",
  "pdf-extract",
@@ -5320,6 +5322,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "otakusoul-macros"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "rand 0.10.3",
+ "serde",
+ "ts-rs",
+]
+
+[[package]]
 name = "otakusoul-native"
 version = "0.1.0"
 dependencies = [
@@ -5327,7 +5339,9 @@ dependencies = [
  "directories",
  "iced",
  "image",
+ "otakusoul-macros",
  "otakusoul-paths",
+ "otakusoul-prompt",
  "otakusoul-stream",
  "png 0.18.1",
  "reqwest",
@@ -5343,6 +5357,16 @@ name = "otakusoul-paths"
 version = "0.1.0"
 dependencies = [
  "directories",
+]
+
+[[package]]
+name = "otakusoul-prompt"
+version = "0.1.0"
+dependencies = [
+ "otakusoul-macros",
+ "serde",
+ "serde_json",
+ "ts-rs",
 ]
 
 [[package]]

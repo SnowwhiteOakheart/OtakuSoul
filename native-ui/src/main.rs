@@ -6,6 +6,7 @@ mod icons;
 mod message_content;
 mod model;
 mod profile;
+mod prompt_preview;
 mod views;
 
 use iced::keyboard::{Key, key::Named};
@@ -107,6 +108,7 @@ enum Page {
     Characters,
     Details,
     Settings,
+    Prompt,
     Planned(&'static str),
 }
 
@@ -127,6 +129,13 @@ enum Message {
     ToggleSearch,
     SearchChanged(String),
     InspectLink(String),
+    PersonaChanged(String),
+    AuthorNoteChanged(String),
+    TemplateChanged(prompt_preview::Template),
+    ReplyLengthChanged(prompt_preview::ReplyLength),
+    RefreshPrompt,
+    CopyPrompt(bool),
+    PromptAction(bool, text_editor::Action),
     EndpointChanged(String),
     ModelChanged(String),
     KeyChanged(connection::Secret),
@@ -176,11 +185,15 @@ struct App {
     diagnostic: Option<connection::ActiveTest>,
     diagnostic_id: u64,
     connection_status: String,
+    prompt_settings: prompt_preview::Settings,
+    prompt: Result<otakusoul_prompt::AssembledPrompt, String>,
+    prompt_system: text_editor::Content,
+    prompt_post: text_editor::Content,
 }
 
 impl Default for App {
     fn default() -> Self {
-        let preview = Preview::default();
+        let mut preview = Preview::default();
         let portraits = Self::portraits(&preview);
         let demo_home = std::env::var_os("OTAKUSOUL_HOME")
             .filter(|value| !value.is_empty())
@@ -190,12 +203,27 @@ impl Default for App {
                     .map(|dirs| dirs.data_dir().join("preview-profile"))
                     .unwrap_or_else(|| PathBuf::from("native-ui-demo"))
             });
-        let greeting = message_content::Content::new(
-            &preview
-                .character()
-                .first_message
-                .replace("{{char}}", &preview.character().name)
-                .replace("{{user}}", "Du"),
+        let prompt_settings = prompt_preview::Settings::default();
+        let seed = format!("native-test:{}", preview.current().character_id);
+        let greeting_text = prompt_preview::greeting(preview.character(), &prompt_settings, &seed);
+        preview.current_mut().greeting = Some((
+            prompt_settings.persona_name.trim().into(),
+            greeting_text.clone(),
+        ));
+        let greeting = message_content::Content::new(&greeting_text);
+        let prompt = prompt_preview::build(preview.character(), &prompt_settings, &seed);
+        let prompt_system = text_editor::Content::with_text(
+            prompt
+                .as_ref()
+                .map(|prompt| prompt.system.as_str())
+                .unwrap_or_default(),
+        );
+        let prompt_post = text_editor::Content::with_text(
+            prompt
+                .as_ref()
+                .ok()
+                .and_then(|prompt| prompt.post_history.as_deref())
+                .unwrap_or_default(),
         );
         Self {
             preview,
@@ -222,6 +250,10 @@ impl Default for App {
             diagnostic: None,
             diagnostic_id: 0,
             connection_status: "Noch kein Verbindungstest ausgeführt.".into(),
+            prompt_settings,
+            prompt,
+            prompt_system,
+            prompt_post,
         }
     }
 }
@@ -271,12 +303,45 @@ impl App {
             .iter()
             .map(|m| message_content::Content::new(&m.content))
             .collect();
-        let character = self.preview.character();
-        self.greeting = message_content::Content::new(
-            &character
-                .first_message
-                .replace("{{char}}", &character.name)
-                .replace("{{user}}", "Du"),
+        self.refresh_prompt();
+    }
+
+    fn refresh_prompt(&mut self) {
+        let seed = self
+            .preview
+            .current()
+            .source_id
+            .clone()
+            .unwrap_or_else(|| format!("native-test:{}", self.preview.current().character_id));
+        let persona = self.prompt_settings.persona_name.trim().to_owned();
+        let greeting_text = if let Some((_, text)) = self
+            .preview
+            .current()
+            .greeting
+            .as_ref()
+            .filter(|(name, _)| *name == persona)
+        {
+            text.clone()
+        } else {
+            let text =
+                prompt_preview::greeting(self.preview.character(), &self.prompt_settings, &seed);
+            self.preview.current_mut().greeting = Some((persona, text.clone()));
+            text
+        };
+        self.greeting = message_content::Content::new(&greeting_text);
+        self.prompt = prompt_preview::build(self.preview.character(), &self.prompt_settings, &seed);
+        self.prompt_system = text_editor::Content::with_text(
+            self.prompt
+                .as_ref()
+                .map(|prompt| prompt.system.as_str())
+                .unwrap_or_default(),
+        );
+        self.prompt_post = text_editor::Content::with_text(
+            self.prompt
+                .as_ref()
+                .ok()
+                .and_then(|prompt| prompt.post_history.as_deref())
+                .unwrap_or_default(),
         );
     }
     fn load(&mut self, create: bool) -> Task<Message> {
@@ -326,7 +391,12 @@ impl App {
     }
     fn update(&mut self, message: Message) -> Task<Message> {
         match message {
-            Message::Navigate(page) => self.page = page,
+            Message::Navigate(page) => {
+                if page == Page::Prompt {
+                    self.refresh_prompt();
+                }
+                self.page = page;
+            }
             Message::SelectCharacter(index) => {
                 self.preview.select_character(index);
                 self.page = Page::Chat;
@@ -374,6 +444,41 @@ impl App {
             }
             Message::SearchChanged(value) => self.search = value,
             Message::InspectLink(link) => self.notice = format!("Link aus der Nachricht: {link}"),
+            Message::PersonaChanged(value) => {
+                self.prompt_settings.persona_name = value;
+                self.refresh_prompt();
+            }
+            Message::AuthorNoteChanged(value) => {
+                self.prompt_settings.author_note = value;
+                self.refresh_prompt();
+            }
+            Message::TemplateChanged(value) => {
+                self.prompt_settings.template = value;
+                self.refresh_prompt();
+            }
+            Message::ReplyLengthChanged(value) => {
+                self.prompt_settings.reply_length = value;
+                self.refresh_prompt();
+            }
+            Message::RefreshPrompt => self.refresh_prompt(),
+            Message::CopyPrompt(post) => {
+                if let Ok(prompt) = &self.prompt {
+                    return iced::clipboard::write(if post {
+                        prompt.post_history.clone().unwrap_or_default()
+                    } else {
+                        prompt.system.clone()
+                    });
+                }
+            }
+            Message::PromptAction(post, action) => {
+                if !action.is_edit() {
+                    if post {
+                        self.prompt_post.perform(action);
+                    } else {
+                        self.prompt_system.perform(action);
+                    }
+                }
+            }
             Message::EndpointChanged(value) => {
                 if self.diagnostic.is_none() {
                     self.connection.endpoint = value;
@@ -511,6 +616,21 @@ impl App {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn greeting_stays_stable_when_submitting_and_switching_chats() {
+        let mut app = App::default();
+        app.preview.current_mut().greeting =
+            Some(("User".into(), "Einmalig expandierte Begrüßung".into()));
+        app.preview.current_mut().draft = "Eine Testnachricht".into();
+        let _ = app.update(Message::Submit);
+        let _ = app.update(Message::SelectCharacter(1));
+        let _ = app.update(Message::SelectCharacter(0));
+        assert_eq!(
+            app.preview.current().greeting.as_ref().unwrap().1,
+            "Einmalig expandierte Begrüßung"
+        );
+    }
 
     #[test]
     fn stale_connection_report_cannot_finish_the_active_test() {

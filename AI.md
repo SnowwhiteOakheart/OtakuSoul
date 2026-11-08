@@ -19,6 +19,9 @@ Nutzerentscheidung 08.11.2026: Übersetzungen erst ganz zum Schluss. Layout und 
 GUI möglichst identisch zum vorhandenen Tauri-Frontend halten; aktuelle React-/CSS-Quellen als Referenz.
 Gemeinsamer Antwortdecoder: `crates/otakusoul-stream` (Tauri-Inferenz und native Verbindungsdiagnose).
 Die native Diagnose sendet nur einen festen Testprompt; echte Charakter-Prompt-/Chatlogik ist noch offen.
+Gemeinsame Makros und Prompt-Renderer: `crates/otakusoul-macros` und `crates/otakusoul-prompt`.
+Tauri bleibt Adapter; native Prompt-Vorschau mit Persona, Vorlage, Autorennotiz und Antwortlänge.
+Die Auswahl von Lore/Gedächtnis/Verlauf in TypeScript ist noch nicht in einen gemeinsamen Service portiert.
 
 ### Allgemeine Arbeitsregeln
 

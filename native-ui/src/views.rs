@@ -11,6 +11,16 @@ use iced::{Alignment, Background, Border, Color, Element, Fill, Length, Theme};
 type NavItem = (Page, Icon, &'static str);
 type NavGroup = (&'static str, &'static [NavItem]);
 
+fn read_only_keys(press: text_editor::KeyPress) -> Option<text_editor::Binding<Message>> {
+    if press.key == Key::Named(Named::Tab) {
+        Some(text_editor::Binding::Custom(Message::Focus(
+            press.modifiers.shift(),
+        )))
+    } else {
+        text_editor::Binding::from_key_press(press)
+    }
+}
+
 fn muted<'a>(
     label: impl Into<std::borrow::Cow<'a, str>>,
     size: u32,
@@ -117,6 +127,7 @@ impl App {
             Page::Characters => self.characters(),
             Page::Details => self.details(),
             Page::Settings => self.settings(),
+            Page::Prompt => self.prompt_view(),
             Page::Planned(label) => self.planned(label),
         };
         column![self.header(), row![self.navigation(), content].height(Fill)]
@@ -217,8 +228,9 @@ impl App {
                 section = section.push(muted(group, 10, &self.theme()));
             }
             for (page, symbol, label) in entries {
-                let active =
-                    self.page == *page || (self.page == Page::Details && *page == Page::Characters);
+                let active = self.page == *page
+                    || (self.page == Page::Details && *page == Page::Characters)
+                    || (self.page == Page::Prompt && *page == Page::Chat);
                 let symbol =
                     container(
                         icon(*symbol, 18).style(move |theme, _| iced::widget::svg::Style {
@@ -320,6 +332,7 @@ impl App {
                 ),
                 control(Icon::Eye, "Avatar", Message::ToggleAvatar),
                 control(Icon::Compact, "Kompakt", Message::ToggleCompact),
+                control(Icon::Lorebooks, "Prompt", Message::Navigate(Page::Prompt)),
             ]
             .spacing(8)
             .align_y(Alignment::Center),
@@ -771,6 +784,84 @@ impl App {
         scroll(details.padding(24).width(Fill))
             .height(Fill)
             .width(Fill)
+            .into()
+    }
+
+    fn prompt_view(&self) -> Element<'_, Message> {
+        use crate::prompt_preview::{ReplyLength, Template};
+        let inputs = container(column![
+            row![
+                column![muted("Name Deiner Persona",12,&self.theme()),
+                    text_input("Persona-Name",&self.prompt_settings.persona_name).style(appearance::input)
+                        .on_input(Message::PersonaChanged).padding(10)].spacing(5).width(Fill),
+                column![muted("Vorlage",12,&self.theme()),
+                    iced::widget::pick_list([Template::Roleplay,Template::Narrator,Template::Companion],Some(self.prompt_settings.template),Message::TemplateChanged)
+                        .style(appearance::select).padding(10)].spacing(5),
+                column![muted("Antwortlänge",12,&self.theme()),
+                    iced::widget::pick_list([ReplyLength::Standard,ReplyLength::Short,ReplyLength::Medium,ReplyLength::Long],Some(self.prompt_settings.reply_length),Message::ReplyLengthChanged)
+                        .style(appearance::select).padding(10)].spacing(5),
+            ].spacing(14).align_y(Alignment::End),
+            text_input("Regieanweisung (optional)",&self.prompt_settings.author_note).style(appearance::input)
+                .on_input(Message::AuthorNoteChanged).padding(10),
+            muted("Charakterkarte und diese Vorgaben werden mit demselben Prompt-Renderer wie in Tauri verarbeitet. Automatische Lore- und Gedächtnisauswahl folgen noch. Es wird nichts an einen Server gesendet.",12,&self.theme()),
+        ].spacing(12)).padding(16).width(Fill).style(appearance::card);
+        let mut content = column![
+            row![
+                text("Prompt-Vorschau").size(26).width(Fill),
+                control(Icon::Back, "Zum Chat", Message::Navigate(Page::Chat)),
+                control(Icon::Chat, "Aktualisieren", Message::RefreshPrompt)
+            ]
+            .spacing(10)
+            .align_y(Alignment::Center),
+            muted(&self.preview.character().name, 14, &self.theme()),
+            inputs
+        ]
+        .spacing(14);
+        match &self.prompt {
+            Ok(prompt) => {
+                content = content.push(
+                    row![
+                        text("Systemteil").size(16).width(Fill),
+                        control(Icon::Copy, "Kopieren", Message::CopyPrompt(false))
+                    ]
+                    .align_y(Alignment::Center),
+                );
+                content = content.push(
+                    text_editor(&self.prompt_system)
+                        .font(iced::Font::MONOSPACE)
+                        .size(13)
+                        .padding(12)
+                        .height(Fill)
+                        .style(appearance::editor)
+                        .key_binding(read_only_keys)
+                        .on_action(|action| Message::PromptAction(false, action)),
+                );
+                if prompt.post_history.is_some() {
+                    content = content.push(
+                        row![
+                            text("Nachspann nach dem Verlauf").size(16).width(Fill),
+                            control(Icon::Copy, "Kopieren", Message::CopyPrompt(true))
+                        ]
+                        .align_y(Alignment::Center),
+                    );
+                    content = content.push(
+                        text_editor(&self.prompt_post)
+                            .font(iced::Font::MONOSPACE)
+                            .size(13)
+                            .padding(12)
+                            .height(100)
+                            .style(appearance::editor)
+                            .key_binding(read_only_keys)
+                            .on_action(|action| Message::PromptAction(true, action)),
+                    );
+                }
+            }
+            Err(error) => content = content.push(text(error).size(14)),
+        }
+        container(content)
+            .padding(24)
+            .width(Fill)
+            .height(Fill)
             .into()
     }
 

@@ -1,85 +1,13 @@
+//! App-Adapter für die gemeinsame Darstellung bereits ausgewählter Promptdaten.
 use crate::modules::characters::CharacterData;
 use crate::modules::lorebook::LorebookEntry;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-#[derive(Debug, Clone, Serialize, Deserialize, TS)]
-#[ts(export)]
-pub struct StateVariable {
-    pub name: String,
-    pub value: String,
-    pub var_type: String, // "int", "str", "bool", "progress"
-    pub max_value: Option<i32>,
-}
-
-/// The editable parts of the system prompt. `{{char}}` and `{{user}}` are filled in; a card's
-/// own `system_prompt`/`post_history_instructions` replace `main`/`post_history` and can include
-/// them with `{{original}}` (Character Card V2).
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
-#[ts(export)]
-#[serde(default)]
-pub struct PromptTemplate {
-    /// Opening instruction: who the model is and whom it talks to.
-    pub main: String,
-    /// Style rules, sent as "Formatting & Roleplay Conventions".
-    pub style: String,
-    /// Sent as the last system message after the chat history; empty for none.
-    pub post_history: String,
-}
-
-impl Default for PromptTemplate {
-    fn default() -> Self {
-        builtin_prompt_templates().remove(0).template
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, TS)]
-#[ts(export)]
-pub struct BuiltinPromptTemplate {
-    /// Stable id; the frontend translates the name by it.
-    pub id: String,
-    pub template: PromptTemplate,
-}
-
-/// Ready-made templates; the first is the default and matches the original fixed prompt.
-pub fn builtin_prompt_templates() -> Vec<BuiltinPromptTemplate> {
-    let make = |id: &str, main: &str, style: &str, post_history: &str| BuiltinPromptTemplate {
-        id: id.into(),
-        template: PromptTemplate {
-            main: main.into(),
-            style: style.into(),
-            post_history: post_history.into(),
-        },
-    };
-    vec![
-        make(
-            "roleplay",
-            "# Role & Identity\nYou fully become **{{char}}** and reply only as this character.\nYou are talking with **{{user}}**.",
-            "- Always put actions, gestures, facial expressions and descriptions in asterisks (e.g. *smiles softly and leans forward*).\n\
-             - Always put spoken words in quotation marks (e.g. \"All right, as you wish!\").\n\
-             - Keep actions and spoken words clearly separated.",
-            "",
-        ),
-        make(
-            "narrator",
-            "# Role & Identity\nYou are the narrator of an interactive story. Portray **{{char}}** and the world around them for **{{user}}**.\n\
-             Never decide what {{user}} says, thinks or does; leave their actions to them.",
-            "- Write vivid prose in the third person and past tense, like a novel.\n\
-             - Describe surroundings, body language and atmosphere; put dialogue in quotation marks.\n\
-             - End each reply at a moment that invites {{user}} to act.",
-            "",
-        ),
-        make(
-            "companion",
-            "# Role & Identity\nYou are **{{char}}**, a close companion chatting with **{{user}}** in everyday life.\n\
-             Be warm, attentive and personal; remember what {{user}} tells you and ask about it later.",
-            "- Reply like a chat message: short (one to three sentences), natural and casual.\n\
-             - No asterisk actions or stage directions; at most an occasional emoji.\n\
-             - Stay in character as {{char}}; no out-of-character meta commentary.",
-            "",
-        ),
-    ]
-}
+pub use otakusoul_prompt::{
+    AssembledPrompt, BuiltinPromptTemplate, GroupMember, PromptTemplate, StateVariable,
+    builtin_prompt_templates, is_none_marker,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
 #[ts(export)]
@@ -146,106 +74,6 @@ pub struct PromptContext {
     pub avatar_moods: Option<bool>,
 }
 
-/// Another character present in a group chat, as the speaker sees them.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
-#[ts(export)]
-pub struct GroupMember {
-    pub name: String,
-    /// Short description (appearance, role); may be empty.
-    pub description: String,
-}
-
-/// Who else is in a group chat and that the speaker writes only their own part.
-fn group_section(others: &[GroupMember], char_name: &str, user_name: &str) -> Option<String> {
-    let others: Vec<&GroupMember> = others
-        .iter()
-        .filter(|m| !m.name.trim().is_empty())
-        .collect();
-    if others.is_empty() {
-        return None;
-    }
-    let mut text = String::from("## Others in this conversation\n");
-    for member in &others {
-        let description: String = member.description.trim().chars().take(300).collect();
-        if description.is_empty() {
-            text.push_str(&format!("- **{}**\n", member.name.trim()));
-        } else {
-            text.push_str(&format!("- **{}**: {}\n", member.name.trim(), description));
-        }
-    }
-    let names: Vec<&str> = others.iter().map(|m| m.name.trim()).collect();
-    text.push_str(&format!(
-        "\nThis is a group conversation. Write only {char_name}'s reply. Never write lines, actions or thoughts for {} or {user_name}; they speak for themselves. Messages from others start with their name.",
-        names.join(", ")
-    ));
-    Some(text)
-}
-
-/// Asks the model to leave out the user's unwanted words and phrases.
-fn avoid_rule(phrases: Option<&[String]>) -> Option<String> {
-    let phrases: Vec<String> = phrases?
-        .iter()
-        .map(|p| p.trim())
-        .filter(|p| !p.is_empty())
-        .map(|p| format!("\"{p}\""))
-        .collect();
-    (!phrases.is_empty()).then(|| {
-        format!(
-            "Never use these words or phrases, not even in other forms: {}.",
-            phrases.join(", ")
-        )
-    })
-}
-
-/// The instruction for a chosen reply length; it goes last, where models heed it most.
-fn reply_length_rule(length: Option<&str>) -> Option<&'static str> {
-    match length? {
-        "short" => Some("Keep this reply short: one to three sentences."),
-        "medium" => Some("Keep this reply to a medium length: about one or two paragraphs."),
-        "long" => Some(
-            "Write a detailed reply: several paragraphs with vivid description, actions and dialogue.",
-        ),
-        _ => None,
-    }
-}
-
-/// The expression tag the reply should end with: every portrait slot (six moods and the extra
-/// ones) the card really has a picture for, checked before each reply; the six moods also when a
-/// 3D/Live2D avatar shows them. Without any of these there is no tag; the cue words decide then.
-fn emotion_tag_rule(ctx: &PromptContext) -> Option<String> {
-    if !ctx.emotion_tags.unwrap_or(false) {
-        return None;
-    }
-    let extensions = &ctx.character.extensions;
-    let pictures = ["expressions", "custom_expressions", "sow_expressions"]
-        .iter()
-        .find_map(|key| extensions.get(*key).and_then(serde_json::Value::as_object));
-    let has_picture = |slot: &str| {
-        pictures
-            .and_then(|p| p.get(slot))
-            .and_then(serde_json::Value::as_str)
-            .is_some_and(picture_exists)
-    };
-    let avatar_moods = ctx.avatar_moods.unwrap_or(false);
-    let names: Vec<&str> = crate::modules::emotions::MOODS
-        .into_iter()
-        .filter(|mood| avatar_moods || has_picture(mood))
-        .chain(
-            crate::modules::emotions::EXTRA_PORTRAITS
-                .into_iter()
-                .filter(|slot| has_picture(slot)),
-        )
-        .collect();
-    if names.is_empty() {
-        return None;
-    }
-    Some(format!(
-        "End your reply with one tag for {}'s facial expression at its end: [emotion: NAME], NAME one of: {}. Write nothing after the tag.",
-        ctx.char_name,
-        names.join(", ")
-    ))
-}
-
 /// Whether a portrait entry points to a picture: embedded or remote ones count, files must exist
 /// (cards hold absolute paths once loaded, `characters::resolve_profile_expression_paths`).
 fn picture_exists(source: &str) -> bool {
@@ -263,397 +91,134 @@ fn picture_exists(source: &str) -> bool {
     std::path::Path::new(source).is_file()
 }
 
-impl PromptContext {
-    fn macro_input(&self) -> crate::modules::macros::MacroInput {
-        crate::modules::macros::MacroInput {
-            char_name: self.char_name.clone(),
-            user_name: self.user_name.clone(),
-            language: self.reply_language.clone().unwrap_or_default(),
-            pick_seed: self.macro_seed.clone(),
-            idle_seconds: self.idle_seconds,
-        }
+/// Die Promptdaten behalten ihre bisherige API; nur ihre Darstellung liegt im gemeinsamen Core.
+struct BackendServices;
+impl otakusoul_prompt::Services for BackendServices {
+    fn language_code(&self, name: &str) -> String {
+        crate::modules::content_lang::language_code(name)
+    }
+    fn expand(&self, text: &str, input: &crate::modules::macros::MacroInput) -> String {
+        crate::modules::macros::expand(text, input)
+    }
+    fn picture_exists(&self, source: &str) -> bool {
+        picture_exists(source)
     }
 }
 
-/// System prompt plus the instruction that goes after the chat history.
-#[derive(Debug, Clone, Serialize, Deserialize, TS)]
-#[ts(export)]
-pub struct AssembledPrompt {
-    pub system: String,
-    pub post_history: Option<String>,
+fn character_projection(character: &CharacterData) -> otakusoul_prompt::Character {
+    otakusoul_prompt::Character {
+        name: character.name.clone(),
+        description: character.description.clone(),
+        personality: character.personality.clone(),
+        scenario: character.scenario.clone(),
+        mes_example: character.mes_example.clone(),
+        system_prompt: character.system_prompt.clone(),
+        post_history_instructions: character.post_history_instructions.clone(),
+        extensions: character.extensions.clone(),
+    }
+}
+
+fn lore_projection(entry: &LorebookEntry) -> otakusoul_prompt::LoreEntry {
+    otakusoul_prompt::LoreEntry {
+        name: entry.name.clone(),
+        content: entry.content.clone(),
+        injection_behavior: entry.injection_behavior.clone(),
+    }
+}
+
+fn memory_projection(memory: &crate::modules::memory::EpisodicMemory) -> otakusoul_prompt::Memory {
+    otakusoul_prompt::Memory {
+        category: memory.category.clone(),
+        content: memory.content.clone(),
+    }
+}
+
+fn projection(ctx: &PromptContext) -> otakusoul_prompt::Context {
+    let language = otakusoul_prompt::Services::language_code(
+        &BackendServices,
+        ctx.reply_language.as_deref().unwrap_or("Deutsch"),
+    );
+    let character = character_projection(&ctx.character);
+    let system_character = Some(otakusoul_prompt::localized_character(&character, &language));
+    otakusoul_prompt::Context {
+        char_name: ctx.char_name.clone(),
+        user_name: ctx.user_name.clone(),
+        character,
+        system_character,
+        active_lore: ctx.active_lore.iter().map(lore_projection).collect(),
+        active_directives: ctx.active_directives.iter().map(lore_projection).collect(),
+        state_variables: ctx.state_variables.clone(),
+        cognitive: ctx
+            .cognitive
+            .as_ref()
+            .map(|cognitive| otakusoul_prompt::Cognitive {
+                psychology: otakusoul_prompt::Psychology {
+                    core_identity: cognitive.psychology.core_identity.clone(),
+                    primary_emotion: cognitive.psychology.primary_emotion.clone(),
+                    intensity: cognitive.psychology.intensity,
+                    psychological_tension: cognitive.psychology.psychological_tension.clone(),
+                    active_agenda: cognitive.psychology.active_agenda.clone(),
+                    immediate_focus: cognitive.psychology.immediate_focus.clone(),
+                    cognitive_dissonance: cognitive.psychology.cognitive_dissonance.clone(),
+                },
+                relationship: otakusoul_prompt::Relationship {
+                    role_in_story: cognitive.relationship.role_in_story.clone(),
+                    known_attributes: cognitive.relationship.known_attributes.clone(),
+                    trust_level: cognitive.relationship.trust_level.clone(),
+                    dynamic_description: cognitive.relationship.dynamic_description.clone(),
+                    unspoken_tension: cognitive.relationship.unspoken_tension.clone(),
+                    preferences_habits: cognitive.relationship.preferences_habits.clone(),
+                    shared_milestones: cognitive.relationship.shared_milestones.clone(),
+                },
+                recent_memories: cognitive
+                    .recent_memories
+                    .iter()
+                    .map(memory_projection)
+                    .collect(),
+            }),
+        memories: ctx
+            .memories
+            .as_ref()
+            .map(|memories| otakusoul_prompt::PromptMemories {
+                core: memories.core.iter().map(memory_projection).collect(),
+                relevant: memories.relevant.iter().map(memory_projection).collect(),
+                intentions: memories
+                    .intentions
+                    .iter()
+                    .map(|intention| otakusoul_prompt::Intention {
+                        label: intention.label.clone(),
+                        title: intention.title.clone(),
+                        details: intention.details.clone(),
+                        initiator: intention.initiator.clone(),
+                    })
+                    .collect(),
+            }),
+        reply_language: ctx.reply_language.clone(),
+        allow_reasoning: ctx.allow_reasoning,
+        author_note: ctx.author_note.clone(),
+        author_note_depth: ctx.author_note_depth,
+        chat_summary: ctx.chat_summary.clone(),
+        template: ctx.template.clone(),
+        macro_seed: ctx.macro_seed.clone(),
+        idle_seconds: ctx.idle_seconds,
+        reply_length: ctx.reply_length.clone(),
+        avoid_phrases: ctx.avoid_phrases.clone(),
+        group: ctx.group.clone(),
+        emotion_tags: ctx.emotion_tags,
+        avatar_moods: ctx.avatar_moods,
+    }
 }
 
 pub fn assemble(ctx: &PromptContext) -> AssembledPrompt {
-    AssembledPrompt {
-        system: build_system_prompt(ctx),
-        post_history: post_history_instruction(ctx),
-    }
-}
-
-/// A card's override of a template part: empty keeps the template, `{{original}}` includes it.
-fn card_override(card: Option<&str>, original: &str) -> String {
-    match card.map(str::trim).filter(|c| !c.is_empty()) {
-        Some(card) => card.replace("{{original}}", original),
-        None => original.to_string(),
-    }
-}
-
-/// The system message sent after the chat history (card or template), macros filled; `None`
-/// when there is nothing to send.
-pub fn post_history_instruction(ctx: &PromptContext) -> Option<String> {
-    let template = ctx.template.clone().unwrap_or_default();
-    let text = card_override(
-        ctx.character.post_history_instructions.as_deref(),
-        &template.post_history,
-    );
-    let mut text = crate::modules::macros::expand(&text, &ctx.macro_input())
-        .trim()
-        .to_string();
-    // Memories that fit the conversation change with every reply: after the history they leave
-    // the cached beginning of the prompt alone.
-    if let Some(block) = relevant_memories_block(ctx) {
-        text = if text.is_empty() {
-            block
-        } else {
-            format!("{block}\n\n{text}")
-        };
-    }
-    for rule in avoid_rule(ctx.avoid_phrases.as_deref())
-        .into_iter()
-        .chain(reply_length_rule(ctx.reply_length.as_deref()).map(str::to_string))
-        .chain(emotion_tag_rule(ctx))
-    {
-        if !text.is_empty() {
-            text.push('\n');
-        }
-        text.push_str(&rule);
-    }
-    (!text.trim().is_empty()).then(|| text.trim().to_string())
-}
-
-/// The memories that fit the current conversation and open intentions, for after the history.
-fn relevant_memories_block(ctx: &PromptContext) -> Option<String> {
-    let memories = ctx.memories.as_ref()?;
-    let mut parts = Vec::new();
-    if !memories.relevant.is_empty() {
-        let mut block = String::from(
-            "[Memories of yours that may matter right now – use them only where they fit naturally]",
-        );
-        for mem in &memories.relevant {
-            block.push_str(&format!("\n- [{}] {}", mem.category, mem.content));
-        }
-        parts.push(block);
-    }
-    // Open plans and promises: the character can bring up what is due on their own.
-    if !memories.intentions.is_empty() {
-        let mut block = String::from(
-            "[Open plans and promises – bring them up naturally when it fits, especially what is due]",
-        );
-        for intention in &memories.intentions {
-            let who = match intention.initiator.as_str() {
-                "user" => ctx.user_name.as_str(),
-                "character" => ctx.char_name.as_str(),
-                _ => "both of you",
-            };
-            let details = if intention.details.is_empty() {
-                String::new()
-            } else {
-                format!(" ({})", intention.details)
-            };
-            block.push_str(&format!(
-                "\n- [{}] {}{} – from {}",
-                intention.label, intention.title, details, who
-            ));
-        }
-        parts.push(block);
-    }
-    (!parts.is_empty()).then(|| parts.join("\n\n"))
-}
-
-/// Placeholder that memory fields hold when there is nothing to say (in any content language).
-pub fn is_none_marker(value: &str) -> bool {
-    matches!(
-        value.trim(),
-        "Keine." | "Keine" | "None." | "None" | "Нет." | "Нет"
-    )
+    otakusoul_prompt::assemble(&projection(ctx), &BackendServices)
 }
 
 pub fn build_system_prompt(ctx: &PromptContext) -> String {
-    // Use the card's translation for the reply language when it has one.
-    let lang = crate::modules::content_lang::language_code(
-        ctx.reply_language.as_deref().unwrap_or("Deutsch"),
-    );
-    let localized = PromptContext {
-        character: ctx.character.localized(&lang),
-        ..ctx.clone()
-    };
-    let ctx = &localized;
-    let mut parts = Vec::new();
+    otakusoul_prompt::build_system_prompt(&projection(ctx), &BackendServices)
+}
 
-    let macro_input = ctx.macro_input();
-    let replace_macros =
-        |text: &str| -> String { crate::modules::macros::expand(text, &macro_input) };
-
-    let template = ctx.template.clone().unwrap_or_default();
-
-    // 1. Roleplay & Identity Directive (template, or the card's own system prompt)
-    let main = card_override(ctx.character.system_prompt.as_deref(), &template.main);
-    if !main.trim().is_empty() {
-        parts.push(replace_macros(main.trim()));
-    }
-
-    // 2. Character Description
-    if !ctx.character.description.trim().is_empty() {
-        parts.push(format!(
-            "## Background & Appearance\n{}",
-            replace_macros(&ctx.character.description)
-        ));
-    }
-
-    // 3. Personality
-    if !ctx.character.personality.trim().is_empty() {
-        parts.push(format!(
-            "## Personality\n{}",
-            replace_macros(&ctx.character.personality)
-        ));
-    }
-
-    // 3.9 Group chat: who else is present
-    if let Some(section) = ctx
-        .group
-        .as_deref()
-        .and_then(|others| group_section(others, &ctx.char_name, &ctx.user_name))
-    {
-        parts.push(section);
-    }
-
-    // 4. Scenario / Current Situation
-    if !ctx.character.scenario.trim().is_empty() {
-        parts.push(format!(
-            "## Current Scenario\n{}",
-            replace_macros(&ctx.character.scenario)
-        ));
-    }
-
-    // 5. Active Lorebook Directives (High-Priority Action & Behavior Directives)
-    let mut direct_entries: Vec<&LorebookEntry> = Vec::new();
-    let mut passive_entries: Vec<&LorebookEntry> = Vec::new();
-
-    for entry in &ctx.active_lore {
-        if entry.injection_behavior.to_lowercase() == "active"
-            || entry.injection_behavior.to_lowercase() == "directive"
-        {
-            direct_entries.push(entry);
-        } else {
-            passive_entries.push(entry);
-        }
-    }
-    for entry in &ctx.active_directives {
-        direct_entries.push(entry);
-    }
-
-    if !direct_entries.is_empty() {
-        let mut dir_str = String::from(
-            "## Important Directions (Lore Directives)\nFollow these behaviour and situation rules strictly in your reply:\n",
-        );
-        for entry in &direct_entries {
-            dir_str.push_str(&format!(
-                "- **{}**: {}\n",
-                entry.name,
-                replace_macros(&entry.content)
-            ));
-        }
-        parts.push(dir_str);
-    }
-
-    // 5.5. Passive Lorebook Entries (World Context)
-    if !passive_entries.is_empty() {
-        let mut lore_str = String::from("## World Knowledge & Context (Lorebook)\n");
-        for entry in &passive_entries {
-            lore_str.push_str(&format!(
-                "- **{}**: {}\n",
-                entry.name,
-                replace_macros(&entry.content)
-            ));
-        }
-        parts.push(lore_str);
-    }
-
-    // 6. Reactive State Variables HUD
-    if !ctx.state_variables.is_empty() {
-        let mut vars_str = String::from(
-            "## Current State Variables\nKeep these variables in mind and let them shape your behaviour:\n",
-        );
-        for v in &ctx.state_variables {
-            if let Some(max) = v.max_value {
-                vars_str.push_str(&format!("- {}: {}/{}\n", v.name, v.value, max));
-            } else {
-                vars_str.push_str(&format!("- {}: {}\n", v.name, v.value));
-            }
-        }
-        vars_str.push_str("\nNote: When values or emotions change during the conversation, you may end your message with a `<state>` block in JSON to update the variables. Example: `<state>{\"Affection\": 55, \"Mood\": \"Happy\"}</state>`.");
-        parts.push(vars_str);
-    }
-
-    // 6.5. Cognitive Soul Memory & Inner Psychology
-    if let Some(cog) = &ctx.cognitive {
-        let mut cog_str = String::from("## Inner State & Cognitive Memory\n");
-        if !cog.psychology.core_identity.is_empty() {
-            cog_str.push_str("### Unshakeable Beliefs & Core Identity:\n");
-            for belief in &cog.psychology.core_identity {
-                cog_str.push_str(&format!("- {}\n", belief));
-            }
-        }
-        cog_str.push_str(&format!(
-            "- **Emotion & Intensity**: {} (intensity {} of 5)\n",
-            cog.psychology.primary_emotion, cog.psychology.intensity
-        ));
-        if !cog.psychology.psychological_tension.trim().is_empty()
-            && !is_none_marker(&cog.psychology.psychological_tension)
-        {
-            cog_str.push_str(&format!(
-                "- **Inner Tension**: {}\n",
-                cog.psychology.psychological_tension
-            ));
-        }
-        if !cog.psychology.active_agenda.trim().is_empty() {
-            cog_str.push_str(&format!(
-                "- **Unconscious Agenda**: {}\n",
-                cog.psychology.active_agenda
-            ));
-        }
-        if !cog.psychology.immediate_focus.trim().is_empty() {
-            cog_str.push_str(&format!(
-                "- **Current Focus**: {}\n",
-                cog.psychology.immediate_focus
-            ));
-        }
-        if !cog.psychology.cognitive_dissonance.trim().is_empty()
-            && !is_none_marker(&cog.psychology.cognitive_dissonance)
-        {
-            cog_str.push_str(&format!(
-                "- **Cognitive Dissonance**: {}\n",
-                cog.psychology.cognitive_dissonance
-            ));
-        }
-        cog_str.push_str(&format!(
-            "- **Role of {}**: {}\n",
-            ctx.user_name, cog.relationship.role_in_story
-        ));
-        if !cog.relationship.known_attributes.trim().is_empty()
-            && !is_none_marker(&cog.relationship.known_attributes)
-        {
-            cog_str.push_str(&format!(
-                "- **Known Facts about {}**: {}\n",
-                ctx.user_name, cog.relationship.known_attributes
-            ));
-        }
-        cog_str.push_str(&format!(
-            "- **Trust towards {}**: {}\n",
-            ctx.user_name, cog.relationship.trust_level
-        ));
-        if !cog.relationship.dynamic_description.trim().is_empty()
-            && !is_none_marker(&cog.relationship.dynamic_description)
-        {
-            cog_str.push_str(&format!(
-                "- **Relationship Dynamic**: {}\n",
-                cog.relationship.dynamic_description
-            ));
-        }
-        if !cog.relationship.unspoken_tension.trim().is_empty()
-            && !is_none_marker(&cog.relationship.unspoken_tension)
-        {
-            cog_str.push_str(&format!(
-                "- **Unspoken Tension**: {}\n",
-                cog.relationship.unspoken_tension
-            ));
-        }
-        if !cog.relationship.preferences_habits.is_empty() {
-            cog_str.push_str(&format!(
-                "- **Known Preferences & Habits**: {}\n",
-                cog.relationship.preferences_habits.join(", ")
-            ));
-        }
-        if !cog.relationship.shared_milestones.is_empty() {
-            cog_str.push_str(&format!(
-                "- **Shared Milestones**: {}\n",
-                cog.relationship.shared_milestones.join("; ")
-            ));
-        }
-        // The core stays the same between replies, so the system prompt can be cached.
-        let long_term = match &ctx.memories {
-            Some(memories) => &memories.core,
-            None => &cog.recent_memories,
-        };
-        if !long_term.is_empty() {
-            cog_str.push_str("\n### Long-Term Memories (facts, promises, experiences):\n");
-            for mem in long_term {
-                cog_str.push_str(&format!("- [{}] {}\n", mem.category, mem.content));
-            }
-        }
-        parts.push(cog_str);
-    }
-
-    // 7. Language Directive
-    if let Some(lang) = &ctx.reply_language {
-        parts.push(format!(
-            "## Language\nWrite every reply naturally and expressively in **{}**. These instructions are in English, but your reply must always be in {}.",
-            lang, lang
-        ));
-    }
-
-    // 8. Example Dialogs / Dialogue Style
-    if !ctx.character.mes_example.trim().is_empty() {
-        parts.push(format!(
-            "## Example Dialogue (style reference)\n{}",
-            replace_macros(&ctx.character.mes_example)
-        ));
-    }
-
-    // 8.4 Story so far: messages that fell out of the context window
-    if let Some(summary) = &ctx.chat_summary
-        && !summary.trim().is_empty()
-    {
-        parts.push(format!(
-            "## Story So Far (summary of earlier messages that are no longer shown)\n{}",
-            replace_macros(summary.trim())
-        ));
-    }
-
-    // 8.5 Author's Note (Regieanweisung)
-    if let Some(note) = &ctx.author_note
-        && !note.trim().is_empty()
-    {
-        parts.push(format!(
-            "## Author's Note (important direction)\n{}",
-            replace_macros(note)
-        ));
-    }
-
-    // 9. Formatting & Roleplay Convention Directive
-    let style = replace_macros(template.style.trim());
-    let mut formatting_rules: Vec<&str> = style.lines().filter(|l| !l.trim().is_empty()).collect();
-
-    if !ctx.allow_reasoning.unwrap_or(false) {
-        formatting_rules.push("- Reply immediately, vividly and directly in character.");
-        formatting_rules.push("- NEVER use <think> tags, reasoning steps, meta commentary or out-of-character monologues.");
-        formatting_rules
-            .push("- Start your reply directly with your character's words or actions.");
-    }
-
-    // Directions in ((…)) work with any template, also one without formatting rules.
-    let ooc_rule = crate::modules::ooc::prompt_rule(&ctx.user_name);
-    if formatting_rules.is_empty() {
-        parts.push(format!("## Out-of-Character Directions\n{ooc_rule}"));
-    } else {
-        formatting_rules.push(&ooc_rule);
-        parts.push(format!(
-            "## Formatting & Roleplay Conventions\n{}",
-            formatting_rules.join("\n")
-        ));
-    }
-
-    parts.join("\n\n")
+pub fn post_history_instruction(ctx: &PromptContext) -> Option<String> {
+    otakusoul_prompt::post_history_instruction(&projection(ctx), &BackendServices)
 }
 
 #[cfg(test)]
@@ -923,5 +488,117 @@ mod tests {
         ctx.template = None;
         ctx.character.post_history_instructions = None;
         assert_eq!(post_history_instruction(&ctx), None);
+    }
+
+    /// Snapshot captured with the original renderer before moving its implementation.
+    #[test]
+    fn shared_prompt_migration_golden() {
+        let mut ctx = context(Some("{{original}}\n{{char}} bleibt bei {{user}}."));
+        ctx.user_name = "Kai".into();
+        ctx.reply_language = Some("Deutsch".into());
+        ctx.macro_seed = Some("migration-parity".into());
+        ctx.character.description = "{{char}} trägt einen {{pick:blauen}} Mantel.".into();
+        ctx.character.personality = "Ruhig und wachsam.".into();
+        ctx.character.scenario = "{{user}} wartet am Tor.".into();
+        ctx.character.mes_example = "{{user}}: Hallo!\n{{char}}: Willkommen.".into();
+        ctx.character.post_history_instructions = Some("{{original}} Bleib bei {{user}}.".into());
+        ctx.character.extensions = serde_json::json!({"otakusoul_i18n":{"source_language":"de","translations":{"en":{"description":"{{char}} wears a blue coat.","post_history_instructions":"English post should not replace original post."}}},"expressions":{"blush":"data:image/png;base64,AAAA"}});
+        ctx.active_lore = vec![
+            LorebookEntry {
+                name: "Ort".into(),
+                content: "{{char}} kennt die Stadt.".into(),
+                ..LorebookEntry::default()
+            },
+            LorebookEntry {
+                name: "Regel".into(),
+                content: "Sprich mit {{user}}.".into(),
+                injection_behavior: "active".into(),
+                ..LorebookEntry::default()
+            },
+        ];
+        ctx.active_directives = vec![LorebookEntry {
+            name: "Zusatz".into(),
+            content: "Das Tor bleibt offen.".into(),
+            ..LorebookEntry::default()
+        }];
+        ctx.state_variables = vec![StateVariable {
+            name: "Mut".into(),
+            value: "4".into(),
+            var_type: "progress".into(),
+            max_value: Some(10),
+        }];
+        ctx.group = Some(vec![GroupMember {
+            name: "Sora".into(),
+            description: "Bogenschütze".into(),
+        }]);
+        ctx.author_note = Some("{{user}} sieht den Weg.".into());
+        ctx.author_note_depth = Some(2);
+        ctx.chat_summary = Some("{{char}} hat das Tor gefunden.".into());
+        ctx.reply_length = Some("medium".into());
+        ctx.avoid_phrases = Some(vec!["Ozon".into()]);
+        ctx.emotion_tags = Some(true);
+        ctx.avatar_moods = Some(true);
+        ctx.template = Some(PromptTemplate {
+            post_history: "Später, {{user}}.".into(),
+            ..PromptTemplate::default()
+        });
+        let memory = |id, content: &str| crate::modules::memory::EpisodicMemory {
+            id,
+            category: "fact".into(),
+            content: content.into(),
+            significance: 3,
+            created_at: 0,
+            last_accessed_at: 0,
+            source_chat_id: None,
+            source_message_ids: Vec::new(),
+            origin: "auto".into(),
+            pinned: false,
+            needs_review: false,
+            topic_key: None,
+            superseded_by: None,
+            superseded_at: None,
+            supersede_reason: String::new(),
+        };
+        let db = crate::modules::memory::MemoryDb::new_in_memory().unwrap();
+        let mut cognitive = db.get_cognitive_overview("migration-aiko", "Kai").unwrap();
+        cognitive.psychology.core_identity = vec!["Ich halte mein Wort.".into()];
+        cognitive.psychology.primary_emotion = "happy".into();
+        cognitive.psychology.intensity = 3;
+        cognitive.psychology.psychological_tension = "Ein Geheimnis bewahren.".into();
+        cognitive.psychology.active_agenda = "Das Tor erreichen.".into();
+        cognitive.psychology.immediate_focus = "Der Pfad".into();
+        cognitive.psychology.cognitive_dissonance = "Keine.".into();
+        cognitive.relationship.role_in_story = "Freund".into();
+        cognitive.relationship.known_attributes = "Kai hört zu.".into();
+        cognitive.relationship.trust_level = "Developing Trust".into();
+        cognitive.relationship.dynamic_description = "Gemeinsame Reise".into();
+        cognitive.relationship.unspoken_tension = "Keine.".into();
+        cognitive.relationship.preferences_habits = vec!["Tee".into()];
+        cognitive.relationship.shared_milestones = vec!["Das Tor gefunden".into()];
+        cognitive.recent_memories = vec![memory(1, "Alte Übersicht")];
+        ctx.cognitive = Some(cognitive);
+        ctx.memories = Some(crate::modules::memory::PromptMemories {
+            core: vec![memory(2, "Kai heißt Kaito")],
+            relevant: vec![memory(3, "Mag Jasmintee")],
+            intentions: vec![crate::modules::memory::IntentionPrompt {
+                label: "due tomorrow".into(),
+                title: "Zusammen kochen".into(),
+                details: "italienisch".into(),
+                initiator: "user".into(),
+            }],
+        });
+        let directory = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../crates/otakusoul-prompt/tests/fixtures");
+        for (language, name) in [("Deutsch", "rich-de"), ("English", "rich-en")] {
+            ctx.reply_language = Some(language.into());
+            let prompt = assemble(&ctx);
+            let actual = format!(
+                "{}\n\n=== POST HISTORY ===\n{}\n",
+                prompt.system,
+                prompt.post_history.unwrap_or_default()
+            );
+            let path = directory.join(format!("{name}.txt"));
+            assert_eq!(actual, std::fs::read_to_string(path).unwrap(), "{language}");
+        }
     }
 }

@@ -198,6 +198,9 @@ Die Formatabnahme erfolgt gezielt für die App-Pakete und die neue Pfad-Crate.
 - [x] Gemeinsamen SSE-/Think-Decoder in `crates/otakusoul-stream` extrahieren und in Tauri wiederverwenden.
 - [x] Native Einstellungen: expliziter Verbindungstest mit Endpunkt, optionalem Modell/API-Schlüssel
   und Formatwahl (OpenAI-kompatibel oder Anthropic), Rückmeldung und Abbruch.
+- [x] Makros und Prompt-Renderer ohne Tauri herauslösen; beide Oberflächen nutzen dieselben Crates.
+- [x] Native Prompt-Vorschau: Persona-Name, eingebaute Vorlage, Autorennotiz, Antwortlänge,
+  auswählbarer/kopierbarer System-Prompt und Nachspann. Noch kein Versand von Charakterdaten.
 
 - [ ] Chat-Vorbereitung und Inferenz aus Tauri lösen; Referenzen:
   `src-tauri/src/commands/chat.rs`, `modules/inference.rs`, `state.rs`,
@@ -242,9 +245,9 @@ Kein echtes Modell oder Cloud-Anbieter wurde aufgerufen. Kein vollständiger E2E
 
 Nächster enger Arbeitsschritt für **echte Charakterchats**:
 
-1. Prompt-Eingaben und Request-/Event-Typen ohne Tauri herauslösen; vorhandene Rust- und TypeScript-
-   Verantwortlichkeiten explizit abbilden. `PromptContext` hängt an CharacterData, LorebookEntry,
-   CognitiveOverview/PromptMemories, Makros, Emotionen, OOC-Regeln und Inhalts-Sprachauflösung.
+1. Auf den gemeinsamen Prompt-Eingaben aufbauen; Request-/Event-Typen ohne Tauri herauslösen und
+   die noch fehlenden Rust-/TypeScript-Verantwortlichkeiten abbilden. Der Renderer nimmt bereits
+   Projektionen von Karte, Lore, Gedächtnis und Zustandswerten entgegen; deren Auswahl fehlt nativ.
 2. Insbesondere `src/store/helpers.ts` und `src/store/slices/chatSlice.ts` prüfen: Auswahl von Lore,
    Persona, Vorlage und Verlauf nicht durch eine kurze zweite System-Prompt-Funktion ersetzen.
 3. Gemeinsamen Prompt-/Inferenz-Service mit typisierten Ereignissen herstellen; Tauri bleibt Adapter.
@@ -253,6 +256,42 @@ Nächster enger Arbeitsschritt für **echte Charakterchats**:
    importierte Archivchats weiterhin schreibgeschützt. Persistenz nur im eigenen isolierten Profil.
 
 Die Charakter-Chat-Anbindung ist durch die Diagnose **noch nicht erledigt**. Übersetzungen weiterhin zuletzt.
+
+### Zwischenstand: gemeinsamer Prompt-Renderer und native Vorschau
+
+`crates/otakusoul-macros` enthält die bisherige Makroauflösung (Zeit/Zufall über explizite Testeingaben
+prüfbar). `crates/otakusoul-prompt` enthält die Prompt-Datentypen, Vorlagen, Regeln und den Renderer.
+Keine GUI-, Datenbank- oder Profilabhängigkeit: Sprache, Makros und Bildverfügbarkeit kommen über
+`Services`. Die bisherigen Tauri-Module bleiben typisierte Adapter; IPC-Form und TypeScript-Typen
+bleiben erhalten. `npm run types:gen` berücksichtigt jetzt auch die beiden neuen Crates.
+
+Die native Ansicht „Prompt“ ist über die Chat-Kopfleiste erreichbar. Sie verwendet die aktuelle Karte
+und die gemeinsamen Vorlagen Rollenspiel/Erzähler/Alltagsgespräch. Deutsch ist bis zur abschließenden
+Übersetzung fest eingestellt; die vorhandene Kartenlokalisierung wird im gemeinsamen Kern angewendet.
+System-Prompt und Nachspann sind schreibgeschützt, auswählbar und separat kopierbar. Einstellungen
+bleiben nur im RAM. Begrüßungsmakros werden pro Testchat und Persona zwischengespeichert, damit Zeit-
+und Zufallswerte beim Schreiben oder Chatwechsel nicht ungewollt neu ausgewürfelt werden.
+
+Wichtig für die nächste Arbeit: gemeinsames **Rendern vorbereiteter Eingaben** ist umgesetzt; die
+Auswahl von Lore, Gedächtnis, Persona-Daten und Verlauf in `src/store/helpers.ts`/`chatSlice.ts` noch
+nicht. Die Vorschau behauptet keine vollständige Übereinstimmung mit einem echten Tauri-Chatkontext.
+Keine Profiländerung, kein Modellaufruf und keine Netzwerkübertragung durch diese Ansicht.
+
+Vor der Extraktion wurden zwei deterministische Referenz-Prompts mit dem bisherigen Tauri-Renderer
+gesichert (`crates/otakusoul-prompt/tests/fixtures/rich-de.txt`, `rich-en.txt`). Die Backendtests
+vergleichen Systemtext und Nachspann bytegenau dagegen. Fixtures nicht zur Anpassung an eine
+Regression neu erzeugen; LF ist für sie in `.gitattributes` festgelegt. Weitere Tests decken die
+Lokalisierungs-Fallbacks und die asymmetrische Behandlung von Karten-Nachspann/Systemtext ab.
+
+Prüfstand 08.11.2026: 33 GUI-, 6 Makro-, 11 Prompt-Core- und 24 gezielte Backendtests bestanden
+(74 einschließlich der Exporttests dieser Pakete); beide Referenz-Prompts stimmen bytegenau überein.
+Typgenerierung, TypeScript-Prüfung und drei Command-Abgleichstests erfolgreich. Clippy für GUI,
+gemeinsame Crates und Backend-Library, gezielte Formatprüfung und Windows-Build erfolgreich.
+Ein unabhängiges Agentenreview fand einen Fallback-Randfall bei ungültigen übersetzten Listen;
+er ist korrigiert und durch einen Regressionstest abgesichert. Die Chatansicht des neuen Builds
+wurde im Windows-Fenster gesehen. Sichtprüfung/Bedienabnahme der neuen Prompt-Ansicht bleibt offen:
+Fensteraktivierung wurde durch parallele Benutzereingaben unterbrochen; keine weitere UI-Steuerung.
+Kein vollständiger E2E-Lauf, kein echtes Modell und kein Cloud-Anbieter aufgerufen.
 
 ## Spätere Ausbaustufen
 
