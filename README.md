@@ -2,7 +2,8 @@
 
 > This branch contains an experimental native Rust UI for Windows. Run
 > `cargo run -p otakusoul-native`. See [`native-ui/ROADMAP.md`](native-ui/ROADMAP.md) for the German working plan.
-> The initial preview uses in-memory test messages without AI integration or access to your existing profile.
+> The preview uses in-memory test messages without AI integration and can read explicitly selected profile copies.
+> Settings can create a demo profile with fictional conversations; imported conversations remain read-only.
 
 **English** · [Deutsch](README.de.md) · [Русский](README.ru.md)
 

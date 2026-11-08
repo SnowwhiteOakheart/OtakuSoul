@@ -5221,6 +5221,7 @@ dependencies = [
  "libc",
  "ndarray",
  "ort",
+ "otakusoul-paths",
  "parking_lot 0.13.0",
  "pdf-extract",
  "png",
@@ -5264,8 +5265,23 @@ dependencies = [
 name = "otakusoul-native"
 version = "0.1.0"
 dependencies = [
+ "base64 0.23.1",
+ "directories",
  "iced",
  "image",
+ "otakusoul-paths",
+ "png",
+ "rusqlite",
+ "serde_json",
+ "tempfile",
+ "url",
+]
+
+[[package]]
+name = "otakusoul-paths"
+version = "0.1.0"
+dependencies = [
+ "directories",
 ]
 
 [[package]]

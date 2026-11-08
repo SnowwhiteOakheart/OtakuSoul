@@ -11,7 +11,9 @@ Nutzer mit „Du“ ansprechen. Antworten, Commits und Doku auf Deutsch.
 
 Auf ausdrücklichen Nutzerwunsch liegt der Windows-Prototyp auf `codex/native-rust-gui`.
 Arbeitsplan und Übergabekontext: [`native-ui/ROADMAP.md`](native-ui/ROADMAP.md).
-Separater Start: `cargo run -p otakusoul-native`. Kein Desktop-Pet; zunächst kein produktiver Profilzugriff.
+Separater Start: `cargo run -p otakusoul-native`. Kein Desktop-Pet; kein automatischer produktiver Profilzugriff.
+Profilkopien nur ausdrücklich und schreibgeschützt laden; synthetisches Beispiel über Einstellungen oder
+`--create-demo-profile <Ordner>`. Gemeinsame Basis-Pfadauflösung: `crates/otakusoul-paths`.
 Für diesen Prototyp auf dem Experiment-Branch committen/pushen, nicht auf `main`.
 
 ### Allgemeine Arbeitsregeln

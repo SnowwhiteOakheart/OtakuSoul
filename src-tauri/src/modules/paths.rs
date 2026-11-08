@@ -1,4 +1,3 @@
-use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map as JsonMap, Value as JsonValue};
 use std::collections::HashMap;
@@ -9,6 +8,8 @@ use ts_rs::TS;
 use crate::modules::characters::{
     CharacterProfile, load_character_from_file, parse_character_json,
 };
+
+pub use otakusoul_paths::{base_dirs, isolated_home};
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
@@ -55,28 +56,6 @@ pub struct ScannedVrm {
     /// Preview picture taken in the avatar manager.
     #[serde(default)]
     pub thumbnail: Option<String>,
-}
-
-/// `(config_dir, data_dir)`: the platform folders, or `$OTAKUSOUL_HOME/config|data` when set
-/// (end-to-end tests run against a throwaway profile next to a real installation).
-pub fn base_dirs() -> (PathBuf, PathBuf) {
-    if let Some(home) = isolated_home() {
-        return (home.join("config"), home.join("data"));
-    }
-    match ProjectDirs::from("com", "snowwhite", "otakusoul") {
-        Some(dirs) => (
-            dirs.config_dir().to_path_buf(),
-            dirs.data_dir().to_path_buf(),
-        ),
-        None => (PathBuf::from("./config"), PathBuf::from("./data")),
-    }
-}
-
-/// The profile folder from `OTAKUSOUL_HOME`, if the app runs isolated.
-pub fn isolated_home() -> Option<PathBuf> {
-    std::env::var_os("OTAKUSOUL_HOME")
-        .filter(|v| !v.is_empty())
-        .map(PathBuf::from)
 }
 
 /// Resolves standard base directories for OtakuSoul and creates required user directories

@@ -27,8 +27,13 @@ WSL kann später Linux-Builds/erste WSLg-Tests ermöglichen; es ersetzt weder Li
 - Eigenes Workspace-Paket `otakusoul-native` unter `native-ui/`; gemeinsamer Root-`Cargo.lock`.
 - `default-members = ["src-tauri"]` bewahrt das bisherige Ziel bei Cargo-Aufrufen ohne Paketauswahl.
 - `src/main.rs`: Iced-Ansichten, Darstellung und UI-Ereignisse. `src/model.rs`: flüchtiger Vorschauzustand.
+  `src/profile.rs`: begrenzte lesende Projektion von Karten und SQLite-Verläufen; keine Migrationen.
+- `crates/otakusoul-paths`: gemeinsame Funktionen `base_dirs`, `isolated_home`, `production_dirs`.
+  Das Tauri-Modul re-exportiert die bisherigen Namen, die Standardpfade bleiben unverändert.
 - Ressourcen über `include_bytes!`, keine absoluten Rechnerpfade. Keine derzeitige Verbindung zum Tauri-Crate.
-- Vier gebündelte Charakterporträts; Beschreibungen sind Vorschautexte, kein vollständiger Kartenimport.
+- Vier gebündelte Charakterkarten mit Porträts, Beschreibung, Begrüßung und unverändertem Karten-JSON.
+  Importierte Karten werden ebenfalls vollständig als JSON behalten; das ist noch keine Portierung der
+  produktiven Kartenlogik (Lorebook-/Expressions-Auflösung, fremde Exportsonderformate, Übersetzungen).
 - Später: gemeinsame Rust-Kernbibliothek mit typisierten Requests/Ereignissen. Tauri und Iced als Adapter.
   Fachlogik nicht in zwei Oberflächen duplizieren und keine Tauri-Commands direkt aus Iced aufrufen.
 - Echte Laufzeitzustände werden asynchron angebunden. Kein blockierendes Netzwerk/SQLite auf dem UI-Thread.
@@ -53,6 +58,39 @@ Debug-Datei: `target/debug/otakusoul-native.exe`. Erster Build lädt GUI-/Grafik
 Release später: `cargo build -p otakusoul-native --release`.
 Bestehende App weiterhin über `npm run tauri dev`. Kein neuer Installer in der ersten Etappe.
 
+Beispiel ohne persönliche Daten, einmalig aus dem Repository-Stamm anlegen:
+
+```powershell
+cargo run -p otakusoul-native -- --create-demo-profile ./output/native-ui-demo
+cargo run -p otakusoul-native -- --check-profile ./output/native-ui-demo
+cargo run -p otakusoul-native -- --profile ./output/native-ui-demo
+```
+
+Alternativ in Einstellungen den Pfad eintragen und „Profilkopie laden“ wählen. „Beispielprofil erstellen“
+legt vier gebündelte Karten und zwei erfundene Verläufe an und lädt sie. Ein nichtleerer Ordner wird
+nicht überschrieben. Ohne `OTAKUSOUL_HOME` ist der vorgeschlagene Ordner ein separater
+`ProjectDirs(com, snowwhite, otakusoul-native)`-Datenordner mit Unterordner `preview-profile`;
+die EXE funktioniert damit unabhängig vom aktuellen Arbeitsverzeichnis. Ein gesetztes `OTAKUSOUL_HOME`
+wird nur als vorgeschlagener Eingabepfad übernommen; ohne `--profile`/Ladeklick kein Import.
+
+Erwartete Kopiestruktur:
+
+```text
+<Profilkopie>/
+  data/
+    characters/     # JSON-Karten und/oder PNG mit chara/ccv3-Textchunk
+    otakusoul.db    # optional, abgeschlossene SQLite-Kopie
+```
+
+Das aktuelle produktive Profil nicht auswählen. Eine eigene Kopie bei geschlossener Tauri-App
+vorbereiten; ein nichtleeres `otakusoul.db-wal` wird abgewiesen. Der Import verwendet SQLite
+`mode=ro&immutable=1`, erzeugt keine WAL-/SHM-Dateien und führt keine Migrationen aus. Diese
+Unveränderlichkeitsannahme verlangt eine ruhende Kopie, keine parallel geöffnete Tauri-Instanz darauf.
+Keine Zugangsdaten oder Einstellungen importieren. Dateiverweise außerhalb der Kopie werden abgewiesen.
+Produktive Standardordner werden zusätzlich gegen versehentliche Auswahl geschützt; ein vom Benutzer
+selbst als produktiv verwendeter Sonderpfad kann nicht automatisch als solcher erkannt werden.
+Demo-Schema bildet nur die gelesenen Chatspalten ab und ist kein Profil für die produktive Tauri-App.
+
 ## Etappe 1 – Eigenständige Windows-Vorschau
 
 - [x] Separater Git-Branch und Workspace-Paket; Standardziel bleibt Tauri.
@@ -63,7 +101,7 @@ Bestehende App weiterhin über `npm run tauri dev`. Kein neuer Installer in der 
 - [ ] Gemeinsames Nutzerfeedback zu Layout, Lesbarkeit und Navigation einarbeiten.
 
 Abnahme: EXE startet ohne Tauri/WebView; Auswahl und Eingabe funktionieren; kein Profilzugriff.
-Die Einzeileneingabe und einfache Textdarstellung sind vorübergehend. Keine KI-Antworten vortäuschen.
+Die einfache Textdarstellung ist vorübergehend. Keine KI-Antworten vortäuschen.
 
 Prüfstand 08.11.2026: `cargo fmt --check`, Clippy mit `-D warnings`, zwei Zustandstests und
 `cargo build --locked` erfolgreich. Windows-Fenster gestartet; Porträts, Umlaut-Eingabe, Enter zum
@@ -75,15 +113,33 @@ Lockfile-Vergleich: keine zuvor vorhandene Paketversion entfernt; GUI ergänzt z
 
 ## Etappe 2 – Daten und Bedienung
 
-- [ ] Produktive Pfadauflösung gezielt extrahieren: aktuell `src-tauri/src/modules/paths.rs::base_dirs`.
-  Dieses Modul hängt selbst an Kartentypen; nicht als Ganzes in den Prototyp hineinziehen.
-- [ ] Isoliertes Testprofil anlegen/importieren, Fehler sichtbar machen; keine automatische Nutzung echter Daten.
-- [ ] Vollständige Charakterkarten und vorhandene Chats lesen; Formatkompatibilität erhalten.
+- [x] Produktive Pfadauflösung in `crates/otakusoul-paths` extrahiert; Tauri re-exportiert die Funktionen.
+- [x] Synthetisches Testprofil erstellen und ausdrücklich gewählte Profilkopie lesen; sichtbare Fehler.
+- [x] JSON-/PNG-Karten und Chatlisten lesen; Karten-JSON inklusive unbekannter Felder erhalten.
+- [x] Verläufe asynchron laden, Rollen und Reihenfolge erhalten; Archiv schreibgeschützt, separater Testchat.
+- [x] Mehrzeilige Eingabe: Enter = neue Zeile, Strg+Enter = hinzufügen; Entwürfe pro Testchat.
+- [x] Tab/Shift+Tab für Fokusnavigation, Kopierknöpfe für Nachrichten und vollständiges Karten-JSON.
+- [ ] Anhänge, Swipes, Gedanken und Gruppensprecher gezielt darstellen; aktuell nur Rolle und Text.
 - [ ] UI-Lokalisierung aus vorhandenen `presets/locales/ui/` übernehmen; deutsche Vorschautexte ablösen.
-- [ ] Mehrzeilige Eingabe, Textauswahl/Kopieren, Tastaturfokus, Entwürfe und Nachrichtendarstellung.
+- [ ] Freie Textauswahl in dargestellten Nachrichten und umfassende Tastatur-/IME-Abnahme.
 - [ ] Markdown und lange Chats prüfen; Listenvirtualisierung/Begrenzung anhand Messungen entscheiden.
 
 Abnahme: kopierte Daten lesbar, Originalprofil unverändert; langer Chat bleibt bedienbar.
+
+Zwischenstand 08.11.2026: Das synthetische Profil liefert 4 Figuren, 2 Verläufe und 3 Nachrichten,
+ohne Warnung. Profilimport, geladene Porträts, schreibgeschützter Verlauf, Wechsel in separaten
+Testchat, mehrzeilige Umlaut-Eingabe und Strg+Enter im Windows-Fenster beobachtet. Kein persönliches
+Profil eingelesen. Karten-Detailansicht vorhanden. Die letzten 200 Nachrichten eines Verlaufs werden
+geladen, bei größeren Chats mit sichtbarem Hinweis; noch kein Nachladen älterer Nachrichten.
+Read-only-, Reihenfolge-, Format-, Fehler-, Pfad- und veraltete asynchrone Ergebnisfälle sind getestet.
+Windows-Symlinktest läuft nur mit vorhandener Berechtigung, sonst wird dieser Teil übersprungen.
+Abschlussprüfung: 17 Tests im GUI-Paket und 1 Pfadtest erfolgreich; Clippy mit `-D warnings`,
+Formatprüfung und Windows-Build erfolgreich. Das vorhandene Tauri-Backend wurde nach der
+Pfadextraktion mit `cargo check -p otakusoul --lib --offline` erfolgreich geprüft. Im Abschlussbuild
+auch CLI-Start mit Profilkopie und der Umbruch langer Charakterbeschreibungen visuell geprüft.
+Ein zusätzlicher `cargo fmt --all --check` scheitert an bereits vorhandener Formatierung der
+Vendorkopien `src-tauri/vendor/pdf-extract` und `src-tauri/vendor/kokoro-en`; diese wurden nicht verändert.
+Die Formatabnahme erfolgt gezielt für die App-Pakete und die neue Pfad-Crate.
 
 ## Etappe 3 – Ein echter Chat
 
@@ -116,7 +172,10 @@ An diesem Punkt gemeinsam entscheiden, ob die Migration fortgesetzt wird.
 - Iced ist kein automatischer Ersatz für native Betriebssystem-Widgets. Textbearbeitung, IME und
   Barrierefreiheit früh praktisch prüfen. Unterstützte Plattform bedeutet nicht bereits geprüfte App.
 - Aktuell keine Garantie für RAM-, Startzeit- oder Leistungsvorteile. Mit vergleichbaren Daten messen.
-- Vorschau rendert alle Testnachrichten; noch keine Virtualisierung und kein Langchat-Leistungsnachweis.
+- Vorschau rendert alle lokalen Testnachrichten bzw. maximal 200 geladene Archivnachrichten;
+  noch keine Virtualisierung, kein Nachladen älterer Nachrichten und kein Langchat-Leistungsnachweis.
+- Importgrenzen: 32 MiB je Kartendatei, 4 MiB JSON-/PNG-Kartenmetadaten, 10.000 Chatlisten-Einträge.
+  Kartenordner wird nicht rekursiv durchsucht; gleichnamige JSON-/PNG-Karten werden zusammengefasst.
 - Three.js/VRM/MMD, WebAudio, Live2D und Inochi2D nicht als automatisch portierbar betrachten.
 - Screenshots/Prüfergebnisse und bekannte Einschränkungen nach jeder Etappe hier konkret ergänzen.
 - Diese Roadmap bleibt als branchspezifischer Arbeitskontext versioniert; erledigte Meilensteine dürfen

@@ -2,7 +2,8 @@
 
 > Experiment auf diesem Branch: eine native Rust-Oberfläche für Windows. Start mit
 > `cargo run -p otakusoul-native`; Arbeitsplan und Grenzen in [`native-ui/ROADMAP.md`](native-ui/ROADMAP.md).
-> Die erste Vorschau verwendet lokale Testnachrichten ohne KI-Anbindung und ohne Zugriff auf Dein Profil.
+> Die Vorschau bietet lokale Testnachrichten ohne KI-Anbindung und kann ausdrücklich gewählte Profilkopien
+> schreibgeschützt laden. In den Einstellungen kannst Du ein Beispielprofil mit erfundenen Verläufen erstellen.
 
 [English](README.md) · **Deutsch** · [Русский](README.ru.md)
 

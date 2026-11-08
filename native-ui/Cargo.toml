@@ -9,3 +9,13 @@ description = "Experimentelle native Rust-Oberfläche für OtakuSoul"
 [dependencies]
 iced = { version = "0.14.0", features = ["image-without-codecs"] }
 image = { version = "0.25", default-features = false, features = ["png"] }
+base64 = "0.23"
+png = "0.18"
+rusqlite = { version = "0.41", features = ["bundled"] }
+serde_json = "1"
+url = "2"
+otakusoul-paths = { path = "../crates/otakusoul-paths" }
+directories = "6.0"
+
+[dev-dependencies]
+tempfile = "3"
