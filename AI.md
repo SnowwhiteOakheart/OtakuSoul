@@ -33,6 +33,9 @@ schreibgeschützt, Exportziel muss außerhalb des produktiven und geladenen Prof
 Editorreiter: Kartentexte, Begrüßungen (mehrzeilige Alternativen hinzufügen/bearbeiten/entfernen),
 schreibgeschützte JSON-Vorschau. Alternative Begrüßungen nur in leeren lokalen Testchats auswählen;
 begonnene Chats behalten ihren Begrüßungssnapshot, Archive werden nie aus Karten ergänzt.
+Ausdrucksbilder-Reiter mit 15 Slots, PNG-/WebP-Auswahl und Hauptporträtübernahme. Bekannte Presetbilder
+sowie eingebettete Bilder sind offline sichtbar; andere Verweise bleiben erhalten und ungeladen.
+Dateiexport bettet bekannte Preset-Ausdrucksbilder portabel ein. Details/Grenzen: native-ui/ROADMAP.md.
 
 ### Allgemeine Arbeitsregeln
 

@@ -312,7 +312,8 @@ Kein vollständiger E2E-Lauf, kein echtes Modell und kein Cloud-Anbieter aufgeru
 - [x] Alternative Begrüßungen hinzufügen/bearbeiten/entfernen, JSON-Vorschau des aktuellen Entwurfs.
 - [x] Begrüßungsvarianten in leeren lokalen Testchats auswählen; Detailansicht mit weiteren Kartentexten.
 - [x] Kartenraster und Tagfilter nach Vorbild des Tauri-Frontends.
-- [ ] Weitere Editorbereiche: Ausdrucksbilder und Lorebook-Bindungen.
+- [x] Ausdrucksbilder-Reiter mit 15 Plätzen, Offlinevorschau, Auswahl/Entfernen und Hauptporträtübernahme.
+- [ ] Weitere Editorbereiche: Lorebook-Bindungen und vollständige Auflösung fremder relativer Bildverweise.
 - [x] Expliziter JSON-/PNG-Dateiimport/-export über native Öffnen-/Speichern-Dialoge.
 - [ ] Dauerhafte Integration von Kartenänderungen in ein eigenes isoliertes Schreibprofil.
 
@@ -441,6 +442,48 @@ Sota. Porträtklick aus gefiltertem Raster öffnet Sotas Details, Zurücksetzen 
 wieder her. Scrollen und Chatknopf öffnen die richtige Figur. Danach Bibliothek offen gelassen und
 Desktopkontrolle ausdrücklich zurückgegeben. Keine privaten Daten/Profiländerungen/Modellaufrufe.
 Textsuche und Kombination mit Tags sind automatisiert abgedeckt; keine komplette DPI-/Tastaturabnahme.
+
+### GUI-Zwischenschritt: Ausdrucksbilder und Hauptporträt
+
+Der Editor hat einen Reiter „Ausdrucksbilder“ mit denselben 15 Slots wie Tauri: sechs Grundstimmungen,
+fünf weitere Ausdrücke und vier Romance-Slots. Slotwahl zeigt Gruppenname, Belegungszahl, Referenzstatus
+und Bild. Neutral ohne nichtleeren Verweis zeigt das Hauptporträt. PNG-/WebP-Dateiauswahl bettet das
+komprimierte Original als Data-URL ein; Zuordnung entfernen erzeugt bei Bedarf eine leere kanonische
+`expressions`-Map, damit Legacy-Bilder nicht wieder erscheinen. Fremde Slots/Metadaten bleiben erhalten.
+Präzedenz folgt `getPortraitExpressions`: expressions ?? custom_expressions, dann Objekt-Fallback
+sow_expressions. Unveränderte fehlerhafte Erweiterungen bleiben erhalten, Änderungen daran melden Fehler.
+
+`src/expressions.rs` enthält Slotprojektion, Bildprüfung und 44 eingebettete WebP-Dateien für die vier
+mitgelieferten Karten (je elf Plätze). Vorschau lädt ausschließlich diese exakten Presetverweise oder
+eingebettete PNG-/WebP-Daten, niemals HTTP/Blob/CWD/fremde lokale Dateien. Unaufgelöste Verweise bleiben
+Kartendaten; fehlende Herkunft fremder relativer Pfade wird nicht erraten. Nur die explizite Dateiauswahl
+liest neue Bilder. Prüfung läuft im Hintergrund: 1 MiB komprimiert, 4096 × 4096 Pixel, 64 MiB Decoderbudget.
+Vorschau-IDs und Entwurfs-ID verhindern, dass alte Ergebnisse den gewählten Platz/neuen Entwurf ändern.
+
+Ein verfügbares Bild lässt sich als Hauptporträt in den RAM-Entwurf übernehmen; bei neuen Karten ist
+damit PNG-Export möglich. PNG-Export dekodiert nun auch ein WebP-Hauptporträt und bewahrt seine Pixel.
+JSON enthält kein separates Hauptporträt. Bilder bleiben bis Übernehmen im Entwurf; Schließen/Neustart
+verliert unexportierte Änderungen. Keine automatische Mimik im Chat und keine Avataranimation in dieser Etappe.
+
+Dateiexport wandelt bekannte Presetverweise in allen drei Ausdrucksmaps in portable WebP-Data-URLs um,
+bewahrt unbekannte Verweise/Werte und prüft danach die bisherigen Metadatengrenzen. Alle vier gebündelten
+Karten passen mit ihren elf Bildern als JSON und PNG hinein. Bildzuweisung prüft das resultierende PNG-
+Metadatenbudget vor Übernahme; bei Überschreitung bleibt die alte Zuordnung erhalten. Entfernen bleibt
+auch bei zuvor übergroßen Karten möglich. Kleine WebP-Bilder benötigen weniger Platz. JSON-Vorschau und
+JSON-Kopieren zeigen die logischen Kartenreferenzen; der Dateiexport bettet die bekannten Assets ein.
+Der PNG-Metadatenleser erhält 16 MiB internes Pufferbudget, um mehrfach gehaltene Textchunks zu lesen;
+Dateigrenze 32 MiB und Textchunkgrenze 4 MiB bleiben unverändert. Dies ist keine Erweiterung des Kartenformats.
+
+Prüfstand 08.11.2026: 79 Native-Tests erfolgreich. Neu sind Legacy-/Metadatenerhalt, Hauptporträt-Override,
+PNG-/WebP-Datenprüfung und Offline-Presetvorschau, Vorschau-/Entwurfsschutz, Kartenbudget, neutraler
+Fallback sowie portable JSON-/PNG-Roundtrips aller vier gebündelten Karten und Pixelvergleich beim
+WebP-Hauptporträt. Clippy und Formatprüfung erfolgreich. Review korrigierte fehlende Einbettung bekannter
+Presetbilder und den leeren Neutral-Verweis; Roundtrip-Test deckte das interne PNG-Lesebudget auf.
+Keine echten Modelle oder Netzbilder verwendet; Windows-Build/Sichtprüfung nach Desktopfreigabe.
+Desktopfreigabe für diesen Durchlauf angefragt, noch nicht erteilt. Die laufende Vorschau bleibt
+unangetastet; die normale Windows-EXE wurde in diesem Schritt noch nicht neu gebaut. Native Test-EXE
+und alle Ansichten wurden kompiliert/geprüft. Nach Freigabe: eigene Instanz schließen, Windows-Build,
+Editor → Ausdrucksbilder → neutral/fröhlich/fehlenden Slot prüfen; danach Kontrolle explizit zurückgeben.
 
 - [ ] Einstellungen/Onboarding, Charakter-/Lorebook-Editoren, Gedächtnis, Hub und Im-/Export.
 - [ ] Stage und 5e einschließlich Battlemap; Fachlogik wiederverwenden.

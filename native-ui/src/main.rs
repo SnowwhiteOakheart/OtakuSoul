@@ -4,6 +4,7 @@ mod appearance;
 mod card_files;
 mod character_draft;
 mod connection;
+mod expressions;
 mod icons;
 mod library;
 mod message_content;
@@ -120,6 +121,7 @@ enum Page {
 enum EditorTab {
     Fields,
     Greetings,
+    Expressions,
     Json,
 }
 
@@ -155,6 +157,19 @@ enum Message {
     CharacterName(String),
     CharacterField(character_draft::Field),
     CharacterText(text_editor::Action),
+    ExpressionSlot(expressions::Slot),
+    PickExpression,
+    RemoveExpression,
+    ExpressionAsPortrait,
+    ExpressionPicked {
+        draft_id: u64,
+        slot: expressions::Slot,
+        result: Result<Option<String>, String>,
+    },
+    ExpressionPreview {
+        id: u64,
+        result: Result<Vec<u8>, String>,
+    },
     EditorTabChanged(EditorTab),
     EditorGreeting(GreetingChoice),
     AddGreeting,
@@ -238,6 +253,12 @@ struct App {
     library_search: String,
     library_tag: Option<String>,
     character_draft: Option<character_draft::Draft>,
+    character_draft_id: u64,
+    expression_slot: expressions::Slot,
+    expression_image: Option<image::Handle>,
+    expression_bytes: Option<Vec<u8>>,
+    expression_status: String,
+    expression_epoch: u64,
     character_source: Option<usize>,
     character_field: character_draft::Field,
     editor_tab: EditorTab,
@@ -319,6 +340,12 @@ impl Default for App {
             library_search: String::new(),
             library_tag: None,
             character_draft: None,
+            character_draft_id: 0,
+            expression_slot: expressions::SLOTS[0],
+            expression_image: None,
+            expression_bytes: None,
+            expression_status: String::new(),
+            expression_epoch: 0,
             character_source: None,
             character_field: character_draft::Field::Description,
             editor_tab: EditorTab::Fields,
@@ -332,6 +359,78 @@ impl Default for App {
 }
 
 impl App {
+    fn load_expression_preview(&mut self) -> Task<Message> {
+        self.expression_epoch += 1;
+        let id = self.expression_epoch;
+        self.expression_image = None;
+        self.expression_bytes = None;
+        let Some(draft) = &self.character_draft else {
+            return Task::none();
+        };
+        let reference = draft
+            .expressions()
+            .get(self.expression_slot.key())
+            .and_then(serde_json::Value::as_str)
+            .filter(|reference| !reference.trim().is_empty())
+            .map(str::to_owned);
+        let Some(reference) = reference else {
+            if self.expression_slot.key() == "neutral" {
+                self.expression_bytes =
+                    draft.portrait_override().map(<[u8]>::to_vec).or_else(|| {
+                        self.character_source
+                            .and_then(|index| self.preview.characters.get(index))
+                            .and_then(|character| character.portrait.clone())
+                    });
+                self.expression_image =
+                    self.expression_bytes.clone().map(image::Handle::from_bytes);
+                self.expression_status = if self.expression_image.is_some() {
+                    "Kein eigenes Bild · Hauptporträt als Vorschau."
+                } else {
+                    "Noch kein Hauptporträt. Wähle ein Bild und übernimm es bei Bedarf als Hauptporträt."
+                }.into();
+            } else {
+                self.expression_status = "Diesem Ausdruck ist noch kein Bild zugeordnet.".into();
+            }
+            return Task::none();
+        };
+        self.expression_status = "Bildvorschau wird geladen …".into();
+        Task::perform(
+            background(move || expressions::preview(&reference)),
+            move |result| Message::ExpressionPreview { id, result },
+        )
+    }
+
+    fn set_draft_expression(
+        &mut self,
+        slot: expressions::Slot,
+        reference: Option<String>,
+    ) -> Result<(), String> {
+        let adding = reference.is_some();
+        let mut candidate = self
+            .character_draft
+            .clone()
+            .ok_or("Kein Charakterentwurf geöffnet.")?;
+        candidate.set_expression(slot.key(), reference)?;
+        let mut budget = candidate.clone();
+        if budget.get(character_draft::Field::Name).trim().is_empty() {
+            budget.set(character_draft::Field::Name, "Charakter".into());
+        }
+        let character = budget.apply(
+            self.character_source
+                .and_then(|index| self.preview.characters.get(index)),
+            "budget".into(),
+        )?;
+        let portable =
+            expressions::portable_card(character.card.as_ref().ok_or("Die Charakterkarte fehlt.")?);
+        let json = serde_json::to_vec_pretty(&portable)
+            .map_err(|_| "Die Kartengröße konnte nicht geprüft werden.")?;
+        if adding && json.len().div_ceil(3) * 4 > 4 * 1024 * 1024 {
+            return Err("Die eingebetteten Bilder überschreiten die Kartengrenze. Bitte ein kleineres PNG-/WebP-Bild wählen.".into());
+        }
+        self.character_draft = Some(candidate);
+        self.character_error.clear();
+        Ok(())
+    }
     fn chat_greeting_choices(&self) -> Vec<GreetingChoice> {
         self.preview
             .current()
@@ -364,6 +463,7 @@ impl App {
                         .unwrap_or_default()
                 }
             }
+            EditorTab::Expressions => String::new(),
             EditorTab::Json => match draft.apply(
                 self.character_source
                     .and_then(|index| self.preview.characters.get(index)),
@@ -488,6 +588,11 @@ impl App {
             self.editor_greeting = 0;
             self.character_text = text_editor::Content::with_text(draft.get(self.character_field));
             self.character_draft = Some(draft);
+            self.character_draft_id += 1;
+            self.expression_slot = expressions::SLOTS[0];
+            self.expression_image = None;
+            self.expression_bytes = None;
+            self.expression_status.clear();
             self.character_source = source;
             self.character_error.clear();
         }
@@ -543,6 +648,7 @@ impl App {
                 self.portraits = Self::portraits(&self.preview);
                 self.sync_editor();
                 self.character_draft = None;
+                self.character_draft_id += 1;
                 self.character_source = None;
                 self.character_error.clear();
                 self.library_search.clear();
@@ -724,9 +830,101 @@ impl App {
     }
     fn update(&mut self, message: Message) -> Task<Message> {
         match message {
+            Message::ExpressionSlot(slot) => {
+                self.expression_slot = slot;
+                return self.load_expression_preview();
+            }
+            Message::PickExpression => {
+                if self.card_busy || self.profile_busy || self.character_draft.is_none() {
+                    return Task::none();
+                }
+                self.card_busy = true;
+                let draft_id = self.character_draft_id;
+                let slot = self.expression_slot;
+                return Task::perform(
+                    async move {
+                        let Some(file) = rfd::AsyncFileDialog::new()
+                            .set_title("Ausdrucksbild auswählen")
+                            .add_filter("PNG-/WebP-Bild", &["png", "webp"])
+                            .pick_file()
+                            .await
+                        else {
+                            return Ok(None);
+                        };
+                        let path = file.path().to_path_buf();
+                        background(move || expressions::pick_image(&path))
+                            .await
+                            .map(Some)
+                    },
+                    move |result| Message::ExpressionPicked {
+                        draft_id,
+                        slot,
+                        result,
+                    },
+                );
+            }
+            Message::ExpressionPicked {
+                draft_id,
+                slot,
+                result,
+            } => {
+                self.card_busy = false;
+                if draft_id != self.character_draft_id || self.character_draft.is_none() {
+                    return Task::none();
+                }
+                match result {
+                    Ok(Some(reference)) => match self.set_draft_expression(slot, Some(reference)) {
+                        Ok(()) => {
+                            self.sync_character_text();
+                            if self.editor_tab == EditorTab::Expressions {
+                                return self.load_expression_preview();
+                            }
+                        }
+                        Err(error) => self.character_error = error,
+                    },
+                    Ok(None) => self.notice = "Bildauswahl abgebrochen.".into(),
+                    Err(error) => self.character_error = error,
+                }
+            }
+            Message::RemoveExpression => {
+                if !self.card_busy {
+                    match self.set_draft_expression(self.expression_slot, None) {
+                        Ok(()) => return self.load_expression_preview(),
+                        Err(error) => self.character_error = error,
+                    }
+                }
+            }
+            Message::ExpressionAsPortrait => {
+                if let (Some(draft), Some(bytes)) =
+                    (&mut self.character_draft, &self.expression_bytes)
+                {
+                    draft.set_portrait(bytes.clone());
+                    self.notice = "Hauptporträt im Entwurf geändert. PNG-Export enthält dieses Bild; JSON enthält nur die Ausdruckszuordnung.".into();
+                }
+            }
+            Message::ExpressionPreview { id, result } => {
+                if id != self.expression_epoch
+                    || self.editor_tab != EditorTab::Expressions
+                    || self.character_draft.is_none()
+                {
+                    return Task::none();
+                }
+                match result {
+                    Ok(bytes) => {
+                        self.expression_image = Some(image::Handle::from_bytes(bytes.clone()));
+                        self.expression_bytes = Some(bytes);
+                        self.expression_status =
+                            "Ausdrucksbild · lokale Vorschau ohne Netzwerk.".into();
+                    }
+                    Err(error) => self.expression_status = error,
+                }
+            }
             Message::EditorTabChanged(tab) => {
                 self.editor_tab = tab;
                 self.character_error.clear();
+                if tab == EditorTab::Expressions {
+                    return self.load_expression_preview();
+                }
                 self.sync_character_text();
             }
             Message::EditorGreeting(choice) => {
@@ -910,6 +1108,9 @@ impl App {
                 self.sync_character_text();
             }
             Message::CharacterText(action) => {
+                if self.editor_tab == EditorTab::Expressions {
+                    return Task::none();
+                }
                 if self.editor_tab == EditorTab::Json {
                     if !action.is_edit() {
                         self.character_text.perform(action);
@@ -930,11 +1131,15 @@ impl App {
                             draft.set_greeting(self.editor_greeting - 1, self.character_text.text())
                         }
                         EditorTab::Json => unreachable!(),
+                        EditorTab::Expressions => unreachable!(),
                     }
                 }
             }
             Message::DiscardCharacter => {
                 self.character_draft = None;
+                self.character_draft_id += 1;
+                self.expression_image = None;
+                self.expression_bytes = None;
                 self.character_error.clear();
                 self.page = Page::Characters;
             }
@@ -1247,6 +1452,94 @@ mod tests {
 #[cfg(test)]
 mod character_editor_tests {
     use super::*;
+    #[test]
+    fn empty_neutral_reference_uses_the_main_portrait() {
+        let mut app = App::default();
+        let _ = app.update(Message::EditCharacter(0));
+        app.character_draft
+            .as_mut()
+            .unwrap()
+            .set_expression("neutral", Some(String::new()))
+            .unwrap();
+        let _ = app.update(Message::EditorTabChanged(EditorTab::Expressions));
+        assert_eq!(app.expression_bytes, app.preview.characters[0].portrait);
+        assert!(app.expression_status.contains("Hauptporträt"));
+    }
+    #[test]
+    fn late_expression_preview_cannot_replace_the_selected_slot() {
+        let mut app = App::default();
+        let _ = app.update(Message::EditCharacter(0));
+        let _ = app.update(Message::EditorTabChanged(EditorTab::Expressions));
+        let old = app.expression_epoch;
+        let _ = app.update(Message::ExpressionSlot(expressions::Slot::Happy));
+        let id = app.expression_epoch;
+        let _ = app.update(Message::ExpressionPreview {
+            id: old,
+            result: Ok(vec![1]),
+        });
+        assert!(app.expression_bytes.is_none());
+        let _ = app.update(Message::ExpressionPreview {
+            id,
+            result: Ok(vec![2]),
+        });
+        assert_eq!(app.expression_bytes, Some(vec![2]));
+    }
+
+    #[test]
+    fn completed_image_pick_cannot_restore_a_discarded_draft() {
+        let mut app = App::default();
+        let _ = app.update(Message::EditCharacter(0));
+        let draft_id = app.character_draft_id;
+        let _ = app.update(Message::DiscardCharacter);
+        let _ = app.update(Message::NewCharacter);
+        let _ = app.update(Message::ExpressionPicked {
+            draft_id,
+            slot: expressions::Slot::Happy,
+            result: Ok(Some("old reference".into())),
+        });
+        assert!(
+            app.character_draft
+                .as_ref()
+                .unwrap()
+                .expressions()
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn over_budget_expression_does_not_modify_the_existing_mapping() {
+        let mut app = App::default();
+        let _ = app.update(Message::EditCharacter(0));
+        let before = app.character_draft.as_ref().unwrap().expressions().clone();
+        assert!(
+            app.set_draft_expression(expressions::Slot::Happy, Some("x".repeat(3 * 1024 * 1024)))
+                .is_err()
+        );
+        assert_eq!(app.character_draft.as_ref().unwrap().expressions(), &before);
+        assert!(
+            app.set_draft_expression(expressions::Slot::Happy, None)
+                .is_ok()
+        );
+    }
+
+    #[test]
+    fn preview_image_can_become_a_new_cards_main_portrait() {
+        let mut app = App::default();
+        let _ = app.update(Message::NewCharacter);
+        let _ = app.update(Message::CharacterName("Neue Karte".into()));
+        let _ = app.update(Message::EditorTabChanged(EditorTab::Expressions));
+        let _ = app.update(Message::ExpressionPreview {
+            id: app.expression_epoch,
+            result: Ok(vec![1, 2, 3]),
+        });
+        let _ = app.update(Message::ExpressionAsPortrait);
+        let _ = app.update(Message::SaveCharacter);
+        assert_eq!(
+            app.preview.characters.last().unwrap().portrait,
+            Some(vec![1, 2, 3])
+        );
+    }
+
     #[test]
     fn resetting_library_filters_preserves_chat_and_character_draft() {
         let mut app = App::default();

@@ -28,7 +28,8 @@ pub fn write(
     protected_home: Option<&Path>,
 ) -> Result<(), String> {
     let target = crate::profile::validate_export_target(path, protected_home)?;
-    let json = serde_json::to_vec_pretty(&export.card)
+    let card = crate::expressions::portable_card(&export.card);
+    let json = serde_json::to_vec_pretty(&card)
         .map_err(|_| "Die Charakterkarte konnte nicht als JSON aufbereitet werden.")?;
     if json.len() > MAX_JSON_BYTES {
         return Err("Die Kartenmetadaten überschreiten die Exportgrenze von 4 MiB.".into());
@@ -65,8 +66,9 @@ fn encode_png(export: &Export, json: &[u8]) -> Result<Vec<u8>, String> {
     if portrait.len() > MAX_FILE_BYTES {
         return Err("Das Porträt überschreitet die Exportgrenze von 32 MiB.".into());
     }
-    let mut reader =
-        image::ImageReader::with_format(Cursor::new(portrait), image::ImageFormat::Png);
+    let mut reader = image::ImageReader::new(Cursor::new(portrait))
+        .with_guessed_format()
+        .map_err(|_| "Das Hauptporträt hat kein lesbares PNG-/WebP-Format.")?;
     let mut limits = image::Limits::default();
     limits.max_image_width = Some(4096);
     limits.max_image_height = Some(4096);
@@ -74,7 +76,7 @@ fn encode_png(export: &Export, json: &[u8]) -> Result<Vec<u8>, String> {
     reader.limits(limits);
     let portrait = reader
         .decode()
-        .map_err(|_| "Das PNG-Porträt ist ungültig oder überschreitet 4096 × 4096 Pixel/64 MiB.")?
+        .map_err(|_| "Das Hauptporträt ist ungültig oder überschreitet 4096 × 4096 Pixel/64 MiB.")?
         .into_rgba8();
     let mut bytes = BoundedBytes(Vec::new());
     {
@@ -116,6 +118,55 @@ mod tests {
     use super::*;
     use serde_json::json;
     use std::fs;
+    #[test]
+    fn all_bundled_cards_export_with_portable_expressions_within_the_budget() {
+        let directory = tempfile::tempdir().unwrap();
+        for character in crate::model::Preview::default().characters {
+            let export = Export {
+                card: character.card.unwrap(),
+                portrait: character.portrait,
+            };
+            for (format, extension) in [(Format::Json, "json"), (Format::Png, "png")] {
+                let path = directory
+                    .path()
+                    .join(format!("{}.{extension}", character.id));
+                write(&path, &export, format, None).unwrap();
+                let imported = crate::profile::import_card_file(&path).unwrap();
+                assert_eq!(
+                    imported.card,
+                    crate::expressions::portable_card(&export.card)
+                );
+                let expressions = imported.card["data"]["extensions"]["expressions"]
+                    .as_object()
+                    .unwrap();
+                assert_eq!(expressions.len(), 11);
+                assert!(expressions.values().all(|value| {
+                    value
+                        .as_str()
+                        .unwrap()
+                        .starts_with("data:image/webp;base64,")
+                }));
+            }
+        }
+    }
+    #[test]
+    fn webp_portrait_and_embedded_expression_survive_png_export() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("webp-card.png");
+        let mut export = export();
+        let bytes = crate::expressions::preview("expressions/shiori_amane/happy.webp").unwrap();
+        export.card["data"]["extensions"]["expressions"] = serde_json::json!({"happy":format!("data:image/webp;base64,{}", STANDARD.encode(&bytes))});
+        export.portrait = Some(bytes.clone());
+        write(&path, &export, Format::Png, None).unwrap();
+        let imported = crate::profile::import_card_file(&path).unwrap();
+        assert_eq!(imported.card, export.card);
+        assert_eq!(
+            image::load_from_memory(imported.portrait.as_ref().unwrap())
+                .unwrap()
+                .into_rgba8(),
+            image::load_from_memory(&bytes).unwrap().into_rgba8()
+        );
+    }
 
     fn export() -> Export {
         Export {

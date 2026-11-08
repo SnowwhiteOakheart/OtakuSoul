@@ -74,15 +74,24 @@ pub struct Draft {
     values: [String; 11],
     alternate_greetings: Vec<String>,
     alternate_greetings_changed: bool,
+    expressions: serde_json::Map<String, Value>,
+    expressions_changed: bool,
+    portrait_override: Option<Vec<u8>>,
 }
 
 impl Draft {
+    pub fn portrait_override(&self) -> Option<&[u8]> {
+        self.portrait_override.as_deref()
+    }
     pub fn new() -> Self {
         Self {
             target: None,
             values: Default::default(),
             alternate_greetings: Vec::new(),
             alternate_greetings_changed: false,
+            expressions: serde_json::Map::new(),
+            expressions_changed: false,
+            portrait_override: None,
         }
     }
 
@@ -104,6 +113,9 @@ impl Draft {
                 })
                 .unwrap_or_default(),
             alternate_greetings_changed: false,
+            expressions: expression_map(character),
+            expressions_changed: false,
+            portrait_override: None,
         }
     }
 
@@ -138,6 +150,35 @@ impl Draft {
             self.alternate_greetings.remove(index);
             self.alternate_greetings_changed = true;
         }
+    }
+
+    pub fn expressions(&self) -> &serde_json::Map<String, Value> {
+        &self.expressions
+    }
+
+    pub fn set_portrait(&mut self, bytes: Vec<u8>) {
+        self.portrait_override = Some(bytes);
+    }
+
+    pub fn set_expression(&mut self, key: &str, reference: Option<String>) -> Result<(), String> {
+        if key.trim().is_empty() {
+            return Err("Bitte einen gültigen Ausdruck auswählen.".into());
+        }
+        match reference {
+            Some(reference) => {
+                let reference = Value::String(reference);
+                if self.expressions.get(key) != Some(&reference) {
+                    self.expressions.insert(key.into(), reference);
+                    self.expressions_changed = true;
+                }
+            }
+            None => {
+                if self.expressions.remove(key).is_some() {
+                    self.expressions_changed = true;
+                }
+            }
+        }
+        Ok(())
     }
 
     /// `existing` ist auch beim Duplizieren die Quellkarte, damit fremde Metadaten und Bild bleiben.
@@ -223,6 +264,18 @@ impl Draft {
                 changed.push(field.key());
             }
         }
+        if self.expressions_changed {
+            let extensions = data.entry("extensions").or_insert_with(|| json!({}));
+            let extensions = extensions.as_object_mut().ok_or(
+                "Die Ausdrucksbilder können nicht geändert werden: Die Erweiterungen der Karte enthalten kein gültiges JSON-Objekt.",
+            )?;
+            // Auch ein leeres kanonisches Objekt sperrt den Legacy-Fallback. Die alten
+            // Erweiterungen bleiben erhalten, ohne entfernte Bilder wieder einzublenden.
+            extensions.insert(
+                "expressions".into(),
+                Value::Object(self.expressions.clone()),
+            );
+        }
         // Sonst würde eine alte Übersetzung den gerade bearbeiteten Text in der
         // deutschen Prompt-Vorschau wieder verdecken. Unveränderte Übersetzungen bleiben.
         if let Some(translations) = data
@@ -243,9 +296,32 @@ impl Draft {
             description: self.get(Field::Description).into(),
             first_message: self.get(Field::FirstMessage).into(),
             card: Some(card),
-            portrait: existing.and_then(|character| character.portrait.clone()),
+            portrait: self
+                .portrait_override
+                .clone()
+                .or_else(|| existing.and_then(|character| character.portrait.clone())),
         })
     }
+}
+
+/// Dieselbe Nullish-/Legacy-Präzedenz wie `getPortraitExpressions` im Tauri-Frontend.
+fn expression_map(character: &Character) -> serde_json::Map<String, Value> {
+    let Some(extensions) = character
+        .card
+        .as_ref()
+        .and_then(|card| card.get("data").unwrap_or(card).get("extensions"))
+    else {
+        return serde_json::Map::new();
+    };
+    let selected = extensions
+        .get("expressions")
+        .filter(|value| !value.is_null())
+        .or_else(|| extensions.get("custom_expressions"));
+    selected
+        .and_then(Value::as_object)
+        .or_else(|| extensions.get("sow_expressions").and_then(Value::as_object))
+        .cloned()
+        .unwrap_or_default()
 }
 
 fn value(character: &Character, field: Field) -> String {
@@ -301,6 +377,134 @@ fn value(character: &Character, field: Field) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn portrait_override_supports_new_cards_without_changing_existing_metadata() {
+        let mut new = Draft::new();
+        new.set(Field::Name, "Neue Karte".into());
+        new.set_portrait(vec![1, 2, 3]);
+        assert_eq!(
+            new.apply(None, "new".into()).unwrap().portrait,
+            Some(vec![1, 2, 3])
+        );
+
+        let card = json!({"name":"Alice","description":"Original","first_mes":"Hallo",
+            "extensions":{"foreign":{"keep":true},"expressions":{"happy":"happy.webp"}}});
+        let original = character(card.clone());
+        let mut draft = Draft::from_character(0, &original);
+        draft.set_portrait(vec![4, 5, 6]);
+        let edited = draft.apply(Some(&original), "original".into()).unwrap();
+        assert_eq!(edited.portrait, Some(vec![4, 5, 6]));
+        assert_eq!(edited.card, Some(card));
+    }
+
+    #[test]
+    fn expression_maps_follow_nullish_and_legacy_precedence() {
+        for (extensions, expected) in [
+            (
+                json!({"expressions":{"neutral":"current"},"custom_expressions":{"neutral":"custom"},"sow_expressions":{"neutral":"legacy"}}),
+                json!({"neutral":"current"}),
+            ),
+            (
+                json!({"expressions":null,"custom_expressions":{"neutral":"custom"},"sow_expressions":{"neutral":"legacy"}}),
+                json!({"neutral":"custom"}),
+            ),
+            (
+                json!({"expressions":[],"custom_expressions":{"neutral":"custom"},"sow_expressions":{"neutral":"legacy"}}),
+                json!({"neutral":"legacy"}),
+            ),
+            (
+                json!({"expressions":{},"sow_expressions":{"neutral":"legacy"}}),
+                json!({}),
+            ),
+        ] {
+            let original = character(
+                json!({"name":"Alice","description":"Original","first_mes":"Hallo","extensions":extensions}),
+            );
+            assert_eq!(
+                Value::Object(Draft::from_character(0, &original).expressions().clone()),
+                expected
+            );
+        }
+    }
+
+    #[test]
+    fn expression_edits_preserve_unknown_values_and_do_not_resurrect_removed_legacy_images() {
+        let original = character(
+            json!({"data":{"name":"Alice","description":"Original","first_mes":"Hallo",
+            "extensions":{"sow_expressions":{"neutral":"old.png","sad":"sad.png","future_slot":{"opaque":true}},
+                "foreign":[1,2],"otakusoul_i18n":{"translations":{"de":{"description":"Beschreibung"}}}}}}),
+        );
+        let mut draft = Draft::from_character(0, &original);
+        draft
+            .set_expression("neutral", Some("data:image/png;base64,new".into()))
+            .unwrap();
+        draft.set_expression("sad", None).unwrap();
+        let edited = draft.apply(Some(&original), "original".into()).unwrap();
+        let extensions = &edited.card.as_ref().unwrap()["data"]["extensions"];
+        assert_eq!(
+            extensions["expressions"]["neutral"],
+            "data:image/png;base64,new"
+        );
+        assert_eq!(
+            extensions["expressions"]["future_slot"],
+            json!({"opaque":true})
+        );
+        assert_eq!(extensions["foreign"], json!([1, 2]));
+        assert_eq!(
+            extensions["otakusoul_i18n"]["translations"]["de"]["description"],
+            "Beschreibung"
+        );
+        assert_eq!(extensions["sow_expressions"]["sad"], "sad.png");
+        let mut roundtrip = Draft::from_character(0, &edited);
+        assert!(!roundtrip.expressions().contains_key("sad"));
+        roundtrip.set_expression("neutral", None).unwrap();
+        roundtrip.set_expression("future_slot", None).unwrap();
+        let empty = roundtrip.apply(Some(&edited), "original".into()).unwrap();
+        assert!(Draft::from_character(0, &empty).expressions().is_empty());
+    }
+
+    #[test]
+    fn untouched_expression_data_is_preserved_and_malformed_extensions_cannot_be_replaced() {
+        for extensions in [
+            Value::Null,
+            json!(["foreign"]),
+            json!("foreign"),
+            json!({"expressions":[42],"custom_expressions":false}),
+        ] {
+            let card = json!({"name":"Alice","description":"Original","first_mes":"Hallo","extensions":extensions});
+            let original = character(card.clone());
+            let mut draft = Draft::from_character(0, &original);
+            assert!(draft.set_expression(" ", Some("image".into())).is_err());
+            assert_eq!(
+                draft
+                    .apply(Some(&original), "original".into())
+                    .unwrap()
+                    .card,
+                Some(card)
+            );
+            draft
+                .set_expression("neutral", Some("image".into()))
+                .unwrap();
+            if !extensions.is_object() {
+                assert!(draft.apply(Some(&original), "original".into()).is_err());
+            }
+        }
+        let original =
+            character(json!({"name":"Alice","description":"Original","first_mes":"Hallo"}));
+        let mut draft = Draft::from_character(0, &original);
+        draft
+            .set_expression("neutral", Some("new.png".into()))
+            .unwrap();
+        assert_eq!(
+            draft
+                .apply(Some(&original), "original".into())
+                .unwrap()
+                .card
+                .unwrap()["extensions"]["expressions"]["neutral"],
+            "new.png"
+        );
+    }
 
     fn character(card: Value) -> Character {
         Character {

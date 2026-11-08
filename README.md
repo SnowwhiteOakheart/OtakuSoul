@@ -6,6 +6,7 @@
 > Its character library supports search, an in-memory card editor, creation and duplication, and explicit JSON/PNG file import/export through native dialogs. PNG exports include the portrait; loaded profiles remain read-only.
 > The editor includes alternate greetings and a read-only JSON preview. Empty local test chats can select a greeting variant.
 > The character library uses a responsive portrait grid with combined text search and tag filtering.
+> Its expression editor supports 15 portrait slots, PNG/WebP embedding and main portrait selection; file exports embed bundled expression assets for portability.
 > The preview uses in-memory test messages without AI integration and can read explicitly selected profile copies.
 > Settings can create a demo profile with fictional conversations; imported conversations remain read-only.
 > A separate connection test checks an existing AI endpoint with a short fixed request.

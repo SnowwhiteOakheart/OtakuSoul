@@ -128,7 +128,9 @@ fn png_card(bytes: &[u8]) -> Result<Value, String> {
     let decoder = png::Decoder::new_with_limits(
         Cursor::new(bytes),
         png::Limits {
-            bytes: MAX_CARD_BYTES,
+            // PNG hält beim Lesen großer Textchunks mehrere interne Puffer.
+            // Kartenmetadaten bleiben separat auf MAX_CARD_BYTES begrenzt.
+            bytes: MAX_CARD_BYTES * 4,
         },
     );
     let mut reader = decoder

@@ -1030,6 +1030,7 @@ impl App {
         for (tab, label) in [
             (EditorTab::Fields, "Kartentexte"),
             (EditorTab::Greetings, "Begrüßungen"),
+            (EditorTab::Expressions, "Ausdrucksbilder"),
             (EditorTab::Json, "JSON"),
         ] {
             tabs = tabs.push(
@@ -1044,6 +1045,19 @@ impl App {
             );
         }
         let selector: Element<'_, Message> = match self.editor_tab {
+            EditorTab::Expressions => row![
+                iced::widget::pick_list(
+                    crate::expressions::SLOTS,
+                    Some(self.expression_slot),
+                    Message::ExpressionSlot
+                )
+                .padding(10)
+                .style(appearance::select),
+                muted(self.expression_slot.group(), 12, &self.theme())
+            ]
+            .spacing(12)
+            .align_y(Alignment::Center)
+            .into(),
             EditorTab::Fields => row![
                 text("Kartenfeld").size(14),
                 iced::widget::pick_list(
@@ -1084,6 +1098,80 @@ impl App {
             )
             .into(),
         };
+        let editor: Element<'_, Message> = if self.editor_tab == EditorTab::Expressions {
+            let preview: Element<'_, Message> = if let Some(handle) = &self.expression_image {
+                image(handle.clone())
+                    .width(Fill)
+                    .height(Fill)
+                    .content_fit(iced::ContentFit::Contain)
+                    .into()
+            } else {
+                container(icon(Icon::Image, 48))
+                    .center_x(Fill)
+                    .center_y(Fill)
+                    .into()
+            };
+            let reference = draft
+                .expressions()
+                .get(self.expression_slot.key())
+                .and_then(serde_json::Value::as_str)
+                .filter(|reference| !reference.trim().is_empty());
+            let reference_label = match reference {
+                Some(reference) if reference.starts_with("data:") => {
+                    "Bild portabel in der Karte eingebettet".to_owned()
+                }
+                Some(reference) => shorten(reference, 120),
+                None => "Kein eigenes Ausdrucksbild".into(),
+            };
+            let count = crate::expressions::SLOTS
+                .iter()
+                .filter(|slot| {
+                    draft
+                        .expressions()
+                        .get(slot.key())
+                        .and_then(serde_json::Value::as_str)
+                        .is_some_and(|reference| !reference.trim().is_empty())
+                })
+                .count();
+            let actions = column![
+                text(format!("{count} von 15 Ausdrücken zugeordnet")).size(16),
+                muted(reference_label,11,&self.theme()),
+                muted(&self.expression_status,12,&self.theme()),
+                button("PNG-/WebP-Bild wählen …").padding(8).style(appearance::primary_button)
+                    .on_press_maybe((!self.card_busy).then_some(Message::PickExpression)),
+                button("Zuordnung entfernen").padding(8).style(appearance::subtle_button)
+                    .on_press_maybe((!self.card_busy && reference.is_some()).then_some(Message::RemoveExpression)),
+                button("Als Hauptporträt verwenden").padding(8).style(appearance::subtle_button)
+                    .on_press_maybe(self.expression_bytes.is_some().then_some(Message::ExpressionAsPortrait)),
+                muted("PNG/WebP bis 1 MiB pro Bild. Kleine WebP-Dateien lassen mehr Platz für weitere Ausdrücke. Externe Verweise werden nicht automatisch geladen.",11,&self.theme())
+            ].spacing(8).width(Fill);
+            scroll(
+                row![
+                    container(preview)
+                        .width(180)
+                        .height(220)
+                        .style(appearance::card),
+                    actions
+                ]
+                .spacing(16),
+            )
+            .height(Fill)
+            .into()
+        } else {
+            text_editor(&self.character_text)
+                .height(Fill)
+                .padding(14)
+                .size(14)
+                .font(if self.editor_tab == EditorTab::Json {
+                    iced::Font::MONOSPACE
+                } else {
+                    super::ui_font()
+                })
+                .style(appearance::editor)
+                .key_binding(read_only_keys)
+                .on_action(Message::CharacterText)
+                .into()
+        };
         container(column![
             row![text("Charakter bearbeiten").size(26).width(Fill),
                 control(Icon::Back,"Bibliothek",Message::Navigate(Page::Characters))].align_y(Alignment::Center),
@@ -1091,7 +1179,7 @@ impl App {
             text_input("Name des Charakters",draft.get(Field::Name)).padding(10).style(appearance::input).on_input(Message::CharacterName),
             tabs,
             selector,
-            text_editor(&self.character_text).height(Fill).padding(14).size(14).font(if self.editor_tab == EditorTab::Json {iced::Font::MONOSPACE} else { super::ui_font() }).style(appearance::editor).key_binding(read_only_keys).on_action(Message::CharacterText),
+            editor,
             text(&self.character_error).size(13),
             row![
                 button("Übernehmen").padding(10).style(appearance::primary_button).on_press(Message::SaveCharacter),
