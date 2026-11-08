@@ -19,6 +19,7 @@
 * **Pfade:** Niemals feste Systempfade hardcoden – ausschließlich `paths::base_dirs()` nutzen (`ProjectDirs` bzw. `$OTAKUSOUL_HOME/config|data`). Betriebssystemspezifischen Code immer mit `#[cfg]` absichern.
 * **Git & Commits:** Thematische Commits direkt auf `main` (`feat(bereich): …` auf Deutsch), danach sofort `git push`. Keine fremden, uncommitteten Änderungen mitcommitten.
 * **Roadmap-Pflege:** Erledigte Punkte in `roadmap.md` abhaken und nach `roadmap_abgeschlossen.md` verschieben (nur lokal, gitignored).
+* **Dokumentation:** Ausführliche Arbeitsregeln und tiefgehende technische Details stehen in [`AI.md`](AI.md). Der spezialisierte Leitfaden zur Erstellung und Riggung von 3D-Anime-Avataren, Hair-Card-Generierung und VRM-Export liegt in [`VRM_PIPELINE.md`](VRM_PIPELINE.md).
 * **Modell-Downloads:** Modelle von der Quelle laden (SHA-256), Lizenzen beachten (`license_kind`). Ausnahme: 1–2 Avatare/Puppen je Art dürfen mitgeliefert werden, wenn Lizenz und Größe es erlauben (mit `lizenzen.txt` + README-Hinweis); der Rest kommt als Registry-Eintrag ins Daten-Repo. LLM-/TTS-/Bild-Gewichte nie.
 
 ---
