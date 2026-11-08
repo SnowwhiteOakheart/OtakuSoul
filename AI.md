@@ -40,6 +40,8 @@ sowie eingebettete Bilder sind offline sichtbar; andere Verweise bleiben erhalte
 Dateiexport bettet bekannte Preset-Ausdrucksbilder portabel ein. Details/Grenzen: native-ui/ROADMAP.md.
 Lorebooks: ausdrücklich geladener RAM-Katalog, Eintragssuche, eigener Eintragseditor und Kartenbindungen.
 Quelldateien bleiben unverändert; expliziter JSON-Export sichert Lorebook-Entwürfe atomar über file_export.rs.
+Lorebook-Regeln: Aktivierung/Einfügeart, Priorität/Wahrscheinlichkeit/Spannung, Wort-/Großschreibung,
+Verkettungen, Suchbereich/global. Ungültige Zahleneingaben sperren Übernehmen/Entwurfsexport/Eintragswechsel.
 Original-JSON/eingebettete Bücher bleiben erhalten; noch keine native Lore-Evaluation/Promptaktivierung.
 
 ### Allgemeine Arbeitsregeln

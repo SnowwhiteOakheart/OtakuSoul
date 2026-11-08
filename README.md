@@ -8,6 +8,7 @@
 > The character library uses a responsive portrait grid with combined text search and tag filtering.
 > Its expression editor supports 15 portrait slots, PNG/WebP embedding and main portrait selection; file exports embed bundled expression assets for portability.
 > Lorebooks can be loaded without changing their source files, edited in memory, exported as JSON and assigned to character cards; native chat context evaluation is still pending.
+> The lorebook editor includes activation rules, priorities, probabilities, keyword options and entry chains with input validation.
 > The preview uses in-memory test messages without AI integration and can read explicitly selected profile copies.
 > Settings can create a demo profile with fictional conversations; imported conversations remain read-only.
 > A separate connection test checks an existing AI endpoint with a short fixed request.

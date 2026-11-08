@@ -11,6 +11,36 @@ use iced::{Alignment, Background, Border, Color, Element, Fill, Length, Theme};
 type NavItem = (Page, Icon, &'static str);
 type NavGroup = (&'static str, &'static [NavItem]);
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct RuleChoice(String, String);
+impl std::fmt::Display for RuleChoice {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.1)
+    }
+}
+fn rule_choices(
+    current: String,
+    options: &[(&str, &str)],
+) -> (Vec<RuleChoice>, Option<RuleChoice>) {
+    let mut choices = options
+        .iter()
+        .map(|(value, label)| RuleChoice((*value).into(), (*label).into()))
+        .collect::<Vec<_>>();
+    let selected = choices
+        .iter()
+        .find(|choice| choice.0 == current)
+        .cloned()
+        .unwrap_or_else(|| {
+            let choice = RuleChoice(
+                current.clone(),
+                format!("Vorhanden: {}", shorten(&current, 40)),
+            );
+            choices.push(choice.clone());
+            choice
+        });
+    (choices, Some(selected))
+}
+
 fn read_only_keys(press: text_editor::KeyPress) -> Option<text_editor::Binding<Message>> {
     if press.key == Key::Named(Named::Tab) {
         Some(text_editor::Binding::Custom(Message::Focus(
@@ -1172,6 +1202,104 @@ impl App {
         scroll(content.padding(24)).height(Fill).width(Fill).into()
     }
 
+    fn lorebook_rules(&self) -> Element<'_, Message> {
+        let Some(draft) = &self.lore_draft else {
+            return text("Kein Entwurf geöffnet.").into();
+        };
+        let mut rules=column![
+            row![column![muted("Suchbereich: letzte Nachrichten",12,&self.theme()),
+                text_input("5",&self.lore_scan_depth).padding(10).style(appearance::input).on_input(Message::LoreScanDepth)].spacing(5).width(Fill),
+                iced::widget::checkbox(draft.is_global()).label("Global (Dateieinstellung)").on_toggle(Message::LoreGlobal)
+            ].spacing(16).align_y(Alignment::Center),
+            muted("Diese Einstellungen werden gespeichert; die native Chat-Kontextauswahl folgt später.",12,&self.theme())
+        ].spacing(16);
+        if self.lore_selected_entry < draft.count() {
+            let index = self.lore_selected_entry;
+            let (triggers, trigger) = rule_choices(
+                draft.trigger(index),
+                &[
+                    ("keyword", "Schlüsselwörter"),
+                    ("regex", "Reguläre Ausdrücke"),
+                    ("always_on", "Immer aufnehmen"),
+                    ("tension", "Spannung"),
+                ],
+            );
+            let (behaviors, behavior) = rule_choices(
+                draft.injection(index),
+                &[("passive", "Hintergrundwissen"), ("active", "Anweisung")],
+            );
+            rules = rules.push(
+                row![
+                    column![
+                        muted("Aktivierung", 12, &self.theme()),
+                        iced::widget::pick_list(triggers, trigger, |choice| Message::LoreTrigger(
+                            choice.0
+                        ))
+                        .padding(10)
+                        .style(appearance::select)
+                    ]
+                    .spacing(5)
+                    .width(Fill),
+                    column![
+                        muted("Einfügen als", 12, &self.theme()),
+                        iced::widget::pick_list(behaviors, behavior, |choice| {
+                            Message::LoreInjection(choice.0)
+                        })
+                        .padding(10)
+                        .style(appearance::select)
+                    ]
+                    .spacing(5)
+                    .width(Fill)
+                ]
+                .spacing(16),
+            );
+            let mut numbers = row![].spacing(12);
+            for number in crate::lore_draft::Number::ALL {
+                numbers = numbers.push(
+                    column![
+                        muted(number.to_string(), 12, &self.theme()),
+                        text_input("Optional", &self.lore_numbers[number as usize])
+                            .padding(10)
+                            .style(appearance::input)
+                            .on_input(move |value| Message::LoreNumber(number, value))
+                    ]
+                    .spacing(5)
+                    .width(Fill),
+                );
+            }
+            rules = rules.push(numbers);
+            rules=rules.push(muted("Wahrscheinlichkeit und Spannung: 0–100, leer = kein eigener Wert. Priorität: ganze Zahl.",11,&self.theme()));
+            rules = rules.push(
+                column![
+                    iced::widget::checkbox(draft.case_sensitive(index))
+                        .label("Groß-/Kleinschreibung beachten")
+                        .on_toggle(Message::LoreCaseSensitive),
+                    iced::widget::checkbox(draft.whole_words(index))
+                        .label("Nur ganze Wörter")
+                        .on_toggle(Message::LoreWholeWords)
+                ]
+                .spacing(10),
+            );
+            rules = rules.push(
+                row![
+                    control(
+                        Icon::Lorebooks,
+                        "Benötigte Einträge",
+                        Message::LoreField(crate::lore_draft::Field::ChainRequires)
+                    ),
+                    control(
+                        Icon::Lorebooks,
+                        "Aktivierte Einträge",
+                        Message::LoreField(crate::lore_draft::Field::ChainActivates)
+                    )
+                ]
+                .spacing(10),
+            );
+            rules=rules.push(muted("Verkettungen verweisen zeilenweise auf Namen oder UIDs. Vorhandene weitergehende Regeln bleiben erhalten.",11,&self.theme()));
+        }
+        scroll(rules).height(Fill).width(Fill).into()
+    }
+
     fn lorebook_editor(&self) -> Element<'_, Message> {
         let Some(draft) = &self.lore_draft else {
             return self.lorebooks_view();
@@ -1194,7 +1322,30 @@ impl App {
                 control(Icon::Plus,"Eintrag",Message::AddLoreEntry),
                 icon_control(Icon::Close,"Eintrag entfernen",(draft.count()>0).then_some(Message::RemoveLoreEntry))].spacing(10).align_y(Alignment::Center)
         ].spacing(10);
-        if self.lore_selected_entry < draft.count() {
+        content = content.push(
+            row![
+                button("Eintragstext")
+                    .padding([6, 10])
+                    .style(if self.lore_show_rules {
+                        appearance::subtle_button
+                    } else {
+                        appearance::primary_button
+                    })
+                    .on_press(Message::LoreShowRules(false)),
+                button("Regeln")
+                    .padding([6, 10])
+                    .style(if self.lore_show_rules {
+                        appearance::primary_button
+                    } else {
+                        appearance::subtle_button
+                    })
+                    .on_press(Message::LoreShowRules(true))
+            ]
+            .spacing(8),
+        );
+        if self.lore_show_rules {
+            content = content.push(self.lorebook_rules());
+        } else if self.lore_selected_entry < draft.count() {
             content = content.push(
                 text_input("Name des Eintrags", &self.lore_entry_name)
                     .on_input(Message::LoreEntryName)
@@ -1237,13 +1388,25 @@ impl App {
                     .center_y(Fill),
             );
         }
-        content = content.push(text(&self.lore_error).size(13));
+        let error = self
+            .lore_scan_error
+            .as_deref()
+            .or_else(|| self.lore_number_errors.iter().find_map(Option::as_deref))
+            .unwrap_or(&self.lore_error);
+        content = content.push(text(error).size(13));
+        if self.lore_rules_invalid() {
+            content = content.push(control(
+                Icon::Back,
+                "Ungültige Eingabe verwerfen",
+                Message::ResetLoreRules,
+            ));
+        }
         content = content.push(
             row![
                 button("Übernehmen")
                     .padding(10)
                     .style(appearance::primary_button)
-                    .on_press(Message::SaveLorebook),
+                    .on_press_maybe((!self.lore_rules_invalid()).then_some(Message::SaveLorebook)),
                 control(Icon::Close, "Entwurf verwerfen", Message::DiscardLorebook),
                 Space::new().width(Fill),
                 control(Icon::Attachment, "JSON speichern", Message::ExportLoreDraft)

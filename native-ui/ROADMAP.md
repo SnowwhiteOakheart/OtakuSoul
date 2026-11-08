@@ -317,7 +317,8 @@ Kein vollständiger E2E-Lauf, kein echtes Modell und kein Cloud-Anbieter aufgeru
 - [x] Ausdrucksbilder-Reiter mit 15 Plätzen, Offlinevorschau, Auswahl/Entfernen und Hauptporträtübernahme.
 - [x] Lorebook-Bindungen im Charaktereditor und lesender Katalog mit Eintragssuche.
 - [x] Lorebook-Basiseditor mit Eintragsverwaltung und atomarem JSON-Export.
-- [ ] Weitere Editorbereiche: erweiterte Lorebook-Aktivierungsregeln und Auflösung fremder relativer Bildverweise.
+- [x] Erweiterte Lorebook-Regelmetadaten mit Eingabevalidierung.
+- [ ] Weitere Editorbereiche: Auflösung fremder relativer Bildverweise; weitere Gesamt-GUI-Bereiche gemäß Folgeetappen.
 - [x] Expliziter JSON-/PNG-Dateiimport/-export über native Öffnen-/Speichern-Dialoge.
 - [ ] Dauerhafte Integration von Kartenänderungen in ein eigenes isoliertes Schreibprofil.
 
@@ -559,6 +560,36 @@ Pflichtfelder, Entwurfsschutz/ID-Kollision, Auswählen ohne Normalisierung, atom
 Roundtrip unter anderem Dateinamen mit unveränderter Quelle. Clippy/Formatprüfung erfolgreich.
 Review korrigierte fehlende Exportmeldungen und den projizierten Namen ohne Rohfeld. Kein Desktopzugriff,
 kein Schließen/Starten der Vorschau. Normale Windows-EXE und gesammelte Sichtabnahme weiter offen.
+
+### GUI-Zwischenschritt: erweiterte Lorebook-Regeln
+
+Im Lorebookeditor zwischen „Eintragstext“ und „Regeln“ wechseln. Regeln zeigen die Aktivierung
+(Schlüsselwort/Regex/immer/Spannung), Einfügeart (Hintergrundwissen/Anweisung), Priorität (i32), optionale
+Wahrscheinlichkeit/Spannung (0–100), Groß-/Kleinschreibung und ganze Wörter. Vorhandene unbekannte
+Trigger-/Einfügewerte erscheinen separat und werden nicht beim Anzeigen ersetzt. Verkettungen
+`chain_requires`/`chain_activates` lassen sich über die Feldliste zeilenweise bearbeiten; Schnellknöpfe
+öffnen diese Felder. Buchweit sind `scan_depth` (u32 einschließlich 0) und `is_global` editierbar.
+Alle Werte sind weiterhin Dateimetadaten; native Chat-Kontextauswertung ist ausdrücklich noch offen.
+
+Zahleneingaben haben eigene Puffer/Fehlerzustände. Ungültige Werte verändern den Entwurf nicht,
+bleiben aber sichtbar und sperren Übernehmen, Entwurfsexport sowie Eintragswechsel/Anlegen/Entfernen.
+„Ungültige Eingabe verwerfen“ setzt Puffer auf die letzten gültigen Entwurfswerte, nicht auf die
+ursprüngliche Datei zurück. Andere gültige Regeländerungen gehen dabei nicht verloren. Regelansicht
+wechseln/Navigation verwirft keine ungültigen Puffer. Katalogexport eines bereits übernommenen Buchs
+bleibt unabhängig vom offenen Entwurf. Leere optionale Prozentwerte entfernen die eigene Vorgabe.
+
+Legacy-Metadaten: `n_depth` beim Suchbereich lesen und beim Ändern synchronisieren; `order` bei
+Prioritätsänderung erhalten/synchronisieren; String-`position` bei Einfügeart mitlesen und beim Ändern
+abgleichen. Leere Voraussetzungen berücksichtigen ein nichtnegatives `depends_on`; ausdrückliches
+Bearbeiten der Voraussetzungsliste entfernt diesen Legacywert, damit er später nicht wieder greift.
+Das sind Editorprojektionen und Aliasbereinigung, keine Kopie von Tauris Legacyupgrade/Evaluationsengine.
+Bestehende nicht bearbeitete Rohwerte bleiben erhalten. Vollständige Importnormalisierung gehört
+weiterhin in die geplante gemeinsame Lorebook-Crate.
+
+Prüfstand: 111 Native-Tests erfolgreich (acht neue Regel-/Eingabeschutztests gegenüber dem Basiseditor).
+Der Dateiroundtrip prüft nun ebenfalls Suchbereich, Globalmarkierung, Priorität, Wahrscheinlichkeit,
+Spannung und Aktivierung. Clippy und Formatprüfung bestanden. Review führte zu drei Legacy-Alias-
+Korrekturen. Keine Desktopsteuerung/kein Neustart; Windows-Build und Sichtprüfungen bleiben gesammelt offen.
 
 - [ ] Einstellungen/Onboarding, Charakter-/Lorebook-Editoren, Gedächtnis, Hub und Im-/Export.
 - [ ] Stage und 5e einschließlich Battlemap; Fachlogik wiederverwenden.

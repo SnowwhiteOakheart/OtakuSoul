@@ -169,6 +169,15 @@ enum Message {
     LoreText(text_editor::Action),
     LoreEnabled(bool),
     LoreAlways(bool),
+    LoreShowRules(bool),
+    LoreNumber(lore_draft::Number, String),
+    LoreScanDepth(String),
+    LoreGlobal(bool),
+    LoreTrigger(String),
+    LoreInjection(String),
+    LoreCaseSensitive(bool),
+    LoreWholeWords(bool),
+    ResetLoreRules,
     AddLoreEntry,
     RemoveLoreEntry,
     SaveLorebook,
@@ -303,6 +312,11 @@ struct App {
     lore_field: lore_draft::Field,
     lore_text: text_editor::Content,
     lore_error: String,
+    lore_show_rules: bool,
+    lore_numbers: [String; 3],
+    lore_number_errors: [Option<String>; 3],
+    lore_scan_depth: String,
+    lore_scan_error: Option<String>,
     next_lore_id: u64,
     character_draft: Option<character_draft::Draft>,
     character_draft_id: u64,
@@ -401,6 +415,11 @@ impl Default for App {
             lore_field: lore_draft::Field::Content,
             lore_text: text_editor::Content::new(),
             lore_error: String::new(),
+            lore_show_rules: false,
+            lore_numbers: Default::default(),
+            lore_number_errors: Default::default(),
+            lore_scan_depth: String::new(),
+            lore_scan_error: None,
             next_lore_id: 0,
             character_draft: None,
             character_draft_id: 0,
@@ -422,6 +441,25 @@ impl Default for App {
 }
 
 impl App {
+    fn lore_rules_invalid(&self) -> bool {
+        self.lore_scan_error.is_some() || self.lore_number_errors.iter().any(Option::is_some)
+    }
+    fn sync_lore_rule_error(&mut self) {
+        self.lore_error = self
+            .lore_scan_error
+            .clone()
+            .or_else(|| self.lore_number_errors.iter().flatten().next().cloned())
+            .unwrap_or_default();
+    }
+    fn sync_lore_rules(&mut self) {
+        if let Some(draft) = &self.lore_draft {
+            self.lore_numbers = lore_draft::Number::ALL
+                .map(|number| draft.number(self.lore_selected_entry, number));
+            self.lore_scan_depth = draft.scan_depth();
+        }
+        self.lore_number_errors = Default::default();
+        self.lore_scan_error = None;
+    }
     fn sync_lore_text(&mut self) {
         self.lore_entry_name = self
             .lore_draft
@@ -464,10 +502,16 @@ impl App {
             self.lore_field = lore_draft::Field::Content;
             self.lore_error.clear();
             self.sync_lore_text();
+            self.sync_lore_rules();
+            self.lore_show_rules = false;
         }
         self.page = Page::LorebookEditor;
     }
     fn save_lorebook(&mut self) {
+        if self.lore_rules_invalid() {
+            self.sync_lore_rule_error();
+            return;
+        }
         let Some(draft) = &self.lore_draft else {
             return;
         };
@@ -1016,6 +1060,65 @@ impl App {
     }
     fn update(&mut self, message: Message) -> Task<Message> {
         match message {
+            Message::LoreShowRules(value) => self.lore_show_rules = value,
+            Message::LoreNumber(number, value) => {
+                let index = number as usize;
+                self.lore_numbers[index] = value.clone();
+                if let Some(draft) = &mut self.lore_draft {
+                    self.lore_number_errors[index] = draft
+                        .set_number(self.lore_selected_entry, number, &value)
+                        .err();
+                    self.sync_lore_rule_error();
+                }
+            }
+            Message::LoreScanDepth(value) => {
+                self.lore_scan_depth = value.clone();
+                if let Some(draft) = &mut self.lore_draft {
+                    self.lore_scan_error = draft.set_scan_depth(&value).err();
+                    self.sync_lore_rule_error();
+                }
+            }
+            Message::LoreGlobal(value) => {
+                if let Some(draft) = &mut self.lore_draft {
+                    draft.set_global(value);
+                }
+            }
+            Message::LoreTrigger(value) => {
+                if let Some(draft) = &mut self.lore_draft {
+                    self.lore_error = draft
+                        .set_trigger(self.lore_selected_entry, &value)
+                        .err()
+                        .unwrap_or_default();
+                }
+            }
+            Message::LoreInjection(value) => {
+                if let Some(draft) = &mut self.lore_draft {
+                    self.lore_error = draft
+                        .set_injection(self.lore_selected_entry, &value)
+                        .err()
+                        .unwrap_or_default();
+                }
+            }
+            Message::LoreCaseSensitive(value) => {
+                if let Some(draft) = &mut self.lore_draft {
+                    self.lore_error = draft
+                        .set_case_sensitive(self.lore_selected_entry, value)
+                        .err()
+                        .unwrap_or_default();
+                }
+            }
+            Message::LoreWholeWords(value) => {
+                if let Some(draft) = &mut self.lore_draft {
+                    self.lore_error = draft
+                        .set_whole_words(self.lore_selected_entry, value)
+                        .err()
+                        .unwrap_or_default();
+                }
+            }
+            Message::ResetLoreRules => {
+                self.sync_lore_rules();
+                self.lore_error.clear();
+            }
             Message::NewLorebook => self.open_lorebook(None),
             Message::EditLorebook(index) => self.open_lorebook(Some(index)),
             Message::LoreName(value) => {
@@ -1029,6 +1132,10 @@ impl App {
                 }
             }
             Message::LoreSelectEntry(choice) => {
+                if self.lore_rules_invalid() {
+                    self.sync_lore_rule_error();
+                    return Task::none();
+                }
                 if self
                     .lore_draft
                     .as_ref()
@@ -1036,10 +1143,12 @@ impl App {
                 {
                     self.lore_selected_entry = choice.0;
                     self.sync_lore_text();
+                    self.sync_lore_rules();
                 }
             }
             Message::LoreField(field) => {
                 self.lore_field = field;
+                self.lore_show_rules = false;
                 self.sync_lore_text();
             }
             Message::LoreEntryName(value) => {
@@ -1086,18 +1195,27 @@ impl App {
                 }
             }
             Message::AddLoreEntry => {
+                if self.lore_rules_invalid() {
+                    self.sync_lore_rule_error();
+                    return Task::none();
+                }
                 if let Some(draft) = &mut self.lore_draft {
                     match draft.add_entry() {
                         Ok(index) => {
                             self.lore_selected_entry = index;
                             self.lore_error.clear();
                             self.sync_lore_text();
+                            self.sync_lore_rules();
                         }
                         Err(error) => self.lore_error = error,
                     }
                 }
             }
             Message::RemoveLoreEntry => {
+                if self.lore_rules_invalid() {
+                    self.sync_lore_rule_error();
+                    return Task::none();
+                }
                 if let Some(draft) = &mut self.lore_draft {
                     match draft.remove_entry(self.lore_selected_entry) {
                         Ok(()) => {
@@ -1106,6 +1224,7 @@ impl App {
                                 .min(draft.count().saturating_sub(1));
                             self.lore_error.clear();
                             self.sync_lore_text();
+                            self.sync_lore_rules();
                         }
                         Err(error) => self.lore_error = error,
                     }
@@ -1118,6 +1237,10 @@ impl App {
                 self.page = Page::Lorebooks;
             }
             Message::ExportLoreDraft => {
+                if self.lore_rules_invalid() {
+                    self.sync_lore_rule_error();
+                    return Task::none();
+                }
                 if let Some(draft) = &self.lore_draft {
                     match draft.apply() {
                         Ok(book) => return self.export_lorebook(book),
@@ -1874,6 +1997,92 @@ mod tests {
 #[cfg(test)]
 mod character_editor_tests {
     use super::*;
+    #[test]
+    fn invalid_rule_numbers_block_save_export_and_entry_changes_until_reset() {
+        let mut app = App::default();
+        app.lorebooks.push(lorebook_fixture("Original"));
+        let _ = app.update(Message::EditLorebook(0));
+        let _ = app.update(Message::LoreNumber(
+            lore_draft::Number::Priority,
+            "-9".into(),
+        ));
+        let _ = app.update(Message::LoreNumber(
+            lore_draft::Number::Probability,
+            "101".into(),
+        ));
+        let _ = app.update(Message::SaveLorebook);
+        let _ = app.update(Message::ExportLoreDraft);
+        let _ = app.update(Message::AddLoreEntry);
+        assert!(!app.card_busy);
+        assert!(app.lore_draft.is_some());
+        assert_eq!(app.lore_draft.as_ref().unwrap().count(), 1);
+        assert_eq!(
+            app.lore_numbers[lore_draft::Number::Probability as usize],
+            "101"
+        );
+        let _ = app.update(Message::ResetLoreRules);
+        assert!(!app.lore_rules_invalid());
+        let _ = app.update(Message::SaveLorebook);
+        assert_eq!(app.lorebooks[0].raw["entries"][0]["priority"], -9);
+        assert!(
+            app.lorebooks[0].raw["entries"][0]
+                .get("probability")
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn scan_errors_survive_other_valid_inputs_and_cannot_be_lost_on_entry_switch() {
+        let mut app = App::default();
+        app.lorebooks.push(lorebook_fixture("Original"));
+        let _ = app.update(Message::EditLorebook(0));
+        let _ = app.update(Message::AddLoreEntry);
+        assert_eq!(app.lore_selected_entry, 1);
+        let _ = app.update(Message::LoreScanDepth("-1".into()));
+        let _ = app.update(Message::LoreNumber(
+            lore_draft::Number::Probability,
+            "10".into(),
+        ));
+        let _ = app.update(Message::LoreSelectEntry(LoreEntryChoice(0, "Ort".into())));
+        assert_eq!(app.lore_selected_entry, 1);
+        assert!(app.lore_rules_invalid());
+        let _ = app.update(Message::LoreScanDepth("0".into()));
+        assert!(!app.lore_rules_invalid());
+        let _ = app.update(Message::LoreSelectEntry(LoreEntryChoice(0, "Ort".into())));
+        assert_eq!(app.lore_selected_entry, 0);
+        let _ = app.update(Message::SaveLorebook);
+        assert_eq!(app.lorebooks[0].raw["scan_depth"], 0);
+        assert_eq!(app.lorebooks[0].raw["entries"][1]["probability"], 10);
+    }
+
+    #[test]
+    fn rule_controls_store_metadata_without_activating_chat_context() {
+        let mut app = App::default();
+        app.lorebooks.push(lorebook_fixture("Original"));
+        let _ = app.update(Message::EditLorebook(0));
+        let _ = app.update(Message::LoreTrigger("regex".into()));
+        let _ = app.update(Message::LoreInjection("active".into()));
+        let _ = app.update(Message::LoreCaseSensitive(true));
+        let _ = app.update(Message::LoreWholeWords(true));
+        let _ = app.update(Message::LoreGlobal(true));
+        let _ = app.update(Message::LoreField(lore_draft::Field::ChainRequires));
+        let _ = app.update(Message::LoreText(text_editor::Action::Edit(
+            text_editor::Edit::Insert('7'),
+        )));
+        let _ = app.update(Message::SaveLorebook);
+        let raw = &app.lorebooks[0].raw;
+        assert_eq!(raw["is_global"], true);
+        assert_eq!(raw["entries"][0]["trigger_type"], "regex");
+        assert_eq!(raw["entries"][0]["injection_behavior"], "active");
+        assert_eq!(raw["entries"][0]["case_sensitive"], true);
+        assert_eq!(raw["entries"][0]["match_whole_words"], true);
+        assert_eq!(
+            raw["entries"][0]["chain_requires"],
+            serde_json::json!(["7"])
+        );
+        assert!(app.preview.current().messages.is_empty());
+    }
+
     #[test]
     fn lorebook_edits_stay_with_their_target_until_saved() {
         let mut app = App::default();
