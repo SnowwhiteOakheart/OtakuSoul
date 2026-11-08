@@ -1,5 +1,9 @@
 # OtakuSoul
 
+> This branch contains an experimental native Rust UI for Windows. Run
+> `cargo run -p otakusoul-native`. See [`native-ui/ROADMAP.md`](native-ui/ROADMAP.md) for the German working plan.
+> The initial preview uses in-memory test messages without AI integration or access to your existing profile.
+
 **English** · [Deutsch](README.de.md) · [Русский](README.ru.md)
 
 **Roleplay with a cast of AI characters.** Play interactive stories with an AI game master or try a tactical 5e adventure. Each companion has their own voice and remembers what you've shared.

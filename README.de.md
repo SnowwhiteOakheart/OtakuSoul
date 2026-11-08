@@ -1,5 +1,9 @@
 # OtakuSoul
 
+> Experiment auf diesem Branch: eine native Rust-Oberfläche für Windows. Start mit
+> `cargo run -p otakusoul-native`; Arbeitsplan und Grenzen in [`native-ui/ROADMAP.md`](native-ui/ROADMAP.md).
+> Die erste Vorschau verwendet lokale Testnachrichten ohne KI-Anbindung und ohne Zugriff auf Dein Profil.
+
 [English](README.md) · **Deutsch** · [Русский](README.ru.md)
 
 **Erlebe Rollenspiele mit mehreren KI-Charakteren.** Spiele interaktive Geschichten mit KI-Spielleitung oder starte ein taktisches 5e-Abenteuer. Jede Figur hat ihre eigene Stimme und erinnert sich an eure gemeinsamen Erlebnisse.

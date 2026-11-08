@@ -7,6 +7,15 @@ Nutzer mit „Du“ ansprechen. Antworten, Commits und Doku auf Deutsch.
 
 ## Regeln
 
+### Experiment: native Rust-GUI
+
+Auf ausdrücklichen Nutzerwunsch liegt der Windows-Prototyp auf `codex/native-rust-gui`.
+Arbeitsplan und Übergabekontext: [`native-ui/ROADMAP.md`](native-ui/ROADMAP.md).
+Separater Start: `cargo run -p otakusoul-native`. Kein Desktop-Pet; zunächst kein produktiver Profilzugriff.
+Für diesen Prototyp auf dem Experiment-Branch committen/pushen, nicht auf `main`.
+
+### Allgemeine Arbeitsregeln
+
 - Tests nur bei Bedarf ausführen; der Assistent entscheidet anhand der Änderung über Umfang und Zeitpunkt.
   Erforderliche Checks vor dem Commit ausführen und den Commit an deren erfolgreichen Exit-Code koppeln.
   Die vollständige Suite (`npm run check` bzw. `npm run e2e`) nur bei sinnvoller Abdeckung breiter Änderungen

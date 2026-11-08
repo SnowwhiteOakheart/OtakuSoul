@@ -1,0 +1,11 @@
+[package]
+name = "otakusoul-native"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+license = "GPL-3.0-only"
+description = "Experimentelle native Rust-Oberfläche für OtakuSoul"
+
+[dependencies]
+iced = { version = "0.14.0", features = ["image-without-codecs"] }
+image = { version = "0.25", default-features = false, features = ["png"] }
