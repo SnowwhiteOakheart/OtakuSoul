@@ -63,7 +63,7 @@ fn bubble_style(theme: &Theme, user: bool) -> container::Style {
     style.border.radius = 16.into();
     if user {
         style.background = Some(Background::Gradient(
-            iced::gradient::Linear::new(0.0)
+            iced::gradient::Linear::new(std::f32::consts::FRAC_PI_2)
                 .add_stop(0.0, Color::from_rgb8(147, 51, 234))
                 .add_stop(1.0, Color::from_rgb8(79, 70, 229))
                 .into(),
@@ -288,7 +288,7 @@ impl App {
         .padding(10)
         .style(appearance::navigation)
         .on_press(Message::ToggleNavigation);
-        container(column![scrollable(navigation).height(Fill), collapse].spacing(12))
+        container(column![scroll(navigation).height(Fill), collapse].spacing(12))
             .padding(if self.collapsed { 6 } else { 10 })
             .width(if self.collapsed { 60 } else { 240 })
             .height(Fill)
@@ -477,7 +477,7 @@ impl App {
             );
         }
         stream = stream.push(
-            scrollable(messages.padding(if self.compact { 12 } else { 20 }))
+            scroll(messages.padding(if self.compact { 12 } else { 20 }))
                 .id("conversation")
                 .width(Fill)
                 .height(Fill),
@@ -514,10 +514,11 @@ impl App {
             container(
                 image(handle.clone())
                     .width(Fill)
-                    .height(Fill)
+                    .height(Length::Shrink)
+                    .border_radius(22)
                     .content_fit(iced::ContentFit::Contain),
             )
-            .height(Fill)
+            .padding(2)
             .width(Fill)
             .style(|theme| {
                 let mut style = appearance::card(theme);
@@ -547,7 +548,7 @@ impl App {
                         .padding([6, 10])
                         .style(appearance::selected_navigation_icon)
                 ],
-                portrait,
+                container(portrait).width(Fill).center_y(Fill),
                 container(text(&character.name).size(20)).center_x(Fill),
                 container(muted(shorten(summary, 150), 12, &self.theme())).center_x(Fill),
             ]
@@ -680,7 +681,7 @@ impl App {
                 .on_press(Message::SelectConversation(index)),
             );
         }
-        container(scrollable(chats).height(Fill))
+        container(scroll(chats).height(Fill))
             .padding(14)
             .width(300)
             .height(Fill)
@@ -744,10 +745,7 @@ impl App {
                 .style(appearance::card),
             );
         }
-        scrollable(cards.padding(24))
-            .height(Fill)
-            .width(Fill)
-            .into()
+        scroll(cards.padding(24)).height(Fill).width(Fill).into()
     }
 
     fn details(&self) -> Element<'_, Message> {
@@ -770,7 +768,7 @@ impl App {
                 Message::CopyCard,
             ));
         }
-        scrollable(details.padding(24).width(Fill))
+        scroll(details.padding(24).width(Fill))
             .height(Fill)
             .width(Fill)
             .into()
@@ -790,7 +788,7 @@ impl App {
         for warning in &self.warnings {
             settings = settings.push(text(warning).size(12));
         }
-        scrollable(settings.padding(26).max_width(1000))
+        scroll(settings.padding(26).max_width(1000))
             .height(Fill)
             .width(Fill)
             .into()
@@ -826,4 +824,15 @@ fn shorten(value: &str, limit: usize) -> String {
     } else {
         shortened
     }
+}
+
+fn scroll<'a>(content: impl Into<Element<'a, Message>>) -> iced::widget::Scrollable<'a, Message> {
+    scrollable(content)
+        .style(appearance::scrollbar)
+        .direction(scrollable::Direction::Vertical(
+            scrollable::Scrollbar::new()
+                .width(6)
+                .scroller_width(6)
+                .margin(2),
+        ))
 }

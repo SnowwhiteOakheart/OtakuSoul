@@ -1,6 +1,6 @@
 //! Farben und wiederverwendbare Iced-Stile passend zur Obsidian-Oberfläche.
 
-use iced::widget::{button, container, text_editor};
+use iced::widget::{button, container, scrollable, text_editor};
 use iced::{Background, Color, Theme};
 
 const SLATE_950: Color = Color::from_rgb8(2, 6, 23);
@@ -294,4 +294,46 @@ pub fn primary_button(theme: &Theme, status: button::Status) -> button::Style {
 
 fn is_dark(theme: &Theme) -> bool {
     theme.extended_palette().is_dark
+}
+
+/// Schmale Slate-Scrollleisten wie im Web-Frontend, ohne akzentfarbene Schiene.
+pub fn scrollbar(theme: &Theme, status: scrollable::Status) -> scrollable::Style {
+    let mut style = scrollable::default(theme, status);
+    let active = !matches!(status, scrollable::Status::Active { .. });
+    let (horizontal_disabled, vertical_disabled) = match status {
+        scrollable::Status::Active {
+            is_horizontal_scrollbar_disabled,
+            is_vertical_scrollbar_disabled,
+        }
+        | scrollable::Status::Hovered {
+            is_horizontal_scrollbar_disabled,
+            is_vertical_scrollbar_disabled,
+            ..
+        }
+        | scrollable::Status::Dragged {
+            is_horizontal_scrollbar_disabled,
+            is_vertical_scrollbar_disabled,
+            ..
+        } => (
+            is_horizontal_scrollbar_disabled,
+            is_vertical_scrollbar_disabled,
+        ),
+    };
+    for (rail, disabled) in [
+        (&mut style.vertical_rail, vertical_disabled),
+        (&mut style.horizontal_rail, horizontal_disabled),
+    ] {
+        rail.background = None;
+        rail.border = iced::Border::default();
+        rail.scroller.border = iced::Border::default().rounded(8);
+        let alpha = if disabled {
+            0.0
+        } else if active {
+            0.5
+        } else {
+            0.25
+        };
+        rail.scroller.background = Color::from_rgba8(148, 163, 184, alpha).into();
+    }
+    style
 }

@@ -144,7 +144,8 @@ Lockfile-Vergleich: keine zuvor vorhandene Paketversion entfernt; GUI ergänzt z
   Sternchen und Zeilenumbrüche bleiben sichtbar. Kartenvorschau der Begrüßung bleibt auch nach Testnachrichten.
 - [x] Native Markdown-Blöcke (z. B. Listen, Überschriften, Code) ohne WebView; keine externen Bilder laden.
 - [x] Charakterübersicht, Kartenansicht und Profileinstellungen verwenden dieselben Flächenstile.
-- [ ] Visuelle Abnahme am entsperrten Windows-Desktop, einschließlich schmalem Fenster und hellem Theme.
+- [x] Erste visuelle Abnahme am entsperrten Windows-Desktop bei 1027 × 799, hell/dunkel und mit ein-/ausgeklappter Navigation.
+- [ ] Weitere Fenstergrößen einschließlich Minimum 900 × 680 und zusätzliche DPI-/Monitor-Konfigurationen prüfen.
 - [ ] Feinschliff nach Vergleich mit laufender Tauri-App: Farben/Abstände, Textumbruch, Fokus und Scrollen.
 
 Referenzen: `src/components/Header.tsx`, `Sidebar.tsx`, `navigation.ts`, `chat/ChatView.tsx`,
@@ -158,10 +159,17 @@ Ein Markdown-Link zeigt beim Klick seine Adresse in der Statuszeile; kein automa
 OOC-Badges, Vorlesen, Spezialtags, freie Nachrichtentextauswahl und animierte Avatare bleiben offen.
 
 Technische Abnahme dieses Schritts: 21 GUI-Tests, Clippy mit `-D warnings`, Formatprüfung und
-Windows-Build bestanden. Die erste visuelle Prüfung wurde durch den gesperrten Windows-Desktop
-verhindert; diese Überarbeitung ist **noch nicht visuell abgenommen**. Die zuvor laufende Test-EXE
-wurde ausschließlich für den Abschlussbuild beendet. Nutzer um Entsperren gebeten; bis dahin keine
-weiteren Maus-/Tastaturaktionen. Keine Pixelgleichheit behaupten, bevor der praktische Vergleich erfolgt ist.
+Windows-Build bestanden. Nach Entsperren durch den Nutzer wurde die Oberfläche visuell geprüft:
+Obsidian/Hell, breite und eingeklappte Navigation, Rollenspieltext, Texteingabe und Strg+Enter mit
+einer Markdown-Testnachricht. Die Begrüßung bleibt nach dem Hinzufügen sichtbar und Markdown-Nutzertext
+bleibt auch im hellen Design auf der violetten Blase lesbar. Verglichen wurde mit den vorhandenen
+Tauri-Quellen und dem Repository-Screenshot, nicht mit einer gleichzeitig laufenden Tauri-Instanz.
+
+Dabei korrigiert: Porträtrahmen umschließt jetzt das unverzerrte Bild ohne interne Leerbalken und mit
+runden Ecken; Scrollleisten verwenden schmale, dezente Slate-Schieber statt akzentfarbener Rails.
+Der Nutzerblasenverlauf ist wie im Web-Frontend horizontal angelegt. Abschlussbuild mit korrigiertem
+Porträtrahmen und Scrollleisten erneut angesehen. Weitere Detailangleichung bleibt möglich;
+Pixelgleichheit und vollständige Funktionsgleichheit sind noch nicht nachgewiesen.
 
 Abnahme: kopierte Daten lesbar, Originalprofil unverändert; langer Chat bleibt bedienbar.
 
