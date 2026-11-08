@@ -4,6 +4,7 @@
 > `cargo run -p otakusoul-native`. See [`native-ui/ROADMAP.md`](native-ui/ROADMAP.md) for the German working plan.
 > The prototype includes a prompt preview using the shared Rust renderer and macros; character chat integration is still in progress.
 > Its character library supports search, an in-memory card editor, creation and duplication, and explicit JSON/PNG file import/export through native dialogs. PNG exports include the portrait; loaded profiles remain read-only.
+> The editor includes alternate greetings and a read-only JSON preview. Empty local test chats can select a greeting variant.
 > The preview uses in-memory test messages without AI integration and can read explicitly selected profile copies.
 > Settings can create a demo profile with fictional conversations; imported conversations remain read-only.
 > A separate connection test checks an existing AI endpoint with a short fixed request.

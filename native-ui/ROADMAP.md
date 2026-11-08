@@ -306,8 +306,9 @@ Kein vollständiger E2E-Lauf, kein echtes Modell und kein Cloud-Anbieter aufgeru
 - [x] Entwurf bleibt bei Navigation erhalten; anderer Editorauftrag setzt ihn fort. Profilwechsel bleibt
   bis Übernehmen/Verwerfen gesperrt. Bei laufendem Profilimport keinen neuen Kartenentwurf beginnen.
 - [x] Weitere Metadatenfelder: Titel, Tags (eine Zeile je Tag) und Erstellernotizen.
-- [ ] Weitere Editorbereiche: alternative Begrüßungen, Ausdrucksbilder,
-  Lorebook-Bindungen und vollständige JSON-Ansicht; Kartenraster/Tagfilter wie im Tauri-Frontend.
+- [x] Alternative Begrüßungen hinzufügen/bearbeiten/entfernen, JSON-Vorschau des aktuellen Entwurfs.
+- [x] Begrüßungsvarianten in leeren lokalen Testchats auswählen; Detailansicht mit weiteren Kartentexten.
+- [ ] Weitere Editorbereiche: Ausdrucksbilder und Lorebook-Bindungen; Kartenraster/Tagfilter wie im Tauri-Frontend.
 - [x] Expliziter JSON-/PNG-Dateiimport/-export über native Öffnen-/Speichern-Dialoge.
 - [ ] Dauerhafte Integration von Kartenänderungen in ein eigenes isoliertes Schreibprofil.
 
@@ -371,6 +372,43 @@ Roundtrip-Tests decken ihn ab. Testinstanz nach dem Durchlauf beendet. Keine pri
 benutzt, keine Profiländerung und kein Modellaufruf. Keine vollständige GUI-Abnahme.
 Die tatsächlich abgelegte `output/native-gui-filecheck-20261108/charakter.png` wurde zusätzlich
 gelesen: 975.053 Bytes, eingebettete vollständige Kartenmetadaten identisch zum JSON-Export.
+
+### GUI-Zwischenschritt: Begrüßungsvarianten und JSON-Ansicht
+
+Editorreiter Kartentexte/Begrüßungen/JSON teilen denselben Entwurf. Im Begrüßungsreiter ist die
+Hauptbegrüßung separat wählbar; Alternativen lassen sich hinzufügen, mehrzeilig bearbeiten und entfernen.
+Leere Alternativen bleiben im Kartenformat erhalten. Unveränderte fehlende/null/fehlerhafte Listen
+bleiben unangetastet; eine explizite Bearbeitung einer fehlerhaften Liste wird abgewiesen. Nur bei
+Listenänderung werden alte Übersetzungen von `alternate_greetings` im Entwurf entfernt. JSON ist eine
+auswählbare, kopierbare Vorschau des angewendeten Entwurfs und vollständig schreibgeschützt. Leerer
+Pflichtname zeigt statt irreführendem JSON eine Fehlermeldung. Kein Roh-JSON-Import über diesen Reiter.
+
+`Conversation.greeting_index` ist ein Originalindex (0 Haupttext, 1..N Alternativen). Alle Varianten
+werden gemeinsam über `otakusoul_macros::expand_all` expandiert und pro Persona/Chat im RAM gehalten.
+Auswahl verwendet nur nichtleere **expandierte** Texte; auch `{{noop}}` kann daher keine scheinbar
+auswählbare leere Begrüßung erzeugen. Wechsel A → B → A würfelt Zufalls-/Zeitmakros nicht neu.
+Der Handler erlaubt Auswahl ausschließlich bei leeren lokalen Chats und bewahrt den Composer-Entwurf.
+Nach der ersten Nachricht bleibt der aktuelle Begrüßungstext als Snapshot erhalten, auch bei Persona-
+oder Kartenänderungen. Kartenänderungen setzen nur leere lokale Begrüßungscaches zurück; Testchat leeren
+setzt Auswahl/Cache vollständig zurück. Archive erhalten ausschließlich gespeicherte Nachrichten.
+
+Kartendetails zeigen jetzt zusätzlich Titel, Tags, Persönlichkeit, Szenario, Beispieldialoge,
+Prompt/Nachspann, Erstellernotizen und alternative Begrüßungen. Kartenfelder in diesem Bereich sind
+bewusst die unveränderten Basistexte einschließlich Makros. Native Begrüßungen lokalisieren noch nicht
+die komplette Karte wie Tauri `greetingsFor`; die gemeinsame Promptprojektion enthält diese Felder
+nicht. Vollständige Inhaltslokalisierung und native GUI-Übersetzungen bleiben getrennte Folgeaufgaben.
+
+Prüfstand: 57 Native-Tests erfolgreich, einschließlich acht neuer Tests für Listenbearbeitung,
+fehlerhafte Karten, mehrzeilige Makros, Editorwechsel/JSON-Schreibschutz, leere Varianten,
+Cache-/Snapshot-Verhalten und Archivschutz. Bestehende JSON-/PNG-Roundtrip-Fixtures enthalten jetzt
+ebenfalls alternative Begrüßungen. Clippy und gezielte Formatprüfung erfolgreich. Agentenreview
+führte zur Filterung expandierter statt roher Texte; kein vollständiger E2E-Lauf oder Modellaufruf.
+Windows-Build erfolgreich. Im Windows-Fenster (1027 × 799) Haupt-/Alternativauswahl geöffnet und
+„Alternative 1“ gewählt: richtiger expandierter Text im Chat sichtbar. Danach Bibliothek → Bearbeiten,
+Reiter Kartentexte/Begrüßungen/JSON durchgeklickt; Hauptbegrüßung und vollständiges JSON mit Alternativen
+sichtbar, Export-/Übernehmenknöpfe erreichbar. Kein Speichern und kein produktiver Profilzugriff.
+Neue Instanz bleibt auf der JSON-Vorschau einer gebündelten Karte geöffnet. Hinzufügen/Entfernen und
+Schreibschutz sind automatisiert geprüft; keine vollständige Tastatur-/DPI-/Screenreaderabnahme.
 
 - [ ] Einstellungen/Onboarding, Charakter-/Lorebook-Editoren, Gedächtnis, Hub und Im-/Export.
 - [ ] Stage und 5e einschließlich Battlemap; Fachlogik wiederverwenden.

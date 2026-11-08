@@ -11,8 +11,29 @@ pub struct Character {
     pub portrait: Option<Vec<u8>>,
 }
 
+impl Character {
+    pub fn greeting_texts(&self) -> Vec<&str> {
+        let mut texts = vec![self.first_message.as_str()];
+        if let Some(alternates) = self
+            .card
+            .as_ref()
+            .and_then(|card| card.get("data").unwrap_or(card).get("alternate_greetings"))
+            .and_then(serde_json::Value::as_array)
+        {
+            texts.extend(
+                alternates
+                    .iter()
+                    .map(|value| value.as_str().unwrap_or_default()),
+            );
+        }
+        texts
+    }
+}
+
 pub struct Conversation {
     pub greeting: Option<(String, String)>,
+    pub greeting_index: usize,
+    pub greeting_variants: std::collections::BTreeMap<String, Vec<String>>,
     pub source_id: Option<String>,
     pub character_id: String,
     pub title: String,
@@ -26,6 +47,8 @@ impl Conversation {
     fn local(character_id: &str) -> Self {
         Self {
             greeting: None,
+            greeting_index: 0,
+            greeting_variants: Default::default(),
             source_id: None,
             character_id: character_id.into(),
             title: "Testchat".into(),
@@ -132,6 +155,8 @@ impl Preview {
             }
             conversations.push(Conversation {
                 greeting: None,
+                greeting_index: 0,
+                greeting_variants: Default::default(),
                 source_id: Some(session.id),
                 character_id: session.character_id,
                 title: session.title,

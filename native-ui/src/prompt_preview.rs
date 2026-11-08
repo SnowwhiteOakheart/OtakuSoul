@@ -83,9 +83,28 @@ impl Services for NativeServices {
     }
 }
 
+#[cfg(test)]
 pub fn greeting(character: &Character, settings: &Settings, seed: &str) -> String {
     otakusoul_macros::expand(
         &character.first_message,
+        &otakusoul_macros::MacroInput {
+            char_name: character.name.clone(),
+            user_name: settings.persona_name.trim().into(),
+            language: "Deutsch".into(),
+            pick_seed: Some(seed.into()),
+            idle_seconds: None,
+        },
+        "de",
+    )
+}
+
+pub fn greetings(character: &Character, settings: &Settings, seed: &str) -> Vec<String> {
+    otakusoul_macros::expand_all(
+        &character
+            .greeting_texts()
+            .into_iter()
+            .map(str::to_owned)
+            .collect::<Vec<_>>(),
         &otakusoul_macros::MacroInput {
             char_name: character.name.clone(),
             user_name: settings.persona_name.trim().into(),

@@ -1,5 +1,5 @@
 //! Native Ansichten nach Header, Sidebar und ChatView des Tauri-Frontends.
-use super::{App, Message, Page, appearance};
+use super::{App, EditorTab, GreetingChoice, Message, Page, appearance};
 use crate::icons::{Icon, icon};
 use iced::keyboard::{Key, key::Named};
 use iced::widget::{
@@ -392,12 +392,35 @@ impl App {
                 .spacing(8),
             );
         } else {
-            if !character.first_message.is_empty() && !conversation.is_read_only() {
-                messages = messages.push(muted(
-                    "Begrüßung · Vorschau aus der Charakterkarte",
-                    11,
-                    &self.theme(),
-                ));
+            if conversation
+                .greeting
+                .as_ref()
+                .is_some_and(|(_, text)| !text.trim().is_empty())
+                && !conversation.is_read_only()
+            {
+                let choices = self.chat_greeting_choices();
+                if conversation.messages.is_empty() && choices.len() > 1 {
+                    messages = messages.push(
+                        row![
+                            muted("Begrüßung", 11, &self.theme()),
+                            iced::widget::pick_list(
+                                choices,
+                                Some(GreetingChoice(conversation.greeting_index)),
+                                Message::ChatGreeting
+                            )
+                            .padding(6)
+                            .style(appearance::select)
+                        ]
+                        .spacing(10)
+                        .align_y(Alignment::Center),
+                    );
+                } else {
+                    messages = messages.push(muted(
+                        "Begrüßung · Vorschau aus der Charakterkarte",
+                        11,
+                        &self.theme(),
+                    ));
+                }
                 messages = messages.push(
                     container(self.greeting.view(&self.theme()).map(Message::InspectLink))
                         .padding([12, 16])
@@ -838,13 +861,72 @@ impl App {
             .copied()
             .filter(|field| *field != Field::Name)
             .collect::<Vec<_>>();
+        let mut tabs = row![].spacing(8);
+        for (tab, label) in [
+            (EditorTab::Fields, "Kartentexte"),
+            (EditorTab::Greetings, "Begrüßungen"),
+            (EditorTab::Json, "JSON"),
+        ] {
+            tabs = tabs.push(
+                button(text(label).size(13))
+                    .padding([8, 12])
+                    .style(if self.editor_tab == tab {
+                        appearance::primary_button
+                    } else {
+                        appearance::subtle_button
+                    })
+                    .on_press(Message::EditorTabChanged(tab)),
+            );
+        }
+        let selector: Element<'_, Message> = match self.editor_tab {
+            EditorTab::Fields => row![
+                text("Kartenfeld").size(14),
+                iced::widget::pick_list(
+                    fields,
+                    Some(self.character_field),
+                    Message::CharacterField
+                )
+                .padding(10)
+                .style(appearance::select)
+            ]
+            .spacing(12)
+            .align_y(Alignment::Center)
+            .into(),
+            EditorTab::Greetings => row![
+                iced::widget::pick_list(
+                    (0..=draft.alternate_greetings().len())
+                        .map(GreetingChoice)
+                        .collect::<Vec<_>>(),
+                    Some(GreetingChoice(self.editor_greeting)),
+                    Message::EditorGreeting
+                )
+                .padding(10)
+                .style(appearance::select),
+                control(Icon::Plus, "Hinzufügen", Message::AddGreeting),
+                icon_control(
+                    Icon::Close,
+                    "Alternative entfernen",
+                    (self.editor_greeting > 0).then_some(Message::RemoveGreeting)
+                )
+            ]
+            .spacing(10)
+            .align_y(Alignment::Center)
+            .into(),
+            EditorTab::Json => muted(
+                "Vollständiger aktueller Entwurf · schreibgeschützt, auswählbar und kopierbar",
+                12,
+                &self.theme(),
+            )
+            .into(),
+        };
         container(column![
             row![text("Charakter bearbeiten").size(26).width(Fill),
                 control(Icon::Back,"Bibliothek",Message::Navigate(Page::Characters))].align_y(Alignment::Center),
             muted("Entwurf im Arbeitsspeicher · Profilkopien und importierte Verläufe werden nicht verändert.",12,&self.theme()),
             text_input("Name des Charakters",draft.get(Field::Name)).padding(10).style(appearance::input).on_input(Message::CharacterName),
-            row![text("Kartenfeld").size(14),iced::widget::pick_list(fields,Some(self.character_field),Message::CharacterField).padding(10).style(appearance::select)].spacing(12).align_y(Alignment::Center),
-            text_editor(&self.character_text).height(Fill).padding(14).size(14).style(appearance::editor).key_binding(read_only_keys).on_action(Message::CharacterText),
+            tabs,
+            selector,
+            text_editor(&self.character_text).height(Fill).padding(14).size(14).font(if self.editor_tab == EditorTab::Json {iced::Font::MONOSPACE} else { super::ui_font() }).style(appearance::editor).key_binding(read_only_keys).on_action(Message::CharacterText),
             text(&self.character_error).size(13),
             row![
                 button("Übernehmen").padding(10).style(appearance::primary_button).on_press(Message::SaveCharacter),
@@ -878,6 +960,28 @@ impl App {
             text(&character.first_message).width(Fill)
         ]
         .spacing(18);
+        let draft = crate::character_draft::Draft::from_character(index, character);
+        for field in [
+            crate::character_draft::Field::Title,
+            crate::character_draft::Field::Tags,
+            crate::character_draft::Field::Personality,
+            crate::character_draft::Field::Scenario,
+            crate::character_draft::Field::ExampleMessages,
+            crate::character_draft::Field::SystemPrompt,
+            crate::character_draft::Field::PostHistory,
+            crate::character_draft::Field::CreatorNotes,
+        ] {
+            if !draft.get(field).trim().is_empty() {
+                details = details.push(text(field.to_string()).size(20));
+                details = details.push(text(draft.get(field).to_owned()).width(Fill));
+            }
+        }
+        for (number, greeting) in character.greeting_texts().iter().enumerate().skip(1) {
+            if !greeting.trim().is_empty() {
+                details = details.push(text(format!("Alternative Begrüßung {number}")).size(20));
+                details = details.push(text((*greeting).to_owned()).width(Fill));
+            }
+        }
         if character.card.is_some() {
             details = details.push(
                 row![

@@ -72,6 +72,8 @@ impl Field {
 pub struct Draft {
     pub target: Option<usize>,
     values: [String; 11],
+    alternate_greetings: Vec<String>,
+    alternate_greetings_changed: bool,
 }
 
 impl Draft {
@@ -79,6 +81,8 @@ impl Draft {
         Self {
             target: None,
             values: Default::default(),
+            alternate_greetings: Vec::new(),
+            alternate_greetings_changed: false,
         }
     }
 
@@ -86,6 +90,20 @@ impl Draft {
         Self {
             target: Some(index),
             values: Field::ALL.map(|field| value(character, field)),
+            alternate_greetings: character
+                .card
+                .as_ref()
+                .and_then(|card| card.get("data").unwrap_or(card).get("alternate_greetings"))
+                .and_then(Value::as_array)
+                .map(|greetings| {
+                    greetings
+                        .iter()
+                        .filter_map(Value::as_str)
+                        .map(str::to_owned)
+                        .collect()
+                })
+                .unwrap_or_default(),
+            alternate_greetings_changed: false,
         }
     }
 
@@ -95,6 +113,31 @@ impl Draft {
 
     pub fn set(&mut self, field: Field, value: String) {
         self.values[field as usize] = value;
+    }
+
+    pub fn alternate_greetings(&self) -> &[String] {
+        &self.alternate_greetings
+    }
+
+    pub fn add_greeting(&mut self) {
+        self.alternate_greetings.push(String::new());
+        self.alternate_greetings_changed = true;
+    }
+
+    pub fn set_greeting(&mut self, index: usize, text: String) {
+        if let Some(greeting) = self.alternate_greetings.get_mut(index)
+            && *greeting != text
+        {
+            *greeting = text;
+            self.alternate_greetings_changed = true;
+        }
+    }
+
+    pub fn remove_greeting(&mut self, index: usize) {
+        if index < self.alternate_greetings.len() {
+            self.alternate_greetings.remove(index);
+            self.alternate_greetings_changed = true;
+        }
     }
 
     /// `existing` ist auch beim Duplizieren die Quellkarte, damit fremde Metadaten und Bild bleiben.
@@ -119,6 +162,21 @@ impl Draft {
             .as_object_mut()
             .ok_or("Die Charakterkarte enthält keinen gültigen Datenbereich.")?;
         let mut changed = Vec::new();
+        if self.alternate_greetings_changed {
+            if data.get("alternate_greetings").is_some_and(|value| {
+                !value.is_null()
+                    && value
+                        .as_array()
+                        .is_none_or(|list| list.iter().any(|item| !item.is_string()))
+            }) {
+                return Err("Die alternativen Begrüßungen der ursprünglichen Karte sind keine gültige Textliste und können hier nicht verändert werden.".into());
+            }
+            data.insert(
+                "alternate_greetings".into(),
+                json!(self.alternate_greetings),
+            );
+            changed.push("alternate_greetings");
+        }
         for field in Field::ALL {
             let text = if field == Field::Name {
                 name
@@ -365,5 +423,88 @@ mod tests {
         new.set(Field::Name, "Neu".into());
         let created = new.apply(None, "new".into()).unwrap();
         assert_eq!(created.card.unwrap()["data"]["tags"], json!([]));
+    }
+
+    #[test]
+    fn untouched_alternate_greetings_preserve_missing_and_malformed_data() {
+        for list in [
+            None,
+            Some(Value::Null),
+            Some(json!("foreign text")),
+            Some(json!(["Valid", 42])),
+        ] {
+            let mut card =
+                json!({"name":"Alice","description":"Original","first_mes":"Hallo","foreign":true});
+            if let Some(list) = list {
+                card["alternate_greetings"] = list;
+            }
+            let original = character(card.clone());
+            let draft = Draft::from_character(0, &original);
+            assert_eq!(
+                draft
+                    .apply(Some(&original), "original".into())
+                    .unwrap()
+                    .card,
+                Some(card)
+            );
+        }
+    }
+
+    #[test]
+    fn alternate_greetings_edit_preserves_multiline_macros_order_and_other_translations() {
+        let original = character(
+            json!({"data":{"name":"Alice","description":"Original","first_mes":"Hallo",
+            "alternate_greetings":["First", "Second"], "foreign":{"keep":true},
+            "extensions":{"otakusoul_i18n":{"translations":{"de":{"alternate_greetings":["Alt"],"description":"Beschreibung"},
+                "ja":{"alternate_greetings":["前"]}}}}}}),
+        );
+        let mut draft = Draft::from_character(0, &original);
+        draft.set_greeting(0, "{{user}}\n*{{char}} winkt.*".into());
+        draft.remove_greeting(1);
+        draft.add_greeting();
+        draft.set_greeting(99, "ignorieren".into());
+        draft.remove_greeting(99);
+        assert_eq!(
+            draft.alternate_greetings(),
+            &["{{user}}\n*{{char}} winkt.*", ""]
+        );
+        let edited = draft.apply(Some(&original), "original".into()).unwrap();
+        let data = &edited.card.as_ref().unwrap()["data"];
+        assert_eq!(
+            data["alternate_greetings"],
+            json!(["{{user}}\n*{{char}} winkt.*", ""])
+        );
+        assert_eq!(data["foreign"], json!({"keep":true}));
+        let translations = &data["extensions"]["otakusoul_i18n"]["translations"];
+        assert!(translations["de"].get("alternate_greetings").is_none());
+        assert!(translations["ja"].get("alternate_greetings").is_none());
+        assert_eq!(translations["de"]["description"], "Beschreibung");
+        assert_eq!(
+            Draft::from_character(0, &edited).alternate_greetings(),
+            draft.alternate_greetings()
+        );
+    }
+
+    #[test]
+    fn changing_malformed_greetings_is_rejected_but_null_is_an_empty_list() {
+        for list in [json!("foreign text"), json!(["Valid", 42])] {
+            let original = character(
+                json!({"name":"Alice","description":"Original","first_mes":"Hallo","alternate_greetings":list}),
+            );
+            let mut draft = Draft::from_character(0, &original);
+            draft.add_greeting();
+            assert!(
+                draft
+                    .apply(Some(&original), "original".into())
+                    .is_err_and(|error| error.contains("Textliste"))
+            );
+        }
+        let original = character(
+            json!({"name":"Alice","description":"Original","first_mes":"Hallo","alternate_greetings":null}),
+        );
+        let mut draft = Draft::from_character(0, &original);
+        draft.add_greeting();
+        let edited = draft.apply(Some(&original), "original".into()).unwrap();
+        assert_eq!(edited.card.unwrap()["alternate_greetings"], json!([""]));
     }
 }

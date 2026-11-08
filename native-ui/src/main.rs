@@ -115,6 +115,25 @@ enum Page {
     Planned(&'static str),
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum EditorTab {
+    Fields,
+    Greetings,
+    Json,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct GreetingChoice(usize);
+impl std::fmt::Display for GreetingChoice {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.0 == 0 {
+            f.write_str("Hauptbegrüßung")
+        } else {
+            write!(f, "Alternative {}", self.0)
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 enum Message {
     Navigate(Page),
@@ -133,6 +152,11 @@ enum Message {
     CharacterName(String),
     CharacterField(character_draft::Field),
     CharacterText(text_editor::Action),
+    EditorTabChanged(EditorTab),
+    EditorGreeting(GreetingChoice),
+    AddGreeting,
+    RemoveGreeting,
+    ChatGreeting(GreetingChoice),
     SaveCharacter,
     DiscardCharacter,
     SelectConversation(usize),
@@ -212,6 +236,8 @@ struct App {
     character_draft: Option<character_draft::Draft>,
     character_source: Option<usize>,
     character_field: character_draft::Field,
+    editor_tab: EditorTab,
+    editor_greeting: usize,
     character_text: text_editor::Content,
     character_error: String,
     next_character_id: u64,
@@ -232,7 +258,12 @@ impl Default for App {
             });
         let prompt_settings = prompt_preview::Settings::default();
         let seed = format!("native-test:{}", preview.current().character_id);
-        let greeting_text = prompt_preview::greeting(preview.character(), &prompt_settings, &seed);
+        let variants = prompt_preview::greetings(preview.character(), &prompt_settings, &seed);
+        let greeting_text = variants.first().cloned().unwrap_or_default();
+        preview
+            .current_mut()
+            .greeting_variants
+            .insert(prompt_settings.persona_name.trim().into(), variants);
         preview.current_mut().greeting = Some((
             prompt_settings.persona_name.trim().into(),
             greeting_text.clone(),
@@ -285,6 +316,8 @@ impl Default for App {
             character_draft: None,
             character_source: None,
             character_field: character_draft::Field::Description,
+            editor_tab: EditorTab::Fields,
+            editor_greeting: 0,
             character_text: text_editor::Content::new(),
             character_error: String::new(),
             next_character_id: 0,
@@ -294,6 +327,56 @@ impl Default for App {
 }
 
 impl App {
+    fn chat_greeting_choices(&self) -> Vec<GreetingChoice> {
+        self.preview
+            .current()
+            .greeting_variants
+            .get(self.prompt_settings.persona_name.trim())
+            .map(|variants| {
+                variants
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, text)| !text.trim().is_empty())
+                    .map(|(index, _)| GreetingChoice(index))
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+    fn sync_character_text(&mut self) {
+        let Some(draft) = &self.character_draft else {
+            return;
+        };
+        let text = match self.editor_tab {
+            EditorTab::Fields => draft.get(self.character_field).to_owned(),
+            EditorTab::Greetings => {
+                if self.editor_greeting == 0 {
+                    draft.get(character_draft::Field::FirstMessage).to_owned()
+                } else {
+                    draft
+                        .alternate_greetings()
+                        .get(self.editor_greeting - 1)
+                        .cloned()
+                        .unwrap_or_default()
+                }
+            }
+            EditorTab::Json => match draft.apply(
+                self.character_source
+                    .and_then(|index| self.preview.characters.get(index)),
+                "preview".into(),
+            ) {
+                Ok(character) => {
+                    self.character_error.clear();
+                    serde_json::to_string_pretty(&character.card).unwrap_or_default()
+                }
+                Err(error) => {
+                    self.character_error = error;
+                    String::new()
+                }
+            },
+        };
+        self.character_text = text_editor::Content::with_text(&text);
+    }
+
     fn fresh_character_id(&mut self) -> String {
         loop {
             self.next_character_id += 1;
@@ -396,6 +479,8 @@ impl App {
                 draft.set(character_draft::Field::Name, name);
             }
             self.character_field = character_draft::Field::Description;
+            self.editor_tab = EditorTab::Fields;
+            self.editor_greeting = 0;
             self.character_text = text_editor::Content::with_text(draft.get(self.character_field));
             self.character_draft = Some(draft);
             self.character_source = source;
@@ -438,8 +523,13 @@ impl App {
                 if let Some(index) = target {
                     self.preview.characters[index] = character;
                     for conversation in &mut self.preview.conversations {
-                        if conversation.character_id == id {
+                        if conversation.character_id == id
+                            && conversation.messages.is_empty()
+                            && !conversation.is_read_only()
+                        {
                             conversation.greeting = None;
+                            conversation.greeting_variants.clear();
+                            conversation.greeting_index = 0;
                         }
                     }
                 } else {
@@ -515,18 +605,45 @@ impl App {
             .clone()
             .unwrap_or_else(|| format!("native-test:{}", self.preview.current().character_id));
         let persona = self.prompt_settings.persona_name.trim().to_owned();
-        let greeting_text = if let Some((_, text)) = self
-            .preview
-            .current()
-            .greeting
-            .as_ref()
-            .filter(|(name, _)| *name == persona)
+        let greeting_text = if self.preview.current().is_read_only() {
+            String::new()
+        } else if !self.preview.current().messages.is_empty()
+            && self.preview.current().greeting.is_some()
         {
-            text.clone()
+            self.preview.current().greeting.as_ref().unwrap().1.clone()
         } else {
-            let text =
-                prompt_preview::greeting(self.preview.character(), &self.prompt_settings, &seed);
-            self.preview.current_mut().greeting = Some((persona, text.clone()));
+            if !self
+                .preview
+                .current()
+                .greeting_variants
+                .contains_key(&persona)
+            {
+                let variants = prompt_preview::greetings(
+                    self.preview.character(),
+                    &self.prompt_settings,
+                    &seed,
+                );
+                self.preview
+                    .current_mut()
+                    .greeting_variants
+                    .insert(persona.clone(), variants);
+            }
+            let current = self.preview.current_mut();
+            let variants = &current.greeting_variants[&persona];
+            if variants
+                .get(current.greeting_index)
+                .is_none_or(|text| text.trim().is_empty())
+            {
+                current.greeting_index = variants
+                    .iter()
+                    .position(|text| !text.trim().is_empty())
+                    .unwrap_or_default();
+            }
+            let text = variants
+                .get(current.greeting_index)
+                .cloned()
+                .unwrap_or_default();
+            current.greeting = Some((persona, text.clone()));
             text
         };
         self.greeting = message_content::Content::new(&greeting_text);
@@ -601,6 +718,49 @@ impl App {
     }
     fn update(&mut self, message: Message) -> Task<Message> {
         match message {
+            Message::EditorTabChanged(tab) => {
+                self.editor_tab = tab;
+                self.character_error.clear();
+                self.sync_character_text();
+            }
+            Message::EditorGreeting(choice) => {
+                if self
+                    .character_draft
+                    .as_ref()
+                    .is_some_and(|draft| choice.0 <= draft.alternate_greetings().len())
+                {
+                    self.editor_greeting = choice.0;
+                    self.sync_character_text();
+                }
+            }
+            Message::AddGreeting => {
+                if let Some(draft) = &mut self.character_draft {
+                    draft.add_greeting();
+                    self.editor_greeting = draft.alternate_greetings().len();
+                    self.sync_character_text();
+                }
+            }
+            Message::RemoveGreeting => {
+                if self.editor_greeting > 0
+                    && let Some(draft) = &mut self.character_draft
+                {
+                    draft.remove_greeting(self.editor_greeting - 1);
+                    self.editor_greeting = self
+                        .editor_greeting
+                        .saturating_sub(1)
+                        .min(draft.alternate_greetings().len());
+                    self.sync_character_text();
+                }
+            }
+            Message::ChatGreeting(choice) => {
+                if !self.preview.current().is_read_only()
+                    && self.preview.current().messages.is_empty()
+                    && self.chat_greeting_choices().contains(&choice)
+                {
+                    self.preview.current_mut().greeting_index = choice.0;
+                    self.refresh_prompt();
+                }
+            }
             Message::ImportCharacter => {
                 if self.card_busy || self.profile_busy {
                     return Task::none();
@@ -729,17 +889,36 @@ impl App {
                 if let Some(draft) = &mut self.character_draft {
                     draft.set(character_draft::Field::Name, value);
                 }
+                if self.editor_tab == EditorTab::Json {
+                    self.sync_character_text();
+                }
             }
             Message::CharacterField(field) => {
                 self.character_field = field;
-                if let Some(draft) = &self.character_draft {
-                    self.character_text = text_editor::Content::with_text(draft.get(field));
-                }
+                self.sync_character_text();
             }
             Message::CharacterText(action) => {
+                if self.editor_tab == EditorTab::Json {
+                    if !action.is_edit() {
+                        self.character_text.perform(action);
+                    }
+                    return Task::none();
+                }
                 if let Some(draft) = &mut self.character_draft {
                     self.character_text.perform(action);
-                    draft.set(self.character_field, self.character_text.text());
+                    match self.editor_tab {
+                        EditorTab::Fields => {
+                            draft.set(self.character_field, self.character_text.text())
+                        }
+                        EditorTab::Greetings if self.editor_greeting == 0 => draft.set(
+                            character_draft::Field::FirstMessage,
+                            self.character_text.text(),
+                        ),
+                        EditorTab::Greetings => {
+                            draft.set_greeting(self.editor_greeting - 1, self.character_text.text())
+                        }
+                        EditorTab::Json => unreachable!(),
+                    }
                 }
             }
             Message::DiscardCharacter => {
@@ -1054,6 +1233,116 @@ mod tests {
 #[cfg(test)]
 mod character_editor_tests {
     use super::*;
+    #[test]
+    fn macros_that_expand_to_empty_are_not_chat_choices() {
+        let mut app = with_alternate_greetings();
+        app.preview.characters[0].first_message = "{{noop}}".into();
+        app.preview.current_mut().greeting_variants.clear();
+        app.refresh_prompt();
+        assert_eq!(app.preview.current().greeting_index, 1);
+        assert!(!app.chat_greeting_choices().contains(&GreetingChoice(0)));
+        let _ = app.update(Message::ChatGreeting(GreetingChoice(0)));
+        assert_eq!(app.preview.current().greeting_index, 1);
+    }
+
+    fn with_alternate_greetings() -> App {
+        let mut app = App::default();
+        app.preview.characters[0].card.as_mut().unwrap()["data"]["alternate_greetings"] =
+            serde_json::json!(["Andere Begrüßung, {{user}}.", "Dritte Begrüßung."]);
+        app.preview.current_mut().greeting_variants.clear();
+        app.refresh_prompt();
+        app
+    }
+
+    #[test]
+    fn variants_are_cached_and_cannot_change_after_the_first_message() {
+        let mut app = with_alternate_greetings();
+        let original = app.preview.current().greeting.as_ref().unwrap().1.clone();
+        app.preview.current_mut().draft = "Entwurf bleibt erhalten".into();
+        let _ = app.update(Message::ChatGreeting(GreetingChoice(1)));
+        assert_eq!(
+            app.preview.current().greeting.as_ref().unwrap().1,
+            "Andere Begrüßung, User."
+        );
+        assert_eq!(app.preview.current().draft, "Entwurf bleibt erhalten");
+        let _ = app.update(Message::ChatGreeting(GreetingChoice(0)));
+        assert_eq!(app.preview.current().greeting.as_ref().unwrap().1, original);
+        let _ = app.update(Message::Submit);
+        let _ = app.update(Message::ChatGreeting(GreetingChoice(1)));
+        assert_eq!(app.preview.current().greeting_index, 0);
+        assert_eq!(app.preview.current().greeting.as_ref().unwrap().1, original);
+    }
+
+    #[test]
+    fn empty_main_greeting_uses_nonempty_alternative_and_archives_stay_untouched() {
+        let mut app = with_alternate_greetings();
+        app.preview.characters[0].first_message.clear();
+        app.preview.characters[0].card.as_mut().unwrap()["data"]["alternate_greetings"] =
+            serde_json::json!(["  ", "Hallo {{user}}"]);
+        app.preview.current_mut().greeting_variants.clear();
+        app.refresh_prompt();
+        assert_eq!(app.preview.current().greeting_index, 2);
+        assert_eq!(
+            app.preview.current().greeting.as_ref().unwrap().1,
+            "Hallo User"
+        );
+        app.preview.current_mut().source_id = Some("archive".into());
+        let snapshot = app.preview.current().greeting.clone();
+        let _ = app.update(Message::ChatGreeting(GreetingChoice(0)));
+        assert_eq!(app.preview.current().greeting, snapshot);
+    }
+
+    #[test]
+    fn card_edits_preserve_started_chat_greeting_and_clear_resets_selection() {
+        let mut app = with_alternate_greetings();
+        let _ = app.update(Message::ChatGreeting(GreetingChoice(1)));
+        app.preview.current_mut().draft = "Test".into();
+        let _ = app.update(Message::Submit);
+        let original = app.preview.current().greeting.clone();
+        let _ = app.update(Message::EditCharacter(0));
+        app.character_draft.as_mut().unwrap().set(
+            character_draft::Field::FirstMessage,
+            "Neue Begrüßung".into(),
+        );
+        let _ = app.update(Message::SaveCharacter);
+        assert_eq!(app.preview.current().greeting, original);
+        let _ = app.update(Message::Clear);
+        assert_eq!(app.preview.current().greeting_index, 0);
+        assert_eq!(
+            app.preview.current().greeting.as_ref().unwrap().1,
+            "Neue Begrüßung"
+        );
+    }
+
+    #[test]
+    fn greeting_editor_and_readonly_json_keep_the_current_draft() {
+        let mut app = App::default();
+        let _ = app.update(Message::EditCharacter(0));
+        let _ = app.update(Message::EditorTabChanged(EditorTab::Greetings));
+        let _ = app.update(Message::AddGreeting);
+        let index = app.editor_greeting;
+        let _ = app.update(Message::CharacterText(text_editor::Action::Edit(
+            text_editor::Edit::Insert('X'),
+        )));
+        let _ = app.update(Message::EditorTabChanged(EditorTab::Json));
+        let json = app.character_text.text();
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+        assert!(
+            parsed["data"]["alternate_greetings"][index - 1]
+                .as_str()
+                .unwrap()
+                .contains('X')
+        );
+        let _ = app.update(Message::CharacterText(text_editor::Action::Edit(
+            text_editor::Edit::Insert('Z'),
+        )));
+        assert_eq!(app.character_text.text(), json);
+        let _ = app.update(Message::EditorTabChanged(EditorTab::Greetings));
+        assert!(app.character_text.text().contains('X'));
+        let _ = app.update(Message::RemoveGreeting);
+        assert!(app.editor_greeting < index);
+    }
+
     #[test]
     fn card_io_blocks_conflicting_profile_and_editor_operations() {
         let mut app = App {

@@ -121,6 +121,7 @@ mod tests {
         Export {
             card: json!({"spec":"chara_card_v2","spec_version":"2.0","data":{
                 "name":"Änne", "description":"Text", "first_mes":"Hallo",
+                "alternate_greetings":["Zweite Begrüßung\nmit {{user}}", "Dritte Begrüßung"],
                 "extensions":{"foreign":{"kept":42}},"character_book":{"entries":[]}
             },"foreign_top":true}),
             portrait: None,

@@ -26,6 +26,9 @@ Die Auswahl von Lore/Gedächtnis/Verlauf in TypeScript ist noch nicht in einen g
 Charakterbibliothek mit Suche, Karteneditor im RAM und explizitem JSON-/PNG-Dateiimport/-export
 über native Dialoge (`rfd`); PNG bewahrt das Porträt. Profilkopien und Archivnachrichten bleiben
 schreibgeschützt, Exportziel muss außerhalb des produktiven und geladenen Profils liegen.
+Editorreiter: Kartentexte, Begrüßungen (mehrzeilige Alternativen hinzufügen/bearbeiten/entfernen),
+schreibgeschützte JSON-Vorschau. Alternative Begrüßungen nur in leeren lokalen Testchats auswählen;
+begonnene Chats behalten ihren Begrüßungssnapshot, Archive werden nie aus Karten ergänzt.
 
 ### Allgemeine Arbeitsregeln
 
