@@ -1538,6 +1538,80 @@ mod tests {
     }
 
     #[test]
+    fn a_companion_choice_on_a_board_plays_the_chosen_attack() {
+        let mut state = table_with_party(Some("crypt_hall"));
+        let mut rng = StdRng::seed_from_u64(11);
+        start_encounter_at(
+            &mut state.table(),
+            &goblins(1),
+            "en",
+            "spawn",
+            false,
+            1,
+            &mut rng,
+        );
+        let finn = state
+            .combat
+            .combatants
+            .iter()
+            .position(|c| c.name == "Finn")
+            .unwrap();
+        let goblin = state.combat.combatants.iter().position(is_enemy).unwrap();
+        // The goblin stands right next to Finn.
+        let at = state.combat.combatants[finn].position.unwrap();
+        let map = state.map.clone().unwrap();
+        let taken: Vec<GridPos> = state
+            .combat
+            .combatants
+            .iter()
+            .filter_map(|c| c.position)
+            .collect();
+        let next = [
+            (1, 0),
+            (-1, 0),
+            (0, 1),
+            (0, -1),
+            (1, 1),
+            (-1, -1),
+            (1, -1),
+            (-1, 1),
+        ]
+        .into_iter()
+        .map(|(dx, dy)| GridPos::new(at.x + dx, at.y + dy))
+        .find(|p| map.walkable(*p) && !taken.contains(p))
+        .expect("a free square next to Finn");
+        state.combat.combatants[goblin].position = Some(next);
+        state.combat.current_turn_index = finn;
+        begin_turn(&mut state.table());
+        let EnginePlan::Choice(choice) = engine_plan(&state.combat, state.map.as_ref()) else {
+            panic!("Finn chooses how to attack");
+        };
+        let option = choice
+            .options
+            .iter()
+            .find(|o| o.id.starts_with("attack:"))
+            .expect("an attack on the goblin")
+            .clone();
+        let PlannedTurn::Board(plan) = choice.clone().pick(Some(&option.id)) else {
+            panic!("a board plan");
+        };
+        assert_eq!(
+            plan.action,
+            TurnDecision::Attack {
+                attack_id: option.attack_id.clone().unwrap(),
+                target_id: option.target_id.clone().unwrap(),
+            }
+        );
+        assert_eq!(choice.clone().pick(Some("nothing")), choice.fallback);
+        let events = play_turn(&mut state.table(), PlannedTurn::Board(plan), &mut rng);
+        assert!(
+            events
+                .iter()
+                .any(|e| matches!(e, CombatEvent::Attack { .. }))
+        );
+    }
+
+    #[test]
     fn the_fight_log_keeps_the_newest_events() {
         let mut combat = EncounterState {
             events: (0..MAX_COMBAT_EVENTS)

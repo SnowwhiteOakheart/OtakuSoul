@@ -134,8 +134,9 @@ impl Table<'_> {
 }
 
 /// An owned game table, for apps without their own scene type (e.g. a JSON-in/JSON-out
-/// wrapper): keep it between calls and lend it out with [`TableState::table`]. The field names
-/// match the desktop's `SceneState`.
+/// wrapper): keep it between calls and lend it out with [`TableState::table`]. The fields carry
+/// the names of the desktop's `SceneState`, but `rules` and `party` sit at the top level here
+/// (on the desktop under `definition`), so a `SceneState` JSON does not read as a `TableState`.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct TableState {
     #[serde(default)]
