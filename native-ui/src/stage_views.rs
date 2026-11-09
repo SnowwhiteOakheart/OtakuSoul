@@ -23,6 +23,9 @@ impl App {
         {
             return self.scene_preview(scene);
         }
+        if let Some(wizard) = &self.stage.wizard {
+            return self.story_wizard_view(wizard);
+        }
         if self.stage.lobby {
             return self.scene_lobby();
         }
@@ -42,9 +45,13 @@ impl App {
                     label(if self.stage.draft.is_some() {
                         "gallery.native.resumeScene"
                     } else {
-                        "lobby.newScene"
+                        "gallery.create"
                     }),
-                    Message::StageEdit(None)
+                    if self.stage.draft.is_some() {
+                        Message::StageEdit(None)
+                    } else {
+                        Message::StageOpenWizard
+                    }
                 ),
                 control(
                     Icon::Settings,

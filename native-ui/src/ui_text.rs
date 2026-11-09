@@ -10,6 +10,10 @@ pub fn text(key: &'static str) -> &'static str {
 }
 
 fn lookup(language: &str, key: &'static str) -> &'static str {
+    lookup_existing(language, key).unwrap_or(key)
+}
+
+pub fn lookup_existing(language: &str, key: &str) -> Option<&'static str> {
     static NATIVE_DE: OnceLock<Value> = OnceLock::new();
     pack(language)
         .get(key)
@@ -24,7 +28,6 @@ fn lookup(language: &str, key: &'static str) -> &'static str {
                 .get(key)
                 .and_then(Value::as_str)
         })
-        .unwrap_or(key)
 }
 
 fn pack(language: &str) -> &'static Value {

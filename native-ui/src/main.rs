@@ -30,6 +30,8 @@ mod stage_rule_view;
 mod stage_rules;
 mod stage_store;
 mod stage_views;
+mod story_wizard;
+mod story_wizard_view;
 mod ui_text;
 mod views;
 
@@ -183,6 +185,12 @@ enum Message {
     StageOpening,
     StageBrowseHub,
     StageManage,
+    StageOpenWizard,
+    StageWizardEdit(story_wizard::Edit),
+    StageWizardClose,
+    StageWizardFinish {
+        advanced: bool,
+    },
     StageLobbySearch(String),
     StageLobbySource(StageSource),
     StageLobbyFolder(StageFolder),
@@ -577,6 +585,7 @@ struct Stage {
     folder_form: Option<stage_store::FolderChange>,
     own: HashSet<usize>,
     draft: Option<stage_draft::Draft>,
+    wizard: Option<story_wizard::Wizard>,
     editing: bool,
     edit_field: stage_draft::Field,
     editor: text_editor::Content,
@@ -595,6 +604,7 @@ struct Stage {
 enum StageWrite {
     Import,
     Editor(Option<usize>),
+    Wizard,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -647,6 +657,7 @@ impl Default for Stage {
             folder_form: None,
             own: HashSet::new(),
             draft: None,
+            wizard: None,
             editing: false,
             edit_field: stage_draft::Field::Description,
             editor: text_editor::Content::new(),
@@ -2425,6 +2436,21 @@ impl App {
                 self.stage.opening = false;
                 self.stage.editing = false;
             }
+            Message::StageOpenWizard => self.open_story_wizard(),
+            Message::StageWizardEdit(edit) => {
+                if !self.stage.file_busy
+                    && let Some(wizard) = &mut self.stage.wizard
+                {
+                    wizard.edit(edit);
+                    self.stage.edit_error.clear();
+                }
+            }
+            Message::StageWizardClose => {
+                if !self.stage.file_busy {
+                    self.stage.wizard = None;
+                }
+            }
+            Message::StageWizardFinish { advanced } => return self.finish_story_wizard(advanced),
             Message::StageLobbySearch(query) => self.stage.lobby_query = query,
             Message::StageLobbySource(source) => {
                 self.stage.lobby_source = source;
@@ -3229,6 +3255,57 @@ mod tests {
         let _ = app.update(Message::HubRefresh);
         assert_eq!(app.hub.loading.len(), Kind::ALL.len());
         assert_eq!(app.hub.catalog.len(), Kind::ALL.len());
+    }
+
+    #[test]
+    fn story_wizard_saves_a_scene_or_opens_an_editable_draft() {
+        let mut app = App::default();
+        let temp = tempfile::tempdir().unwrap();
+        app.stage.store = Some(temp.path().to_path_buf());
+        let _ = app.update(Message::Navigate(Page::Stage));
+        let _ = app.update(Message::StageOpenWizard);
+        let _ = app.update(Message::StageWizardFinish { advanced: false });
+        assert!(!app.stage.file_busy);
+        for _ in 0..4 {
+            let _ = app.update(Message::StageWizardEdit(story_wizard::Edit::Next));
+        }
+        let _ = app.update(Message::StageWizardFinish { advanced: false });
+        assert!(app.stage.file_busy);
+        let _ = app.update(Message::StageStored(
+            StageWrite::Wizard,
+            Err("Fehler".into()),
+        ));
+        assert!(app.stage.wizard.is_some());
+        assert!(!app.stage.edit_error.is_empty());
+        let scene = app.stage.wizard.as_ref().unwrap().scene("story").unwrap();
+        let folders = stage_store::save(temp.path(), &scene, None).unwrap();
+        let _ = app.update(Message::StageStored(
+            StageWrite::Wizard,
+            Ok((scene, folders)),
+        ));
+        assert!(app.stage.wizard.is_none());
+        let index = app.stage.selected.unwrap();
+        assert!(app.stage.own.contains(&index));
+        assert_eq!(
+            stage_store::list(temp.path()).unwrap().scenes[0].id,
+            "story"
+        );
+
+        let _ = app.update(Message::StageOpenWizard);
+        for _ in 0..4 {
+            let _ = app.update(Message::StageWizardEdit(story_wizard::Edit::Next));
+        }
+        let _ = app.update(Message::StageWizardFinish { advanced: true });
+        assert!(app.stage.wizard.is_none());
+        assert!(app.stage.editing);
+        let draft = app.stage.draft.as_ref().unwrap();
+        assert!(draft.target.is_none());
+        assert!(!draft.get(stage_draft::Field::Description).is_empty());
+        assert_eq!(
+            draft.apply("new").unwrap().genre,
+            stage_preview::Genre::Fantasy
+        );
+        assert_eq!(stage_store::list(temp.path()).unwrap().scenes.len(), 1);
     }
 
     #[test]

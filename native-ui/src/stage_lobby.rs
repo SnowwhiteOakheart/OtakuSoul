@@ -17,7 +17,7 @@ use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-fn new_scene_id() -> String {
+pub(super) fn new_scene_id() -> String {
     static NEXT_ID: AtomicU64 = AtomicU64::new(0);
     let millis = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -106,16 +106,20 @@ impl App {
                 }
                 draft
             };
-            self.stage.editor = text_editor::Content::with_text(draft.get(Field::Description));
-            self.stage.edit_field = Field::Description;
-            self.stage.draft = Some(draft);
-            self.stage.background_preview = None;
-            self.stage.edit_error.clear();
+            self.set_scene_draft(draft);
         }
         self.stage.lobby = true;
         self.stage.selected = None;
         self.stage.editing = true;
         self.stage.folder_form = None;
+    }
+
+    pub(super) fn set_scene_draft(&mut self, draft: Draft) {
+        self.stage.editor = text_editor::Content::with_text(draft.get(Field::Description));
+        self.stage.edit_field = Field::Description;
+        self.stage.draft = Some(draft);
+        self.stage.background_preview = None;
+        self.stage.edit_error.clear();
     }
 
     pub(super) fn save_scene_draft(&mut self) -> Task<Message> {
@@ -204,7 +208,7 @@ impl App {
                 let error = format("gallery.native.storeError", &[("error", &error)]);
                 match write {
                     StageWrite::Import => self.stage.notice = error,
-                    StageWrite::Editor(_) => self.stage.edit_error = error,
+                    StageWrite::Editor(_) | StageWrite::Wizard => self.stage.edit_error = error,
                 }
                 return;
             }
@@ -229,6 +233,20 @@ impl App {
                     &[("title", scene.title(CONTENT_LANGUAGE))],
                 );
                 self.add_local_scene(scene);
+            }
+            StageWrite::Wizard => {
+                let index = self.stage.scenes.len();
+                self.add_local_scene(scene);
+                self.stage.wizard = None;
+                self.stage.notice = label("gallery.native.sceneApplied").into();
+                if self.page == Page::Stage && self.stage.selected.is_none() && !self.stage.editing
+                {
+                    self.stage.lobby = true;
+                    self.stage.lobby_source = StageSource::Own;
+                    self.stage.lobby_folder = StageFolder::All;
+                    self.stage.lobby_query.clear();
+                    self.stage.selected = Some(index);
+                }
             }
         }
         if self.stage.lobby && !self.stage.editing && self.stage.selected.is_none() {

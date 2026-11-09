@@ -5489,6 +5489,7 @@ dependencies = [
  "otakusoul-prompt",
  "otakusoul-stream",
  "png 0.18.1",
+ "rand 0.9.5",
  "reqwest",
  "rfd 0.18.0",
  "rodio",

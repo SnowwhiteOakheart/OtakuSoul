@@ -797,7 +797,9 @@ geladenen Titelbilder der ersten Reihe. Die Aufnahme liegt lokal in
   im Szeneneditor. Die Sammlung ist unabhängig von einer geladenen Profilkopie.
 - [x] Ambient-Ton im Szeneneditor probehören und stoppen. Beim Wechsel des Tons, beim
   Deaktivieren und beim Verlassen des Editors endet die Vorschau.
-- [ ] Story-Wizard.
+- [x] Offline-Story-Wizard für Genre, Spielerfigur, bis zu vier Gefährten und Ausgangslage.
+  Die Vorschau führt zum dauerhaften Szenenspeicher oder in den erweiterten Editor.
+- [ ] Musikschritt des Story-Wizards mit Stimmungsprofil und Modellvorschlägen.
 - [ ] Spielansicht mit echten Stage-Runden und Spielständen.
 - [ ] 5e-Spielbrett, Kampf und Erkundung über die vorhandene Stage-/Regel-Engine.
 
@@ -833,6 +835,9 @@ der ausdrücklich geladenen Profilkopie auf und dekodiert sie außerhalb des GUI
 Dateiauflösung, Dekodierung und Ausgabe laufen im Hintergrund. Der Linux-Build benötigt
 die ALSA-Entwicklungsbibliothek (`libasound2-dev` auf Debian/Ubuntu). Die Ausgabe über
 das konkrete Audiogerät gehört zur späteren Bedienprobe.
+`story_wizard.rs` verwendet die zwei Vorlagen pro Genre aus den Tauri-Sprachpaketen und
+speichert eigene Ideen, Startort, Spielerfigur und Begleiter in einer Szenendefinition.
+`story_wizard_view.rs` führt durch die Schritte und zeigt vor dem Speichern den Auftakt.
 Tauris Lobby und die gemeinsamen Editorfelder wurden per WebDriver im isolierten E2E-Profil
 geprüft. Für die native Variante bestanden 152 Tests einschließlich JSON-Rundlauf und der
 Windows-Build. Der Live-Hub-Test war bei diesem Lauf ausgenommen.
