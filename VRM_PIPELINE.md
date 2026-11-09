@@ -14,6 +14,8 @@ Für die Asset-Erstellung steht eine lokal installierte Suite modernster Open-So
 | **Motion2MixamoRig** | `C:\Users\Sebas\AI\Motion2MixamoRig` | Übertragung von menschlichen Bewegungen aus Smartphone-/Webcam-Videos auf Mixamo/VRM-Rigs |
 | **image-to-3dlab (AssetFurnace)** | `C:\Users\Sebas\AI\image-to-3dlab` | Lokale Bild-zu-3D-Pipeline (TRELLIS.2, Hunyuan3D, SF3D) für Basiskörper, Kleidung und Requisiten |
 | **Charakuru** | `C:\Users\Sebas\AI\Charakuru` | 2D-zu-VRM Avatar-Workflow & Blendshape-Generierung für Coding-Agenten |
+| **UltraTex (ComfyUI)** | C:\Users\Sebas\AI\ComfyUI | Gestochen scharfe 2K-Multi-View-PBR-Texturierung untexturierter Meshes aus einem Referenzbild |
+| **PixelArtistry Workflows** | C:\Users\Sebas\AI\PixelArtistry-UltraTex / -Watertight-Meshes | ComfyUI-Workflows für Watertight-Meshes, Retopologie und UltraTex (6 & 10 Views) |
 | **PartLLM** | `C:\Users\Sebas\AI\PartLLM` | Semantische 3D-Part-Segmentierung (Zerlegung monolithischer 3D-Meshes) |
 
 ---
