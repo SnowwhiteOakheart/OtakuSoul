@@ -68,9 +68,13 @@ pub(super) fn stage_media_names(root: &Path, directory: &Path, extensions: &[&st
     names
 }
 
-pub(super) fn stage_background_path(home: &Path, name: &str) -> Option<PathBuf> {
+pub(super) fn stage_media_path(
+    home: &Path,
+    kind: crate::stage_media::Kind,
+    name: &str,
+) -> Option<PathBuf> {
     let root = profile_root(home).ok()?;
-    let path = root.join("data/backgrounds").join(name);
+    let path = root.join("data").join(kind.directory()).join(name);
     let metadata = fs::symlink_metadata(&path).ok()?;
     if !metadata.is_file() || is_link(&metadata) {
         return None;

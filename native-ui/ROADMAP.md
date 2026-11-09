@@ -795,7 +795,9 @@ geladenen Titelbilder der ersten Reihe. Die Aufnahme liegt lokal in
   auswählen und Gefährtensteuerung sowie Heldentod konfigurieren.
 - [x] Native Bild- und Tonimporte mit wiederverwendbarer lokaler Sammlung und Bildvorschau
   im Szeneneditor. Die Sammlung ist unabhängig von einer geladenen Profilkopie.
-- [ ] Tonwiedergabe und Story-Wizard.
+- [x] Ambient-Ton im Szeneneditor probehören und stoppen. Beim Wechsel des Tons, beim
+  Deaktivieren und beim Verlassen des Editors endet die Vorschau.
+- [ ] Story-Wizard.
 - [ ] Spielansicht mit echten Stage-Runden und Spielständen.
 - [ ] 5e-Spielbrett, Kampf und Erkundung über die vorhandene Stage-/Regel-Engine.
 
@@ -827,6 +829,10 @@ gespeichert. Der Editor erhält importierte Zuordnungen und andere Regelparamete
 enthält die Dateinamen. Bildimporte unterstützen PNG, JPEG und WebP (bis 16 MiB), Tonimporte
 WAV, MP3 und Ogg (bis 32 MiB). Die Bildvorschau löst Referenzen in der nativen Sammlung oder
 der ausdrücklich geladenen Profilkopie auf und dekodiert sie außerhalb des GUI-Threads.
+`stage_audio.rs` spielt WAV, MP3 und Ogg-Vorbis auf dem Standardgerät über Rodio ab.
+Dateiauflösung, Dekodierung und Ausgabe laufen im Hintergrund. Der Linux-Build benötigt
+die ALSA-Entwicklungsbibliothek (`libasound2-dev` auf Debian/Ubuntu). Die Ausgabe über
+das konkrete Audiogerät gehört zur späteren Bedienprobe.
 Tauris Lobby und die gemeinsamen Editorfelder wurden per WebDriver im isolierten E2E-Profil
 geprüft. Für die native Variante bestanden 152 Tests einschließlich JSON-Rundlauf und der
 Windows-Build. Der Live-Hub-Test war bei diesem Lauf ausgenommen.

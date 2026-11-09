@@ -34,7 +34,7 @@ impl Kind {
         })
     }
 
-    fn directory(self) -> &'static str {
+    pub(super) fn directory(self) -> &'static str {
         match self {
             Self::Background => "backgrounds",
             Self::Ambient => "ambient",
@@ -130,21 +130,60 @@ pub fn preview(
     profile_home: Option<&Path>,
     name: &str,
 ) -> Result<Handle, String> {
-    if !valid_name(name) || name.is_empty() || name.eq_ignore_ascii_case("none") {
-        return Err(label("gallery.native.mediaMissing").into());
+    let (path, extension) = resolve(Kind::Background, root, profile_home, name)?;
+    decode_image(&read(&path, IMAGE_LIMIT)?, &extension)
+}
+
+pub fn ambient(
+    root: Option<&Path>,
+    profile_home: Option<&Path>,
+    name: &str,
+) -> Result<(Vec<u8>, String), String> {
+    let (path, extension) = resolve(Kind::Ambient, root, profile_home, name)?;
+    let bytes = read(&path, AUDIO_LIMIT)?;
+    if !matches_audio(&bytes, &extension) {
+        return Err(label(INVALID).into());
+    }
+    Ok((bytes, extension))
+}
+
+pub fn has_ambient(name: &str) -> bool {
+    let name = name.trim();
+    !name.is_empty()
+        && !["none", "null", "silence"]
+            .iter()
+            .any(|value| name.eq_ignore_ascii_case(value))
+}
+
+fn resolve(
+    kind: Kind,
+    root: Option<&Path>,
+    profile_home: Option<&Path>,
+    name: &str,
+) -> Result<(PathBuf, String), String> {
+    let missing = label(match kind {
+        Kind::Background => "gallery.native.mediaMissing",
+        Kind::Ambient => "gallery.native.ambientMissing",
+    });
+    let selected = match kind {
+        Kind::Background => !name.is_empty() && !name.eq_ignore_ascii_case("none"),
+        Kind::Ambient => has_ambient(name),
+    };
+    if !valid_name(name) || !selected {
+        return Err(missing.into());
     }
     let local = if let Some(root) = root {
         match stage_store::store_root(root)? {
-            Some(root) => directory(&root, Kind::Background)?,
+            Some(root) => directory(&root, kind)?,
             None => None,
         }
     } else {
         None
     };
     let candidates = std::iter::once(name.to_owned()).chain(
-        Kind::Background
-            .extensions()
+        kind.extensions()
             .iter()
+            .filter(|_| matches!(kind, Kind::Background))
             .map(|ext| format!("{name}.{ext}")),
     );
     for candidate in candidates {
@@ -155,7 +194,7 @@ pub fn preview(
             continue;
         };
         let extension = extension.to_ascii_lowercase();
-        if !Kind::Background.extensions().contains(&extension.as_str()) {
+        if !kind.extensions().contains(&extension.as_str()) {
             continue;
         }
         let native = local
@@ -164,14 +203,14 @@ pub fn preview(
             .filter(|path| regular_file(path));
         let path = native.or_else(|| {
             profile_home
-                .and_then(|home| profile::stage_background_path(home, &candidate))
+                .and_then(|home| profile::stage_media_path(home, kind, &candidate))
                 .filter(|path| regular_file(path))
         });
         if let Some(path) = path {
-            return decode_image(&read(&path, IMAGE_LIMIT)?, &extension);
+            return Ok((path, extension));
         }
     }
-    Err(label("gallery.native.mediaMissing").into())
+    Err(missing.into())
 }
 
 pub fn valid_name(name: &str) -> bool {

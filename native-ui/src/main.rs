@@ -21,6 +21,7 @@ mod message_content;
 mod model;
 mod profile;
 mod prompt_preview;
+mod stage_audio;
 mod stage_draft;
 mod stage_lobby;
 mod stage_media;
@@ -202,6 +203,8 @@ enum Message {
     ),
     StagePreviewBackground,
     StageBackgroundLoaded(Result<image::Handle, String>),
+    StageToggleAmbient,
+    StageAmbientFinished(Result<(), String>),
     StageRule(stage_rules::Edit),
     StageText(text_editor::Action),
     StageApply,
@@ -580,6 +583,7 @@ struct Stage {
     media: profile::StageMedia,
     native_media: profile::StageMedia,
     background_preview: Option<image::Handle>,
+    ambient_preview: Option<stage_audio::Preview>,
     store: Option<PathBuf>,
     loading: bool,
     file_busy: bool,
@@ -649,6 +653,7 @@ impl Default for Stage {
             media: profile::StageMedia::default(),
             native_media: profile::StageMedia::default(),
             background_preview: None,
+            ambient_preview: None,
             store: None,
             loading: false,
             file_busy: false,
@@ -1823,6 +1828,21 @@ impl App {
         )
     }
     fn update(&mut self, message: Message) -> Task<Message> {
+        let task = self.update_message(message);
+        if let Some(preview) = &mut self.stage.ambient_preview
+            && (self.page != Page::Stage
+                || !self.stage.editing
+                || !self.stage.draft.as_ref().is_some_and(|draft| {
+                    draft.get(stage_draft::Field::Ambient).trim() == preview.name
+                        && draft.get(stage_draft::Field::DisableAmbient) != "true"
+                }))
+        {
+            preview.stop();
+        }
+        task
+    }
+
+    fn update_message(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::LoreShowRules(value) => self.lore_show_rules = value,
             Message::LoreNumber(number, value) => {
@@ -2466,6 +2486,15 @@ impl App {
                 match result {
                     Ok(image) => self.stage.background_preview = Some(image),
                     Err(error) => self.stage.edit_error = error,
+                }
+            }
+            Message::StageToggleAmbient => return self.toggle_stage_ambient(),
+            Message::StageAmbientFinished(result) => {
+                if let Some(preview) = self.stage.ambient_preview.take()
+                    && !preview.stopping()
+                    && let Err(error) = result
+                {
+                    self.stage.edit_error = error;
                 }
             }
             Message::StageRule(edit) => {
@@ -3200,6 +3229,34 @@ mod tests {
         let _ = app.update(Message::HubRefresh);
         assert_eq!(app.hub.loading.len(), Kind::ALL.len());
         assert_eq!(app.hub.catalog.len(), Kind::ALL.len());
+    }
+
+    #[test]
+    fn stage_ambient_stops_when_the_editor_context_changes() {
+        use stage_draft::Field;
+        use std::sync::mpsc::TryRecvError;
+
+        let mut app = App::default();
+        let _ = app.update(Message::Navigate(Page::Stage));
+        let _ = app.update(Message::StageEdit(None));
+        let _ = app.update(Message::StageSet(Field::Ambient, "wind.wav".into()));
+        let (preview, stop) = stage_audio::Preview::new("wind.wav".into());
+        app.stage.ambient_preview = Some(preview);
+
+        let _ = app.update(Message::StageSet(Field::Title, "Kampagne".into()));
+        assert_eq!(stop.try_recv(), Err(TryRecvError::Empty));
+        let _ = app.update(Message::StageSet(Field::Ambient, "rain.ogg".into()));
+        assert_eq!(stop.try_recv(), Err(TryRecvError::Disconnected));
+        let _ = app.update(Message::StageAmbientFinished(Err(
+            "Veralteter Fehler".into()
+        )));
+        assert!(app.stage.edit_error.is_empty());
+
+        let (preview, stop) = stage_audio::Preview::new("rain.ogg".into());
+        app.stage.ambient_preview = Some(preview);
+        let _ = app.update(Message::StageBack);
+        assert_eq!(stop.try_recv(), Err(TryRecvError::Disconnected));
+        assert!(app.stage.draft.is_some());
     }
 
     #[test]

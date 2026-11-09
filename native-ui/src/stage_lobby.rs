@@ -7,7 +7,7 @@ use crate::ui_text::{CONTENT_LANGUAGE, format, text as label};
 use crate::views::{control, muted, scroll, shorten};
 use crate::{
     App, Message, Page, StageFolder, StageSource, StageWrite, appearance, background, file_export,
-    profile, stage_preview, stage_rule_view, stage_store,
+    profile, stage_audio, stage_preview, stage_rule_view, stage_store,
 };
 use iced::widget::{
     button, checkbox, column, container, pick_list, row, text, text_editor, text_input,
@@ -362,6 +362,37 @@ impl App {
         Task::perform(
             background(move || stage_media::preview(root.as_deref(), profile.as_deref(), &name)),
             Message::StageBackgroundLoaded,
+        )
+    }
+
+    pub(super) fn toggle_stage_ambient(&mut self) -> Task<Message> {
+        if let Some(preview) = &mut self.stage.ambient_preview {
+            preview.stop();
+            return Task::none();
+        }
+        if self.page != Page::Stage
+            || !self.stage.editing
+            || self.stage.file_busy
+            || self.profile_busy
+        {
+            return Task::none();
+        }
+        let Some(draft) = &self.stage.draft else {
+            return Task::none();
+        };
+        let name = draft.get(Field::Ambient).trim();
+        if !stage_media::has_ambient(name) || draft.get(Field::DisableAmbient) == "true" {
+            return Task::none();
+        }
+        let root = self.stage.store.clone();
+        let profile = self.profile_home.clone();
+        let name = name.to_owned();
+        let (preview, stop) = stage_audio::Preview::new(name.clone());
+        self.stage.ambient_preview = Some(preview);
+        self.stage.edit_error.clear();
+        Task::perform(
+            background(move || stage_audio::play(root.as_deref(), profile.as_deref(), &name, stop)),
+            Message::StageAmbientFinished,
         )
     }
 
@@ -799,7 +830,12 @@ impl App {
             .spacing(8)
             .wrap(),
             asset(Field::Ambient, &names.ambient),
-            import(Kind::Ambient),
+            row![
+                import(Kind::Ambient),
+                self.ambient_preview_button(draft, available),
+            ]
+            .spacing(8)
+            .wrap(),
             toggle(Field::LockBackground),
             toggle(Field::DisableAmbient),
         ]
@@ -906,6 +942,23 @@ impl App {
         scroll(container(content.padding(24).max_width(850)).center_x(Fill))
             .width(Fill)
             .height(Fill)
+            .into()
+    }
+
+    fn ambient_preview_button(&self, draft: &Draft, available: bool) -> Element<'static, Message> {
+        let (key, enabled) = match &self.stage.ambient_preview {
+            Some(preview) if preview.stopping() => ("gallery.native.stoppingAmbient", false),
+            Some(_) => ("gallery.native.stopAmbient", true),
+            None => (
+                "gallery.native.playAmbient",
+                available
+                    && stage_media::has_ambient(draft.get(Field::Ambient))
+                    && draft.get(Field::DisableAmbient) != "true",
+            ),
+        };
+        button(label(key))
+            .style(appearance::subtle_button)
+            .on_press_maybe(enabled.then_some(Message::StageToggleAmbient))
             .into()
     }
 }

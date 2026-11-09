@@ -23,5 +23,6 @@ otakusoul-lore = { path = "../crates/otakusoul-lore" }
 reqwest = { version = "0.13", features = ["json", "stream"] }
 tokio = { version = "1", features = ["rt", "time", "net", "sync", "macros"] }
 rfd = "0.18"
+rodio = { version = "0.23", default-features = false, features = ["playback", "wav", "mp3", "vorbis"] }
 
 tempfile = "3"
