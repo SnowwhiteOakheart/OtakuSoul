@@ -671,7 +671,9 @@ wurden nach dem Durchlauf textlich korrigiert.
 - [ ] Vorschaubilder für Figuren über ein separates kleines Katalog-Asset. Die Registry enthält
   derzeit nur Links zur vollständigen Charakterkarte.
 - [x] Dauerhafte Installation von Figuren und Lorebooks in einer eigenen nativen Hub-Bibliothek.
-- [ ] Versionsabgleich, Aktualisierungen und Konfliktbehandlung für bearbeitete Inhalte.
+- [x] Versionsabgleich und ausdrücklich angeforderte Updates für importierte Originale.
+- [ ] Konfliktbehandlung für dauerhaft gespeicherte Bearbeitungen und Aktivierung während der Sitzung.
+- [ ] Registry und Downloads für Updates an denselben Repository-Stand binden.
 - [ ] Szenarien an die native Stage anbinden. Avatare und Chub AI separat integrieren.
 
 `src/hub_catalog.rs` lädt den angewählten Reiter im Hintergrund von der festen öffentlichen
@@ -726,6 +728,22 @@ Prüfstand 09.11.2026: 139 Native- und ein Pfadtest bestanden. Der Hub-Live-Test
 eine öffentliche Charakterkarte und ein Lorebook in einer temporären SQLite-Bibliothek und
 stellte beide beim erneuten Laden in einer frischen App-Instanz wieder her. Clippy und der
 Windows-Build bestanden. Der Neustart im Windows-Fenster ist noch offen.
+
+#### Hub-Revisionsabgleich
+
+Die gespeicherte Revision eines Eintrags bestimmt den Status im Katalog und in den Weltdetails.
+„Aktualisieren“ lädt eine neuere Fassung, validiert dieselben Karten- und Lorebook-Formate wie beim
+Erstimport und schreibt Nutzdaten und Metadaten gemeinsam in die vorhandene SQLite-Zeile.
+Der Revisionsvergleich erfolgt innerhalb der Schreibtransaktion. Bei gleichzeitigen Aktualisierungen
+gilt die höchste erfolgreich gespeicherte Revision. Die vorhandene Datenbankversion bleibt kompatibel.
+
+Die aktualisierte Fassung wird beim nächsten Start geladen. Bis dahin arbeiten Editor und Chat mit
+der geöffneten Fassung. Eigene Bearbeitungen lassen sich wie bisher separat exportieren.
+
+Prüfstand 09.11.2026: 142 native Tests und der öffentliche Hub-Live-Test bestanden. Der
+Live-Test aktualisierte eine temporäre Bibliothek von Testrevision 3 auf Katalogrevision 4.
+Der lokale Test mit unterschiedlichen Lorebook-Fassungen prüft, dass ein offener Entwurf
+erhalten bleibt und erst eine frische App-Instanz die neue Fassung liest.
 
 - [ ] Einstellungen/Onboarding, weitere Charakter-/Lorebook-Editoren, Gedächtnis und Im-/Export.
 - [ ] Stage und 5e einschließlich Battlemap; Fachlogik wiederverwenden.

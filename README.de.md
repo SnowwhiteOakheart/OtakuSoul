@@ -3,7 +3,7 @@
 > Experiment auf diesem Branch: eine native Rust-Oberfläche für Windows. Start mit
 > `cargo run -p otakusoul-native`; Arbeitsplan und Grenzen in [`native-ui/ROADMAP.md`](native-ui/ROADMAP.md).
 > Der Testchat kann Charakterantworten von einem eingestellten OpenAI-kompatiblen oder Anthropic-Endpunkt abrufen. Der Testverlauf liegt im Arbeitsspeicher.
-> Der native Hub zeigt Welten, Charaktere, Szenarien und Lorebooks. Das Weltenraster lädt Titelbilder bei Bedarf und die Weltansicht zeigt die zugehörigen Inhalte. Importierte Charakterkarten und Lorebooks bleiben über Neustarts hinweg in einer separaten nativen Bibliothek verfügbar.
+> Der native Hub zeigt Welten, Charaktere, Szenarien und Lorebooks. Das Weltenraster lädt Titelbilder bei Bedarf und die Weltansicht zeigt die zugehörigen Inhalte. Eine separate native Bibliothek speichert importierte Charakterkarten, Lorebooks und ausdrücklich angeforderte Updates. Updates werden beim nächsten Start geladen.
 > Die Vorschau bietet lokale Testnachrichten ohne KI-Anbindung und kann ausdrücklich gewählte Profilkopien
 > schreibgeschützt laden. In den Einstellungen kannst Du ein Beispielprofil mit erfundenen Verläufen erstellen.
 > Ein separater Verbindungstest prüft einen bereits laufenden KI-Endpunkt mit einer kurzen Testanfrage.

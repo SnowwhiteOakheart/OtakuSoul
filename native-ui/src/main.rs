@@ -175,7 +175,7 @@ enum Message {
     HubCoverLoaded(url::Url, Option<image::Handle>),
     HubLibraryLoaded(Result<HubLibrary, String>),
     HubImport(hub_catalog::Kind, String),
-    HubImported(Result<HubContent, String>),
+    HubImported(Result<HubImportResult, String>),
     ImportLorebook,
     NewLorebook,
     EditLorebook(usize),
@@ -329,12 +329,25 @@ impl HubContent {
     }
 }
 
-fn install_hub_content(
+#[derive(Debug, Clone)]
+struct HubInstalledContent {
+    revision: u32,
+    content: HubContent,
+}
+
+#[derive(Debug, Clone)]
+enum HubImportResult {
+    Installed(HubInstalledContent),
+    UpdateStored(u32),
+}
+
+fn import_hub_content(
     root: &std::path::Path,
     protected_home: Option<&std::path::Path>,
     kind: hub_catalog::Kind,
     entry: &hub_catalog::Entry,
-) -> Result<HubContent, String> {
+    update: bool,
+) -> Result<HubImportResult, String> {
     if protected_home.is_some_and(|home| profile::hub_store_overlaps(root, home)) {
         return Err(
             "Der native Hub-Speicher überschneidet sich mit der geladenen Profilkopie.".into(),
@@ -353,17 +366,25 @@ fn install_hub_content(
         bytes: hub_catalog::download(entry)?,
     };
     let content = HubContent::parse(kind, &item.title, &item.filename, item.bytes.clone())?;
-    match hub_store::install(root, &item)? {
-        hub_store::Install::Added => Ok(content),
-        hub_store::Install::Existing(stored) => {
-            HubContent::parse(stored.kind, &stored.title, &stored.filename, stored.bytes)
-        }
+    if update {
+        return hub_store::update(root, &item).map(HubImportResult::UpdateStored);
     }
+    let installed = match hub_store::install(root, &item)? {
+        hub_store::Install::Added => HubInstalledContent {
+            revision: item.revision,
+            content,
+        },
+        hub_store::Install::Existing(stored) => HubInstalledContent {
+            revision: stored.revision,
+            content: HubContent::parse(stored.kind, &stored.title, &stored.filename, stored.bytes)?,
+        },
+    };
+    Ok(HubImportResult::Installed(installed))
 }
 
 #[derive(Debug, Clone)]
 struct HubLibrary {
-    entries: Vec<((hub_catalog::Kind, String), HubContent)>,
+    entries: Vec<((hub_catalog::Kind, String), HubInstalledContent)>,
     unreadable: usize,
 }
 
@@ -375,7 +396,13 @@ impl HubLibrary {
         };
         for item in hub_store::list(root)? {
             match HubContent::parse(item.kind, &item.title, &item.filename, item.bytes) {
-                Ok(content) => library.entries.push(((item.kind, item.id), content)),
+                Ok(content) => library.entries.push((
+                    (item.kind, item.id),
+                    HubInstalledContent {
+                        revision: item.revision,
+                        content,
+                    },
+                )),
                 Err(_) => library.unreadable += 1,
             }
         }
@@ -385,6 +412,19 @@ impl HubLibrary {
 
 struct HubWorld {
     entry: hub_catalog::Entry,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum HubEntryState {
+    Available,
+    Installed,
+    UpdateAvailable,
+    PendingRestart,
+}
+
+struct HubInstallation {
+    revision: u32,
+    pending_restart: bool,
 }
 
 struct Hub {
@@ -402,7 +442,7 @@ struct Hub {
     library_notice: String,
     installed_character_ids: HashSet<String>,
     importing: Option<(hub_catalog::Kind, String)>,
-    imported: HashSet<(hub_catalog::Kind, String)>,
+    installed: HashMap<(hub_catalog::Kind, String), HubInstallation>,
     notice: String,
 }
 
@@ -423,13 +463,22 @@ impl Default for Hub {
             library_notice: String::new(),
             installed_character_ids: HashSet::new(),
             importing: None,
-            imported: HashSet::new(),
+            installed: HashMap::new(),
             notice: String::new(),
         }
     }
 }
 
 impl Hub {
+    fn entry_state(&self, key: &(hub_catalog::Kind, String), revision: u32) -> HubEntryState {
+        match self.installed.get(key) {
+            None => HubEntryState::Available,
+            Some(installed) if installed.revision < revision => HubEntryState::UpdateAvailable,
+            Some(installed) if installed.pending_restart => HubEntryState::PendingRestart,
+            Some(_) => HubEntryState::Installed,
+        }
+    }
+
     fn reset_cover_requests(&mut self) {
         self.covers.clear_pending();
         self.visible_covers.clear();
@@ -937,12 +986,16 @@ impl App {
     fn register_hub_content(
         &mut self,
         key: (hub_catalog::Kind, String),
-        content: HubContent,
+        installed: HubInstalledContent,
     ) -> String {
-        if !self.hub.imported.insert(key) {
+        let std::collections::hash_map::Entry::Vacant(slot) = self.hub.installed.entry(key) else {
             return String::new();
-        }
-        match content {
+        };
+        slot.insert(HubInstallation {
+            revision: installed.revision,
+            pending_restart: false,
+        });
+        match installed.content {
             HubContent::Character(character) => {
                 let name = character.name.clone();
                 let id = self.add_imported_character(character);
@@ -1038,7 +1091,6 @@ impl App {
             || self.hub.library_loading
             || self.hub.loading.contains(&kind)
             || self.hub.importing.is_some()
-            || self.hub.imported.contains(&key)
         {
             return Task::none();
         }
@@ -1059,10 +1111,17 @@ impl App {
         else {
             return Task::none();
         };
+        let update = match self.hub.entry_state(&key, entry.revision) {
+            HubEntryState::Available => false,
+            HubEntryState::UpdateAvailable => true,
+            HubEntryState::Installed | HubEntryState::PendingRestart => return Task::none(),
+        };
         self.hub.notice = ui_text::text("hub.importing").into();
         self.hub.importing = Some(key);
         Task::perform(
-            background(move || install_hub_content(&root, protected_home.as_deref(), kind, &entry)),
+            background(move || {
+                import_hub_content(&root, protected_home.as_deref(), kind, &entry, update)
+            }),
             Message::HubImported,
         )
     }
@@ -2164,7 +2223,16 @@ impl App {
                     return Task::none();
                 };
                 self.hub.notice = match result {
-                    Ok(content) => self.register_hub_content(key, content),
+                    Ok(HubImportResult::Installed(content)) => {
+                        self.register_hub_content(key, content)
+                    }
+                    Ok(HubImportResult::UpdateStored(revision)) => {
+                        if let Some(installed) = self.hub.installed.get_mut(&key) {
+                            installed.revision = revision;
+                            installed.pending_restart = true;
+                        }
+                        ui_text::text("hub.native.updateStored").into()
+                    }
                     Err(error) => ui_text::format("hub.importFailed", &[("error", &error)]),
                 };
             }
@@ -2584,12 +2652,36 @@ mod tests {
             let entries = hub_catalog::load(kind).unwrap();
             assert!(!entries.is_empty(), "{kind:?}");
             if let Some(entry) = entries.iter().find(|entry| entry.can_import()) {
-                match install_hub_content(directory.path(), None, kind, entry).unwrap() {
+                let HubImportResult::Installed(installed) =
+                    import_hub_content(directory.path(), None, kind, entry, false).unwrap()
+                else {
+                    panic!("Erstimport muss einen Bibliothekseintrag liefern");
+                };
+                assert_eq!(installed.revision, entry.revision);
+                match installed.content {
                     HubContent::Character(character) => {
                         assert!(!character.name.is_empty());
                         assert!(character.portrait.is_some());
                     }
                     HubContent::Lorebook(book) => assert!(!book.entries.is_empty()),
+                }
+                if kind == Kind::Lorebooks && entry.revision > 1 {
+                    let update_directory = tempfile::tempdir().unwrap();
+                    let mut earlier = hub_store::list(directory.path())
+                        .unwrap()
+                        .into_iter()
+                        .find(|item| item.kind == kind && item.id == entry.id)
+                        .unwrap();
+                    earlier.revision -= 1;
+                    hub_store::install(update_directory.path(), &earlier).unwrap();
+                    assert!(matches!(
+                        import_hub_content(update_directory.path(), None, kind, entry, true).unwrap(),
+                        HubImportResult::UpdateStored(revision) if revision == entry.revision
+                    ));
+                    println!(
+                        "Lorebook-Update von Revision {} auf {}",
+                        earlier.revision, entry.revision
+                    );
                 }
             } else {
                 assert!(matches!(
@@ -2646,7 +2738,7 @@ mod tests {
         assert_eq!(restored.entries.len(), 2);
         let mut reopened = App::default();
         let _ = reopened.update(Message::HubLibraryLoaded(Ok(restored)));
-        assert_eq!(reopened.hub.imported.len(), 2);
+        assert_eq!(reopened.hub.installed.len(), 2);
         assert_eq!(reopened.preview.characters.len(), 5);
         assert_eq!(reopened.lorebooks.len(), 1);
     }
@@ -2667,7 +2759,10 @@ mod tests {
         let _ = app.update(Message::HubLibraryLoaded(Ok(HubLibrary {
             entries: vec![(
                 key.clone(),
-                HubContent::Character(character("registry", "Hub-Figur")),
+                HubInstalledContent {
+                    revision: 1,
+                    content: HubContent::Character(character("registry", "Hub-Figur")),
+                },
             )],
             unreadable: 0,
         })));
@@ -2692,7 +2787,7 @@ mod tests {
         assert_eq!(stored.name, "Hub-Figur");
         assert_ne!(stored.id, hub_id);
         assert!(app.hub.installed_character_ids.contains(&stored.id));
-        assert!(app.hub.imported.contains(&key));
+        assert!(app.hub.installed.contains_key(&key));
     }
 
     #[test]
@@ -2709,12 +2804,55 @@ mod tests {
             .unwrap()
         };
         app.lorebooks.push(make_book("Eigener Entwurf"));
-        let _ = app.update(Message::HubImported(Ok(HubContent::Lorebook(make_book(
-            "Serverversion",
-        )))));
+        let _ = app.update(Message::HubImported(Ok(HubImportResult::Installed(
+            HubInstalledContent {
+                revision: 1,
+                content: HubContent::Lorebook(make_book("Serverversion")),
+            },
+        ))));
         assert_eq!(app.lorebooks.len(), 1);
         assert_eq!(app.lorebooks[0].entries[0].content, "Eigener Entwurf");
-        assert!(app.hub.imported.contains(&(kind, "Welt".into())));
+        assert!(app.hub.installed.contains_key(&(kind, "Welt".into())));
+    }
+
+    #[test]
+    fn hub_update_keeps_the_active_editor_and_loads_the_new_revision_on_restart() {
+        let store = tempfile::tempdir().unwrap();
+        let kind = hub_catalog::Kind::Lorebooks;
+        let key = (kind, String::from("Welt"));
+        let item = |revision, name| hub_store::Item {
+            kind,
+            id: key.1.clone(),
+            revision,
+            title: "Welt".into(),
+            filename: "welt.json".into(),
+            bytes: serde_json::to_vec(&serde_json::json!({
+                "id":"welt", "name": name, "entries":[]
+            }))
+            .unwrap(),
+        };
+        hub_store::install(store.path(), &item(1, "Original")).unwrap();
+        let mut app = App::default();
+        let _ = app.update(Message::HubLibraryLoaded(HubLibrary::read(store.path())));
+        assert_eq!(app.hub.entry_state(&key, 1), HubEntryState::Installed);
+        assert_eq!(app.hub.entry_state(&key, 2), HubEntryState::UpdateAvailable);
+        let _ = app.update(Message::EditLorebook(0));
+        let _ = app.update(Message::LoreName("Eigener Entwurf".into()));
+        app.hub.importing = Some(key.clone());
+        let revision = hub_store::update(store.path(), &item(2, "Neue Fassung")).unwrap();
+        let _ = app.update(Message::HubImported(Ok(HubImportResult::UpdateStored(
+            revision,
+        ))));
+        assert_eq!(app.hub.entry_state(&key, 2), HubEntryState::PendingRestart);
+        assert_eq!(app.page, Page::LorebookEditor);
+        assert_eq!(app.lorebooks[0].name, "Original");
+        let _ = app.update(Message::SaveLorebook);
+        assert_eq!(app.lorebooks[0].name, "Eigener Entwurf");
+
+        let mut reopened = App::default();
+        let _ = reopened.update(Message::HubLibraryLoaded(HubLibrary::read(store.path())));
+        assert_eq!(reopened.hub.entry_state(&key, 2), HubEntryState::Installed);
+        assert_eq!(reopened.lorebooks[0].name, "Neue Fassung");
     }
 
     #[test]

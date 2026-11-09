@@ -20,6 +20,7 @@ const ACCESS_ERROR: &str = "Die native Hub-Bibliothek ist nicht zugänglich.";
 const READ_ERROR: &str = "Die native Hub-Bibliothek konnte nicht gelesen werden.";
 const WRITE_ERROR: &str = "Der Hub-Inhalt konnte nicht dauerhaft gespeichert werden.";
 const CAPACITY_ERROR: &str = "Die native Hub-Bibliothek überschreitet ihre Größenbegrenzung.";
+const MISSING_ITEM: &str = "Dieser Hub-Inhalt ist in der nativen Bibliothek nicht installiert.";
 
 #[derive(Debug, Clone)]
 pub struct Item {
@@ -64,11 +65,7 @@ pub fn install(root: &Path, item: &Item) -> Result<Install, String> {
     if !exists {
         initialize(&path)?;
     }
-    let (path, true) = database_path(root)?.ok_or(ACCESS_ERROR)? else {
-        return Err(ACCESS_ERROR.into());
-    };
-    check_header(&path)?;
-    let mut connection = open(&path, OpenFlags::SQLITE_OPEN_READ_WRITE)?;
+    let mut connection = open_existing_for_write(root)?.ok_or(ACCESS_ERROR)?;
     let transaction = connection
         .transaction_with_behavior(TransactionBehavior::Immediate)
         .map_err(|_| WRITE_ERROR)?;
@@ -97,6 +94,57 @@ pub fn install(root: &Path, item: &Item) -> Result<Install, String> {
         .map_err(|_| WRITE_ERROR)?;
     transaction.commit().map_err(|_| WRITE_ERROR)?;
     Ok(Install::Added)
+}
+
+/// Übernimmt eine neuere Revision und gibt die tatsächlich gespeicherte Revision zurück.
+pub fn update(root: &Path, item: &Item) -> Result<u32, String> {
+    let kind = validate_item(item)?;
+    let mut connection = open_existing_for_write(root)?.ok_or(MISSING_ITEM)?;
+    let transaction = connection
+        .transaction_with_behavior(TransactionBehavior::Immediate)
+        .map_err(|_| WRITE_ERROR)?;
+    check_version(&transaction)?;
+    let (revision, old_size) = transaction
+        .query_row(
+            "SELECT revision, length(payload) FROM items WHERE kind = ?1 AND id = ?2",
+            params![kind, item.id],
+            |row| Ok((row.get::<_, u32>(0)?, row.get::<_, i64>(1)?)),
+        )
+        .optional()
+        .map_err(|_| READ_ERROR)?
+        .ok_or(MISSING_ITEM)?;
+    if item.revision <= revision {
+        return Ok(revision);
+    }
+    let (_, bytes) = usage(&transaction)?;
+    if bytes - old_size + item.bytes.len() as i64 > MAX_TOTAL_BYTES {
+        return Err(CAPACITY_ERROR.into());
+    }
+    transaction
+        .execute(
+            "UPDATE items SET revision = ?3, title = ?4, filename = ?5, payload = ?6
+             WHERE kind = ?1 AND id = ?2",
+            params![
+                kind,
+                item.id,
+                item.revision,
+                item.title,
+                item.filename,
+                item.bytes
+            ],
+        )
+        .map_err(|_| WRITE_ERROR)?;
+    transaction.commit().map_err(|_| WRITE_ERROR)?;
+    Ok(item.revision)
+}
+
+fn open_existing_for_write(root: &Path) -> Result<Option<Connection>, String> {
+    validate_hub_store(root)?;
+    let Some((path, true)) = database_path(root)? else {
+        return Ok(None);
+    };
+    check_header(&path)?;
+    open(&path, OpenFlags::SQLITE_OPEN_READ_WRITE).map(Some)
 }
 
 fn validate_item(item: &Item) -> Result<i64, String> {
@@ -349,7 +397,54 @@ mod tests {
         let original = fs::read(&path).unwrap();
         assert!(list(root.path()).is_err());
         assert!(install(root.path(), &book(1)).is_err());
+        assert!(update(root.path(), &book(2)).is_err());
         assert_eq!(fs::read(path).unwrap(), original);
+    }
+
+    #[test]
+    fn updates_only_replace_a_stored_item_with_a_newer_revision() {
+        let root = tempfile::tempdir().unwrap();
+        let original = book(1);
+        install(root.path(), &original).unwrap();
+        let mut newer = book(3);
+        newer.title = "Neue Testwelt".into();
+        newer.filename = "neue-welt.json".into();
+        assert_eq!(update(root.path(), &newer).unwrap(), 3);
+        assert_eq!(update(root.path(), &book(2)).unwrap(), 3);
+        let mut same = book(3);
+        same.bytes = b"other payload".to_vec();
+        assert_eq!(update(root.path(), &same).unwrap(), 3);
+
+        let items = list(root.path()).unwrap();
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0].kind, original.kind);
+        assert_eq!(items[0].id, original.id);
+        assert_eq!(items[0].revision, newer.revision);
+        assert_eq!(items[0].title, newer.title);
+        assert_eq!(items[0].filename, newer.filename);
+        assert_eq!(items[0].bytes, newer.bytes);
+    }
+
+    #[test]
+    fn update_preserves_the_library_when_the_item_is_missing_or_invalid() {
+        let directory = tempfile::tempdir().unwrap();
+        let root = directory.path().join("native");
+        assert!(update(&root, &book(2)).is_err());
+        assert!(!root.exists());
+
+        let original = book(1);
+        install(&root, &original).unwrap();
+        let mut missing = book(2);
+        missing.id = "Andere Welt".into();
+        assert!(update(&root, &missing).is_err());
+        let mut oversized = book(2);
+        oversized.bytes.resize(MAX_LOREBOOK_BYTES + 1, 0);
+        assert!(update(&root, &oversized).is_err());
+
+        let items = list(&root).unwrap();
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0].revision, original.revision);
+        assert_eq!(items[0].bytes, original.bytes);
     }
 
     #[test]

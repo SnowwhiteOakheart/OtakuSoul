@@ -4,6 +4,8 @@
   "hub.native.revision": "Revision {{revision}}",
   "hub.native.alreadyLoaded": "Die Hub-Datei ist gespeichert. Das bereits geladene Lorebook bleibt in der Ansicht erhalten.",
   "hub.native.imported": "In der Bibliothek",
+  "hub.native.pendingRestart": "Nach Neustart verfügbar",
+  "hub.native.updateStored": "Update gespeichert. Die neue Fassung wird beim nächsten Start geladen.",
   "hub.native.storeTitle": "Native Hub-Bibliothek",
   "hub.native.storeInfo": "Hub-Importe bleiben in der nativen Bibliothek gespeichert. Änderungen im Editor kannst Du separat exportieren.",
   "hub.native.storeLoading": "Native Hub-Bibliothek wird geladen …",

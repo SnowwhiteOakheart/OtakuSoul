@@ -1,5 +1,7 @@
 //! Native Ansichten nach Header, Sidebar und ChatView des Tauri-Frontends.
-use super::{App, EditorTab, GreetingChoice, LoreEntryChoice, Message, Page, appearance};
+use super::{
+    App, EditorTab, GreetingChoice, HubEntryState, LoreEntryChoice, Message, Page, appearance,
+};
 use crate::hub_catalog::{Entry as HubEntry, Kind as HubKind};
 use crate::icons::{Icon, icon};
 use crate::ui_text::{self, CONTENT_LANGUAGE};
@@ -1273,15 +1275,18 @@ impl App {
 
     fn hub_import_button<'a>(&self, kind: HubKind, entry: &HubEntry) -> Element<'a, Message> {
         let key = (kind, entry.id.clone());
-        let imported = self.hub.imported.contains(&key);
-        let label = if imported {
-            "hub.native.imported"
-        } else if self.hub.importing.as_ref() == Some(&key) {
+        let state = self.hub.entry_state(&key, entry.revision);
+        let label = if self.hub.importing.as_ref() == Some(&key) {
             "hub.importing"
         } else {
-            "common.import"
+            match state {
+                HubEntryState::Available => "common.import",
+                HubEntryState::Installed => "hub.native.imported",
+                HubEntryState::UpdateAvailable => "hub.update",
+                HubEntryState::PendingRestart => "hub.native.pendingRestart",
+            }
         };
-        button(ui_text::text(label))
+        let action = button(ui_text::text(label))
             .style(appearance::primary_button)
             .on_press_maybe(
                 (self.hub.importing.is_none()
@@ -1289,10 +1294,22 @@ impl App {
                     && !self.hub.library_loading
                     && self.hub.store.is_some()
                     && !self.hub.loading.contains(&kind)
-                    && !imported)
-                    .then_some(Message::HubImport(kind, key.1)),
-            )
+                    && matches!(
+                        state,
+                        HubEntryState::Available | HubEntryState::UpdateAvailable
+                    ))
+                .then_some(Message::HubImport(kind, key.1)),
+            );
+        if state == HubEntryState::UpdateAvailable {
+            column![
+                muted(ui_text::text("hub.updateAvailable"), 11, &self.theme()),
+                action
+            ]
+            .spacing(4)
             .into()
+        } else {
+            action.into()
+        }
     }
 
     fn hub_library_notice(&self) -> &str {

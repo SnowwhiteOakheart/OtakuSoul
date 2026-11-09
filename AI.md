@@ -59,8 +59,10 @@ und Lorebook-Listen beim Aufruf des jeweiligen Reiters. Explizite Karten- und Lo
 speichern die validierten Originaldownloads atomar in der eigenen nativen Hub-Bibliothek
 (`native-ui/src/hub_store.rs`, Pfad über `otakusoul_paths::native_data_dir`). Beim Start wird nur gelesen.
 Profilkopien bleiben getrennt. Editoränderungen sind Entwürfe bis zum expliziten Export.
-Feste HTTPS-Quelle und Größenlimits; markierte 18+-Inhalte werden ausgefiltert. Szenarien dienen der
-Vorschau. Aktualisierungen und Konfliktbehandlung sind offen.
+Feste HTTPS-Quelle und Größenlimits. Der öffentliche Katalog filtert markierte 18+-Inhalte.
+Szenarien dienen der Vorschau. Der Hub vergleicht installierte Revisionen mit dem Katalog.
+Ausdrückliche Updates speichern nur neuere Originale in derselben Bibliothek. Die aktive Fassung
+wechselt beim nächsten App-Start. Dauerhafte Editoränderungen und deren Konfliktbehandlung folgen später.
 Weltansichten verknüpfen die Originalreferenzen mit den passenden Katalogeinträgen. Das Weltenraster
 lädt Titelbilder beim Scrollen in der Nähe des sichtbaren Bereichs. Die Weltansicht nutzt denselben
 begrenzten Bildcache und priorisiert ihr Titelbild. Der Hub liest die mitgelieferten Tauri-Sprachpakete über

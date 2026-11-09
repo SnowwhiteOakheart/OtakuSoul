@@ -22,7 +22,8 @@
   Abschluss und Abbruch per Generierungs-ID. Laufende Textanzeige und Persistenz offen. Übersetzungen zuletzt.
   Nativer Hub in `native-ui/src/hub_catalog.rs`: vier öffentliche Listen und Suche.
   `native-ui/src/hub_store.rs` speichert importierte Charaktere und Lorebooks in einer separaten
-  nativen SQLite-Bibliothek. Szenarien werden im Katalog angezeigt.
+  nativen SQLite-Bibliothek und übernimmt auf Klick neuere Revisionen. Die neue Fassung lädt beim
+  nächsten App-Start. Szenarien werden im Katalog angezeigt.
   Weltdetails lösen Mitglieder per Originalschlüssel auf. Raster und Detailansicht teilen
   den begrenzten Titelbild-Cache in `native-ui/src/hub_cover.rs`.
   `native-ui/src/ui_text.rs` liest für den Hub dieselben UI-Sprachdateien wie Tauri.
