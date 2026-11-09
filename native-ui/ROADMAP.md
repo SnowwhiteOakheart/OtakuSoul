@@ -667,7 +667,9 @@ wurden nach dem Durchlauf textlich korrigiert.
 - [x] Charakterkarten mit Porträt und Lorebooks im Arbeitsspeicher übernehmen. Bearbeiten und
   explizit exportieren über die vorhandenen Bibliotheken.
 - [x] Welt-Detailansicht mit Titelbild und Mitgliedern als verknüpfte Katalogeinträge.
-- [ ] Vorschaubilder im Raster für Welten und Figuren.
+- [x] Titelbilder im Weltenraster und Wiederverwendung in der Detailansicht.
+- [ ] Vorschaubilder für Figuren über ein separates kleines Katalog-Asset. Die Registry enthält
+  derzeit nur Links zur vollständigen Charakterkarte.
 - [ ] Dauerhafte Installation im isolierten Profil, Versionsabgleich und Konfliktbehandlung.
 - [ ] Szenarien an die native Stage anbinden. Avatare und Chub AI separat integrieren.
 
@@ -675,8 +677,13 @@ wurden nach dem Durchlauf textlich korrigiert.
 OtakuSoul-Quelle. „Neu laden“ fragt den Reiter erneut ab. Ein Fehler beim Aktualisieren erhält den
 bisher geladenen Katalog. „Details ansehen“ öffnet eine Welt mit Titelbild und drei Abschnitten.
 Figuren und Lorebooks lassen sich direkt aus der Welt importieren. Szenarien zeigen Titel und
-Beschreibung. Titelbilder lädt die App beim Öffnen einer Welt. Bei fehlendem oder unlesbarem Bild
-zeigt sie ein Symbol. Der Bildabruf verwendet dieselbe öffentliche Quelle und feste Größenlimits.
+Beschreibung. Im Raster lösen Iced-Sensoren einen Bildabruf aus, wenn eine Karte sichtbar ist
+oder sich dem sichtbaren Bereich nähert. Scrollen aus dem Bereich entfernt noch wartende Abrufe.
+Filter- und Ansichtswechsel räumen die Warteschlange auf. Die Detailansicht priorisiert ihr Bild.
+Raster und Details teilen einen Sitzungscache mit 32 Einträgen und bis zu drei gleichzeitigen
+Abrufen. Bilder werden auf maximal 800 × 480 Pixel vorbereitet. Bei fehlendem oder unlesbarem Bild
+bleibt der Platzhalter in gleicher Größe. „Neu laden“ erlaubt einen neuen Versuch fehlgeschlagener
+Bildabrufe. Der Bildabruf verwendet dieselbe öffentliche Quelle und feste Größenlimits.
 
 Katalogtexte behalten alle vorhandenen Übersetzungen. Die Projektion verwendet die Inhaltssprache,
 bei fehlender nichtdeutscher Fassung Englisch und dann den Originaltext. Stabile Welt- und
@@ -695,6 +702,11 @@ Für die neue Weltansicht bestanden 131 native Tests und der separate Live-Test 
 öffentlichen Registries, je einem Charakterkarten- und Lorebook-Download und einem Titelbild.
 Der Test prüft Weltmitglieder und die Übernahme aus der Weltansicht auf Ereignisebene. Die
 Windows-EXE wurde neu gebaut. Die Sichtprüfung der neuen Weltansicht steht aus.
+
+Prüfstand für das Weltenraster: 134 native Tests bestanden, darunter Cache-Tests für Parallelität,
+Priorisierung, erneuten Abruf und Verdrängung. Der separate Live-Test lädt ein öffentliches
+Titelbild und prüft, dass Raster und Detailansicht dasselbe Ergebnis verwenden. Die Sichtprüfung
+des Scrollverhaltens steht aus.
 
 - [ ] Einstellungen/Onboarding, weitere Charakter-/Lorebook-Editoren, Gedächtnis und Im-/Export.
 - [ ] Stage und 5e einschließlich Battlemap; Fachlogik wiederverwenden.

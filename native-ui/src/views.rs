@@ -1237,10 +1237,34 @@ impl App {
                 Message::HubOpenWorld(entry.id.clone()),
             ));
         }
-        container(item)
-            .padding(16)
+        let body = container(item).padding(16).width(Fill);
+        if kind != HubKind::Worlds {
+            return body.width(width).style(appearance::card).into();
+        }
+        let height = (width * 9.0 / 16.0).clamp(104.0, 176.0);
+        let banner = self.hub_banner(entry, height);
+        let banner: Element<'_, Message> = if let Some(address) = &entry.cover {
+            let generation = self.hub.cover_generation;
+            iced::widget::sensor(banner)
+                .key((generation, entry.id.clone()))
+                .anticipate(80)
+                .on_show(move |_| {
+                    Message::HubCoverVisible(generation, entry.id.clone(), address.clone(), true)
+                })
+                .on_hide(Message::HubCoverVisible(
+                    generation,
+                    entry.id.clone(),
+                    address.clone(),
+                    false,
+                ))
+                .into()
+        } else {
+            banner
+        };
+        container(column![banner, body])
             .width(width)
             .style(appearance::card)
+            .clip(true)
             .into()
     }
 
@@ -1266,27 +1290,34 @@ impl App {
             .into()
     }
 
-    fn hub_world_view<'a>(&'a self, world: &'a super::HubWorld) -> Element<'a, Message> {
-        let cover: Element<'_, Message> = if let Some(handle) = &world.cover {
+    fn hub_banner<'a>(&'a self, entry: &HubEntry, height: f32) -> Element<'a, Message> {
+        if let Some(handle) = entry
+            .cover
+            .as_ref()
+            .and_then(|address| self.hub.covers.get(address))
+        {
             image(handle.clone())
                 .width(Fill)
-                .height(176)
+                .height(height)
                 .content_fit(iced::ContentFit::Cover)
                 .into()
         } else {
             container(icon(Icon::Hub, 54))
                 .center_x(Fill)
-                .center_y(176)
+                .center_y(height)
                 .style(appearance::panel)
                 .into()
-        };
+        }
+    }
+
+    fn hub_world_view<'a>(&'a self, world: &'a super::HubWorld) -> Element<'a, Message> {
         let mut content = column![
             control(
                 Icon::Back,
                 ui_text::text("common.back"),
                 Message::HubCloseWorld
             ),
-            container(cover)
+            container(self.hub_banner(&world.entry, 176.0))
                 .width(Fill)
                 .clip(true)
                 .style(appearance::card),

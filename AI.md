@@ -58,8 +58,9 @@ Nativer Hub: `native-ui/src/hub_catalog.rs` lädt die öffentlichen Welten-, Cha
 und Lorebook-Listen beim Aufruf des jeweiligen Reiters. Karten und Bücher werden über die bestehenden
 Leser in den Arbeitsspeicher übernommen. Feste HTTPS-Quelle und Größenlimits; markierte 18+-Inhalte
 werden ausgefiltert. Szenarien dienen der Vorschau. Profilinstallation und Aktualisierungen sind offen.
-Weltansichten verknüpfen die Originalreferenzen mit den passenden Katalogeinträgen und laden ein
-Titelbild für die ausgewählte Welt. Der Hub liest die mitgelieferten Tauri-Sprachpakete über
+Weltansichten verknüpfen die Originalreferenzen mit den passenden Katalogeinträgen. Das Weltenraster
+lädt Titelbilder beim Scrollen in der Nähe des sichtbaren Bereichs. Die Weltansicht nutzt denselben
+begrenzten Bildcache und priorisiert ihr Titelbild. Der Hub liest die mitgelieferten Tauri-Sprachpakete über
 `native-ui/src/ui_text.rs`. Zusätzliche Prototyp-Texte stehen in `native-ui/assets/locales/de.json`.
 
 ### Allgemeine Arbeitsregeln

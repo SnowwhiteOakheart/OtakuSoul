@@ -170,7 +170,8 @@ enum Message {
     HubLoaded(hub_catalog::Kind, Result<Vec<hub_catalog::Entry>, String>),
     HubOpenWorld(String),
     HubCloseWorld,
-    HubCoverLoaded(u64, Option<image::Handle>),
+    HubCoverVisible(u64, String, url::Url, bool),
+    HubCoverLoaded(url::Url, Option<image::Handle>),
     HubImport(hub_catalog::Kind, String),
     HubImported(Result<HubContent, String>),
     ImportLorebook,
@@ -325,8 +326,6 @@ impl HubContent {
 
 struct HubWorld {
     entry: hub_catalog::Entry,
-    cover: Option<image::Handle>,
-    generation: u64,
 }
 
 struct Hub {
@@ -336,7 +335,9 @@ struct Hub {
     loading: HashSet<hub_catalog::Kind>,
     errors: HashMap<hub_catalog::Kind, String>,
     world: Option<HubWorld>,
-    world_generation: u64,
+    covers: hub_cover::Gallery,
+    cover_generation: u64,
+    visible_covers: HashMap<String, url::Url>,
     importing: Option<(hub_catalog::Kind, String)>,
     imported: HashSet<(hub_catalog::Kind, String)>,
     notice: String,
@@ -351,11 +352,21 @@ impl Default for Hub {
             loading: HashSet::new(),
             errors: HashMap::new(),
             world: None,
-            world_generation: 0,
+            covers: hub_cover::Gallery::default(),
+            cover_generation: 0,
+            visible_covers: HashMap::new(),
             importing: None,
             imported: HashSet::new(),
             notice: String::new(),
         }
+    }
+}
+
+impl Hub {
+    fn reset_cover_requests(&mut self) {
+        self.covers.clear_pending();
+        self.visible_covers.clear();
+        self.cover_generation += 1;
     }
 }
 
@@ -881,8 +892,7 @@ impl App {
         else {
             return Task::none();
         };
-        self.hub.world_generation += 1;
-        let generation = self.hub.world_generation;
+        self.hub.reset_cover_requests();
         let mut tasks = Vec::new();
         for kind in Kind::WORLD_CONTENTS {
             if !self.hub.catalog.contains_key(&kind)
@@ -892,16 +902,22 @@ impl App {
             }
         }
         if let Some(address) = entry.cover.clone() {
+            self.hub.covers.prioritize(address);
+        }
+        self.hub.world = Some(HubWorld { entry });
+        tasks.push(self.load_hub_covers());
+        Task::batch(tasks)
+    }
+
+    fn load_hub_covers(&mut self) -> Task<Message> {
+        let mut tasks = Vec::new();
+        while let Some(address) = self.hub.covers.next() {
+            let request = address.clone();
             tasks.push(Task::perform(
-                background(move || hub_cover::load(address)),
-                move |result| Message::HubCoverLoaded(generation, result.ok()),
+                background(move || hub_cover::load(request)),
+                move |result| Message::HubCoverLoaded(address.clone(), result.ok()),
             ));
         }
-        self.hub.world = Some(HubWorld {
-            entry,
-            cover: None,
-            generation,
-        });
         Task::batch(tasks)
     }
 
@@ -1931,17 +1947,30 @@ impl App {
             Message::HubKind(kind) => {
                 self.hub.kind = kind;
                 self.hub.world = None;
+                self.hub.reset_cover_requests();
                 if !self.hub.catalog.contains_key(&kind) {
                     return self.load_hub(kind);
                 }
             }
-            Message::HubSearch(query) => self.hub.query = query,
-            Message::HubReload(kind) => return self.load_hub(kind),
+            Message::HubSearch(query) => {
+                self.hub.query = query;
+                self.hub.reset_cover_requests();
+            }
+            Message::HubReload(kind) => {
+                if kind == hub_catalog::Kind::Worlds {
+                    self.hub.covers.retry_failed();
+                    self.hub.reset_cover_requests();
+                }
+                return self.load_hub(kind);
+            }
             Message::HubLoaded(kind, result) => {
                 self.hub.loading.remove(&kind);
                 match result {
                     Ok(entries) => {
                         self.hub.catalog.insert(kind, entries);
+                        if kind == hub_catalog::Kind::Worlds && self.hub.world.is_none() {
+                            self.hub.reset_cover_requests();
+                        }
                     }
                     Err(error) => {
                         self.hub.errors.insert(kind, error);
@@ -1949,13 +1978,36 @@ impl App {
                 }
             }
             Message::HubOpenWorld(id) => return self.open_hub_world(&id),
-            Message::HubCloseWorld => self.hub.world = None,
-            Message::HubCoverLoaded(generation, cover) => {
-                if let Some(world) = &mut self.hub.world
-                    && world.generation == generation
+            Message::HubCloseWorld => {
+                self.hub.world = None;
+                self.hub.reset_cover_requests();
+            }
+            Message::HubCoverVisible(generation, id, address, visible) => {
+                if generation != self.hub.cover_generation
+                    || self.page != Page::Hub
+                    || self.hub.kind != hub_catalog::Kind::Worlds
+                    || self.hub.world.is_some()
                 {
-                    world.cover = cover;
+                    return Task::none();
                 }
+                if visible {
+                    self.hub.visible_covers.insert(id, address.clone());
+                    self.hub.covers.request(address);
+                    return self.load_hub_covers();
+                }
+                self.hub.visible_covers.remove(&id);
+                if !self
+                    .hub
+                    .visible_covers
+                    .values()
+                    .any(|visible| visible == &address)
+                {
+                    self.hub.covers.hide(&address);
+                }
+            }
+            Message::HubCoverLoaded(address, cover) => {
+                self.hub.covers.complete(address, cover);
+                return self.load_hub_covers();
             }
             Message::HubImport(kind, id) => return self.import_hub(kind, id),
             Message::HubImported(result) => {
@@ -2072,6 +2124,7 @@ impl App {
             Message::SaveCharacter => self.save_character(),
             Message::Navigate(page) => {
                 self.hub.world = None;
+                self.hub.reset_cover_requests();
                 if page != Page::Chat {
                     self.cancel_chat();
                 }
@@ -2404,11 +2457,18 @@ mod tests {
             .find(|world| world.cover.is_some() && !world.members.is_empty())
             .unwrap();
         let id = world.id.clone();
-        let cover = hub_cover::load(world.cover.clone().unwrap()).unwrap();
+        let address = world.cover.clone().unwrap();
+        let cover = hub_cover::load(address.clone()).unwrap();
+        let gallery_generation = app.hub.cover_generation;
+        let _ = app.update(Message::HubCoverVisible(
+            gallery_generation,
+            id.clone(),
+            address.clone(),
+            true,
+        ));
         let _ = app.update(Message::HubOpenWorld(id.clone()));
         let selected = app.hub.world.as_ref().unwrap();
         assert_eq!(selected.entry.id, id);
-        let generation = selected.generation;
         let member = selected
             .entry
             .members
@@ -2420,12 +2480,19 @@ mod tests {
             })
             .unwrap()
             .clone();
-        let _ = app.update(Message::HubCoverLoaded(generation - 1, Some(cover.clone())));
-        assert!(app.hub.world.as_ref().unwrap().cover.is_none());
-        let _ = app.update(Message::HubCoverLoaded(generation, Some(cover)));
-        assert!(app.hub.world.as_ref().unwrap().cover.is_some());
+        let _ = app.update(Message::HubCoverVisible(
+            gallery_generation,
+            id,
+            address.clone(),
+            true,
+        ));
+        assert!(app.hub.visible_covers.is_empty());
+        let _ = app.update(Message::HubCoverLoaded(address.clone(), Some(cover)));
+        assert!(app.hub.covers.get(&address).is_some());
         let _ = app.update(Message::HubImport(member.kind, member.id.clone()));
         assert_eq!(app.hub.importing, Some((member.kind, member.id)));
+        let _ = app.update(Message::HubCloseWorld);
+        assert!(app.hub.covers.get(&address).is_some());
     }
 
     #[test]
