@@ -786,7 +786,12 @@ geladenen Titelbilder der ersten Reihe. Die Aufnahme liegt lokal in
   Katalog die enthaltenen Szenen nach „Ohne Ordner“. Auch leere Ordner bleiben gespeichert.
 - [x] Erweiterte Einstellungen für Spielleiterton, Erzählstil, Akteure pro Runde, Würfelproben
   und Erlebnisse zwischen den Sitzungen. Die Definition speichert Tauri-kompatible Werte.
-- [ ] Medien- und Regeloptionen im Szeneneditor, Story-Wizard.
+- [x] Startbild und Ambient-Ton im Szeneneditor als Tauri-kompatible Referenzen auswählen.
+  Medienlisten werden aus der geladenen Profilkopie gelesen. Hintergrundsperre und
+  Deaktivieren des Ambient-Tons werden in der Definition gespeichert.
+- [x] Erzählung oder 5e wählen, Klassen zuordnen, eines der mitgelieferten Spielbretter
+  auswählen und Gefährtensteuerung sowie Heldentod konfigurieren.
+- [ ] Medienimport, Bildvorschau und Tonwiedergabe, Story-Wizard.
 - [ ] Spielansicht mit echten Stage-Runden und Spielständen.
 - [ ] 5e-Spielbrett, Kampf und Erkundung über die vorhandene Stage-/Regel-Engine.
 
@@ -810,6 +815,9 @@ aus den vorhandenen Szenen projiziert und beim nächsten Schreibvorgang atomar a
 aktualisiert. Frühere native Builds unterstützen Version 2 nicht.
 Der Editor verwendet dieselben sechs Spielleiter-Tonfälle wie Tauri und zeigt importierte
 individuelle Tonfälle an. Vorhandene Werte und implizite Vorgaben bleiben bis zu einer Bearbeitung erhalten.
+`stage_rules.rs` bearbeitet die 5e-Regeln. Klassen und Spielbretter werden über stabile IDs
+gespeichert. Der Editor erhält importierte Zuordnungen und andere Regelparameter bei gezielten
+Änderungen. Beim Speichern im Erzählmodus wird ein zuvor aktives 5e-Regelwerk entfernt.
 Tauris Lobby und die gemeinsamen Editorfelder wurden per WebDriver im isolierten E2E-Profil
 geprüft. Für die native Variante bestanden 152 Tests einschließlich JSON-Rundlauf und der
 Windows-Build. Der Live-Hub-Test war bei diesem Lauf ausgenommen.

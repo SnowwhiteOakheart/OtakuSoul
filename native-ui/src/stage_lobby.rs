@@ -6,7 +6,7 @@ use crate::ui_text::{CONTENT_LANGUAGE, format, text as label};
 use crate::views::{control, muted, scroll, shorten};
 use crate::{
     App, Message, Page, StageFolder, StageSource, StageWrite, appearance, background, file_export,
-    profile, stage_preview, stage_store,
+    profile, stage_preview, stage_rule_view, stage_store,
 };
 use iced::widget::{
     button, checkbox, column, container, pick_list, row, text, text_editor, text_input,
@@ -33,21 +33,36 @@ impl std::fmt::Display for Field {
 }
 
 #[derive(Clone, PartialEq)]
-struct Tone {
-    value: String,
-    label: Option<&'static str>,
+pub(super) struct Choice {
+    pub value: String,
+    title: String,
 }
 
-impl std::fmt::Display for Tone {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(match self.label {
-            Some(key) => label(key),
-            None => &self.value,
-        })
+impl Choice {
+    pub fn new(value: &str, title: &str) -> Self {
+        Self {
+            value: value.into(),
+            title: title.into(),
+        }
+    }
+
+    pub fn include_current(options: &mut Vec<Self>, value: &str) -> Self {
+        if let Some(choice) = options.iter().find(|choice| choice.value == value) {
+            return choice.clone();
+        }
+        let choice = Self::new(value, value);
+        options.push(choice.clone());
+        choice
     }
 }
 
-fn tone_options(value: &str) -> (Vec<Tone>, Tone) {
+impl std::fmt::Display for Choice {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.title)
+    }
+}
+
+fn tone_options(value: &str) -> (Vec<Choice>, Choice) {
     let mut options: Vec<_> = [
         ("Epic Fantasy", "sceneNew.tone.epic"),
         ("Dark Fantasy", "sceneNew.tone.dark"),
@@ -57,19 +72,9 @@ fn tone_options(value: &str) -> (Vec<Tone>, Tone) {
         ("Isekai Adventure", "sceneNew.tone.isekai"),
     ]
     .into_iter()
-    .map(|(value, label)| Tone {
-        value: value.into(),
-        label: Some(label),
-    })
+    .map(|(value, key)| Choice::new(value, label(key)))
     .collect();
-    if let Some(selected) = options.iter().find(|tone| tone.value == value).cloned() {
-        return (options, selected);
-    }
-    let selected = Tone {
-        value: value.into(),
-        label: None,
-    };
-    options.insert(0, selected.clone());
+    let selected = Choice::include_current(&mut options, value);
     (options, selected)
 }
 
@@ -664,6 +669,41 @@ impl App {
                 .label(label(field.label_key()))
                 .on_toggle(move |enabled| Message::StageSet(field, enabled.to_string()))
         };
+        let asset = |field: Field, names: &[String]| -> Element<'a, Message> {
+            if names.is_empty() {
+                return input(field).into();
+            }
+            let value = draft.get(field);
+            let empty = if value.eq_ignore_ascii_case("none") {
+                value
+            } else {
+                ""
+            };
+            let mut options = vec![Choice::new(empty, label("sceneEdit.none"))];
+            options.extend(names.iter().map(|name| Choice::new(name, name)));
+            let selected = Choice::include_current(&mut options, value);
+            column![
+                muted(label(field.label_key()), 12, &theme),
+                pick_list(options, Some(selected), move |choice| Message::StageSet(
+                    field,
+                    choice.value
+                ))
+                .padding(8)
+                .style(appearance::select),
+            ]
+            .spacing(4)
+            .width(Fill)
+            .into()
+        };
+        let media = column![
+            text(label("sceneEdit.sectionMedia")).size(16),
+            muted(label("gallery.native.mediaHint"), 12, &theme),
+            asset(Field::Background, &self.stage.media.backgrounds),
+            asset(Field::Ambient, &self.stage.media.ambient),
+            toggle(Field::LockBackground),
+            toggle(Field::DisableAmbient),
+        ]
+        .spacing(9);
         let (tones, tone) = tone_options(draft.get(Field::GmTone));
         let advanced = column![
             text(label("sceneEdit.sectionAdvanced")).size(16),
@@ -716,7 +756,15 @@ impl App {
             .padding(16)
             .width(Fill)
             .style(appearance::card),
+            container(media)
+                .padding(16)
+                .width(Fill)
+                .style(appearance::card),
             container(advanced)
+                .padding(16)
+                .width(Fill)
+                .style(appearance::card),
+            container(stage_rule_view::fields(draft, &theme))
                 .padding(16)
                 .width(Fill)
                 .style(appearance::card),

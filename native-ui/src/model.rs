@@ -259,6 +259,7 @@ mod tests {
         let mut preview = Preview::from_profile(Profile {
             characters: vec![],
             warnings: vec![],
+            stage_media: Default::default(),
             sessions: vec![Session {
                 id: "chat-1".into(),
                 character_id: "missing-card".into(),

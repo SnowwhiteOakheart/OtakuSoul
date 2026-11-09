@@ -24,6 +24,8 @@ mod prompt_preview;
 mod stage_draft;
 mod stage_lobby;
 mod stage_preview;
+mod stage_rule_view;
+mod stage_rules;
 mod stage_store;
 mod stage_views;
 mod ui_text;
@@ -191,6 +193,7 @@ enum Message {
     StageEdit(Option<usize>),
     StageEditField(stage_draft::Field),
     StageSet(stage_draft::Field, String),
+    StageRule(stage_rules::Edit),
     StageText(text_editor::Action),
     StageApply,
     StageDiscard,
@@ -565,6 +568,7 @@ struct Stage {
     editing: bool,
     edit_field: stage_draft::Field,
     editor: text_editor::Content,
+    media: profile::StageMedia,
     store: Option<PathBuf>,
     loading: bool,
     file_busy: bool,
@@ -631,6 +635,7 @@ impl Default for Stage {
             editing: false,
             edit_field: stage_draft::Field::Description,
             editor: text_editor::Content::new(),
+            media: profile::StageMedia::default(),
             store: None,
             loading: false,
             file_busy: false,
@@ -2426,6 +2431,14 @@ impl App {
                     self.stage.edit_error.clear();
                 }
             }
+            Message::StageRule(edit) => {
+                if !self.stage.file_busy
+                    && self.stage.editing
+                    && let Some(draft) = &mut self.stage.draft
+                {
+                    self.stage.edit_error = draft.rules.edit(edit).err().unwrap_or_default();
+                }
+            }
             Message::StageText(action) => {
                 if !self.stage.file_busy
                     && self.stage.editing
@@ -2939,13 +2952,14 @@ impl App {
             Message::ProfileLoaded(home, result) => {
                 self.profile_busy = false;
                 match result {
-                    Ok(profile) => {
+                    Ok(mut profile) => {
                         self.notice = format!(
                             "Profilkopie geladen: {} Figuren, {} Verläufe. Nur lesender Zugriff.",
                             profile.characters.len(),
                             profile.sessions.len()
                         );
                         self.warnings = profile.warnings.clone();
+                        self.stage.media = std::mem::take(&mut profile.stage_media);
                         let installed = std::mem::take(&mut self.preview.characters)
                             .into_iter()
                             .filter(|character| {
@@ -3306,6 +3320,7 @@ mod tests {
                 characters: vec![character(&hub_id, "Figur aus Profilkopie")],
                 sessions: Vec::new(),
                 warnings: Vec::new(),
+                stage_media: Default::default(),
             }),
         ));
         assert_eq!(app.preview.characters.len(), 2);

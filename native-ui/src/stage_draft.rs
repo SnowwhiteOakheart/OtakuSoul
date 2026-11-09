@@ -3,6 +3,7 @@
 use serde_json::{Value, json};
 
 use crate::stage_preview::{self, Scene};
+use crate::stage_rules::Rules;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Field {
@@ -21,10 +22,14 @@ pub enum Field {
     ActorDepth,
     Dice,
     DisableOffscreen,
+    Background,
+    Ambient,
+    LockBackground,
+    DisableAmbient,
 }
 
 impl Field {
-    const ALL: [Self; 15] = [
+    const ALL: [Self; 19] = [
         Self::Title,
         Self::Description,
         Self::Location,
@@ -40,6 +45,10 @@ impl Field {
         Self::ActorDepth,
         Self::Dice,
         Self::DisableOffscreen,
+        Self::Background,
+        Self::Ambient,
+        Self::LockBackground,
+        Self::DisableAmbient,
     ];
 
     pub const MULTILINE: [Self; 5] = [
@@ -67,6 +76,10 @@ impl Field {
             Self::ActorDepth => "sceneEdit.actors",
             Self::Dice => "sceneNew.dice",
             Self::DisableOffscreen => "sceneEdit.disableOffscreen",
+            Self::Background => "sceneEdit.background",
+            Self::Ambient => "sceneEdit.ambient",
+            Self::LockBackground => "sceneEdit.lockBg",
+            Self::DisableAmbient => "sceneEdit.disableAmbient",
         }
     }
 
@@ -87,6 +100,10 @@ impl Field {
             Self::ActorDepth => "max_actor_depth",
             Self::Dice => "dice_rolls_enabled",
             Self::DisableOffscreen => "disable_offscreen",
+            Self::Background => "starting_bg",
+            Self::Ambient => "starting_ambient",
+            Self::LockBackground => "lock_bg",
+            Self::DisableAmbient => "disable_ambient",
         }
     }
 
@@ -95,7 +112,7 @@ impl Field {
             Self::GmTone => "Epic Fantasy",
             Self::ActorDepth => "3",
             Self::Dice => "true",
-            Self::DisableOffscreen => "false",
+            Self::DisableOffscreen | Self::LockBackground | Self::DisableAmbient => "false",
             _ => "",
         }
     }
@@ -119,9 +136,11 @@ impl Field {
             Self::ActorDepth => value
                 .as_u64()
                 .map_or_else(|| self.default_text().into(), |value| value.to_string()),
-            Self::Dice | Self::DisableOffscreen => value
-                .as_bool()
-                .map_or_else(|| self.default_text().into(), |value| value.to_string()),
+            Self::Dice | Self::DisableOffscreen | Self::LockBackground | Self::DisableAmbient => {
+                value
+                    .as_bool()
+                    .map_or_else(|| self.default_text().into(), |value| value.to_string())
+            }
             _ => value
                 .as_str()
                 .unwrap_or_else(|| self.default_text())
@@ -144,6 +163,7 @@ impl Field {
 
 pub struct Draft {
     pub target: Option<usize>,
+    pub rules: Rules,
     original: Option<Value>,
     values: [String; Field::ALL.len()],
 }
@@ -152,6 +172,7 @@ impl Draft {
     pub fn new() -> Self {
         Self {
             target: None,
+            rules: Rules::new(Value::Null),
             original: None,
             values: Field::ALL.map(|field| field.default_text().into()),
         }
@@ -162,6 +183,7 @@ impl Draft {
         let values = Field::ALL.map(|field| field.text(&definition));
         Self {
             target,
+            rules: Rules::new(definition["rules"].clone()),
             original: Some(definition),
             values,
         }
@@ -210,7 +232,10 @@ impl Draft {
                         })?;
                     Value::from(actors)
                 }
-                Field::Dice | Field::DisableOffscreen => {
+                Field::Dice
+                | Field::DisableOffscreen
+                | Field::LockBackground
+                | Field::DisableAmbient => {
                     let enabled = text
                         .parse::<bool>()
                         .map_err(|_| "Ungültiger Schalterwert.")?;
@@ -220,6 +245,16 @@ impl Draft {
                     let name = text.trim();
                     if !valid_folder_name(name) {
                         return Err(crate::ui_text::text("gallery.native.folderInvalid").into());
+                    }
+                    Value::from(name)
+                }
+                Field::Background | Field::Ambient => {
+                    let name = text.trim();
+                    if matches!(name, "." | "..")
+                        || name.contains(['/', '\\', ':'])
+                        || name.chars().any(char::is_control)
+                    {
+                        return Err(crate::ui_text::text("gallery.native.mediaNameInvalid").into());
                     }
                     Value::from(name)
                 }
@@ -252,6 +287,7 @@ impl Draft {
                 }
             }
         }
+        self.rules.apply(&mut definition);
         stage_preview::parse(definition)
     }
 }
@@ -287,6 +323,48 @@ mod tests {
         assert_eq!(scene.party, ["beta", "alpha"]);
         assert_eq!(scene.lorebooks, ["myth", "legend"]);
         assert_eq!(scene.definition()["solo_mode"], false);
+    }
+
+    #[test]
+    fn stage_media_and_5e_edits_preserve_unrelated_settings() {
+        use crate::stage_rules::Edit;
+
+        let mut source = json!({
+            "id": "draft", "title": "Der Wald",
+            "starting_bg": "https://example.test/old.png",
+            "rules": {
+                "ruleset": "5e", "map_id": "old_map",
+                "goals": [{"kind": "exit", "target": "gate"}],
+                "hero_classes": {"player": "fighter", "companion": "custom_class"},
+                "future_rule": {"keep": true}
+            }
+        });
+        let scene = stage_preview::parse(source.clone()).unwrap();
+        let mut draft = Draft::from_scene(Some(0), &scene);
+        draft.set(Field::Ambient, "../forest.ogg".into());
+        assert!(draft.apply("draft").is_err());
+        draft.set(Field::Ambient, "forest.ogg".into());
+        draft.set(Field::LockBackground, "true".into());
+        draft.rules.edit(Edit::Map("forest_road".into())).unwrap();
+        draft
+            .rules
+            .edit(Edit::Class {
+                member: "player".into(),
+                class: "".into(),
+            })
+            .unwrap();
+        draft.rules.edit(Edit::HeroicDeath(true)).unwrap();
+        draft.rules.edit(Edit::Enabled(false)).unwrap();
+        assert!(draft.apply("draft").unwrap().definition()["rules"].is_null());
+        draft.rules.edit(Edit::Enabled(true)).unwrap();
+
+        source["description"] = "".into();
+        source["starting_ambient"] = "forest.ogg".into();
+        source["lock_bg"] = true.into();
+        source["rules"]["map_id"] = "forest_road".into();
+        source["rules"]["hero_classes"] = json!({"companion": "custom_class"});
+        source["rules"]["heroic_death"] = true.into();
+        assert_eq!(draft.apply("draft").unwrap().definition(), source);
     }
 
     #[test]

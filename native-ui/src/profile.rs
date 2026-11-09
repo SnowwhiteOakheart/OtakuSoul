@@ -17,6 +17,38 @@ pub struct Profile {
     pub characters: Vec<ProfileCharacter>,
     pub sessions: Vec<Session>,
     pub warnings: Vec<String>,
+    pub stage_media: StageMedia,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct StageMedia {
+    pub backgrounds: Vec<String>,
+    pub ambient: Vec<String>,
+}
+
+fn stage_media_names(root: &Path, directory: &Path, extensions: &[&str]) -> Vec<String> {
+    let Ok(directory) = contained(root, directory) else {
+        return Vec::new();
+    };
+    let Ok(entries) = fs::read_dir(directory) else {
+        return Vec::new();
+    };
+    let mut names: Vec<_> = entries
+        .flatten()
+        .filter_map(|entry| {
+            let extension = entry.path().extension()?.to_str()?.to_ascii_lowercase();
+            if !extensions.contains(&extension.as_str()) {
+                return None;
+            }
+            let metadata = fs::symlink_metadata(entry.path()).ok()?;
+            if !metadata.is_file() || is_link(&metadata) {
+                return None;
+            }
+            entry.file_name().into_string().ok()
+        })
+        .collect();
+    names.sort_unstable();
+    names
 }
 
 #[derive(Debug, Clone)]
@@ -457,6 +489,14 @@ pub fn load_profile(home: &Path) -> Result<Profile, String> {
         characters: characters.into_values().collect(),
         sessions,
         warnings,
+        stage_media: StageMedia {
+            backgrounds: stage_media_names(
+                &root,
+                &data.join("backgrounds"),
+                &["png", "jpg", "jpeg", "webp"],
+            ),
+            ambient: stage_media_names(&root, &data.join("ambient"), &["wav", "mp3", "ogg"]),
+        },
     })
 }
 
@@ -606,6 +646,23 @@ mod tests {
         assert!(!home.join("data/otakusoul.db-shm").exists());
         assert!(!home.join("data/otakusoul.db-wal").exists());
         assert!(create_demo_profile(&home).is_err());
+    }
+
+    #[test]
+    fn stage_media_discovery_only_lists_supported_files_in_the_profile_copy() {
+        let root = tempfile::tempdir().unwrap();
+        create_demo_profile(root.path()).unwrap();
+        let backgrounds = root.path().join("data/backgrounds");
+        let ambient = root.path().join("data/ambient");
+        fs::create_dir_all(backgrounds.join("directory.png")).unwrap();
+        fs::create_dir_all(&ambient).unwrap();
+        fs::write(backgrounds.join("cover.WEBP"), []).unwrap();
+        fs::write(backgrounds.join("notes.txt"), []).unwrap();
+        fs::write(ambient.join("forest.ogg"), []).unwrap();
+        fs::write(ambient.join("cover.png"), []).unwrap();
+        let profile = load_profile(root.path()).unwrap();
+        assert_eq!(profile.stage_media.backgrounds, ["cover.WEBP"]);
+        assert_eq!(profile.stage_media.ambient, ["forest.ogg"]);
     }
 
     #[test]
