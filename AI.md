@@ -51,6 +51,10 @@ Original-JSON und eingebettete Bücher bleiben erhalten. „Lore prüfen“ verw
 angezeigten Nachrichten und Spannung 0. Wahrscheinlichkeitsregeln werden bei einer neuen Prüfung ausgewertet.
 Chatsuche: Strg+F im Chat, Trefferzahl einschließlich lokaler Begrüßung, Leerzustand/Zurücksetzen;
 untersucht nur geladene Nachrichten (kein Nachladen alter Archive).
+Nativer Hub: `native-ui/src/hub_catalog.rs` lädt die öffentlichen Welten-, Charakter-, Szenario-
+und Lorebook-Listen beim Aufruf des jeweiligen Reiters. Karten und Bücher werden über die bestehenden
+Leser in den Arbeitsspeicher übernommen. Feste HTTPS-Quelle und Größenlimits; markierte 18+-Inhalte
+werden ausgefiltert. Szenarien dienen der Vorschau. Profilinstallation und Aktualisierungen sind offen.
 
 ### Allgemeine Arbeitsregeln
 

@@ -24,7 +24,7 @@ Konzept. Vergleichsquelle ist der aktuelle React-/CSS-Code; vorhandene Screensho
 ## Verbindlicher Umfang
 
 - Zunächst Navigation, Charakterauswahl, Chatverlauf, Eingabe, grundlegende Einstellungen und echte Chat-Anbindung.
-- Kein Desktop-Pet. Animierte Avatare, Audio, Hub, Stage und komplexe Editoren sind spätere Ausbaustufen.
+- Kein Desktop-Pet. Animierte Avatare, Audio, Hub-Ausbau, Stage und komplexe Editoren folgen stufenweise.
 - Vorhandene Porträts dürfen in der Vorschau verwendet werden; keine neuen Modellgewichte herunterladen.
 - Aktuelle Vorschau ist ausdrücklich ohne KI; Laufzeitänderungen bleiben im RAM. Expliziter Kartenexport
   sichert JSON-/PNG-Dateien außerhalb des produktiven und geladenen Profils.
@@ -659,7 +659,29 @@ Der Test lief im Standardfenster mit dem lokalen Testchat. Die eigens gestartete
 anschließend geschlossen. Ein veralteter Hinweis im Regel-Editor und die Anzeige der Trefferzahl
 wurden nach dem Durchlauf textlich korrigiert.
 
-- [ ] Einstellungen/Onboarding, Charakter-/Lorebook-Editoren, Gedächtnis, Hub und Im-/Export.
+### Öffentlicher Hub im nativen Fenster
+
+- [x] Hub-Seite mit Kartenraster, Suchfeld und Reitern für Welten, Charaktere, Szenarien und Lorebooks.
+- [x] Charakterkarten mit Porträt und Lorebooks im Arbeitsspeicher übernehmen. Bearbeiten und
+  explizit exportieren über die vorhandenen Bibliotheken.
+- [ ] Titelbilder und Figurenporträts im Hub, Welt-Detailansicht mit Mitgliedern als verknüpfte Karten.
+- [ ] Dauerhafte Installation im isolierten Profil, Versionsabgleich und Konfliktbehandlung.
+- [ ] Szenarien an die native Stage anbinden. Avatare und Chub AI separat integrieren.
+
+`src/hub_catalog.rs` lädt den angewählten Reiter im Hintergrund von der festen öffentlichen
+OtakuSoul-Quelle. „Neu laden“ fragt den Reiter erneut ab. Ein Fehler beim Aktualisieren erhält den
+bisher geladenen Katalog. Über „Inhalte“ lassen sich die Referenzen einer Welt aufklappen.
+Die Listen verwenden die vorhandenen deutschen Inhaltsfelder, soweit vorhanden.
+Karten- und Lorebook-Downloads sind auf die jeweiligen Gateway-Ordner und Dateitypen begrenzt.
+Markierte 18+-Einträge und markierte Downloads bleiben ausgefiltert. Ein gleich referenziertes
+Lorebook bleibt beim Import erhalten. Die importierten Inhalte nutzen die bestehenden Editoren und
+die explizite Exportfunktion. Für das Starten eines Szenarios ist die native Stage Voraussetzung.
+
+Prüfstand 09.11.2026: 128 native Tests sowie ein separater Live-Test mit allen vier öffentlichen
+Registries und je einem echten Charakterkarten- und Lorebook-Download bestanden. Die
+Windows-EXE wurde neu gebaut. Die Bedienprobe des Hub-Fensters steht aus.
+
+- [ ] Einstellungen/Onboarding, weitere Charakter-/Lorebook-Editoren, Gedächtnis und Im-/Export.
 - [ ] Stage und 5e einschließlich Battlemap; Fachlogik wiederverwenden.
 - [ ] Native Audioausgabe/-aufnahme separat planen, danach Avatarintegration separat bewerten.
 - [ ] Windows: DPI (100/150/200 %), mehrere Monitore, Tastatur, Screenreader, Zwischenablage, Dateidialoge.

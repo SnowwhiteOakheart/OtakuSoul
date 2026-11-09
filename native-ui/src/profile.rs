@@ -167,6 +167,20 @@ fn load_character(root: &Path, path: &Path) -> Result<ProfileCharacter, String> 
         .extension()
         .and_then(|extension| extension.to_str())
         .is_some_and(|extension| extension.eq_ignore_ascii_case("png"));
+    let mut character = parse_card(id, bytes, is_png)?;
+    if !is_png {
+        let sibling = path.with_extension("png");
+        if sibling
+            .try_exists()
+            .map_err(|_| "Das Kartenporträt ist nicht zugänglich.")?
+        {
+            character.portrait = Some(read_file(root, &sibling)?);
+        }
+    }
+    Ok(character)
+}
+
+fn parse_card(id: String, bytes: Vec<u8>, is_png: bool) -> Result<ProfileCharacter, String> {
     let card: Value = if is_png {
         png_card(&bytes)?
     } else {
@@ -193,27 +207,40 @@ fn load_character(root: &Path, path: &Path) -> Result<ProfileCharacter, String> 
         .and_then(Value::as_str)
         .unwrap_or_default()
         .to_owned();
-    let portrait = if is_png {
-        Some(bytes)
-    } else {
-        let sibling = path.with_extension("png");
-        if sibling
-            .try_exists()
-            .map_err(|_| "Das Kartenporträt ist nicht zugänglich.")?
-        {
-            Some(read_file(root, &sibling)?)
-        } else {
-            None
-        }
-    };
     Ok(ProfileCharacter {
         id,
         name,
         description,
         first_message,
         card,
-        portrait,
+        portrait: is_png.then_some(bytes),
     })
+}
+
+pub fn import_hub_card(bytes: Vec<u8>) -> Result<ProfileCharacter, String> {
+    let is_png = bytes.starts_with(b"\x89PNG\r\n\x1a\n");
+    if is_png {
+        let (width, height) =
+            image::ImageReader::with_format(Cursor::new(&bytes), image::ImageFormat::Png)
+                .into_dimensions()
+                .map_err(|_| "Das Hub-Porträt ist ungültig.")?;
+        if width > 4096 || height > 4096 {
+            return Err("Das Hub-Porträt überschreitet 4096 Pixel pro Seite.".into());
+        }
+    }
+    let character = parse_card(String::new(), bytes, is_png)?;
+    check_public_hub_content(&character.card)?;
+    Ok(character)
+}
+
+pub fn check_public_hub_content(value: &Value) -> Result<(), String> {
+    if [value, value.get("data").unwrap_or(value)]
+        .into_iter()
+        .any(|item| item["extensions"]["otakusoul_nsfw"].as_bool() == Some(true))
+    {
+        return Err("Der öffentliche Hub übernimmt keine als 18+ markierten Inhalte.".into());
+    }
+    Ok(())
 }
 
 /// Einzelne ausdrücklich gewählte Karte; dieselben Grenzen wie bei Profilkopien.

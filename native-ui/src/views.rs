@@ -1,5 +1,6 @@
 //! Native Ansichten nach Header, Sidebar und ChatView des Tauri-Frontends.
 use super::{App, EditorTab, GreetingChoice, LoreEntryChoice, Message, Page, appearance};
+use crate::hub_catalog::{Entry as HubEntry, Kind as HubKind};
 use crate::icons::{Icon, icon};
 use iced::keyboard::{Key, key::Named};
 use iced::widget::{
@@ -162,6 +163,7 @@ impl App {
             Page::Lorebooks => self.lorebooks_view(),
             Page::LorebookDetails => self.lorebook_details(),
             Page::LorebookEditor => self.lorebook_editor(),
+            Page::Hub => self.hub_view(),
             Page::Planned(label) => self.planned(label),
         };
         column![self.header(), row![self.navigation(), content].height(Fill)]
@@ -240,7 +242,7 @@ impl App {
                     (Page::Characters, Icon::Characters, "Charaktere"),
                     (Page::Planned("Avatare"), Icon::Avatars, "Avatare"),
                     (Page::Lorebooks, Icon::Lorebooks, "Lorebooks"),
-                    (Page::Planned("Hub"), Icon::Hub, "Hub"),
+                    (Page::Hub, Icon::Hub, "Hub"),
                 ],
             ),
             (
@@ -1098,6 +1100,170 @@ impl App {
                 }
                 style
             })
+            .into()
+    }
+
+    fn hub_view(&self) -> Element<'_, Message> {
+        iced::widget::responsive(move |size| self.hub_catalog_view(size.width)).into()
+    }
+
+    fn hub_catalog_view(&self, width: f32) -> Element<'_, Message> {
+        let hub = &self.hub;
+        let kind = hub.kind;
+        let loading = hub.loading.contains(&kind);
+        let tabs = HubKind::ALL
+            .into_iter()
+            .fold(row![].spacing(8), |tabs, tab| {
+                tabs.push(
+                    button(text(tab.to_string()).size(13))
+                        .padding([8, 12])
+                        .style(if tab == kind {
+                            appearance::primary_button
+                        } else {
+                            appearance::subtle_button
+                        })
+                        .on_press(Message::HubKind(tab)),
+                )
+            });
+        let header = container(
+            column![
+                row![
+                    icon(Icon::Hub, 24),
+                    text("Hub").size(24).width(Fill),
+                    button("Neu laden")
+                        .style(appearance::subtle_button)
+                        .on_press_maybe((!loading).then_some(Message::HubReload))
+                ]
+                .spacing(10)
+                .align_y(Alignment::Center),
+                muted(
+                    "Kuratierte Welten, Charaktere, Szenarien und Lorebooks für OtakuSoul.",
+                    13,
+                    &self.theme()
+                ),
+                tabs,
+                text_input("Katalog durchsuchen …", &hub.query)
+                    .on_input(Message::HubSearch)
+                    .padding(10)
+                    .style(appearance::input)
+            ]
+            .spacing(12),
+        )
+        .padding(20)
+        .width(Fill)
+        .style(appearance::header);
+        let mut list = column![].spacing(12);
+        if loading {
+            list = list.push(text("Katalog wird geladen …").size(14));
+        }
+        if let Some(error) = hub.errors.get(&kind) {
+            list = list.push(text(error).size(14));
+        }
+        if !hub.notice.is_empty() {
+            list = list.push(text(&hub.notice).size(14));
+        }
+        if let Some(entries) = hub.catalog.get(&kind) {
+            let query = hub.query.trim().to_lowercase();
+            let visible: Vec<_> = entries
+                .iter()
+                .filter(|entry| {
+                    [&entry.title, &entry.author, &entry.description, &entry.id]
+                        .into_iter()
+                        .chain(&entry.members)
+                        .any(|field| field.to_lowercase().contains(&query))
+                })
+                .collect();
+            list = list.push(muted(
+                format!("{} von {} Einträgen", visible.len(), entries.len()),
+                12,
+                &self.theme(),
+            ));
+            if visible.is_empty() {
+                list = list.push(text(if entries.is_empty() {
+                    "Dieser Katalog enthält keine Einträge."
+                } else {
+                    "Keine passenden Einträge gefunden."
+                }));
+            }
+            let content_width = (width - 40.0).max(1.0);
+            let cols = crate::library::columns(content_width).min(3);
+            let card_width = ((content_width - 12.0 * (cols - 1) as f32) / cols as f32).max(1.0);
+            for chunk in visible.chunks(cols) {
+                let mut cards = row![].spacing(12).align_y(Alignment::Start);
+                for entry in chunk {
+                    cards = cards.push(self.hub_card(kind, entry, card_width));
+                }
+                list = list.push(cards);
+            }
+        }
+        column![header, scroll(list.padding(20)).height(Fill).width(Fill)]
+            .height(Fill)
+            .width(Fill)
+            .into()
+    }
+
+    fn hub_card<'a>(
+        &'a self,
+        kind: HubKind,
+        entry: &'a HubEntry,
+        width: f32,
+    ) -> Element<'a, Message> {
+        let symbol = match kind {
+            HubKind::Worlds => Icon::Hub,
+            HubKind::Characters => Icon::Characters,
+            HubKind::Scenes => Icon::Stage,
+            HubKind::Lorebooks => Icon::Lorebooks,
+        };
+        let details = self.hub.expanded_world.as_deref() == Some(&entry.id);
+        let mut item = column![
+            row![icon(symbol, 20), text(&entry.title).size(17)]
+                .spacing(8)
+                .align_y(Alignment::Center),
+            muted(
+                format!("{} · Revision {}", entry.author, entry.revision),
+                12,
+                &self.theme()
+            )
+        ]
+        .spacing(10)
+        .width(Fill);
+        if !entry.description.is_empty() {
+            item = item.push(text(&entry.description).size(13));
+        }
+        if details {
+            item = item.push(text(entry.members.join(" · ")).size(13));
+        }
+        if entry.can_import() {
+            let key = (kind, entry.id.clone());
+            let label = if self.hub.imported.contains(&key) {
+                "Übernommen"
+            } else if self.hub.importing.as_ref() == Some(&key) {
+                "Wird geladen …"
+            } else {
+                "Übernehmen"
+            };
+            item = item.push(
+                button(label)
+                    .style(appearance::primary_button)
+                    .on_press_maybe(
+                        (self.hub.importing.is_none()
+                            && !self.profile_busy
+                            && !self.hub.loading.contains(&kind)
+                            && !self.hub.imported.contains(&key))
+                        .then_some(Message::HubImport(kind, key.1)),
+                    ),
+            );
+        } else if !entry.members.is_empty() {
+            item = item.push(control(
+                Icon::Eye,
+                if details { "Einklappen" } else { "Inhalte" },
+                Message::HubToggleWorld(entry.id.clone()),
+            ));
+        }
+        container(item)
+            .padding(16)
+            .width(width)
+            .style(appearance::card)
             .into()
     }
 

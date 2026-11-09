@@ -8,6 +8,7 @@ mod chat_search;
 mod connection;
 mod expressions;
 mod file_export;
+mod hub_catalog;
 mod icons;
 mod library;
 mod lore_catalog;
@@ -23,7 +24,7 @@ use iced::widget::{image, text_editor};
 use iced::{Task, Theme};
 use model::Preview;
 use profile::{Profile, StoredMessage};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
 const MESSAGE_LIMIT: usize = 200;
@@ -122,6 +123,7 @@ enum Page {
     Lorebooks,
     LorebookDetails,
     LorebookEditor,
+    Hub,
     Planned(&'static str),
 }
 
@@ -160,6 +162,13 @@ enum Message {
     LibrarySearch(String),
     LibraryTag(Option<String>),
     ResetLibraryFilters,
+    HubKind(hub_catalog::Kind),
+    HubSearch(String),
+    HubReload,
+    HubLoaded(hub_catalog::Kind, Result<Vec<hub_catalog::Entry>, String>),
+    HubToggleWorld(String),
+    HubImport(hub_catalog::Kind, String),
+    HubImported(Result<HubContent, String>),
     ImportLorebook,
     NewLorebook,
     EditLorebook(usize),
@@ -286,6 +295,58 @@ enum Message {
     },
 }
 
+#[derive(Debug, Clone)]
+enum HubContent {
+    Character(profile::ProfileCharacter),
+    Lorebook(lore_catalog::Book),
+}
+
+impl HubContent {
+    fn download(kind: hub_catalog::Kind, entry: &hub_catalog::Entry) -> Result<Self, String> {
+        let bytes = hub_catalog::download(entry)?;
+        match kind {
+            hub_catalog::Kind::Characters => profile::import_hub_card(bytes).map(Self::Character),
+            hub_catalog::Kind::Lorebooks => {
+                let raw = serde_json::from_slice(&bytes)
+                    .map_err(|_| "Die Hub-Datei enthält kein gültiges Lorebook-JSON.")?;
+                profile::check_public_hub_content(&raw)?;
+                let file = entry.download_filename().unwrap_or(&entry.id);
+                lore_catalog::Book::from_json(raw, format!("Hub/{file}"), &entry.title)
+                    .map(Self::Lorebook)
+            }
+            _ => Err("Dieser Inhalt kann noch nicht übernommen werden.".into()),
+        }
+    }
+}
+
+struct Hub {
+    kind: hub_catalog::Kind,
+    query: String,
+    catalog: HashMap<hub_catalog::Kind, Vec<hub_catalog::Entry>>,
+    loading: HashSet<hub_catalog::Kind>,
+    errors: HashMap<hub_catalog::Kind, String>,
+    expanded_world: Option<String>,
+    importing: Option<(hub_catalog::Kind, String)>,
+    imported: HashSet<(hub_catalog::Kind, String)>,
+    notice: String,
+}
+
+impl Default for Hub {
+    fn default() -> Self {
+        Self {
+            kind: hub_catalog::Kind::Worlds,
+            query: String::new(),
+            catalog: HashMap::new(),
+            loading: HashSet::new(),
+            errors: HashMap::new(),
+            expanded_world: None,
+            importing: None,
+            imported: HashSet::new(),
+            notice: String::new(),
+        }
+    }
+}
+
 struct App {
     preview: Preview,
     page: Page,
@@ -322,6 +383,7 @@ struct App {
     prompt_post: text_editor::Content,
     library_search: String,
     library_tag: Option<String>,
+    hub: Hub,
     lorebooks: Vec<lore_catalog::Book>,
     lorebook_selected: Option<usize>,
     lore_entry_search: String,
@@ -430,6 +492,7 @@ impl Default for App {
             prompt_post,
             library_search: String::new(),
             library_tag: None,
+            hub: Hub::default(),
             lorebooks: Vec::new(),
             lorebook_selected: None,
             lore_entry_search: String::new(),
@@ -750,6 +813,78 @@ impl App {
                 return id;
             }
         }
+    }
+
+    fn add_imported_character(&mut self, character: profile::ProfileCharacter) {
+        let id = self.fresh_character_id();
+        self.portraits
+            .push(character.portrait.clone().map(image::Handle::from_bytes));
+        self.preview.add_character(model::Character {
+            id,
+            name: character.name,
+            description: character.description,
+            first_message: character.first_message,
+            card: Some(character.card),
+            portrait: character.portrait,
+        });
+        self.library_search.clear();
+        self.library_tag = None;
+    }
+
+    fn existing_lorebook(&self, book: &lore_catalog::Book) -> Option<usize> {
+        self.lorebooks.iter().position(|existing| {
+            existing.matches_reference(book.binding_key()) || existing.source == book.source
+        })
+    }
+
+    fn add_lorebook(&mut self, book: lore_catalog::Book) {
+        self.lorebooks.push(book);
+        self.invalidate_prompt_lore();
+        if self.page == Page::Prompt {
+            self.refresh_prompt();
+        }
+    }
+
+    fn load_hub(&mut self, kind: hub_catalog::Kind) -> Task<Message> {
+        if !self.hub.loading.insert(kind) {
+            return Task::none();
+        }
+        self.hub.errors.remove(&kind);
+        Task::perform(background(move || hub_catalog::load(kind)), move |result| {
+            Message::HubLoaded(kind, result)
+        })
+    }
+
+    fn import_hub(&mut self, kind: hub_catalog::Kind, id: String) -> Task<Message> {
+        let key = (kind, id);
+        if self.page != Page::Hub
+            || self.hub.kind != kind
+            || self.profile_busy
+            || self.hub.loading.contains(&kind)
+            || self.hub.importing.is_some()
+            || self.hub.imported.contains(&key)
+        {
+            return Task::none();
+        }
+        let Some(entry) = self
+            .hub
+            .catalog
+            .get(&kind)
+            .and_then(|entries| {
+                entries
+                    .iter()
+                    .find(|entry| entry.id == key.1 && entry.can_import())
+            })
+            .cloned()
+        else {
+            return Task::none();
+        };
+        self.hub.notice = format!("„{}“ wird geladen …", entry.title);
+        self.hub.importing = Some(key);
+        Task::perform(
+            background(move || HubContent::download(kind, &entry)),
+            Message::HubImported,
+        )
     }
 
     fn export_card(
@@ -1139,8 +1274,8 @@ impl App {
         }
     }
     fn load(&mut self, create: bool) -> Task<Message> {
-        if self.card_busy {
-            self.notice = "Bitte den laufenden Kartenimport oder -export abwarten.".into();
+        if self.card_busy || self.hub.importing.is_some() {
+            self.notice = "Bitte den laufenden Import oder Export abwarten.".into();
             return Task::none();
         }
         if self.character_draft.is_some() {
@@ -1429,19 +1564,12 @@ impl App {
                 self.card_busy = false;
                 self.notice = match result {
                     Ok(Some(book)) => {
-                        if let Some(index) = self.lorebooks.iter().position(|existing| {
-                            existing.matches_reference(book.binding_key())
-                                || existing.source == book.source
-                        }) {
+                        if let Some(index) = self.existing_lorebook(&book) {
                             self.lorebook_selected = Some(index);
                             "Ein Lorebook mit dieser Referenz ist bereits geladen; es wurde nicht ersetzt.".into()
                         } else {
                             self.lorebook_selected = Some(self.lorebooks.len());
-                            self.lorebooks.push(book);
-                            self.invalidate_prompt_lore();
-                            if self.page == Page::Prompt {
-                                self.refresh_prompt();
-                            }
+                            self.add_lorebook(book);
                             "Lorebook lesend in den Arbeitsspeicher geladen. Keine automatische Bindung oder Promptaktivierung.".into()
                         }
                     }
@@ -1679,18 +1807,7 @@ impl App {
                 self.card_busy = false;
                 self.notice = match result {
                     Ok(Some(character)) => {
-                        let id = self.fresh_character_id();
-                        self.preview.add_character(model::Character {
-                            id,
-                            name: character.name,
-                            description: character.description,
-                            first_message: character.first_message,
-                            card: Some(character.card),
-                            portrait: character.portrait,
-                        });
-                        self.portraits = Self::portraits(&self.preview);
-                        self.library_search.clear();
-                        self.library_tag = None;
+                        self.add_imported_character(character);
                         self.page = Page::Characters;
                         "Charakter importiert. Er bleibt bis zum Export im Arbeitsspeicher.".into()
                     }
@@ -1749,6 +1866,55 @@ impl App {
             Message::ResetLibraryFilters => {
                 self.library_search.clear();
                 self.library_tag = None;
+            }
+            Message::HubKind(kind) => {
+                self.hub.kind = kind;
+                self.hub.expanded_world = None;
+                if !self.hub.catalog.contains_key(&kind) {
+                    return self.load_hub(kind);
+                }
+            }
+            Message::HubSearch(query) => self.hub.query = query,
+            Message::HubReload => return self.load_hub(self.hub.kind),
+            Message::HubLoaded(kind, result) => {
+                self.hub.loading.remove(&kind);
+                match result {
+                    Ok(entries) => {
+                        self.hub.catalog.insert(kind, entries);
+                    }
+                    Err(error) => {
+                        self.hub.errors.insert(kind, error);
+                    }
+                }
+            }
+            Message::HubToggleWorld(id) => {
+                self.hub.expanded_world =
+                    (self.hub.expanded_world.as_deref() != Some(&id)).then_some(id);
+            }
+            Message::HubImport(kind, id) => return self.import_hub(kind, id),
+            Message::HubImported(result) => {
+                let Some(key) = self.hub.importing.take() else {
+                    return Task::none();
+                };
+                self.hub.notice = match result {
+                    Ok(HubContent::Character(character)) => {
+                        let name = character.name.clone();
+                        self.add_imported_character(character);
+                        self.hub.imported.insert(key);
+                        format!("„{name}“ ist in der Charakterbibliothek verfügbar.")
+                    }
+                    Ok(HubContent::Lorebook(book)) => {
+                        self.hub.imported.insert(key);
+                        if self.existing_lorebook(&book).is_some() {
+                            format!("„{}“ ist bereits im Lorebook-Katalog vorhanden.", book.name)
+                        } else {
+                            let name = book.name.clone();
+                            self.add_lorebook(book);
+                            format!("„{name}“ ist unter Lorebooks verfügbar.")
+                        }
+                    }
+                    Err(error) => format!("Import fehlgeschlagen. {error}"),
+                };
             }
             Message::NewCharacter => self.open_character(None, false),
             Message::EditCharacter(index) => self.open_character(Some(index), false),
@@ -1840,6 +2006,9 @@ impl App {
                     self.refresh_prompt();
                 }
                 self.page = page;
+                if page == Page::Hub && !self.hub.catalog.contains_key(&self.hub.kind) {
+                    return self.load_hub(self.hub.kind);
+                }
             }
             Message::SelectCharacter(index) => {
                 let previous = self.preview.selected;
@@ -2074,6 +2243,9 @@ impl App {
                         );
                         self.warnings = profile.warnings.clone();
                         self.preview = Preview::from_profile(profile);
+                        self.hub
+                            .imported
+                            .retain(|(kind, _)| *kind != hub_catalog::Kind::Characters);
                         self.search.clear();
                         self.show_search = false;
                         self.library_search.clear();
@@ -2125,6 +2297,52 @@ impl App {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    #[ignore = "benötigt Zugriff auf den öffentlichen OtakuSoul-Katalog"]
+    fn public_hub_registries_and_imports_work_live() {
+        for kind in hub_catalog::Kind::ALL {
+            let entries = hub_catalog::load(kind).unwrap();
+            assert!(!entries.is_empty(), "{kind}");
+            if let Some(entry) = entries.iter().find(|entry| entry.can_import()) {
+                match HubContent::download(kind, entry).unwrap() {
+                    HubContent::Character(character) => {
+                        assert!(!character.name.is_empty());
+                        assert!(character.portrait.is_some());
+                    }
+                    HubContent::Lorebook(book) => assert!(!book.entries.is_empty()),
+                }
+            } else {
+                assert!(matches!(
+                    kind,
+                    hub_catalog::Kind::Worlds | hub_catalog::Kind::Scenes
+                ));
+            }
+            println!("{kind}: {} Katalogeinträge", entries.len());
+        }
+    }
+
+    #[test]
+    fn hub_import_does_not_replace_an_existing_lorebook() {
+        let mut app = App::default();
+        let kind = hub_catalog::Kind::Lorebooks;
+        app.hub.importing = Some((kind, "Welt".into()));
+        let make_book = |content| {
+            lore_catalog::Book::from_json(
+                serde_json::json!({"id":"welt","name":"Welt","entries":[{"content":content}]}),
+                "Hub/welt.json".into(),
+                "Welt",
+            )
+            .unwrap()
+        };
+        app.lorebooks.push(make_book("Eigener Entwurf"));
+        let _ = app.update(Message::HubImported(Ok(HubContent::Lorebook(make_book(
+            "Serverversion",
+        )))));
+        assert_eq!(app.lorebooks.len(), 1);
+        assert_eq!(app.lorebooks[0].entries[0].content, "Eigener Entwurf");
+        assert!(app.hub.imported.contains(&(kind, "Welt".into())));
+    }
 
     #[test]
     fn model_chat_only_commits_the_draft_and_reply_on_success() {
