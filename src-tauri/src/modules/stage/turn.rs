@@ -692,7 +692,12 @@ RULES:
             .filter(|id| super::rules5e::item(id).is_some())
         {
             let entry = format!("{srd_id}*{}", addition.quantity.max(1));
-            super::explore5e::add_items(&mut state, &[entry], &lang_code);
+            super::explore5e::add_items(
+                &mut state,
+                &[entry],
+                &lang_code,
+                Utc::now().timestamp_micros(),
+            );
             continue;
         }
         if let Some(existing) = state
@@ -1442,7 +1447,7 @@ pub async fn execute_stage_rest(
     // 5e scenes rest by the rules (hit dice, slots); narrative scenes by fixed amounts.
     let five_e = state.definition.is_5e();
     if five_e {
-        super::combat5e::rest_party(&mut state, rest_type == "long");
+        super::combat5e::rest_party(&mut state, rest_type == "long", &mut rand::rng());
     }
     // Heal combatants
     for c in state.combat.combatants.iter_mut().filter(|_| !five_e) {

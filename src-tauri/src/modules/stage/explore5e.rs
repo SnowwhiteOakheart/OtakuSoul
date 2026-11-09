@@ -6,6 +6,7 @@
 
 use super::rules5e::{self, ExploreEvent, GridPos};
 use super::*;
+use rand::Rng;
 
 /// Exploration events kept in the scene (log in the UI).
 const MAX_EVENTS: usize = 60;
@@ -157,7 +158,7 @@ fn enter_room(state: &mut SceneState) -> Option<ExploreEvent> {
 }
 
 /// What stopped a walk early.
-enum Stop {
+pub(super) enum Stop {
     Trap,
     Encounter(rules5e::MapEncounter),
     Exit(String),
@@ -165,7 +166,11 @@ enum Stop {
 
 /// Walks the leader along `path` square by square; the others follow. Stops on a sprung
 /// trap, in the room of a prepared encounter, or on an exit.
-fn walk(state: &mut SceneState, path: &[GridPos]) -> (Vec<ExploreEvent>, Option<Stop>) {
+fn walk<R: Rng + ?Sized>(
+    state: &mut SceneState,
+    path: &[GridPos],
+    rng: &mut R,
+) -> (Vec<ExploreEvent>, Option<Stop>) {
     let mut events = Vec::new();
     let Some(leader) = leader_index(state) else {
         return (events, None);
@@ -184,7 +189,7 @@ fn walk(state: &mut SceneState, path: &[GridPos]) -> (Vec<ExploreEvent>, Option<
             map.traps[trap].sprung = true;
             let trap = map.traps[trap].clone();
             rules5e::set_object(map, step, "trap_plate");
-            events.push(spring_trap(state, leader, &trap));
+            events.push(spring_trap(state, leader, &trap, rng));
             stop = Some(Stop::Trap);
             break;
         }
@@ -215,22 +220,26 @@ fn walk(state: &mut SceneState, path: &[GridPos]) -> (Vec<ExploreEvent>, Option<
 }
 
 /// A hidden trap springs under a party member: Dexterity save, half damage on a success.
-fn spring_trap(state: &mut SceneState, index: usize, trap: &rules5e::MapTrap) -> ExploreEvent {
-    let mut rng = rand::rng();
+fn spring_trap<R: Rng + ?Sized>(
+    state: &mut SceneState,
+    index: usize,
+    trap: &rules5e::MapTrap,
+    rng: &mut R,
+) -> ExploreEvent {
     let heroic_death = state
         .definition
         .rules
         .as_ref()
         .is_some_and(|r| r.heroic_death);
     let target = &mut state.combat.combatants[index];
-    let save = rules5e::saving_throw(target, rules5e::Ability::Dex, trap.save_dc, &mut rng);
+    let save = rules5e::saving_throw(target, rules5e::Ability::Dex, trap.save_dc, rng);
     let success = matches!(save, rules5e::CombatEvent::Save { success: true, .. });
     let formula = rules5e::DiceFormula::parse(&trap.damage).unwrap_or(rules5e::DiceFormula {
         count: 1,
         sides: 6,
         modifier: 0,
     });
-    let mut roll = rules5e::roll_damage(&mut rng, &formula, false);
+    let mut roll = rules5e::roll_damage(rng, &formula, false);
     if success {
         roll.total /= 2;
     }
@@ -245,7 +254,7 @@ fn spring_trap(state: &mut SceneState, index: usize, trap: &rules5e::MapTrap) ->
             critical: false,
             heroic_death,
         },
-        &mut rng,
+        rng,
     );
     ExploreEvent::Trap {
         at: trap.at,
@@ -257,8 +266,12 @@ fn spring_trap(state: &mut SceneState, index: usize, trap: &rules5e::MapTrap) ->
 }
 
 /// A skill check of the party member best at it (picking or forcing a lock).
-fn party_check(state: &SceneState, skill: &str, dc: i32) -> ExploreEvent {
-    let mut rng = rand::rng();
+fn party_check<R: Rng + ?Sized>(
+    state: &SceneState,
+    skill: &str,
+    dc: i32,
+    rng: &mut R,
+) -> ExploreEvent {
     let best = party_indices(state)
         .into_iter()
         .map(|i| &state.combat.combatants[i])
@@ -272,7 +285,7 @@ fn party_check(state: &SceneState, skill: &str, dc: i32) -> ExploreEvent {
         })
         .max_by_key(|(_, bonus)| *bonus);
     let (name, bonus) = best.map_or(("?".to_string(), 0), |(c, b)| (c.name.clone(), b));
-    let roll = rules5e::roll_d20(&mut rng, rules5e::RollMode::Normal);
+    let roll = rules5e::roll_d20(rng, rules5e::RollMode::Normal);
     let total = roll.natural as i32 + bonus;
     ExploreEvent::Check {
         actor_name: name,
@@ -286,14 +299,14 @@ fn party_check(state: &SceneState, skill: &str, dc: i32) -> ExploreEvent {
 }
 
 /// The player's exploration input.
-enum ExploreAction {
+pub(super) enum ExploreAction {
     Move(GridPos),
     Use(GridPos),
     Pick(GridPos),
     Force(GridPos),
 }
 
-fn parse_action(action: &str) -> Option<ExploreAction> {
+pub(super) fn parse_action(action: &str) -> Option<ExploreAction> {
     let (kind, rest) = action.trim().split_once(':')?;
     let (x, y) = rest.split_once(':')?;
     let pos = GridPos::new(x.parse().ok()?, y.parse().ok()?);
@@ -307,9 +320,13 @@ fn parse_action(action: &str) -> Option<ExploreAction> {
 }
 
 /// Carries out one action. `Ok(None)` = nothing happened (unreachable, nothing there).
-fn apply(
+/// Loot is named in `language_code`; `stamp` makes new inventory ids unique.
+pub(super) fn apply<R: Rng + ?Sized>(
     state: &mut SceneState,
     action: ExploreAction,
+    rng: &mut R,
+    language_code: &str,
+    stamp: i64,
 ) -> Option<(Vec<ExploreEvent>, Option<Stop>)> {
     let leader = leader_index(state)?;
     let from = state.combat.combatants[leader].position?;
@@ -327,7 +344,7 @@ fn apply(
             if path.is_empty() {
                 return None;
             }
-            Some(walk(state, &path))
+            Some(walk(state, &path, rng))
         }
         ExploreAction::Use(target) | ExploreAction::Pick(target) | ExploreAction::Force(target) => {
             if !rules5e::is_revealed(&map, target) {
@@ -335,7 +352,7 @@ fn apply(
             }
             let interaction = rules5e::interaction_at(&map, target)?;
             let path = rules5e::approach_object(&map, from, target, &others)?;
-            let (mut events, stop) = walk(state, &path);
+            let (mut events, stop) = walk(state, &path, rng);
             if stop.is_some() {
                 return Some((events, stop));
             }
@@ -361,7 +378,7 @@ fn apply(
                 (rules5e::Interaction::OpenChest, _) => {
                     rules5e::set_object(map, target, "chest_open");
                     events.push(ExploreEvent::Chest { at: target });
-                    events.extend(take_chest_loot(state, target));
+                    events.extend(take_chest_loot(state, target, language_code, stamp));
                 }
                 (
                     rules5e::Interaction::LockedDoor | rules5e::Interaction::LockedChest,
@@ -382,7 +399,7 @@ fn apply(
                     } else {
                         "athletics"
                     };
-                    let check = party_check(state, skill, dc);
+                    let check = party_check(state, skill, dc, rng);
                     let success = matches!(check, ExploreEvent::Check { success: true, .. });
                     events.push(check);
                     if success {
@@ -391,7 +408,7 @@ fn apply(
                         if locked == rules5e::Interaction::LockedChest {
                             rules5e::set_object(map, target, "chest_open");
                             events.push(ExploreEvent::Chest { at: target });
-                            events.extend(take_chest_loot(state, target));
+                            events.extend(take_chest_loot(state, target, language_code, stamp));
                         } else {
                             rules5e::set_object(map, target, "door_open");
                             events.push(ExploreEvent::Door {
@@ -455,7 +472,7 @@ pub fn reach_goal(state: &mut SceneState, kind: &str, target: &str) -> Vec<Explo
 }
 
 /// A won fight: the prepared encounter it came from counts for the act's goals.
-pub fn won_fight(state: &mut SceneState) {
+pub fn won_fight(state: &mut SceneState, language_code: &str, stamp: i64) {
     let Some(id) = state.map.as_mut().and_then(|m| m.active_encounter.take()) else {
         return;
     };
@@ -467,13 +484,13 @@ pub fn won_fight(state: &mut SceneState) {
         .map(|e| e.loot.clone())
         .unwrap_or_default();
     if !loot.is_empty() {
-        let items = add_items(state, &loot, &reply_code());
+        let items = add_items(state, &loot, language_code, stamp);
         events.insert(0, ExploreEvent::Loot { items });
     }
     push_events(state, events);
 }
 
-fn reply_code() -> String {
+pub(super) fn reply_code() -> String {
     crate::modules::content_lang::language_code(
         &crate::modules::content_lang::ContentLang::reply_language_name(),
     )
@@ -489,10 +506,12 @@ fn loot_entry(entry: &str) -> Option<(&'static rules5e::ItemData, u32)> {
 }
 
 /// Puts SRD items into the party inventory (same items stack); returns what was added.
+/// `stamp` makes the ids of new entries unique (the desktop passes the time in µs).
 pub fn add_items(
     state: &mut SceneState,
     entries: &[String],
     language_code: &str,
+    stamp: i64,
 ) -> Vec<rules5e::LootItem> {
     let mut added = Vec::new();
     for (data, count) in entries.iter().filter_map(|e| loot_entry(e)) {
@@ -509,7 +528,7 @@ pub fn add_items(
                 .and_then(rules5e::DiceFormula::parse)
                 .map_or(0, |f| f.average());
             state.inventory.push(InventoryItem {
-                id: format!("item_{}_{}", data.id, Utc::now().timestamp_micros()),
+                id: format!("item_{}_{stamp}", data.id),
                 name: data.name.get(language_code).to_string(),
                 description: String::new(),
                 quantity: count,
@@ -535,11 +554,16 @@ pub fn add_items(
 }
 
 /// What lies in the chest at `at` goes to the party (once).
-fn take_chest_loot(state: &mut SceneState, at: GridPos) -> Option<ExploreEvent> {
+fn take_chest_loot(
+    state: &mut SceneState,
+    at: GridPos,
+    language_code: &str,
+    stamp: i64,
+) -> Option<ExploreEvent> {
     let map = state.map.as_mut()?;
     let index = map.loot.iter().position(|l| l.at == at)?;
     let entries = map.loot.remove(index).items;
-    let items = add_items(state, &entries, &reply_code());
+    let items = add_items(state, &entries, language_code, stamp);
     (!items.is_empty()).then_some(ExploreEvent::Loot { items })
 }
 
@@ -587,7 +611,12 @@ pub fn equip_item(
     if item.quantity == 0 {
         state.inventory.remove(position);
     }
-    add_items(state, &removed, &reply_code());
+    add_items(
+        state,
+        &removed,
+        &reply_code(),
+        Utc::now().timestamp_micros(),
+    );
     Ok(())
 }
 
@@ -606,7 +635,12 @@ pub fn unequip_item(state: &mut SceneState, member_id: &str, srd_id: &str) -> Re
     if !rules5e::unequip(hero, srd_id) {
         return Err(crate::err!("backend.stage.itemMissing"));
     }
-    add_items(state, &[srd_id.to_string()], &reply_code());
+    add_items(
+        state,
+        &[srd_id.to_string()],
+        &reply_code(),
+        Utc::now().timestamp_micros(),
+    );
     Ok(())
 }
 
@@ -667,7 +701,7 @@ pub fn continue_adventure(engine: &StageEngine, scene_id: &str) -> Result<SceneS
         next.exploration
             .push(ExploreEvent::LevelUp { level: reached });
     }
-    super::combat5e::rest_party(&mut next, true);
+    super::combat5e::rest_party(&mut next, true, &mut rand::rng());
     next.definition.last_played = Some(Utc::now().to_rfc3339());
     engine.set_state(next.clone());
     save_scene_state(&next)?;
@@ -694,10 +728,12 @@ pub fn change_map(state: &mut SceneState, map_id: &str) -> Option<ExploreEvent> 
 }
 
 /// The prepared encounter of a room starts: its monsters on its zone.
-fn start_prepared(
+pub(super) fn start_prepared<R: Rng + ?Sized>(
     state: &mut SceneState,
     encounter: &rules5e::MapEncounter,
     language_code: &str,
+    stamp: i64,
+    rng: &mut R,
 ) -> bool {
     if let Some(map) = state.map.as_mut() {
         map.triggered.push(encounter.id.clone());
@@ -714,7 +750,15 @@ fn start_prepared(
             role: "enemy".into(),
         })
         .collect();
-    super::combat5e::start_encounter_at(state, &enemies, language_code, &encounter.zone, false)
+    super::combat5e::start_encounter_at(
+        state,
+        &enemies,
+        language_code,
+        &encounter.zone,
+        false,
+        stamp,
+        rng,
+    )
 }
 
 /// Facts for the game master: rooms entered (with their description), doors, locks, traps,
@@ -904,7 +948,13 @@ pub fn apply_planner_map(
         })
         .cloned()
     {
-        let started = start_prepared(state, &prepared, language_code);
+        let started = start_prepared(
+            state,
+            &prepared,
+            language_code,
+            Utc::now().timestamp_millis(),
+            &mut rand::rng(),
+        );
         if started {
             push_events(
                 state,
@@ -927,6 +977,8 @@ pub fn apply_planner_map(
         language_code,
         &zone,
         true,
+        Utc::now().timestamp_millis(),
+        &mut rand::rng(),
     ))
 }
 
@@ -961,13 +1013,19 @@ pub async fn execute_exploration(
         return Err(crate::err!("backend.stage.noMap"));
     }
     let action = parse_action(&action).ok_or_else(|| crate::err!("backend.stage.invalidAction"))?;
-    let before = state.clone();
-    let (mut events, stop) =
-        apply(&mut state, action).ok_or_else(|| crate::err!("backend.stage.invalidAction"))?;
-    engine.push_snapshot(&state.definition.id, before);
-
     let reply_language = crate::modules::content_lang::ContentLang::reply_language_name();
     let lang_code = crate::modules::content_lang::language_code(&reply_language);
+    let before = state.clone();
+    let (mut events, stop) = apply(
+        &mut state,
+        action,
+        &mut rand::rng(),
+        &lang_code,
+        Utc::now().timestamp_micros(),
+    )
+    .ok_or_else(|| crate::err!("backend.stage.invalidAction"))?;
+    engine.push_snapshot(&state.definition.id, before);
+
     let mut fight = false;
     match stop {
         Some(Stop::Exit(to)) => {
@@ -975,7 +1033,13 @@ pub async fn execute_exploration(
             events.extend(reach_goal(&mut state, "exit", &to));
         }
         Some(Stop::Encounter(encounter)) => {
-            if start_prepared(&mut state, &encounter, &lang_code) {
+            if start_prepared(
+                &mut state,
+                &encounter,
+                &lang_code,
+                Utc::now().timestamp_millis(),
+                &mut rand::rng(),
+            ) {
                 events.push(ExploreEvent::Encounter {
                     encounter_id: encounter.id.clone(),
                 });
@@ -1011,6 +1075,19 @@ pub async fn execute_exploration(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn apply(
+        state: &mut SceneState,
+        action: ExploreAction,
+    ) -> Option<(Vec<ExploreEvent>, Option<Stop>)> {
+        super::apply(
+            state,
+            action,
+            &mut rand::rng(),
+            "en",
+            Utc::now().timestamp_micros(),
+        )
+    }
 
     fn crypt() -> SceneState {
         let mut state = StageEngine::new().get_state();
@@ -1083,7 +1160,13 @@ mod tests {
         );
         let mut party_before = party_positions(&state);
         party_before.sort();
-        assert!(start_prepared(&mut state, &encounter, "en"));
+        assert!(start_prepared(
+            &mut state,
+            &encounter,
+            "en",
+            0,
+            &mut rand::rng()
+        ));
         assert!(state.combat.is_active);
         let mut party_after = party_positions(&state);
         party_after.sort();
@@ -1364,7 +1447,13 @@ mod tests {
             panic!("no ambush")
         };
         assert_eq!(encounter.id, "road_bandits");
-        assert!(start_prepared(&mut state, &encounter, "de"));
+        assert!(start_prepared(
+            &mut state,
+            &encounter,
+            "de",
+            0,
+            &mut rand::rng()
+        ));
         // The fight is won: the goal is reached, the act not yet.
         for c in state
             .combat
@@ -1374,7 +1463,7 @@ mod tests {
         {
             c.hp = 0;
         }
-        won_fight(&mut state);
+        won_fight(&mut state, "en", 0);
         super::super::combat5e::end_encounter(&mut state, Some(rules5e::CombatOutcome::Victory));
         assert!(
             matches!(state.exploration.last(), Some(ExploreEvent::Goal { goal_id, .. }) if goal_id == "hinterhalt")
@@ -1495,12 +1584,18 @@ mod tests {
             .find(|e| e.id == "hall_goblins")
             .cloned()
             .unwrap();
-        assert!(start_prepared(&mut state, &encounter, "de"));
+        assert!(start_prepared(
+            &mut state,
+            &encounter,
+            "de",
+            0,
+            &mut rand::rng()
+        ));
         assert!(
             equip_item(&mut state, &finn, "nothing").is_err(),
             "no changing gear mid-fight"
         );
-        won_fight(&mut state);
+        won_fight(&mut state, "en", 0);
         assert!(state.exploration.iter().any(|e| matches!(e, ExploreEvent::Loot { items } if items.iter().any(|i| i.srd_id == "shortsword"))));
         let swords = state
             .inventory

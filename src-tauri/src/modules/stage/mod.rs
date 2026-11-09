@@ -20,6 +20,8 @@ mod dice;
 mod director;
 mod engine;
 mod explore5e;
+#[cfg(test)]
+mod golden5e_tests;
 mod history;
 mod models;
 mod npc;

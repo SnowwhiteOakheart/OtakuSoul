@@ -5,7 +5,7 @@
 
 use super::rules5e::{self, CombatEvent, CombatOutcome, DeathSaveOutcome, TurnDecision};
 use super::*;
-use rand::RngExt;
+use rand::{Rng, RngExt, SeedableRng};
 
 /// Fight events kept in the scene (log in the UI).
 const MAX_EVENTS: usize = 300;
@@ -141,8 +141,7 @@ pub fn planner_encounter_rule(state: &SceneState) -> String {
 /// quarters of their hit points. Long: full hit points, all spell slots, half the hit dice
 /// back, death saves and fight conditions cleared, Aid ends. Returns one line per hero for
 /// the chronicle (English; the narrator retells it).
-pub fn rest_party(state: &mut SceneState, long: bool) -> Vec<String> {
-    let mut rng = rand::rng();
+pub fn rest_party<R: Rng + ?Sized>(state: &mut SceneState, long: bool, rng: &mut R) -> Vec<String> {
     let mut lines = Vec::new();
     for c in state
         .combat
@@ -202,7 +201,15 @@ pub fn start_encounter(
     enemies: &[PlanCombatant],
     language_code: &str,
 ) -> bool {
-    start_encounter_at(state, enemies, language_code, "spawn", true)
+    start_encounter_at(
+        state,
+        enemies,
+        language_code,
+        "spawn",
+        true,
+        Utc::now().timestamp_millis(),
+        &mut rand::rng(),
+    )
 }
 
 /// Levels of the party members still standing (for the XP budget).
@@ -219,12 +226,15 @@ fn party_levels(state: &SceneState) -> Vec<u32> {
 /// Like [`start_encounter`], with the monsters placed on `zone` of the map. With `limit`
 /// (fights the game master makes up) a group far beyond deadly for the party is trimmed;
 /// prepared encounters of an adventure stay as written.
-pub fn start_encounter_at(
+/// `stamp` makes the enemies' ids unique (the desktop passes the time in milliseconds).
+pub fn start_encounter_at<R: Rng + ?Sized>(
     state: &mut SceneState,
     enemies: &[PlanCombatant],
     language_code: &str,
     zone: &str,
     limit: bool,
+    stamp: i64,
+    rng: &mut R,
 ) -> bool {
     ensure_party_vitals(state);
     let mut fresh = Vec::new();
@@ -258,7 +268,6 @@ pub fn start_encounter_at(
     }
     let difficulty = rules5e::rate(rules5e::encounter_xp(&fresh), budget);
     super::remove_enemies(state);
-    let stamp = Utc::now().timestamp_millis();
     for (index, data) in fresh.iter().enumerate() {
         let base = data.name.get(language_code).to_string();
         let same_kind = fresh.iter().filter(|other| other.id == data.id).count();
@@ -292,8 +301,7 @@ pub fn start_encounter_at(
             .retain(|c| c.name != rules5e::DODGING && c.name != rules5e::FLED);
     }
     place_on_map(state, zone);
-    let mut rng = rand::rng();
-    let initiative = rules5e::roll_initiative(&mut state.combat.combatants, &mut rng);
+    let initiative = rules5e::roll_initiative(&mut state.combat.combatants, rng);
     state.combat.is_active = true;
     state.combat.difficulty = Some(difficulty);
     state.combat.round = 1;
@@ -376,7 +384,7 @@ fn place_on_map(state: &mut SceneState, zone: &str) {
 
 /// Starts the current combatant's turn: effects "until your next turn" end, its reaction
 /// comes back, and it gets its movement (on a board) and one action.
-fn begin_turn(state: &mut SceneState) -> CombatEvent {
+pub(super) fn begin_turn(state: &mut SceneState) -> CombatEvent {
     let index = state.combat.current_turn_index;
     let round = state.combat.round;
     let actor = &mut state.combat.combatants[index];
@@ -448,7 +456,7 @@ pub fn end_encounter(state: &mut SceneState, _outcome: Option<CombatOutcome>) {
 
 /// The player decides for this combatant (always for the player, for companions when the
 /// scene says so).
-fn player_controls(state: &SceneState, combatant: &Combatant) -> bool {
+pub(super) fn player_controls(state: &SceneState, combatant: &Combatant) -> bool {
     combatant.role == "player"
         || (combatant.role == "companion"
             && state
@@ -477,7 +485,11 @@ fn cast_budget(state: &SceneState) -> rules5e::CastBudget {
 
 /// Casts a spell for the current combatant if it is (still) valid; spends the action or the
 /// bonus action it takes.
-fn cast(state: &mut SceneState, request_id: &str) -> Vec<CombatEvent> {
+fn cast<R: Rng + ?Sized>(
+    state: &mut SceneState,
+    request_id: &str,
+    rng: &mut R,
+) -> Vec<CombatEvent> {
     let index = state.combat.current_turn_index;
     let Some(request) = rules5e::CastRequest::parse(request_id) else {
         return Vec::new();
@@ -509,7 +521,7 @@ fn cast(state: &mut SceneState, request_id: &str) -> Vec<CombatEvent> {
         &request,
         &mut state.combat.effects,
         heroic,
-        &mut rand::rng(),
+        rng,
     );
     events.extend(settle(state));
     events
@@ -584,12 +596,11 @@ pub fn feature_options(state: &SceneState) -> Vec<rules5e::FeatureOption> {
 }
 
 /// Uses a class feature of the current combatant (checked against [`feature_options`]).
-fn use_feature(state: &mut SceneState, id: &str) -> Vec<CombatEvent> {
+fn use_feature<R: Rng + ?Sized>(state: &mut SceneState, id: &str, rng: &mut R) -> Vec<CombatEvent> {
     if !feature_options(state).iter().any(|o| o.id == id) {
         return Vec::new();
     }
     let index = state.combat.current_turn_index;
-    let mut rng = rand::rng();
     let actor = &mut state.combat.combatants[index];
     let feature = |actor: &Combatant, feature: &str| CombatEvent::Feature {
         actor_id: actor.id.clone(),
@@ -626,7 +637,7 @@ fn use_feature(state: &mut SceneState, id: &str) -> Vec<CombatEvent> {
             state.combat.turn.action_used = true;
             for target in undead_in_reach(state) {
                 let undead = &mut state.combat.combatants[target];
-                let save = rules5e::saving_throw(undead, rules5e::Ability::Wis, dc, &mut rng);
+                let save = rules5e::saving_throw(undead, rules5e::Ability::Wis, dc, rng);
                 let saved = matches!(save, CombatEvent::Save { success: true, .. });
                 events.push(save);
                 if !saved {
@@ -679,17 +690,20 @@ fn sneak_attack_allowed(
 
 /// Carries out a decision of the current combatant (uses its action; spells may use the
 /// bonus action instead).
-fn act(state: &mut SceneState, decision: TurnDecision) -> Vec<CombatEvent> {
+fn act<R: Rng + ?Sized>(
+    state: &mut SceneState,
+    decision: TurnDecision,
+    rng: &mut R,
+) -> Vec<CombatEvent> {
     if let TurnDecision::Cast(request) = &decision {
-        return cast(state, request);
+        return cast(state, request, rng);
     }
     if let TurnDecision::Feature(id) = &decision {
-        return use_feature(state, id);
+        return use_feature(state, id, rng);
     }
     state.combat.turn.action_used = true;
     let heroic_death = heroic_death(state);
     let index = state.combat.current_turn_index;
-    let mut rng = rand::rng();
     match decision {
         TurnDecision::Cast(_) | TurnDecision::Feature(_) => unreachable!("handled above"),
         TurnDecision::Attack {
@@ -764,7 +778,7 @@ fn act(state: &mut SceneState, decision: TurnDecision) -> Vec<CombatEvent> {
                         target_can_react,
                     };
                     let events =
-                        rules5e::resolve_attack_with(&actor, &attack, target, &situation, &mut rng);
+                        rules5e::resolve_attack_with(&actor, &attack, target, &situation, rng);
                     if events.iter().any(|e| matches!(e, CombatEvent::Feature { feature, .. } if feature == rules5e::SNEAK_ATTACK)) {
                         state.combat.turn.sneak_used = true;
                     }
@@ -795,9 +809,8 @@ fn act(state: &mut SceneState, decision: TurnDecision) -> Vec<CombatEvent> {
 /// Ends the current combatant's turn (short spell riders end, repeated saves) and starts
 /// the next one. Dying heroes roll their death save, incapacitated creatures lose their turn,
 /// both without waiting for anyone. Empty when nobody can act.
-fn next_turn(state: &mut SceneState) -> Vec<CombatEvent> {
+pub(super) fn next_turn<R: Rng + ?Sized>(state: &mut SceneState, rng: &mut R) -> Vec<CombatEvent> {
     let mut events = Vec::new();
-    let mut rng = rand::rng();
     let heroic = heroic_death(state);
     for _ in 0..state.combat.combatants.len() * 2 + 2 {
         let index = state.combat.current_turn_index;
@@ -806,7 +819,7 @@ fn next_turn(state: &mut SceneState) -> Vec<CombatEvent> {
             &mut state.combat.combatants,
             index,
             &mut state.combat.effects,
-            &mut rng,
+            rng,
         ));
         events.extend(settle(state));
         if rules5e::combat_outcome(&state.combat.combatants).is_some()
@@ -818,7 +831,7 @@ fn next_turn(state: &mut SceneState) -> Vec<CombatEvent> {
         let index = state.combat.current_turn_index;
         let actor = &mut state.combat.combatants[index];
         if rules5e::is_dying(actor) {
-            events.push(rules5e::death_save(actor, heroic, &mut rng));
+            events.push(rules5e::death_save(actor, heroic, rng));
             continue;
         }
         if rules5e::incapacitated(actor) {
@@ -840,7 +853,11 @@ fn settle(state: &mut SceneState) -> Vec<CombatEvent> {
 
 /// Moves the current combatant along the path to `target` (opportunity attacks included)
 /// and spends the movement.
-fn move_current(state: &mut SceneState, target: rules5e::GridPos) -> Vec<CombatEvent> {
+fn move_current<R: Rng + ?Sized>(
+    state: &mut SceneState,
+    target: rules5e::GridPos,
+    rng: &mut R,
+) -> Vec<CombatEvent> {
     let Some(map) = state.map.clone() else {
         return Vec::new();
     };
@@ -867,7 +884,7 @@ fn move_current(state: &mut SceneState, target: rules5e::GridPos) -> Vec<CombatE
         &path,
         disengaged,
         &mut state.combat.reactions_used,
-        &mut rand::rng(),
+        rng,
     );
     // Doors on the way open as the mover passes (up to where it stopped).
     let end = state.combat.combatants[index].position;
@@ -926,7 +943,7 @@ pub fn combat_options(state: &SceneState) -> rules5e::CombatOptions {
 }
 
 /// The player's input for the current combatant.
-enum PlayerAction {
+pub(super) enum PlayerAction {
     Move(rules5e::GridPos),
     Act(TurnDecision),
     Dash,
@@ -934,7 +951,7 @@ enum PlayerAction {
     EndTurn,
 }
 
-fn parse_player_action(state: &SceneState, action: &str) -> Option<PlayerAction> {
+pub(super) fn parse_player_action(state: &SceneState, action: &str) -> Option<PlayerAction> {
     let options = combat_options(state);
     let on_board = state.map.is_some();
     let action = action.trim();
@@ -981,11 +998,15 @@ fn parse_player_action(state: &SceneState, action: &str) -> Option<PlayerAction>
 }
 
 /// Carries out the player's input; returns the events and whether the turn is over.
-fn apply_player_action(state: &mut SceneState, action: PlayerAction) -> (Vec<CombatEvent>, bool) {
+pub(super) fn apply_player_action<R: Rng + ?Sized>(
+    state: &mut SceneState,
+    action: PlayerAction,
+    rng: &mut R,
+) -> (Vec<CombatEvent>, bool) {
     let index = state.combat.current_turn_index;
     let events = match action {
-        PlayerAction::Move(target) => move_current(state, target),
-        PlayerAction::Act(decision) => act(state, decision),
+        PlayerAction::Move(target) => move_current(state, target, rng),
+        PlayerAction::Act(decision) => act(state, decision, rng),
         PlayerAction::Dash => {
             let actor = &state.combat.combatants[index];
             state.combat.turn.movement_left_ft += rules5e::speed_ft(actor);
@@ -1014,13 +1035,17 @@ fn apply_player_action(state: &mut SceneState, action: PlayerAction) -> (Vec<Com
 }
 
 /// A whole engine turn on the board: move to the planned square, then act.
-fn play_board_plan(state: &mut SceneState, plan: rules5e::BoardPlan) -> Vec<CombatEvent> {
+fn play_board_plan<R: Rng + ?Sized>(
+    state: &mut SceneState,
+    plan: rules5e::BoardPlan,
+    rng: &mut R,
+) -> Vec<CombatEvent> {
     let mut events = Vec::new();
     if let Some(target) = plan.move_to {
-        events.extend(move_current(state, target));
+        events.extend(move_current(state, target, rng));
     }
     if rules5e::is_up(&state.combat.combatants[state.combat.current_turn_index]) {
-        events.extend(act(state, plan.action));
+        events.extend(act(state, plan.action, rng));
     }
     events
 }
@@ -1212,10 +1237,12 @@ async fn companion_choice(
 
 /// The turn of a monster or a companion, decided by the engine (monsters) or the language
 /// model among legal options (companions), on the board including movement.
-async fn engine_turn(
+/// `rng` must be `Send` (it is held across the language model call).
+pub(super) async fn engine_turn<R: Rng + Send + ?Sized>(
     state: &mut SceneState,
     inference: &InferenceClient,
     llm: &StageLlm,
+    rng: &mut R,
 ) -> Vec<CombatEvent> {
     // A badly hurt fighter catches their Second Wind first (bonus action).
     let mut events = Vec::new();
@@ -1226,16 +1253,17 @@ async fn engine_turn(
             .iter()
             .any(|o| o.id == rules5e::SECOND_WIND)
     {
-        events.extend(use_feature(state, rules5e::SECOND_WIND));
+        events.extend(use_feature(state, rules5e::SECOND_WIND, rng));
     }
-    events.extend(engine_turn_plan(state, inference, llm).await);
+    events.extend(engine_turn_plan(state, inference, llm, rng).await);
     events
 }
 
-async fn engine_turn_plan(
+async fn engine_turn_plan<R: Rng + Send + ?Sized>(
     state: &mut SceneState,
     inference: &InferenceClient,
     llm: &StageLlm,
+    rng: &mut R,
 ) -> Vec<CombatEvent> {
     let actor = state.combat.combatants[state.combat.current_turn_index].clone();
     let budget = state.combat.turn.movement_left_ft;
@@ -1263,7 +1291,7 @@ async fn engine_turn_plan(
                     rules5e::hero_fallback_decision(&actor, &state.combat.combatants)
                 })
         };
-        return act(state, decision);
+        return act(state, decision, rng);
     };
     let plan = if rules5e::is_enemy(&actor) {
         rules5e::monster_board_plan(&map, &actor, &state.combat.combatants, budget)
@@ -1338,7 +1366,7 @@ async fn engine_turn_plan(
                 })
         }
     };
-    play_board_plan(state, plan)
+    play_board_plan(state, plan, rng)
 }
 
 /// Plain facts of the events for the narrator (English; it narrates in the reply language).
@@ -1595,7 +1623,7 @@ pub async fn execute_combat_turn(
         let action = parse_player_action(&state, action)
             .ok_or_else(|| crate::err!("backend.stage.invalidAction"))?;
         engine.push_snapshot(&state.definition.id, state.clone());
-        let (done, turn_over) = apply_player_action(&mut state, action);
+        let (done, turn_over) = apply_player_action(&mut state, action, &mut rand::rng());
         events.extend(done);
         if rules5e::combat_outcome(&state.combat.combatants).is_none() {
             if !turn_over {
@@ -1606,7 +1634,7 @@ pub async fn execute_combat_turn(
                 save_scene_state(&state)?;
                 return Ok(state);
             }
-            events.extend(next_turn(&mut state));
+            events.extend(next_turn(&mut state, &mut rand::rng()));
         }
     } else if player_controls(&state, current) {
         // Nothing to continue: it is the player's turn.
@@ -1628,6 +1656,8 @@ pub(super) async fn finish_round(
     on_stream: StageStream<'_>,
 ) -> Result<SceneState, String> {
     let llm = StageLlm::from_settings();
+    // Held across the language model calls, so it has to be `Send` (unlike `rand::rng()`).
+    let mut rng = rand::rngs::StdRng::from_rng(&mut rand::rng());
     let mut turns = 0;
     while rules5e::combat_outcome(&state.combat.combatants).is_none() && turns < MAX_TURNS_PER_CALL
     {
@@ -1635,12 +1665,12 @@ pub(super) async fn finish_round(
         if player_controls(&state, &actor) {
             break;
         }
-        events.extend(engine_turn(&mut state, inference, &llm).await);
+        events.extend(engine_turn(&mut state, inference, &llm, &mut rng).await);
         turns += 1;
         if rules5e::combat_outcome(&state.combat.combatants).is_some() {
             break;
         }
-        let next = next_turn(&mut state);
+        let next = next_turn(&mut state, &mut rng);
         if next.is_empty() {
             break;
         }
@@ -1656,7 +1686,11 @@ pub(super) async fn finish_round(
     state.combat.events.drain(..overflow);
     narrate(&mut state, &events, inference, &llm, on_stream).await;
     if outcome == Some(CombatOutcome::Victory) {
-        super::explore5e::won_fight(&mut state);
+        super::explore5e::won_fight(
+            &mut state,
+            &super::explore5e::reply_code(),
+            Utc::now().timestamp_micros(),
+        );
     }
     if let Some(outcome) = outcome {
         end_encounter(&mut state, Some(outcome));
@@ -1778,7 +1812,7 @@ mod tests {
             id.ends_with(&format!(":{}", state.combat.combatants[player].id)),
             "{id}"
         );
-        let events = act(&mut state, TurnDecision::Cast(id));
+        let events = act(&mut state, TurnDecision::Cast(id), &mut rand::rng());
         assert!(
             events
                 .iter()
@@ -1816,7 +1850,7 @@ mod tests {
         state.combat.combatants[player].hp -= 3;
         let action = parse_player_action(&state, &format!("cast:healing_word:1:{player_id}"))
             .expect("valid cast");
-        let (_, over) = apply_player_action(&mut state, action);
+        let (_, over) = apply_player_action(&mut state, action, &mut rand::rng());
         assert!(!over && !state.combat.turn.action_used && state.combat.turn.bonus_action_used);
         let slots = state.combat.combatants[player]
             .stats5e
@@ -1831,7 +1865,7 @@ mod tests {
         assert!(parse_player_action(&state, &format!("cast:healing_word:1:{player_id}")).is_none());
         let action =
             parse_player_action(&state, &format!("cast:sacred_flame:0:{wolf}")).expect("cantrip");
-        let (events, over) = apply_player_action(&mut state, action);
+        let (events, over) = apply_player_action(&mut state, action, &mut rand::rng());
         assert!(over);
         assert!(events.iter().any(|e| matches!(e, CombatEvent::Save { .. })));
         assert!(parse_player_action(&state, "cast:fireball:3:x").is_none());
@@ -1850,7 +1884,7 @@ mod tests {
         );
         state.combat.combatants[player].hp = 3;
         let action = parse_player_action(&state, "feature:second_wind").expect("second wind");
-        let (events, over) = apply_player_action(&mut state, action);
+        let (events, over) = apply_player_action(&mut state, action, &mut rand::rng());
         assert!(!over && state.combat.turn.bonus_action_used && !state.combat.turn.action_used);
         assert!(state.combat.combatants[player].hp > 3);
         assert!(events.iter().any(
@@ -1864,9 +1898,9 @@ mod tests {
         assert!(parse_player_action(&state, "feature:action_surge").is_none());
         state.combat.turn.action_used = true;
         let action = parse_player_action(&state, "feature:action_surge").expect("action surge");
-        apply_player_action(&mut state, action);
+        apply_player_action(&mut state, action, &mut rand::rng());
         assert!(!state.combat.turn.action_used);
-        rest_party(&mut state, false);
+        rest_party(&mut state, false, &mut rand::rng());
         let stats = state.combat.combatants[player].stats5e.as_ref().unwrap();
         assert_eq!(rules5e::uses_left(stats, rules5e::SECOND_WIND), 1);
     }
@@ -1894,7 +1928,7 @@ mod tests {
         );
         rules5e::level_up(&mut state.combat.combatants[player], 2);
         let action = parse_player_action(&state, "feature:turn_undead").expect("turn undead");
-        let (events, _) = apply_player_action(&mut state, action);
+        let (events, _) = apply_player_action(&mut state, action, &mut rand::rng());
         assert_eq!(
             events
                 .iter()
@@ -1935,7 +1969,7 @@ mod tests {
                 .unwrap()
                 .slots_used[0] = 2;
         }
-        rest_party(&mut state, false);
+        rest_party(&mut state, false, &mut rand::rng());
         let c = &state.combat.combatants[lyra];
         let stats = c.stats5e.as_ref().unwrap();
         // A level-1 hero has one hit die: spent, and some hit points back; slots stay used.
@@ -1947,7 +1981,7 @@ mod tests {
             rules5e::UNCONSCIOUS,
             0,
         );
-        let lines = rest_party(&mut state, true);
+        let lines = rest_party(&mut state, true, &mut rand::rng());
         assert_eq!(lines.len(), 3);
         for c in state
             .combat
@@ -2183,7 +2217,7 @@ mod board_tests {
             .expect("a neighbour square");
         let action = parse_player_action(&state, &format!("move:{}:{}", step.x, step.y))
             .expect("valid move");
-        let (_, over) = apply_player_action(&mut state, action);
+        let (_, over) = apply_player_action(&mut state, action, &mut rand::rng());
         assert!(!over);
         assert_eq!(state.combat.turn.movement_left_ft, 25);
         assert_eq!(
@@ -2197,14 +2231,14 @@ mod board_tests {
         // Dash doubles the movement but uses the action; then the turn ends on request.
         let (_, over) = {
             let action = parse_player_action(&state, "dash").unwrap();
-            apply_player_action(&mut state, action)
+            apply_player_action(&mut state, action, &mut rand::rng())
         };
         assert!(!over && state.combat.turn.action_used);
         assert_eq!(state.combat.turn.movement_left_ft, 55);
         assert!(combat_options(&state).actions.is_empty());
         let (_, over) = {
             let action = parse_player_action(&state, "end_turn").unwrap();
-            apply_player_action(&mut state, action)
+            apply_player_action(&mut state, action, &mut rand::rng())
         };
         assert!(over);
     }
