@@ -12,7 +12,7 @@
 > In-memory test chats can request a character reply from a configured OpenAI-compatible or Anthropic endpoint. Replies appear after completion. Imported conversations stay read-only.
 > Settings can create a demo profile with fictional conversations; imported conversations remain read-only.
 > A separate connection test checks an existing AI endpoint with a short fixed request.
-> The native Hub browses the public worlds, characters, scenarios and lorebooks catalogs. Character cards and lorebooks can be imported into the current session.
+> The native Hub browses the public worlds, characters, scenarios and lorebooks catalogs. World details include the cover and linked content. Character cards and lorebooks can be imported into the current session.
 
 **English** · [Deutsch](README.de.md) · [Русский](README.ru.md)
 

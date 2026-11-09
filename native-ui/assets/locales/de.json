@@ -1,0 +1,8 @@
+{
+  "hub.native.intro": "Kuratierte Welten, Charaktere, Szenarien und Lorebooks für OtakuSoul.",
+  "hub.native.results": "{{visible}} von {{total}} Einträgen",
+  "hub.native.revision": "Revision {{revision}}",
+  "hub.native.alreadyLoaded": "Das Lorebook ist in der aktuellen Sitzung bereits vorhanden.",
+  "hub.native.imported": "In der Sitzung",
+  "hub.native.stagePreview": "Szenario-Vorschau"
+}

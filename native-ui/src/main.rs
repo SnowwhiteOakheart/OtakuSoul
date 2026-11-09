@@ -9,6 +9,7 @@ mod connection;
 mod expressions;
 mod file_export;
 mod hub_catalog;
+mod hub_cover;
 mod icons;
 mod library;
 mod lore_catalog;
@@ -17,6 +18,7 @@ mod message_content;
 mod model;
 mod profile;
 mod prompt_preview;
+mod ui_text;
 mod views;
 
 use iced::keyboard::{Key, key::Named};
@@ -164,9 +166,11 @@ enum Message {
     ResetLibraryFilters,
     HubKind(hub_catalog::Kind),
     HubSearch(String),
-    HubReload,
+    HubReload(hub_catalog::Kind),
     HubLoaded(hub_catalog::Kind, Result<Vec<hub_catalog::Entry>, String>),
-    HubToggleWorld(String),
+    HubOpenWorld(String),
+    HubCloseWorld,
+    HubCoverLoaded(u64, Option<image::Handle>),
     HubImport(hub_catalog::Kind, String),
     HubImported(Result<HubContent, String>),
     ImportLorebook,
@@ -311,12 +315,18 @@ impl HubContent {
                     .map_err(|_| "Die Hub-Datei enthält kein gültiges Lorebook-JSON.")?;
                 profile::check_public_hub_content(&raw)?;
                 let file = entry.download_filename().unwrap_or(&entry.id);
-                lore_catalog::Book::from_json(raw, format!("Hub/{file}"), &entry.title)
+                lore_catalog::Book::from_json(raw, format!("Hub/{file}"), entry.original_title())
                     .map(Self::Lorebook)
             }
             _ => Err("Dieser Inhalt kann noch nicht übernommen werden.".into()),
         }
     }
+}
+
+struct HubWorld {
+    entry: hub_catalog::Entry,
+    cover: Option<image::Handle>,
+    generation: u64,
 }
 
 struct Hub {
@@ -325,7 +335,8 @@ struct Hub {
     catalog: HashMap<hub_catalog::Kind, Vec<hub_catalog::Entry>>,
     loading: HashSet<hub_catalog::Kind>,
     errors: HashMap<hub_catalog::Kind, String>,
-    expanded_world: Option<String>,
+    world: Option<HubWorld>,
+    world_generation: u64,
     importing: Option<(hub_catalog::Kind, String)>,
     imported: HashSet<(hub_catalog::Kind, String)>,
     notice: String,
@@ -339,7 +350,8 @@ impl Default for Hub {
             catalog: HashMap::new(),
             loading: HashSet::new(),
             errors: HashMap::new(),
-            expanded_world: None,
+            world: None,
+            world_generation: 0,
             importing: None,
             imported: HashSet::new(),
             notice: String::new(),
@@ -855,10 +867,59 @@ impl App {
         })
     }
 
+    fn open_hub_world(&mut self, id: &str) -> Task<Message> {
+        use hub_catalog::Kind;
+        if self.page != Page::Hub || self.hub.kind != Kind::Worlds || self.hub.world.is_some() {
+            return Task::none();
+        }
+        let Some(entry) = self
+            .hub
+            .catalog
+            .get(&Kind::Worlds)
+            .and_then(|worlds| worlds.iter().find(|world| world.id == id))
+            .cloned()
+        else {
+            return Task::none();
+        };
+        self.hub.world_generation += 1;
+        let generation = self.hub.world_generation;
+        let mut tasks = Vec::new();
+        for kind in Kind::WORLD_CONTENTS {
+            if !self.hub.catalog.contains_key(&kind)
+                && entry.members.iter().any(|member| member.kind == kind)
+            {
+                tasks.push(self.load_hub(kind));
+            }
+        }
+        if let Some(address) = entry.cover.clone() {
+            tasks.push(Task::perform(
+                background(move || hub_cover::load(address)),
+                move |result| Message::HubCoverLoaded(generation, result.ok()),
+            ));
+        }
+        self.hub.world = Some(HubWorld {
+            entry,
+            cover: None,
+            generation,
+        });
+        Task::batch(tasks)
+    }
+
     fn import_hub(&mut self, kind: hub_catalog::Kind, id: String) -> Task<Message> {
         let key = (kind, id);
+        let visible = self
+            .hub
+            .world
+            .as_ref()
+            .map_or(self.hub.kind == kind, |world| {
+                world
+                    .entry
+                    .members
+                    .iter()
+                    .any(|member| member.kind == kind && member.id == key.1)
+            });
         if self.page != Page::Hub
-            || self.hub.kind != kind
+            || !visible
             || self.profile_busy
             || self.hub.loading.contains(&kind)
             || self.hub.importing.is_some()
@@ -879,7 +940,7 @@ impl App {
         else {
             return Task::none();
         };
-        self.hub.notice = format!("„{}“ wird geladen …", entry.title);
+        self.hub.notice = ui_text::text("hub.importing").into();
         self.hub.importing = Some(key);
         Task::perform(
             background(move || HubContent::download(kind, &entry)),
@@ -1869,13 +1930,13 @@ impl App {
             }
             Message::HubKind(kind) => {
                 self.hub.kind = kind;
-                self.hub.expanded_world = None;
+                self.hub.world = None;
                 if !self.hub.catalog.contains_key(&kind) {
                     return self.load_hub(kind);
                 }
             }
             Message::HubSearch(query) => self.hub.query = query,
-            Message::HubReload => return self.load_hub(self.hub.kind),
+            Message::HubReload(kind) => return self.load_hub(kind),
             Message::HubLoaded(kind, result) => {
                 self.hub.loading.remove(&kind);
                 match result {
@@ -1887,9 +1948,14 @@ impl App {
                     }
                 }
             }
-            Message::HubToggleWorld(id) => {
-                self.hub.expanded_world =
-                    (self.hub.expanded_world.as_deref() != Some(&id)).then_some(id);
+            Message::HubOpenWorld(id) => return self.open_hub_world(&id),
+            Message::HubCloseWorld => self.hub.world = None,
+            Message::HubCoverLoaded(generation, cover) => {
+                if let Some(world) = &mut self.hub.world
+                    && world.generation == generation
+                {
+                    world.cover = cover;
+                }
             }
             Message::HubImport(kind, id) => return self.import_hub(kind, id),
             Message::HubImported(result) => {
@@ -1901,19 +1967,25 @@ impl App {
                         let name = character.name.clone();
                         self.add_imported_character(character);
                         self.hub.imported.insert(key);
-                        format!("„{name}“ ist in der Charakterbibliothek verfügbar.")
+                        ui_text::format("hub.importedChar", &[("name", &name)])
                     }
                     Ok(HubContent::Lorebook(book)) => {
                         self.hub.imported.insert(key);
                         if self.existing_lorebook(&book).is_some() {
-                            format!("„{}“ ist bereits im Lorebook-Katalog vorhanden.", book.name)
+                            ui_text::text("hub.native.alreadyLoaded").into()
                         } else {
-                            let name = book.name.clone();
+                            let notice = ui_text::format(
+                                "hub.importedLorebook",
+                                &[
+                                    ("name", &book.name),
+                                    ("count", &book.entries.len().to_string()),
+                                ],
+                            );
                             self.add_lorebook(book);
-                            format!("„{name}“ ist unter Lorebooks verfügbar.")
+                            notice
                         }
                     }
-                    Err(error) => format!("Import fehlgeschlagen. {error}"),
+                    Err(error) => ui_text::format("hub.importFailed", &[("error", &error)]),
                 };
             }
             Message::NewCharacter => self.open_character(None, false),
@@ -1999,6 +2071,7 @@ impl App {
             }
             Message::SaveCharacter => self.save_character(),
             Message::Navigate(page) => {
+                self.hub.world = None;
                 if page != Page::Chat {
                     self.cancel_chat();
                 }
@@ -2301,9 +2374,14 @@ mod tests {
     #[test]
     #[ignore = "benötigt Zugriff auf den öffentlichen OtakuSoul-Katalog"]
     fn public_hub_registries_and_imports_work_live() {
-        for kind in hub_catalog::Kind::ALL {
+        use hub_catalog::Kind;
+        let mut app = App {
+            page: Page::Hub,
+            ..App::default()
+        };
+        for kind in Kind::ALL {
             let entries = hub_catalog::load(kind).unwrap();
-            assert!(!entries.is_empty(), "{kind}");
+            assert!(!entries.is_empty(), "{kind:?}");
             if let Some(entry) = entries.iter().find(|entry| entry.can_import()) {
                 match HubContent::download(kind, entry).unwrap() {
                     HubContent::Character(character) => {
@@ -2318,8 +2396,36 @@ mod tests {
                     hub_catalog::Kind::Worlds | hub_catalog::Kind::Scenes
                 ));
             }
-            println!("{kind}: {} Katalogeinträge", entries.len());
+            println!("{kind:?}: {} Katalogeinträge", entries.len());
+            app.hub.catalog.insert(kind, entries);
         }
+        let world = app.hub.catalog[&Kind::Worlds]
+            .iter()
+            .find(|world| world.cover.is_some() && !world.members.is_empty())
+            .unwrap();
+        let id = world.id.clone();
+        let cover = hub_cover::load(world.cover.clone().unwrap()).unwrap();
+        let _ = app.update(Message::HubOpenWorld(id.clone()));
+        let selected = app.hub.world.as_ref().unwrap();
+        assert_eq!(selected.entry.id, id);
+        let generation = selected.generation;
+        let member = selected
+            .entry
+            .members
+            .iter()
+            .find(|member| {
+                app.hub.catalog[&member.kind]
+                    .iter()
+                    .any(|entry| entry.id == member.id && entry.can_import())
+            })
+            .unwrap()
+            .clone();
+        let _ = app.update(Message::HubCoverLoaded(generation - 1, Some(cover.clone())));
+        assert!(app.hub.world.as_ref().unwrap().cover.is_none());
+        let _ = app.update(Message::HubCoverLoaded(generation, Some(cover)));
+        assert!(app.hub.world.as_ref().unwrap().cover.is_some());
+        let _ = app.update(Message::HubImport(member.kind, member.id.clone()));
+        assert_eq!(app.hub.importing, Some((member.kind, member.id)));
     }
 
     #[test]

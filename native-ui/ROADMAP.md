@@ -20,6 +20,8 @@ Aktuelle Nutzerentscheidung (08.11.2026): **Vollständige, funktionierende GUI v
 Übersetzungen integrieren, sobald die wesentlichen Oberflächen und Abläufe stehen; bis dahin Deutsch.
 Die native Oberfläche soll der bestehenden Tauri-Oberfläche möglichst nahekommen, kein neues visuelles
 Konzept. Vergleichsquelle ist der aktuelle React-/CSS-Code; vorhandene Screenshots dienen als Ergänzung.
+Produktionsreife (Nutzerwunsch 09.11.2026): vorhandene Bausteine und UI-Schlüssel wiederverwenden.
+UI-Sprache und Inhaltssprache getrennt behandeln und veränderliche Anzeigetexte von stabilen IDs trennen.
 
 ## Verbindlicher Umfang
 
@@ -664,22 +666,35 @@ wurden nach dem Durchlauf textlich korrigiert.
 - [x] Hub-Seite mit Kartenraster, Suchfeld und Reitern für Welten, Charaktere, Szenarien und Lorebooks.
 - [x] Charakterkarten mit Porträt und Lorebooks im Arbeitsspeicher übernehmen. Bearbeiten und
   explizit exportieren über die vorhandenen Bibliotheken.
-- [ ] Titelbilder und Figurenporträts im Hub, Welt-Detailansicht mit Mitgliedern als verknüpfte Karten.
+- [x] Welt-Detailansicht mit Titelbild und Mitgliedern als verknüpfte Katalogeinträge.
+- [ ] Vorschaubilder im Raster für Welten und Figuren.
 - [ ] Dauerhafte Installation im isolierten Profil, Versionsabgleich und Konfliktbehandlung.
 - [ ] Szenarien an die native Stage anbinden. Avatare und Chub AI separat integrieren.
 
 `src/hub_catalog.rs` lädt den angewählten Reiter im Hintergrund von der festen öffentlichen
 OtakuSoul-Quelle. „Neu laden“ fragt den Reiter erneut ab. Ein Fehler beim Aktualisieren erhält den
-bisher geladenen Katalog. Über „Inhalte“ lassen sich die Referenzen einer Welt aufklappen.
-Die Listen verwenden die vorhandenen deutschen Inhaltsfelder, soweit vorhanden.
+bisher geladenen Katalog. „Details ansehen“ öffnet eine Welt mit Titelbild und drei Abschnitten.
+Figuren und Lorebooks lassen sich direkt aus der Welt importieren. Szenarien zeigen Titel und
+Beschreibung. Titelbilder lädt die App beim Öffnen einer Welt. Bei fehlendem oder unlesbarem Bild
+zeigt sie ein Symbol. Der Bildabruf verwendet dieselbe öffentliche Quelle und feste Größenlimits.
+
+Katalogtexte behalten alle vorhandenen Übersetzungen. Die Projektion verwendet die Inhaltssprache,
+bei fehlender nichtdeutscher Fassung Englisch und dann den Originaltext. Stabile Welt- und
+Szenario-IDs sowie unveränderte Figuren- und Lorebook-Namen bleiben Import- und Referenzschlüssel.
+Die Hub-Oberfläche liest gemeinsame Schlüssel aus `presets/locales/ui/`. Spezifische
+Prototyp-Texte liegen in `native-ui/assets/locales/de.json`. Die Vorschau verwendet Deutsch für
+Oberfläche und Inhalte. App-weite Sprachauswahl und die restlichen Ansichten folgen später.
+
 Karten- und Lorebook-Downloads sind auf die jeweiligen Gateway-Ordner und Dateitypen begrenzt.
 Markierte 18+-Einträge und markierte Downloads bleiben ausgefiltert. Ein gleich referenziertes
 Lorebook bleibt beim Import erhalten. Die importierten Inhalte nutzen die bestehenden Editoren und
 die explizite Exportfunktion. Für das Starten eines Szenarios ist die native Stage Voraussetzung.
 
-Prüfstand 09.11.2026: 128 native Tests sowie ein separater Live-Test mit allen vier öffentlichen
-Registries und je einem echten Charakterkarten- und Lorebook-Download bestanden. Die
-Windows-EXE wurde neu gebaut. Die Bedienprobe des Hub-Fensters steht aus.
+Prüfstand 09.11.2026: Der Nutzer hat Charakter- und Lorebook-Import im Hub-Fenster bestätigt.
+Für die neue Weltansicht bestanden 131 native Tests und der separate Live-Test mit allen vier
+öffentlichen Registries, je einem Charakterkarten- und Lorebook-Download und einem Titelbild.
+Der Test prüft Weltmitglieder und die Übernahme aus der Weltansicht auf Ereignisebene. Die
+Windows-EXE wurde neu gebaut. Die Sichtprüfung der neuen Weltansicht steht aus.
 
 - [ ] Einstellungen/Onboarding, weitere Charakter-/Lorebook-Editoren, Gedächtnis und Im-/Export.
 - [ ] Stage und 5e einschließlich Battlemap; Fachlogik wiederverwenden.
@@ -692,7 +707,8 @@ Windows-EXE wurde neu gebaut. Die Bedienprobe des Hub-Fensters steht aus.
 
 ## Abschluss – Übersetzungen (ausdrücklich zuletzt)
 
-- [ ] Nach Abschluss der Oberfläche vorhandene `presets/locales/ui/` anbinden und deutsche Literaltexte ablösen.
+- [ ] Nach Abschluss der Oberfläche die Anbindung an `presets/locales/ui/` vom Hub auf die
+  übrigen Ansichten erweitern und die Sprachwahl im Profil integrieren.
 - [ ] Mehrstufige Sprachauflösung/Fallbacks übernehmen; Layout mit längeren Texten und japanischer Eingabe prüfen.
 - [ ] Übersetzungsprüfung und abschließende Plattform-/Bedienabnahme durchführen.
 

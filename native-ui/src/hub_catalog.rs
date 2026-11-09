@@ -1,11 +1,13 @@
 //! Öffentlicher Hub-Katalog und begrenzte Downloads für den nativen Prototyp.
 
 use serde_json::Value;
-use std::{fmt, time::Duration};
+use std::time::Duration;
 use url::Url;
 
 const HOST: &str = "raw.githubusercontent.com";
 const REPOSITORY_PATH: &str = "/SnowwhiteOakheart/otakusoul-data/main/";
+pub(crate) const PUBLIC_BASE: &str =
+    "https://raw.githubusercontent.com/SnowwhiteOakheart/otakusoul-data/main/";
 const REGISTRY_LIMIT: usize = 2 * 1024 * 1024;
 const CHARACTER_LIMIT: usize = 32 * 1024 * 1024;
 const LOREBOOK_LIMIT: usize = 4 * 1024 * 1024;
@@ -25,6 +27,7 @@ impl Kind {
         Self::Scenes,
         Self::Lorebooks,
     ];
+    pub const WORLD_CONTENTS: [Self; 3] = [Self::Lorebooks, Self::Scenes, Self::Characters];
 
     fn registry(self) -> (&'static str, &'static str) {
         match self {
@@ -36,25 +39,23 @@ impl Kind {
     }
 }
 
-impl fmt::Display for Kind {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.write_str(match self {
-            Self::Worlds => "Welten",
-            Self::Characters => "Charaktere",
-            Self::Scenes => "Szenarien",
-            Self::Lorebooks => "Lorebooks",
-        })
-    }
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Member {
+    pub kind: Kind,
+    pub id: String,
 }
 
 #[derive(Debug, Clone)]
 pub struct Entry {
     pub id: String,
-    pub title: String,
+    kind: Kind,
+    title: String,
     pub author: String,
-    pub description: String,
+    description: String,
     pub revision: u32,
-    pub members: Vec<String>,
+    pub members: Vec<Member>,
+    pub cover: Option<Url>,
+    translations: Value,
     download: Option<Download>,
 }
 
@@ -65,6 +66,45 @@ struct Download {
 }
 
 impl Entry {
+    fn localized<'a>(&'a self, field: &str, base: &'a str, language: &str) -> &'a str {
+        let lookup = |locale| self.translations.get(locale)?.get(field).and_then(nonempty);
+        lookup(language)
+            .or_else(|| (language != "de").then(|| lookup("en")).flatten())
+            .unwrap_or(base)
+    }
+
+    pub fn title(&self, language: &str) -> &str {
+        match self.kind {
+            Kind::Characters => &self.title,
+            Kind::Lorebooks => self.localized("name", &self.title, language),
+            Kind::Scenes | Kind::Worlds => self.localized("title", &self.title, language),
+        }
+    }
+
+    pub fn description(&self, language: &str) -> &str {
+        self.localized("description", &self.description, language)
+    }
+
+    /// Der Import behält die Registry-Bezeichnung als Fallback für Bindungen.
+    pub fn original_title(&self) -> &str {
+        &self.title
+    }
+
+    pub fn matches(&self, query: &str, language: &str) -> bool {
+        query.is_empty()
+            || [
+                self.title(language),
+                self.description(language),
+                &self.title,
+                &self.description,
+                &self.author,
+                &self.id,
+            ]
+            .into_iter()
+            .chain(self.members.iter().map(|member| member.id.as_str()))
+            .any(|field| field.to_lowercase().contains(query))
+    }
+
     pub fn can_import(&self) -> bool {
         self.download.is_some()
     }
@@ -76,7 +116,7 @@ impl Entry {
 
 pub fn load(kind: Kind) -> Result<Vec<Entry>, String> {
     let (file, key) = kind.registry();
-    let url = Url::parse(&format!("https://{HOST}{REPOSITORY_PATH}{file}"))
+    let url = Url::parse(&format!("{PUBLIC_BASE}{file}"))
         .expect("Die feste Hub-Registry-Adresse muss gültig sein");
     let bytes = fetch(url, REGISTRY_LIMIT)?;
     let registry: Value = serde_json::from_slice(&bytes)
@@ -110,20 +150,11 @@ fn parse_entry(kind: Kind, entry: &Value) -> Option<Entry> {
         Kind::Worlds | Kind::Scenes => text("id")?,
         Kind::Characters | Kind::Lorebooks => text("name")?,
     };
-    let translated = |key: &str| {
-        entry
-            .get("translations")?
-            .get("de")?
-            .get(key)
-            .and_then(nonempty)
-    };
     let title = match kind {
-        Kind::Worlds | Kind::Scenes => translated("title").or_else(|| text("title")).unwrap_or(id),
+        Kind::Worlds | Kind::Scenes => text("title").unwrap_or(id),
         Kind::Characters | Kind::Lorebooks => id,
     };
-    let description = translated("description")
-        .or_else(|| text("description"))
-        .unwrap_or_default();
+    let description = text("description").unwrap_or_default();
     let revision = entry
         .get("revision")
         .and_then(Value::as_u64)
@@ -131,12 +162,20 @@ fn parse_entry(kind: Kind, entry: &Value) -> Option<Entry> {
         .unwrap_or(1)
         .max(1);
     let members = if kind == Kind::Worlds {
-        ["characters", "lorebooks", "scenes"]
+        Kind::WORLD_CONTENTS
             .into_iter()
-            .filter_map(|key| entry.get(key).and_then(Value::as_array))
-            .flatten()
-            .filter_map(nonempty)
-            .map(str::to_owned)
+            .flat_map(|kind| {
+                entry
+                    .get(kind.registry().1)
+                    .and_then(Value::as_array)
+                    .into_iter()
+                    .flatten()
+                    .filter_map(nonempty)
+                    .map(move |id| Member {
+                        kind,
+                        id: id.into(),
+                    })
+            })
             .collect()
     } else {
         Vec::new()
@@ -147,11 +186,16 @@ fn parse_entry(kind: Kind, entry: &Value) -> Option<Entry> {
     };
     Some(Entry {
         id: id.into(),
+        kind,
         title: title.into(),
         author: text("author").unwrap_or_default().into(),
         description: description.into(),
         revision,
         members,
+        cover: (kind == Kind::Worlds)
+            .then(|| text("cover_url").and_then(crate::hub_cover::address))
+            .flatten(),
+        translations: entry.get("translations").cloned().unwrap_or_default(),
         download,
     })
 }
@@ -204,7 +248,7 @@ fn validate_download(kind: Kind, address: &str) -> Option<Download> {
     Some(Download { url, limit })
 }
 
-fn fetch(url: Url, limit: usize) -> Result<Vec<u8>, String> {
+pub(crate) fn fetch(url: Url, limit: usize) -> Result<Vec<u8>, String> {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -276,16 +320,36 @@ mod tests {
     fn collections_preserve_members_and_display_translations_without_changing_keys() {
         let registry = json!({"collections": [{
             "id": "collection", "title": "World", "description": "Base",
-            "translations": {"de": {"title": "Welt", "description": "Beschreibung"}},
+            "translations": {
+                "de": {"title": "Welt", "description": "Beschreibung"},
+                "en": {"description": "English description"},
+                "ja": {"title": "世界"}
+            },
             "characters": ["Figur"], "lorebooks": ["Buch"], "scenes": ["scene"],
             "revision": 4
         }]});
         let list = parse_registry(Kind::Worlds, "collections", &registry).unwrap();
         assert_eq!(list[0].id, "collection");
-        assert_eq!(list[0].title, "Welt");
-        assert_eq!(list[0].description, "Beschreibung");
+        assert_eq!(list[0].title("de"), "Welt");
+        assert_eq!(list[0].description("de"), "Beschreibung");
+        assert_eq!(list[0].title("en"), "World");
+        assert_eq!(list[0].title("ja"), "世界");
+        assert_eq!(list[0].description("ja"), "English description");
+        assert!(list[0].matches("welt", "de"));
+        assert!(list[0].matches("world", "de"));
         assert_eq!(list[0].revision, 4);
-        assert_eq!(list[0].members, ["Figur", "Buch", "scene"]);
+        assert_eq!(
+            list[0]
+                .members
+                .iter()
+                .map(|member| (member.kind, member.id.as_str()))
+                .collect::<Vec<_>>(),
+            [
+                (Kind::Lorebooks, "Buch"),
+                (Kind::Scenes, "scene"),
+                (Kind::Characters, "Figur")
+            ]
+        );
         assert!(!list[0].can_import());
     }
 

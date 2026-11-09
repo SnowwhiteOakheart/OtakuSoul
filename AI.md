@@ -23,6 +23,9 @@ Desktopübernahme vorher abstimmen.
 Nutzerentscheidung 08.11.2026: Zuerst vollständige, funktionierende GUI-Elemente; Übersetzungen danach
 integrieren, sobald der Oberflächenstand dafür geeignet ist. Layout und Gestaltung der nativen
 GUI möglichst identisch zum vorhandenen Tauri-Frontend halten; aktuelle React-/CSS-Quellen als Referenz.
+Nutzerentscheidung 09.11.2026: Den Prototyp auf Produktionsreife hin ausbauen. Vorhandene Layouts,
+Stile und UI-Sprachschlüssel wiederverwenden. UI-Sprache und Inhaltssprache getrennt halten.
+Übersetzte Namen und Titel dienen der Anzeige. Persistenz, Verknüpfung und Import verwenden stabile IDs.
 Gemeinsamer Antwortdecoder: `crates/otakusoul-stream` (Tauri-Inferenz, native Verbindungsdiagnose und Modellchat).
 „An Modell senden“ im lokalen Testchat nutzt den manuell eingestellten Endpunkt und den vorbereiteten
 Charakterkontext. Strg+Enter fügt weiterhin lokal hinzu. Der Verbindungstest sendet einen festen Testprompt.
@@ -55,6 +58,9 @@ Nativer Hub: `native-ui/src/hub_catalog.rs` lädt die öffentlichen Welten-, Cha
 und Lorebook-Listen beim Aufruf des jeweiligen Reiters. Karten und Bücher werden über die bestehenden
 Leser in den Arbeitsspeicher übernommen. Feste HTTPS-Quelle und Größenlimits; markierte 18+-Inhalte
 werden ausgefiltert. Szenarien dienen der Vorschau. Profilinstallation und Aktualisierungen sind offen.
+Weltansichten verknüpfen die Originalreferenzen mit den passenden Katalogeinträgen und laden ein
+Titelbild für die ausgewählte Welt. Der Hub liest die mitgelieferten Tauri-Sprachpakete über
+`native-ui/src/ui_text.rs`. Zusätzliche Prototyp-Texte stehen in `native-ui/assets/locales/de.json`.
 
 ### Allgemeine Arbeitsregeln
 

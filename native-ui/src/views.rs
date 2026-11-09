@@ -2,6 +2,7 @@
 use super::{App, EditorTab, GreetingChoice, LoreEntryChoice, Message, Page, appearance};
 use crate::hub_catalog::{Entry as HubEntry, Kind as HubKind};
 use crate::icons::{Icon, icon};
+use crate::ui_text::{self, CONTENT_LANGUAGE};
 use iced::keyboard::{Key, key::Named};
 use iced::widget::{
     Space, button, column, container, image, row, scrollable, stack, text, text_editor, text_input,
@@ -1104,6 +1105,9 @@ impl App {
     }
 
     fn hub_view(&self) -> Element<'_, Message> {
+        if let Some(world) = &self.hub.world {
+            return self.hub_world_view(world);
+        }
         iced::widget::responsive(move |size| self.hub_catalog_view(size.width)).into()
     }
 
@@ -1115,7 +1119,7 @@ impl App {
             .into_iter()
             .fold(row![].spacing(8), |tabs, tab| {
                 tabs.push(
-                    button(text(tab.to_string()).size(13))
+                    button(text(hub_kind_label(tab)).size(13))
                         .padding([8, 12])
                         .style(if tab == kind {
                             appearance::primary_button
@@ -1129,23 +1133,27 @@ impl App {
             column![
                 row![
                     icon(Icon::Hub, 24),
-                    text("Hub").size(24).width(Fill),
-                    button("Neu laden")
+                    text(ui_text::text("hub.title")).size(24).width(Fill),
+                    button(ui_text::text("hub.reload"))
                         .style(appearance::subtle_button)
-                        .on_press_maybe((!loading).then_some(Message::HubReload))
+                        .on_press_maybe((!loading).then_some(Message::HubReload(kind)))
                 ]
                 .spacing(10)
                 .align_y(Alignment::Center),
-                muted(
-                    "Kuratierte Welten, Charaktere, Szenarien und Lorebooks für OtakuSoul.",
-                    13,
-                    &self.theme()
-                ),
+                muted(ui_text::text("hub.native.intro"), 13, &self.theme()),
                 tabs,
-                text_input("Katalog durchsuchen …", &hub.query)
-                    .on_input(Message::HubSearch)
-                    .padding(10)
-                    .style(appearance::input)
+                text_input(
+                    ui_text::text(match kind {
+                        HubKind::Worlds => "hub.searchWorlds",
+                        HubKind::Characters => "hub.searchGateway",
+                        HubKind::Scenes => "hub.searchScenes",
+                        HubKind::Lorebooks => "hub.searchLorebooks",
+                    }),
+                    &hub.query
+                )
+                .on_input(Message::HubSearch)
+                .padding(10)
+                .style(appearance::input)
             ]
             .spacing(12),
         )
@@ -1154,10 +1162,10 @@ impl App {
         .style(appearance::header);
         let mut list = column![].spacing(12);
         if loading {
-            list = list.push(text("Katalog wird geladen …").size(14));
+            list = list.push(text(ui_text::text("common.loading")).size(14));
         }
         if let Some(error) = hub.errors.get(&kind) {
-            list = list.push(text(error).size(14));
+            list = list.push(text(ui_text::format("hub.loadError", &[("error", error)])).size(14));
         }
         if !hub.notice.is_empty() {
             list = list.push(text(&hub.notice).size(14));
@@ -1166,24 +1174,21 @@ impl App {
             let query = hub.query.trim().to_lowercase();
             let visible: Vec<_> = entries
                 .iter()
-                .filter(|entry| {
-                    [&entry.title, &entry.author, &entry.description, &entry.id]
-                        .into_iter()
-                        .chain(&entry.members)
-                        .any(|field| field.to_lowercase().contains(&query))
-                })
+                .filter(|entry| entry.matches(&query, CONTENT_LANGUAGE))
                 .collect();
             list = list.push(muted(
-                format!("{} von {} Einträgen", visible.len(), entries.len()),
+                ui_text::format(
+                    "hub.native.results",
+                    &[
+                        ("visible", &visible.len().to_string()),
+                        ("total", &entries.len().to_string()),
+                    ],
+                ),
                 12,
                 &self.theme(),
             ));
             if visible.is_empty() {
-                list = list.push(text(if entries.is_empty() {
-                    "Dieser Katalog enthält keine Einträge."
-                } else {
-                    "Keine passenden Einträge gefunden."
-                }));
+                list = list.push(text(ui_text::text("hub.noWorlds")));
             }
             let content_width = (width - 40.0).max(1.0);
             let cols = crate::library::columns(content_width).min(3);
@@ -1208,56 +1213,28 @@ impl App {
         entry: &'a HubEntry,
         width: f32,
     ) -> Element<'a, Message> {
-        let symbol = match kind {
-            HubKind::Worlds => Icon::Hub,
-            HubKind::Characters => Icon::Characters,
-            HubKind::Scenes => Icon::Stage,
-            HubKind::Lorebooks => Icon::Lorebooks,
-        };
-        let details = self.hub.expanded_world.as_deref() == Some(&entry.id);
         let mut item = column![
-            row![icon(symbol, 20), text(&entry.title).size(17)]
-                .spacing(8)
-                .align_y(Alignment::Center),
-            muted(
-                format!("{} · Revision {}", entry.author, entry.revision),
-                12,
-                &self.theme()
-            )
+            row![
+                icon(hub_kind_icon(kind), 20),
+                text(entry.title(CONTENT_LANGUAGE)).size(17)
+            ]
+            .spacing(8)
+            .align_y(Alignment::Center),
+            muted(hub_byline(entry), 12, &self.theme())
         ]
         .spacing(10)
         .width(Fill);
-        if !entry.description.is_empty() {
-            item = item.push(text(&entry.description).size(13));
-        }
-        if details {
-            item = item.push(text(entry.members.join(" · ")).size(13));
+        let description = entry.description(CONTENT_LANGUAGE);
+        if !description.is_empty() {
+            item = item.push(text(description).size(13));
         }
         if entry.can_import() {
-            let key = (kind, entry.id.clone());
-            let label = if self.hub.imported.contains(&key) {
-                "Übernommen"
-            } else if self.hub.importing.as_ref() == Some(&key) {
-                "Wird geladen …"
-            } else {
-                "Übernehmen"
-            };
-            item = item.push(
-                button(label)
-                    .style(appearance::primary_button)
-                    .on_press_maybe(
-                        (self.hub.importing.is_none()
-                            && !self.profile_busy
-                            && !self.hub.loading.contains(&kind)
-                            && !self.hub.imported.contains(&key))
-                        .then_some(Message::HubImport(kind, key.1)),
-                    ),
-            );
-        } else if !entry.members.is_empty() {
+            item = item.push(self.hub_import_button(kind, entry));
+        } else if kind == HubKind::Worlds {
             item = item.push(control(
                 Icon::Eye,
-                if details { "Einklappen" } else { "Inhalte" },
-                Message::HubToggleWorld(entry.id.clone()),
+                ui_text::text("hub.details"),
+                Message::HubOpenWorld(entry.id.clone()),
             ));
         }
         container(item)
@@ -1265,6 +1242,138 @@ impl App {
             .width(width)
             .style(appearance::card)
             .into()
+    }
+
+    fn hub_import_button<'a>(&self, kind: HubKind, entry: &HubEntry) -> Element<'a, Message> {
+        let key = (kind, entry.id.clone());
+        let imported = self.hub.imported.contains(&key);
+        let label = if imported {
+            "hub.native.imported"
+        } else if self.hub.importing.as_ref() == Some(&key) {
+            "hub.importing"
+        } else {
+            "common.import"
+        };
+        button(ui_text::text(label))
+            .style(appearance::primary_button)
+            .on_press_maybe(
+                (self.hub.importing.is_none()
+                    && !self.profile_busy
+                    && !self.hub.loading.contains(&kind)
+                    && !imported)
+                    .then_some(Message::HubImport(kind, key.1)),
+            )
+            .into()
+    }
+
+    fn hub_world_view<'a>(&'a self, world: &'a super::HubWorld) -> Element<'a, Message> {
+        let cover: Element<'_, Message> = if let Some(handle) = &world.cover {
+            image(handle.clone())
+                .width(Fill)
+                .height(176)
+                .content_fit(iced::ContentFit::Cover)
+                .into()
+        } else {
+            container(icon(Icon::Hub, 54))
+                .center_x(Fill)
+                .center_y(176)
+                .style(appearance::panel)
+                .into()
+        };
+        let mut content = column![
+            control(
+                Icon::Back,
+                ui_text::text("common.back"),
+                Message::HubCloseWorld
+            ),
+            container(cover)
+                .width(Fill)
+                .clip(true)
+                .style(appearance::card),
+            muted(ui_text::text("hub.collection"), 12, &self.theme()),
+            text(world.entry.title(CONTENT_LANGUAGE)).size(26),
+            muted(hub_byline(&world.entry), 12, &self.theme()),
+            text(world.entry.description(CONTENT_LANGUAGE)).size(14),
+        ]
+        .spacing(12);
+        if !self.hub.notice.is_empty() {
+            content = content.push(text(&self.hub.notice).size(14));
+        }
+        for kind in HubKind::WORLD_CONTENTS {
+            let members: Vec<_> = world
+                .entry
+                .members
+                .iter()
+                .filter(|member| member.kind == kind)
+                .collect();
+            if members.is_empty() {
+                continue;
+            }
+            content = content.push(
+                row![
+                    icon(hub_kind_icon(kind), 18),
+                    text(hub_kind_label(kind)).size(17)
+                ]
+                .spacing(8)
+                .align_y(Alignment::Center),
+            );
+            if self.hub.loading.contains(&kind) {
+                content = content.push(text(ui_text::text("common.loading")).size(13));
+            }
+            if let Some(error) = self.hub.errors.get(&kind) {
+                content = content.push(
+                    row![
+                        text(ui_text::format("hub.loadError", &[("error", error)]))
+                            .size(13)
+                            .width(Fill),
+                        control(
+                            Icon::Back,
+                            ui_text::text("common.retry"),
+                            Message::HubReload(kind)
+                        ),
+                    ]
+                    .spacing(8)
+                    .align_y(Alignment::Center),
+                );
+            }
+            let Some(entries) = self.hub.catalog.get(&kind) else {
+                continue;
+            };
+            let mut available = false;
+            for member in members {
+                let Some(entry) = entries.iter().find(|entry| entry.id == member.id) else {
+                    continue;
+                };
+                available = true;
+                let mut metadata = column![text(entry.title(CONTENT_LANGUAGE)).size(15)]
+                    .width(Fill)
+                    .spacing(4);
+                let description = entry.description(CONTENT_LANGUAGE);
+                if !description.is_empty() {
+                    metadata = metadata.push(muted(description, 12, &self.theme()));
+                }
+                let mut item = row![metadata].spacing(12).align_y(Alignment::Center);
+                if entry.can_import() {
+                    item = item.push(self.hub_import_button(kind, entry));
+                } else {
+                    item = item.push(muted(
+                        ui_text::text("hub.native.stagePreview"),
+                        11,
+                        &self.theme(),
+                    ));
+                }
+                content = content.push(
+                    container(item)
+                        .padding(12)
+                        .width(Fill)
+                        .style(appearance::card),
+                );
+            }
+            if !available {
+                content = content.push(muted(ui_text::text("hub.noWorlds"), 12, &self.theme()));
+            }
+        }
+        scroll(content.padding(20)).width(Fill).height(Fill).into()
     }
 
     fn lorebooks_view(&self) -> Element<'_, Message> {
@@ -2210,6 +2319,36 @@ fn shorten(value: &str, limit: usize) -> String {
         format!("{shortened}…")
     } else {
         shortened
+    }
+}
+
+fn hub_kind_label(kind: HubKind) -> &'static str {
+    ui_text::text(match kind {
+        HubKind::Worlds => "hub.tabWorlds",
+        HubKind::Characters => "hub.collectionCharacters",
+        HubKind::Scenes => "hub.tabScenes",
+        HubKind::Lorebooks => "hub.tabLorebooks",
+    })
+}
+
+fn hub_kind_icon(kind: HubKind) -> Icon {
+    match kind {
+        HubKind::Worlds => Icon::Hub,
+        HubKind::Characters => Icon::Characters,
+        HubKind::Scenes => Icon::Stage,
+        HubKind::Lorebooks => Icon::Lorebooks,
+    }
+}
+
+fn hub_byline(entry: &HubEntry) -> String {
+    let revision = ui_text::format(
+        "hub.native.revision",
+        &[("revision", &entry.revision.to_string())],
+    );
+    if entry.author.is_empty() {
+        revision
+    } else {
+        format!("{} · {revision}", entry.author)
     }
 }
 
