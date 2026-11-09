@@ -49,7 +49,7 @@ Backend `src-tauri/src/`: `lib.rs` (Plugins, Command-Registrierung), `state.rs` 
 | Lokale Server | `runtimes.rs` (Download/Prüfung llama.cpp, PrismML, sd.cpp, CrispASR; vorheriger Build für Rollback), `llama_manager.rs` (llama-server), `local_image.rs` (sd-server + VRAM-Planer, LoRAs in `image_loras.rs`), `tts_local.rs` (crispasr --server), `model_files.rs` (HF-Downloads), `segmented_download.rs` (parallele Range-Abschnitte), `gguf.rs`, `hardware.rs` (GPU-Probe) |
 | Daten | `memory/` (SQLite: Kognitives Gedächtnis, `chats.rs`, Snapshots), `settings.rs` (`settings.json`), `paths.rs`, `secrets.rs` (Schlüsselbund), `characters.rs` (V2-Karten PNG/JSON, Personas), `lorebook.rs`, `profile_backup.rs`, `device_sync.rs` (Sync über Ordner/WebDAV) |
 | Dateianhänge | `attachments.rs`; PDF-Extraktion über die dokumentierte Kompatibilitätskopie `vendor/pdf-extract` mit lopdf 0.47 ohne Font-Einbettung/ttf-parser. Bei passendem Upstream-Release wieder auf die Registry wechseln. |
-| Features | `memory_pipeline.rs` (Router/Archivist/Diary), `stage/` (Game-Master; `stage/rules5e/` = 5e-Regel-Engine, SRD-Daten in `presets/srd5/`), `companion.rs` + `companion_tools.rs` + `mcp_client.rs`, `voice.rs`/`kokoro.rs` (TTS/STT), `image_generator.rs`, `models_hub.rs`, `hub.rs`, `web_server.rs`, `discord.rs`, `updater.rs`, `logger.rs` |
+| Features | `memory_pipeline.rs` (Router/Archivist/Diary), `stage/` (Game-Master; 5e-Regel-Engine im Crate `crates/otakusoul-rules5e`, als `stage::rules5e` re-exportiert, SRD-Daten in `presets/srd5/`), `companion.rs` + `companion_tools.rs` + `mcp_client.rs`, `voice.rs`/`kokoro.rs` (TTS/STT), `image_generator.rs`, `models_hub.rs`, `hub.rs`, `web_server.rs`, `discord.rs`, `updater.rs`, `logger.rs` |
 
 Frontend `src/`: `services/api.ts` (ein Wrapper je Command), `store/slices/*.ts` (Zustand, Zugriff per
 `useStoreFields('a','b')`), `store/helpers.ts` (`resolvePromptWithLore`, `llmTarget`), `components/<bereich>/`,
@@ -586,7 +586,7 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
 
 ### 5. D&D 5e-Regelsystem (Kampf, Spielbrett, Magie, Erkundung)
 
-- 5e-Regeln (`stage/rules5e/`, Plan lokal in `roadmap_abgeschlossen.md`, Abschnitt 8): reine Funktionen mit injiziertem Zufall (`impl Rng`, Tests mit
+- 5e-Regeln (Crate `crates/otakusoul-rules5e`, bis 2026-11 `stage/rules5e/`; OtakuSoul-Android bindet es über UniFFI an einem festen Commit ein – Feldnamen und JSON-Formen nicht ohne Rücksprache ändern, `cargo test -p otakusoul-rules5e`; Plan lokal in `roadmap_abgeschlossen.md`, Abschnitt 8): reine Funktionen mit injiziertem Zufall (`impl Rng`, Tests mit
   `StdRng::seed_from_u64`); die Engine entscheidet alle Zahlen, das LLM erzählt nur aus `CombatEvent`s. Gespeichert werden
   nur Grundwerte (`Stats5e` an `Combatant`), Modifikatoren/Übungsbonus werden berechnet. Monster/Klassen kommen aus
   `presets/srd5/*.json` (per `include_str!`, Namen de/en/ru); SRD-Namensnennung (CC-BY-4.0) steht in den READMEs.
