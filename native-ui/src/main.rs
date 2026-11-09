@@ -181,6 +181,7 @@ enum Message {
     StageManage,
     StageLobbySearch(String),
     StageLobbySource(StageSource),
+    StageLobbyFolder(StageFolder),
     StageEdit(Option<usize>),
     StageEditField(stage_draft::Field),
     StageSet(stage_draft::Field, String),
@@ -547,6 +548,7 @@ struct Stage {
     lobby: bool,
     lobby_query: String,
     lobby_source: StageSource,
+    lobby_folder: StageFolder,
     own: HashSet<usize>,
     draft: Option<stage_draft::Draft>,
     editing: bool,
@@ -574,6 +576,22 @@ enum StageSource {
     Hub,
 }
 
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+enum StageFolder {
+    #[default]
+    All,
+    Unfiled,
+    Named(String),
+}
+
+impl StageFolder {
+    fn for_scene(scene: &stage_preview::Scene) -> Self {
+        scene
+            .folder()
+            .map_or(Self::Unfiled, |name| Self::Named(name.to_lowercase()))
+    }
+}
+
 fn download_hub_scene(entry: &hub_catalog::Entry) -> Result<stage_preview::Scene, String> {
     let bytes = hub_catalog::download(entry)?;
     let raw = serde_json::from_slice(&bytes)
@@ -594,6 +612,7 @@ impl Default for Stage {
             lobby: false,
             lobby_query: String::new(),
             lobby_source: StageSource::All,
+            lobby_folder: StageFolder::All,
             own: HashSet::new(),
             draft: None,
             editing: false,
@@ -2347,7 +2366,16 @@ impl App {
                 self.stage.editing = false;
             }
             Message::StageLobbySearch(query) => self.stage.lobby_query = query,
-            Message::StageLobbySource(source) => self.stage.lobby_source = source,
+            Message::StageLobbySource(source) => {
+                self.stage.lobby_source = source;
+                if source != StageSource::Own {
+                    self.stage.lobby_folder = StageFolder::All;
+                }
+            }
+            Message::StageLobbyFolder(folder) => {
+                self.stage.lobby_source = StageSource::Own;
+                self.stage.lobby_folder = folder;
+            }
             Message::StageEdit(index) => self.open_scene_editor(index),
             Message::StageEditField(field) => {
                 if !self.stage.file_busy
@@ -3103,6 +3131,7 @@ mod tests {
         let _ = app.update(Message::StageManage);
         let _ = app.update(Message::StageEdit(None));
         let _ = app.update(Message::StageSet(Field::Title, "Kampagne".into()));
+        let _ = app.update(Message::StageSet(Field::Folder, "Nord".into()));
         let _ = app.update(Message::StageBack);
         assert!(app.stage.lobby);
         assert!(!app.stage.editing);
@@ -3129,8 +3158,13 @@ mod tests {
         assert!(app.stage.own.contains(&index));
         assert!(app.stage.lobby_source == StageSource::Own);
         assert_eq!(app.stage.scenes[index].title("de"), "Kampagne");
+        let _ = app.update(Message::StageLobbyFolder(StageFolder::Named("nord".into())));
+        let _ = app.update(Message::StageEdit(None));
+        assert_eq!(app.stage.draft.as_ref().unwrap().get(Field::Folder), "Nord");
+        let _ = app.update(Message::StageDiscard);
         let _ = app.update(Message::StageEdit(Some(index)));
         let _ = app.update(Message::StageSet(Field::Title, "Kampagne II".into()));
+        let _ = app.update(Message::StageSet(Field::Folder, "Süd".into()));
         let _ = app.update(Message::StageApply);
         let scene = app.stage.draft.as_ref().unwrap().apply(&id).unwrap();
         stage_store::save(&root, &scene, Some(&app.stage.scenes[index].definition())).unwrap();
@@ -3140,6 +3174,7 @@ mod tests {
         ));
         assert_eq!(app.stage.scenes[index].id, id);
         assert_eq!(app.stage.scenes[index].title("de"), "Kampagne II");
+        assert_eq!(app.stage.lobby_folder, StageFolder::Named("süd".into()));
 
         let duplicate =
             stage_preview::parse_file(serde_json::json!({"id": id, "title": "Duplikat"}), "unused")
@@ -3153,6 +3188,7 @@ mod tests {
         assert!(reopened.stage.own.contains(&index));
         assert_eq!(reopened.stage.scenes[index].id, id);
         assert_eq!(reopened.stage.scenes[index].title("de"), "Kampagne II");
+        assert_eq!(reopened.stage.scenes[index].folder(), Some("Süd"));
     }
 
     #[test]

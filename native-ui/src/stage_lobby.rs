@@ -4,11 +4,12 @@ use crate::stage_draft::{Draft, Field};
 use crate::ui_text::{CONTENT_LANGUAGE, format, text as label};
 use crate::views::{control, muted, scroll, shorten};
 use crate::{
-    App, Message, Page, StageSource, StageWrite, appearance, background, file_export, profile,
-    stage_preview, stage_store,
+    App, Message, Page, StageFolder, StageSource, StageWrite, appearance, background, file_export,
+    profile, stage_preview, stage_store,
 };
 use iced::widget::{button, column, container, pick_list, row, text, text_editor, text_input};
 use iced::{Alignment, Element, Fill, Task};
+use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -43,7 +44,23 @@ impl App {
                 }
                 Draft::from_scene(Some(index), scene)
             } else {
-                Draft::new()
+                let mut draft = Draft::new();
+                if let StageFolder::Named(key) = &self.stage.lobby_folder
+                    && let Some(name) = self
+                        .stage
+                        .scenes
+                        .iter()
+                        .enumerate()
+                        .filter(|(index, _)| self.stage.own.contains(index))
+                        .filter_map(|(_, scene)| scene.folder())
+                        .find(|name| {
+                            &name.to_lowercase() == key
+                                && crate::stage_draft::valid_folder_name(name)
+                        })
+                {
+                    draft.set(Field::Folder, name.into());
+                }
+                draft
             };
             self.stage.editor = text_editor::Content::with_text(draft.get(Field::Description));
             self.stage.edit_field = Field::Description;
@@ -138,6 +155,7 @@ impl App {
                 return;
             }
         };
+        let folder = StageFolder::for_scene(&scene);
         match write {
             StageWrite::Editor(target) => {
                 if let Some(index) = target {
@@ -160,6 +178,9 @@ impl App {
         if self.stage.lobby && !self.stage.editing && self.stage.selected.is_none() {
             self.stage.lobby_source = StageSource::Own;
             self.stage.lobby_query.clear();
+            if self.stage.lobby_folder != StageFolder::All {
+                self.stage.lobby_folder = folder;
+            }
         }
     }
 
@@ -278,6 +299,7 @@ impl App {
                     scene.title(CONTENT_LANGUAGE),
                     scene.description(CONTENT_LANGUAGE),
                     scene.location(CONTENT_LANGUAGE),
+                    scene.folder().unwrap_or_default(),
                     &scene.id,
                 ]
                 .into_iter()
@@ -324,6 +346,9 @@ impl App {
             filters.wrap(),
         ]
         .spacing(12);
+        if !self.stage.own.is_empty() {
+            content = content.push(self.scene_folder_filters());
+        }
         if !available {
             content = content.push(muted(label("common.loading"), 13, &theme));
         } else if !self.stage.notice.is_empty() {
@@ -331,8 +356,11 @@ impl App {
         }
         let mut visible = matching
             .into_iter()
-            .filter(|(_, _, source)| {
-                self.stage.lobby_source == StageSource::All || *source == self.stage.lobby_source
+            .filter(|(_, scene, source)| {
+                (self.stage.lobby_source == StageSource::All || *source == self.stage.lobby_source)
+                    && (self.stage.lobby_folder == StageFolder::All
+                        || (*source == StageSource::Own
+                            && self.stage.lobby_folder == StageFolder::for_scene(scene)))
             })
             .peekable();
         if visible.peek().is_none() {
@@ -345,7 +373,12 @@ impl App {
                 StageSource::Hub => "gallery.native.hubScene",
                 StageSource::All => unreachable!(),
             });
-            let meta = [tag, scene.location(CONTENT_LANGUAGE)]
+            let folder = if source == StageSource::Own {
+                scene.folder().unwrap_or_default()
+            } else {
+                ""
+            };
+            let meta = [tag, folder, scene.location(CONTENT_LANGUAGE)]
                 .into_iter()
                 .filter(|text| !text.is_empty())
                 .collect::<Vec<_>>()
@@ -397,6 +430,54 @@ impl App {
         scroll(content.padding(24)).width(Fill).height(Fill).into()
     }
 
+    fn scene_folder_filters(&self) -> Element<'_, Message> {
+        let mut named = BTreeMap::new();
+        let mut unfiled = 0;
+        for (index, scene) in self.stage.scenes.iter().enumerate() {
+            if !self.stage.own.contains(&index) {
+                continue;
+            }
+            if let Some(name) = scene.folder() {
+                let (_, count) = named.entry(name.to_lowercase()).or_insert((name, 0));
+                *count += 1;
+            } else {
+                unfiled += 1;
+            }
+        }
+        let filter = |name, count, folder| {
+            button(text(format!("{name} ({count})")).size(12))
+                .style(
+                    if self.stage.lobby_source == StageSource::Own
+                        && self.stage.lobby_folder == folder
+                    {
+                        appearance::primary_button
+                    } else {
+                        appearance::subtle_button
+                    },
+                )
+                .on_press(Message::StageLobbyFolder(folder))
+        };
+        let mut filters = row![
+            text(label("lobby.folders")).size(13),
+            filter(
+                label("lobby.folderAll"),
+                self.stage.own.len(),
+                StageFolder::All
+            ),
+            filter(
+                label("gallery.native.unfiled"),
+                unfiled,
+                StageFolder::Unfiled
+            ),
+        ]
+        .spacing(7)
+        .align_y(Alignment::Center);
+        for (key, (name, count)) in named {
+            filters = filters.push(filter(name, count, StageFolder::Named(key)));
+        }
+        filters.wrap().into()
+    }
+
     pub(super) fn scene_editor<'a>(&'a self, draft: &'a Draft) -> Element<'a, Message> {
         let theme = self.theme();
         let input = |field: Field| {
@@ -424,6 +505,8 @@ impl App {
                 column![
                     text(label("sceneEdit.sectionStory")).size(16),
                     input(Field::Title),
+                    input(Field::Folder),
+                    muted(label("gallery.native.folderHint"), 12, &theme),
                     row![input(Field::Location), input(Field::Time)].spacing(12),
                     input(Field::Persona),
                     pick_list(

@@ -15,10 +15,11 @@ pub enum Field {
     Persona,
     Party,
     Lorebooks,
+    Folder,
 }
 
 impl Field {
-    const ALL: [Self; 9] = [
+    const ALL: [Self; 10] = [
         Self::Title,
         Self::Description,
         Self::Location,
@@ -28,6 +29,7 @@ impl Field {
         Self::Persona,
         Self::Party,
         Self::Lorebooks,
+        Self::Folder,
     ];
 
     pub const MULTILINE: [Self; 5] = [
@@ -49,6 +51,7 @@ impl Field {
             Self::Persona => "sceneNew.persona",
             Self::Party => "sceneNew.party",
             Self::Lorebooks => "sceneEdit.lorebooks",
+            Self::Folder => "gallery.native.folder",
         }
     }
 
@@ -63,12 +66,19 @@ impl Field {
             Self::Persona => "persona",
             Self::Party => "party",
             Self::Lorebooks => "lorebook",
+            Self::Folder => "folder",
         }
     }
 
     fn text(self, definition: &Value) -> String {
         let value = &definition[self.key()];
         match self {
+            Self::Folder => value
+                .as_str()
+                .map(str::trim)
+                .filter(|name| !stage_preview::is_builtin_folder(name))
+                .unwrap_or_default()
+                .to_owned(),
             Self::Party | Self::Lorebooks => value
                 .as_array()
                 .into_iter()
@@ -150,6 +160,13 @@ impl Draft {
                 continue;
             }
             let value = match field {
+                Field::Folder => {
+                    let name = text.trim();
+                    if !valid_folder_name(name) {
+                        return Err(crate::ui_text::text("gallery.native.folderInvalid").into());
+                    }
+                    Value::from(name)
+                }
                 Field::Party | Field::Lorebooks => {
                     let mut items = Vec::new();
                     for item in text.lines().map(str::trim).filter(|item| !item.is_empty()) {
@@ -183,6 +200,14 @@ impl Draft {
     }
 }
 
+pub fn valid_folder_name(name: &str) -> bool {
+    !stage_preview::is_builtin_folder(name)
+        && name.chars().count() <= 100
+        && !name.chars().any(char::is_control)
+        && !name.contains(['/', '\\'])
+        && !name.contains("..")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -206,6 +231,32 @@ mod tests {
         assert_eq!(scene.party, ["beta", "alpha"]);
         assert_eq!(scene.lorebooks, ["myth", "legend"]);
         assert_eq!(scene.definition()["solo_mode"], false);
+    }
+
+    #[test]
+    fn stage_folder_edits_preserve_legacy_defaults_and_reject_invalid_names() {
+        let original = json!({
+            "id": "draft", "title": "Der Wald", "folder": "Eigene Szenen"
+        });
+        let scene = stage_preview::parse(original).unwrap();
+        let mut draft = Draft::from_scene(Some(0), &scene);
+        assert_eq!(draft.get(Field::Folder), "");
+        assert_eq!(
+            draft.apply("draft").unwrap().definition()["folder"],
+            "Eigene Szenen"
+        );
+        for invalid in ["ALLE", "../Kampagne", "Nord/Süd", "Nord\\Süd"] {
+            draft.set(Field::Folder, invalid.into());
+            assert!(draft.apply("draft").is_err());
+        }
+        draft.set(Field::Folder, "  Kampagne Nord  ".into());
+        let named = draft.apply("draft").unwrap();
+        assert_eq!(named.folder(), Some("Kampagne Nord"));
+        let mut draft = Draft::from_scene(Some(0), &named);
+        draft.set(Field::Folder, String::new());
+        let unfiled = draft.apply("draft").unwrap();
+        assert_eq!(unfiled.folder(), None);
+        assert_eq!(unfiled.definition()["folder"], "");
     }
 
     #[test]

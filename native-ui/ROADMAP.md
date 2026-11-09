@@ -781,7 +781,9 @@ geladenen Titelbilder der ersten Reihe. Die Aufnahme liegt lokal in
 - [x] Szenen-Lobby mit Suche und Herkunftsfiltern, Vorschau, Basis-Editor und JSON-Import
   und -Export.
 - [x] Dauerhafter Szenenspeicher. Gespeicherte und importierte Szenen werden beim Start geladen.
-- [ ] Ordnerverwaltung, erweiterte Szenenfelder und Story-Wizard.
+- [x] Eigene Szenen im Editor einem Ordner zuordnen, verschieben und in der Lobby danach filtern.
+- [ ] Eigenständige Ordnerverwaltung für leere Ordner und Sammelaktionen, erweiterte Szenenfelder
+  und Story-Wizard.
 - [ ] Spielansicht mit echten Stage-Runden und Spielständen.
 - [ ] 5e-Spielbrett, Kampf und Erkundung über die vorhandene Stage-/Regel-Engine.
 
@@ -798,6 +800,9 @@ unveränderter Regel- und Erweiterungsfelder. Spielverlauf und Medien sind separ
 Parallele Schreibvorgänge werden serialisiert. Ein veralteter Entwurf kann keine neuere
 Fassung überschreiben. Der Katalog entsteht erst beim Speichern oder Import. Offene Entwürfe
 liegen bis zum Speichern im Arbeitsspeicher. Manuelle Bedienproben sind für später gebündelt.
+Ordner folgen dem Tauri-Feld `folder`. Die Lobby gruppiert eigene Szenen unabhängig von der
+Groß- und Kleinschreibung. Ein Ordner erscheint ab seiner ersten gespeicherten Szene. JSON-Import
+und -Export transportieren die Zuordnung zusammen mit der Definition.
 Tauris Lobby und die gemeinsamen Editorfelder wurden per WebDriver im isolierten E2E-Profil
 geprüft. Für die native Variante bestanden 152 Tests einschließlich JSON-Rundlauf und der
 Windows-Build. Der Live-Hub-Test war bei diesem Lauf ausgenommen.

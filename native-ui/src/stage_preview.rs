@@ -97,6 +97,10 @@ impl Scene {
         self.collection
     }
 
+    pub fn folder(&self) -> Option<&str> {
+        nonempty(&self.raw["folder"]).filter(|name| !is_builtin_folder(name))
+    }
+
     pub fn definition(&self) -> Value {
         let mut definition = self.raw.clone();
         definition["id"] = self.id.clone().into();
@@ -118,6 +122,10 @@ impl Scene {
             .or_else(|| self.raw.get(field).and_then(nonempty))
             .unwrap_or_default()
     }
+}
+
+pub fn is_builtin_folder(name: &str) -> bool {
+    name.eq_ignore_ascii_case("Eigene Szenen") || name.eq_ignore_ascii_case("Alle")
 }
 
 pub fn parse(raw: Value) -> Result<Scene, String> {
