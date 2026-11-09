@@ -2,6 +2,7 @@
 use super::{
     App, EditorTab, GreetingChoice, HubEntryState, LoreEntryChoice, Message, Page, appearance,
 };
+use crate::hub_appearance;
 use crate::hub_catalog::{Entry as HubEntry, Kind as HubKind};
 use crate::icons::{Icon, icon};
 use crate::ui_text::{self, CONTENT_LANGUAGE};
@@ -274,6 +275,7 @@ impl App {
                     || (matches!(self.page, Page::LorebookDetails | Page::LorebookEditor)
                         && *page == Page::Lorebooks)
                     || (self.page == Page::Prompt && *page == Page::Chat);
+                let hub_active = active && *page == Page::Hub;
                 let symbol =
                     container(
                         icon(*symbol, 18).style(move |theme, _| iced::widget::svg::Style {
@@ -285,7 +287,9 @@ impl App {
                         }),
                     )
                     .padding(7)
-                    .style(if active {
+                    .style(if hub_active {
+                        hub_appearance::accent_badge
+                    } else if active {
                         appearance::selected_navigation_icon
                     } else {
                         appearance::card
@@ -301,10 +305,14 @@ impl App {
                 let nav_button = button(item)
                     .width(Fill)
                     .padding(if self.collapsed { 4 } else { 6 })
-                    .style(if active {
-                        appearance::selected_navigation
-                    } else {
-                        appearance::navigation
+                    .style(move |theme, status| {
+                        if hub_active {
+                            hub_appearance::filter(theme, status, true)
+                        } else if active {
+                            appearance::selected_navigation(theme, status)
+                        } else {
+                            appearance::navigation(theme, status)
+                        }
                     })
                     .on_press(Message::Navigate(*page));
                 section = section.push(tooltip(
@@ -1103,51 +1111,6 @@ impl App {
         let hub = &self.hub;
         let kind = hub.kind;
         let loading = hub.loading.contains(&kind);
-        let tabs = HubKind::ALL
-            .into_iter()
-            .fold(row![].spacing(8), |tabs, tab| {
-                tabs.push(
-                    button(text(hub_kind_label(tab)).size(13))
-                        .padding([8, 12])
-                        .style(if tab == kind {
-                            appearance::primary_button
-                        } else {
-                            appearance::subtle_button
-                        })
-                        .on_press(Message::HubKind(tab)),
-                )
-            });
-        let header = container(
-            column![
-                row![
-                    icon(Icon::Hub, 24),
-                    text(ui_text::text("hub.title")).size(24).width(Fill),
-                    button(ui_text::text("hub.reload"))
-                        .style(appearance::subtle_button)
-                        .on_press_maybe((!loading).then_some(Message::HubReload(kind)))
-                ]
-                .spacing(10)
-                .align_y(Alignment::Center),
-                muted(ui_text::text("hub.native.intro"), 13, &self.theme()),
-                tabs,
-                text_input(
-                    ui_text::text(match kind {
-                        HubKind::Worlds => "hub.searchWorlds",
-                        HubKind::Characters => "hub.searchGateway",
-                        HubKind::Scenes => "hub.searchScenes",
-                        HubKind::Lorebooks => "hub.searchLorebooks",
-                    }),
-                    &hub.query
-                )
-                .on_input(Message::HubSearch)
-                .padding(10)
-                .style(appearance::input)
-            ]
-            .spacing(12),
-        )
-        .padding(20)
-        .width(Fill)
-        .style(appearance::header);
         let mut list = column![].spacing(12);
         if loading {
             list = list.push(text(ui_text::text("common.loading")).size(14));
@@ -1166,39 +1129,251 @@ impl App {
         }
         if let Some(entries) = hub.catalog.get(&kind) {
             let query = hub.query.trim().to_lowercase();
+            let member_matches: std::collections::HashSet<_> =
+                if kind == HubKind::Worlds && !query.is_empty() {
+                    HubKind::WORLD_CONTENTS
+                        .into_iter()
+                        .flat_map(|kind| {
+                            hub.catalog
+                                .get(&kind)
+                                .into_iter()
+                                .flatten()
+                                .filter(|entry| entry.matches(&query, CONTENT_LANGUAGE))
+                                .map(move |entry| (kind, entry.id.as_str()))
+                        })
+                        .collect()
+                } else {
+                    Default::default()
+                };
             let visible: Vec<_> = entries
                 .iter()
-                .filter(|entry| entry.matches(&query, CONTENT_LANGUAGE))
+                .filter(|entry| {
+                    entry.matches(&query, CONTENT_LANGUAGE)
+                        || entry.members.iter().any(|member| {
+                            member_matches.contains(&(member.kind, member.id.as_str()))
+                        })
+                })
                 .collect();
-            list = list.push(muted(
-                ui_text::format(
-                    "hub.native.results",
-                    &[
-                        ("visible", &visible.len().to_string()),
-                        ("total", &entries.len().to_string()),
-                    ],
-                ),
-                12,
-                &self.theme(),
-            ));
             if visible.is_empty() {
                 list = list.push(text(ui_text::text("hub.noWorlds")));
+            } else if kind == HubKind::Worlds {
+                list = list.push(muted(
+                    ui_text::text("hub.collections").to_uppercase(),
+                    13,
+                    &self.theme(),
+                ));
             }
-            let content_width = (width - 40.0).max(1.0);
-            let cols = crate::library::columns(content_width).min(3);
-            let card_width = ((content_width - 12.0 * (cols - 1) as f32) / cols as f32).max(1.0);
+            if kind != HubKind::Worlds || !query.is_empty() {
+                list = list.push(muted(
+                    ui_text::format(
+                        "hub.native.results",
+                        &[
+                            ("visible", &visible.len().to_string()),
+                            ("total", &entries.len().to_string()),
+                        ],
+                    ),
+                    12,
+                    &self.theme(),
+                ));
+            }
+            let content_width = (width - 48.0).max(1.0);
+            let cols = if content_width >= 1120.0 {
+                3
+            } else if content_width >= 620.0 {
+                2
+            } else {
+                1
+            };
+            let card_width = ((content_width - 16.0 * (cols - 1) as f32) / cols as f32).max(1.0);
             for chunk in visible.chunks(cols) {
-                let mut cards = row![].spacing(12).align_y(Alignment::Start);
+                let mut cards = row![].spacing(16).align_y(Alignment::Start);
                 for entry in chunk {
                     cards = cards.push(self.hub_card(kind, entry, card_width));
                 }
                 list = list.push(cards);
             }
         }
-        column![header, scroll(list.padding(20)).height(Fill).width(Fill)]
-            .height(Fill)
+        column![
+            self.hub_header(width),
+            container(scroll(list.padding(24)).height(Fill).width(Fill))
+                .width(Fill)
+                .height(Fill)
+                .style(hub_appearance::canvas)
+        ]
+        .height(Fill)
+        .width(Fill)
+        .into()
+    }
+
+    fn hub_header(&self, width: f32) -> Element<'_, Message> {
+        let theme = self.theme();
+        let accent = hub_appearance::accent(&theme);
+        let kind = self.hub.kind;
+        let title = row![
+            container(tinted_icon(Icon::Hub, 23, accent))
+                .padding(11)
+                .style(hub_appearance::accent_badge),
+            column![
+                row![
+                    text(ui_text::text("hub.title")).size(19).font(iced::Font {
+                        weight: iced::font::Weight::Bold,
+                        ..crate::ui_font()
+                    }),
+                    container(text(ui_text::text("hub.subtitleBadge")).size(11))
+                        .padding([3, 8])
+                        .style(hub_appearance::accent_badge),
+                ]
+                .spacing(8)
+                .align_y(Alignment::Center)
+                .wrap(),
+                muted(ui_text::text("hub.native.intro"), 12, &theme),
+            ]
+            .spacing(4)
+            .width(Fill),
+        ]
+        .spacing(12)
+        .align_y(Alignment::Center)
+        .width(Fill);
+        let search = text_input(
+            ui_text::text(match kind {
+                HubKind::Worlds => "hub.searchWorlds",
+                HubKind::Characters => "hub.searchGateway",
+                HubKind::Scenes => "hub.searchScenes",
+                HubKind::Lorebooks => "hub.searchLorebooks",
+            }),
+            &self.hub.query,
+        )
+        .on_input(Message::HubSearch)
+        .padding([7, 8])
+        .size(13)
+        .style(|theme, status| {
+            let mut style = appearance::input(theme, status);
+            style.background = Background::Color(Color::TRANSPARENT);
+            style.border = Border::default();
+            style
+        });
+        let search = container(
+            row![
+                tinted_icon(Icon::Search, 17, appearance::muted(&theme)),
+                search
+            ]
+            .align_y(Alignment::Center),
+        )
+        .padding([2, 10])
+        .width(Fill)
+        .style(appearance::card);
+        let refresh_available = self.hub.loading.is_empty();
+        let reload = tooltip(
+            button(tinted_icon(
+                Icon::Refresh,
+                17,
+                if refresh_available {
+                    theme.palette().text
+                } else {
+                    appearance::muted(&theme)
+                },
+            ))
+            .padding(8)
+            .style(appearance::subtle_button)
+            .on_press_maybe(refresh_available.then_some(Message::HubRefresh)),
+            text(ui_text::text("hub.reload")).size(12),
+            tooltip::Position::Bottom,
+        )
+        .style(appearance::card);
+        let tools = row![search, reload].spacing(10).align_y(Alignment::Center);
+        let heading: Element<'_, Message> = if width >= 900.0 {
+            row![title, container(tools).width(360)]
+                .spacing(18)
+                .align_y(Alignment::Center)
+                .into()
+        } else {
+            column![title, tools].spacing(10).into()
+        };
+        let heading = container(heading)
+            .padding([16, 24])
             .width(Fill)
+            .style(hub_appearance::header);
+
+        let mut tab_label = row![
+            tinted_icon(Icon::Library, 15, accent),
+            text(ui_text::text("hub.tabWorlds")).size(13),
+        ]
+        .spacing(8)
+        .align_y(Alignment::Center);
+        if let Some(entries) = self.hub.catalog.get(&HubKind::Worlds) {
+            tab_label = tab_label.push(
+                container(text(entries.len().to_string()).size(11))
+                    .padding([2, 6])
+                    .style(hub_appearance::accent_badge),
+            );
+        }
+        let tab = column![
+            button(tab_label)
+                .width(Fill)
+                .padding([9, 12])
+                .style(hub_appearance::world_tab)
+                .on_press(Message::HubKind(HubKind::Worlds)),
+            container(Space::new())
+                .width(Fill)
+                .height(2)
+                .style(|theme| container::Style {
+                    background: Some(hub_appearance::accent(theme).into()),
+                    ..container::Style::default()
+                }),
+        ]
+        .width(134);
+        let mut filters = row![].spacing(6).align_y(Alignment::Center);
+        for filter in HubKind::ALL {
+            let name = if filter == HubKind::Worlds {
+                ui_text::text("hub.worldsAll")
+            } else {
+                hub_kind_label(filter)
+            };
+            let mut content = row![
+                tinted_icon(hub_kind_icon(filter), 15, hub_kind_color(filter, &theme)),
+                text(name).size(12),
+            ]
+            .spacing(6)
+            .align_y(Alignment::Center);
+            if let Some(entries) = self.hub.catalog.get(&filter) {
+                content = content.push(muted(entries.len().to_string(), 11, &theme));
+            }
+            filters = filters.push(
+                button(content)
+                    .padding([6, 10])
+                    .style(move |theme, status| {
+                        hub_appearance::filter(theme, status, kind == filter)
+                    })
+                    .on_press(Message::HubKind(filter)),
+            );
+        }
+        let toolbar: Element<'_, Message> = if width >= 960.0 {
+            row![tab, container(filters).align_right(Fill)]
+                .spacing(12)
+                .align_y(Alignment::Center)
+                .into()
+        } else {
+            column![
+                tab,
+                scrollable(filters)
+                    .direction(scrollable::Direction::Horizontal(
+                        scrollable::Scrollbar::new().width(5).scroller_width(5),
+                    ))
+                    .height(36)
+                    .width(Fill)
+                    .style(appearance::scrollbar)
+            ]
+            .spacing(5)
             .into()
+        };
+        column![
+            heading,
+            container(toolbar)
+                .padding([0, 24])
+                .width(Fill)
+                .style(hub_appearance::toolbar)
+        ]
+        .into()
     }
 
     fn hub_card<'a>(
@@ -1207,6 +1382,9 @@ impl App {
         entry: &'a HubEntry,
         width: f32,
     ) -> Element<'a, Message> {
+        if kind == HubKind::Worlds {
+            return self.hub_collection_card(entry, width);
+        }
         let mut item = column![
             row![
                 icon(hub_kind_icon(kind), 20),
@@ -1226,19 +1404,51 @@ impl App {
             item = item.push(self.hub_import_button(kind, entry));
         } else if entry.can_preview_scene() {
             item = item.push(self.hub_scene_button(entry));
-        } else if kind == HubKind::Worlds {
-            item = item.push(control(
-                Icon::Eye,
-                ui_text::text("hub.details"),
-                Message::HubOpenWorld(entry.id.clone()),
-            ));
         }
-        let body = container(item).padding(16).width(Fill);
-        if kind != HubKind::Worlds {
-            return body.width(width).style(appearance::card).into();
-        }
-        let height = (width * 9.0 / 16.0).clamp(104.0, 176.0);
-        let banner = self.hub_banner(entry, height);
+        container(item)
+            .padding(16)
+            .width(width)
+            .style(appearance::card)
+            .into()
+    }
+
+    fn hub_collection_card<'a>(&'a self, entry: &'a HubEntry, width: f32) -> Element<'a, Message> {
+        let theme = self.theme();
+        let height = width * 9.0 / 16.0;
+        let collection_label = container(
+            row![
+                tinted_icon(Icon::Library, 13, Color::WHITE),
+                text(ui_text::text("hub.collection")).size(12),
+            ]
+            .spacing(5)
+            .align_y(Alignment::Center),
+        )
+        .padding([4, 7])
+        .style(hub_appearance::cover_label);
+        let title = container(
+            text(entry.title(CONTENT_LANGUAGE))
+                .size(18)
+                .font(iced::Font {
+                    weight: iced::font::Weight::Bold,
+                    ..crate::ui_font()
+                }),
+        )
+        .width(Fill)
+        .padding([6, 8])
+        .style(hub_appearance::cover_label);
+        let banner = stack![
+            self.hub_banner(entry, height),
+            container(Space::new())
+                .width(Fill)
+                .height(Fill)
+                .style(hub_appearance::cover_shade),
+            container(column![collection_label, Space::new().height(Fill), title,])
+                .padding(11)
+                .width(Fill)
+                .height(Fill),
+        ]
+        .width(Fill)
+        .height(height);
         let banner: Element<'_, Message> = if let Some(address) = &entry.cover {
             let generation = self.hub.cover_generation;
             iced::widget::sensor(banner)
@@ -1255,12 +1465,50 @@ impl App {
                 ))
                 .into()
         } else {
-            banner
+            banner.into()
         };
-        container(column![banner, body])
+        let mut counts = row![].spacing(6);
+        for kind in HubKind::WORLD_CONTENTS {
+            let count = entry
+                .members
+                .iter()
+                .filter(|member| member.kind == kind)
+                .count();
+            if count == 0 {
+                continue;
+            }
+            let chip = container(
+                row![
+                    tinted_icon(hub_kind_icon(kind), 14, hub_kind_color(kind, &theme)),
+                    text(count.to_string()).size(12),
+                ]
+                .spacing(5)
+                .align_y(Alignment::Center),
+            )
+            .padding([4, 8])
+            .style(|theme| {
+                let mut style = appearance::card(theme);
+                style.border.radius = 20.0.into();
+                style
+            });
+            counts = counts.push(
+                tooltip(
+                    chip,
+                    text(hub_kind_label(kind)).size(11),
+                    tooltip::Position::Top,
+                )
+                .style(appearance::card),
+            );
+        }
+        let description = shorten(entry.description(CONTENT_LANGUAGE), (width / 3.5) as usize);
+        let body = container(column![counts, muted(description, 13, &theme),].spacing(8))
+            .padding(16)
+            .width(Fill);
+        button(column![banner, body])
+            .padding(0)
             .width(width)
-            .style(appearance::card)
-            .clip(true)
+            .style(hub_appearance::collection)
+            .on_press(Message::HubOpenWorld(entry.id.clone()))
             .into()
     }
 
@@ -1337,6 +1585,7 @@ impl App {
             image(handle.clone())
                 .width(Fill)
                 .height(height)
+                .border_radius(iced::border::top(16.0))
                 .content_fit(iced::ContentFit::Cover)
                 .into()
         } else {
@@ -1450,7 +1699,10 @@ impl App {
                 content = content.push(muted(ui_text::text("hub.noWorlds"), 12, &self.theme()));
             }
         }
-        scroll(content.padding(20)).width(Fill).height(Fill).into()
+        scroll(container(content.padding(20).max_width(820)).center_x(Fill))
+            .width(Fill)
+            .height(Fill)
+            .into()
     }
 
     fn lorebooks_view(&self) -> Element<'_, Message> {
@@ -2430,11 +2682,23 @@ fn hub_kind_label(kind: HubKind) -> &'static str {
 
 fn hub_kind_icon(kind: HubKind) -> Icon {
     match kind {
-        HubKind::Worlds => Icon::Hub,
+        HubKind::Worlds => Icon::Library,
         HubKind::Characters => Icon::Characters,
         HubKind::Scenes => Icon::Stage,
         HubKind::Lorebooks => Icon::Lorebooks,
     }
+}
+
+fn hub_kind_color(kind: HubKind, theme: &Theme) -> Color {
+    match kind {
+        HubKind::Worlds | HubKind::Characters => hub_appearance::accent(theme),
+        HubKind::Scenes => theme.palette().success,
+        HubKind::Lorebooks => theme.palette().warning,
+    }
+}
+
+fn tinted_icon(symbol: Icon, size: u32, color: Color) -> iced::widget::svg::Svg<'static> {
+    icon(symbol, size).style(move |_, _| iced::widget::svg::Style { color: Some(color) })
 }
 
 fn hub_byline(entry: &HubEntry) -> String {

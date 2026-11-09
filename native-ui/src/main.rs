@@ -9,6 +9,7 @@ mod connection;
 mod expressions;
 mod file_export;
 mod home_view;
+mod hub_appearance;
 mod hub_catalog;
 mod hub_cover;
 mod hub_store;
@@ -179,6 +180,7 @@ enum Message {
     HubKind(hub_catalog::Kind),
     HubSearch(String),
     HubReload(hub_catalog::Kind),
+    HubRefresh,
     HubLoaded(hub_catalog::Kind, Result<Vec<hub_catalog::Entry>, String>),
     HubOpenWorld(String),
     HubCloseWorld,
@@ -1090,6 +1092,16 @@ impl App {
         Task::perform(background(move || hub_catalog::load(kind)), move |result| {
             Message::HubLoaded(kind, result)
         })
+    }
+
+    fn load_hub_catalogs(&mut self, refresh: bool) -> Task<Message> {
+        let mut tasks = Vec::new();
+        for kind in hub_catalog::Kind::ALL {
+            if refresh || !self.hub.catalog.contains_key(&kind) {
+                tasks.push(self.load_hub(kind));
+            }
+        }
+        Task::batch(tasks)
     }
 
     fn open_hub_world(&mut self, id: &str) -> Task<Message> {
@@ -2300,6 +2312,11 @@ impl App {
                 }
                 return self.load_hub(kind);
             }
+            Message::HubRefresh => {
+                self.hub.covers.retry_failed();
+                self.hub.reset_cover_requests();
+                return self.load_hub_catalogs(true);
+            }
             Message::HubLoaded(kind, result) => {
                 self.hub.loading.remove(&kind);
                 match result {
@@ -2480,8 +2497,8 @@ impl App {
                     self.stage.opening = false;
                 }
                 self.page = page;
-                if page == Page::Hub && !self.hub.catalog.contains_key(&self.hub.kind) {
-                    return self.load_hub(self.hub.kind);
+                if page == Page::Hub {
+                    return self.load_hub_catalogs(false);
                 }
             }
             Message::SelectCharacter(index) => {
@@ -2902,6 +2919,21 @@ mod tests {
         assert_eq!(reopened.hub.installed.len(), 2);
         assert_eq!(reopened.preview.characters.len(), 5);
         assert_eq!(reopened.lorebooks.len(), 1);
+    }
+
+    #[test]
+    fn opening_and_refreshing_hub_loads_all_counts_without_discarding_the_catalog() {
+        use hub_catalog::Kind;
+        let mut app = App::default();
+        let _ = app.update(Message::Navigate(Page::Hub));
+        assert_eq!(app.hub.loading.len(), Kind::ALL.len());
+        for kind in Kind::ALL {
+            let _ = app.update(Message::HubLoaded(kind, Ok(Vec::new())));
+        }
+        assert!(app.hub.loading.is_empty());
+        let _ = app.update(Message::HubRefresh);
+        assert_eq!(app.hub.loading.len(), Kind::ALL.len());
+        assert_eq!(app.hub.catalog.len(), Kind::ALL.len());
     }
 
     #[test]

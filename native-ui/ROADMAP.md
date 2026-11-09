@@ -678,8 +678,8 @@ wurden nach dem Durchlauf textlich korrigiert.
 - [ ] Szenario-Installation und Spielfortschritt an die Stage-Laufzeit anbinden. Avatare und Chub AI
   separat integrieren.
 
-`src/hub_catalog.rs` lädt den angewählten Reiter im Hintergrund von der festen öffentlichen
-OtakuSoul-Quelle. „Neu laden“ fragt den Reiter erneut ab. Ein Fehler beim Aktualisieren erhält den
+`src/hub_catalog.rs` lädt die Listen im Hintergrund von der festen öffentlichen OtakuSoul-Quelle.
+„Neu laden“ fragt alle vier Listen für die Filterzähler ab. Ein Fehler beim Aktualisieren erhält den
 bisher geladenen Katalog. „Details ansehen“ öffnet eine Welt mit Titelbild und drei Abschnitten.
 Figuren und Lorebooks lassen sich direkt aus der Welt importieren. Szenarien zeigen Titel und
 Beschreibung. Im Raster lösen Iced-Sensoren einen Bildabruf aus, wenn eine Karte sichtbar ist
@@ -746,6 +746,21 @@ Prüfstand 09.11.2026: 142 native Tests und der öffentliche Hub-Live-Test besta
 Live-Test aktualisierte eine temporäre Bibliothek von Testrevision 3 auf Katalogrevision 4.
 Der lokale Test mit unterschiedlichen Lorebook-Fassungen prüft, dass ein offener Entwurf
 erhalten bleibt und erst eine frische App-Instanz die neue Fassung liest.
+
+#### Hub-Oberfläche nach Tauri v0.7.5
+
+Der Windows-Screenshot des Nutzers vom 09.11.2026 dient als visuelle Vorlage. Die native Ansicht
+hat eine eigene Hub-Kopfzeile mit Suche, Kennzeichnung und Aktualisieren-Symbol. Darunter stehen
+Welten-Reiter und Inhaltsfilter mit aktuellen Zählern. Cyan-Akzente, dunkler Katalogbereich und
+Sammlungskarten mit 16:9-Cover, Titel im Bild und farbigen Zählern folgen der Vorlage.
+Das Raster passt sich der Breite an. Ein Klick auf die Karte öffnet die Sammlung. Die Suche
+findet auch Sammlungen, deren Figuren, Szenarien oder Lorebooks zur Suchanfrage passen.
+
+Windows-Bedienprobe am 09.11.2026: Filterwechsel, Raster mit zwei und drei Spalten, Suche nach
+„Zwei Stunden bis zum Andruck“ über das zugehörige Szenario und Öffnen der Sammlung über ihr
+Titelbild. Danach wurden Kontrast des Aktualisieren-Symbols und Breite der Sammlungsvorschau
+angepasst. Chub AI, Avatare und URL-Import werden mit den jeweiligen Funktionen ergänzt.
+148 native Tests, der Hub-Live-Test, Clippy und der Windows-Build bestanden.
 
 ### Startseite und Stage-Galerie
 

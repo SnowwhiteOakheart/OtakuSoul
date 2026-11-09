@@ -55,7 +55,7 @@ angezeigten Nachrichten und Spannung 0. Wahrscheinlichkeitsregeln werden bei ein
 Chatsuche: Strg+F im Chat, Trefferzahl einschließlich lokaler Begrüßung, Leerzustand/Zurücksetzen;
 untersucht nur geladene Nachrichten (kein Nachladen alter Archive).
 Nativer Hub: `native-ui/src/hub_catalog.rs` lädt die öffentlichen Welten-, Charakter-, Szenario-
-und Lorebook-Listen beim Aufruf des jeweiligen Reiters. Explizite Karten- und Lorebook-Importe
+und Lorebook-Listen beim Öffnen für die Live-Zähler der Filterleiste. Explizite Karten- und Lorebook-Importe
 speichern die validierten Originaldownloads atomar in der eigenen nativen Hub-Bibliothek
 (`native-ui/src/hub_store.rs`, Pfad über `otakusoul_paths::native_data_dir`). Beim Start wird nur gelesen.
 Profilkopien bleiben getrennt. Editoränderungen sind Entwürfe bis zum expliziten Export.
@@ -67,6 +67,9 @@ Weltansichten verknüpfen die Originalreferenzen mit den passenden Katalogeintr�
 lädt Titelbilder beim Scrollen in der Nähe des sichtbaren Bereichs. Die Weltansicht nutzt denselben
 begrenzten Bildcache und priorisiert ihr Titelbild. Der Hub liest die mitgelieferten Tauri-Sprachpakete über
 `native-ui/src/ui_text.rs`. Zusätzliche Prototyp-Texte stehen in `native-ui/assets/locales/de.json`.
+Für die Hub-Optik gilt der Nutzerscreenshot der Tauri-Variante v0.7.5 als Referenz. Cyanfarbene
+Filter, zweistufige Kopfzeile und große klickbare Sammlungscovers sind in `hub_appearance.rs` und
+`views.rs` gekapselt. Chub AI, Avatare und URL-Import bleiben eigene Funktionsschritte.
 Native Startseite in `native-ui/src/home_view.rs` nach Tauri `HomeView.tsx`. Story-Galerie, Genre-
 und Sammlungsfilter, Schauplatz, Einstiegsideen und Auftakt in `stage_views.rs` nach `StoryGallery.tsx`.
 `stage_preview.rs` liest die mitgelieferten Szenendefinitionen und öffentliche Gateway-Szenarien.

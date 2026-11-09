@@ -26,6 +26,7 @@
   nächsten App-Start. Hub-Szenarien öffnen die native Stage-Vorschau.
   Weltdetails lösen Mitglieder per Originalschlüssel auf. Raster und Detailansicht teilen
   den begrenzten Titelbild-Cache in `native-ui/src/hub_cover.rs`.
+  `native-ui/src/hub_appearance.rs` bündelt die Hub-Stile nach der Tauri-v0.7.5-Nutzerreferenz.
   `native-ui/src/ui_text.rs` liest für Startseite, Stage und Hub dieselben UI-Sprachdateien wie Tauri.
   `home_view.rs` und `stage_views.rs` folgen den React-Ansichten. `stage_preview.rs` projiziert
   Szenen für die Galerie und die lesende Vorschau.
