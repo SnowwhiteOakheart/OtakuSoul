@@ -91,7 +91,6 @@ pub fn start_encounter_at<R: Rng + ?Sized>(
     stamp: i64,
     rng: &mut R,
 ) -> bool {
-    ensure_party_vitals(state);
     let requests: Vec<rules5e::EnemyRequest> = enemies
         .iter()
         .map(|request| rules5e::EnemyRequest {
@@ -102,9 +101,24 @@ pub fn start_encounter_at<R: Rng + ?Sized>(
             count: request.count,
         })
         .collect();
+    start_requests(state, &requests, language_code, zone, limit, stamp, rng)
+}
+
+/// [`start_encounter_at`] with SRD monster ids: sets up the party (vitals, classes), then
+/// starts the fight in the rules crate and logs what it skipped or trimmed.
+pub(super) fn start_requests<R: Rng + ?Sized>(
+    state: &mut SceneState,
+    requests: &[rules5e::EnemyRequest],
+    language_code: &str,
+    zone: &str,
+    limit: bool,
+    stamp: i64,
+    rng: &mut R,
+) -> bool {
+    ensure_party_vitals(state);
     let report = rules5e::start_encounter_at(
         &mut state.table(),
-        &requests,
+        requests,
         language_code,
         zone,
         limit,
@@ -616,17 +630,13 @@ pub(super) async fn finish_round(
 
     let outcome = rules5e::record_round(&mut state.combat, &mut events);
     narrate(&mut state, &events, inference, &llm, on_stream).await;
-    if outcome == Some(CombatOutcome::Victory) {
-        super::explore5e::won_fight(
-            &mut state,
-            &super::explore5e::reply_code(),
-            Utc::now().timestamp_micros(),
-        );
-    }
-    if let Some(outcome) = outcome {
-        end_encounter(&mut state, Some(outcome));
-    }
-    super::explore5e::refresh_fog(&mut state);
+    // A won prepared encounter counts (goals, loot), the fight ends, the fog lifts.
+    rules5e::close_round(
+        &mut state.table(),
+        outcome,
+        &super::explore5e::reply_code(),
+        Utc::now().timestamp_micros(),
+    );
     state.current_turn_actor = "PLAYER".to_string();
     state.definition.last_played = Some(Utc::now().to_rfc3339());
     engine.set_state(state.clone());

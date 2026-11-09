@@ -1,5 +1,5 @@
 //! The game table of a 5e scene: the parts of a scene the fight flow ([`crate::fight`]) and
-//! the exploring flow read and change, as a borrowed view. The app keeps its
+//! the exploring flow ([`crate::exploration`]) read and change, as a borrowed view. The app keeps its
 //! own scene type and lends these fields out (`SceneState::table()` on the desktop); a
 //! JSON-in/JSON-out wrapper (Android) can hold them in a plain struct.
 
