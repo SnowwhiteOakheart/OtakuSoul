@@ -30,6 +30,7 @@ mod stage_rule_view;
 mod stage_rules;
 mod stage_store;
 mod stage_views;
+mod story_music;
 mod story_wizard;
 mod story_wizard_view;
 mod ui_text;
@@ -188,6 +189,9 @@ enum Message {
     StageOpenWizard,
     StageWizardEdit(story_wizard::Edit),
     StageWizardClose,
+    StageWizardSuggestMusic,
+    StageWizardCancelMusic,
+    StageWizardMusicSuggested(u64, Result<story_music::Suggestion, String>),
     StageWizardFinish {
         advanced: bool,
     },
@@ -586,6 +590,8 @@ struct Stage {
     own: HashSet<usize>,
     draft: Option<stage_draft::Draft>,
     wizard: Option<story_wizard::Wizard>,
+    wizard_music_request: Option<connection::ActiveRequest>,
+    wizard_music_id: u64,
     editing: bool,
     edit_field: stage_draft::Field,
     editor: text_editor::Content,
@@ -658,6 +664,8 @@ impl Default for Stage {
             own: HashSet::new(),
             draft: None,
             wizard: None,
+            wizard_music_request: None,
+            wizard_music_id: 0,
             editing: false,
             edit_field: stage_draft::Field::Description,
             editor: text_editor::Content::new(),
@@ -1840,6 +1848,15 @@ impl App {
     }
     fn update(&mut self, message: Message) -> Task<Message> {
         let task = self.update_message(message);
+        if self.stage.wizard_music_request.is_some()
+            && (self.page != Page::Stage
+                || self.stage.selected.is_some()
+                || !self.stage.wizard.as_ref().is_some_and(|wizard| {
+                    wizard.step == story_wizard::Step::Music && wizard.music.enabled
+                }))
+        {
+            self.stage.wizard_music_request = None;
+        }
         if let Some(preview) = &mut self.stage.ambient_preview
             && (self.page != Page::Stage
                 || !self.stage.editing
@@ -2441,6 +2458,9 @@ impl App {
                 if !self.stage.file_busy
                     && let Some(wizard) = &mut self.stage.wizard
                 {
+                    if matches!(edit, story_wizard::Edit::Music(_)) {
+                        self.stage.wizard_music_request = None;
+                    }
                     wizard.edit(edit);
                     self.stage.edit_error.clear();
                 }
@@ -2450,6 +2470,9 @@ impl App {
                     self.stage.wizard = None;
                 }
             }
+            Message::StageWizardSuggestMusic => return self.suggest_story_music(),
+            Message::StageWizardCancelMusic => self.stage.wizard_music_request = None,
+            Message::StageWizardMusicSuggested(id, result) => self.finish_story_music(id, result),
             Message::StageWizardFinish { advanced } => return self.finish_story_wizard(advanced),
             Message::StageLobbySearch(query) => self.stage.lobby_query = query,
             Message::StageLobbySource(source) => {
@@ -3266,7 +3289,7 @@ mod tests {
         let _ = app.update(Message::StageOpenWizard);
         let _ = app.update(Message::StageWizardFinish { advanced: false });
         assert!(!app.stage.file_busy);
-        for _ in 0..4 {
+        for _ in 0..5 {
             let _ = app.update(Message::StageWizardEdit(story_wizard::Edit::Next));
         }
         let _ = app.update(Message::StageWizardFinish { advanced: false });
@@ -3292,7 +3315,7 @@ mod tests {
         );
 
         let _ = app.update(Message::StageOpenWizard);
-        for _ in 0..4 {
+        for _ in 0..5 {
             let _ = app.update(Message::StageWizardEdit(story_wizard::Edit::Next));
         }
         let _ = app.update(Message::StageWizardFinish { advanced: true });
@@ -3301,11 +3324,40 @@ mod tests {
         let draft = app.stage.draft.as_ref().unwrap();
         assert!(draft.target.is_none());
         assert!(!draft.get(stage_draft::Field::Description).is_empty());
+        let id = draft.seeded_id().unwrap();
+        let definition = draft.apply(id).unwrap().definition();
+        assert_eq!(definition["extensions"]["otakusoul_music"]["set"], id);
         assert_eq!(
             draft.apply("new").unwrap().genre,
             stage_preview::Genre::Fantasy
         );
         assert_eq!(stage_store::list(temp.path()).unwrap().scenes.len(), 1);
+    }
+
+    #[test]
+    fn story_music_ignores_model_responses_after_an_edit_or_step_change() {
+        let mut app = App::default();
+        let _ = app.update(Message::Navigate(Page::Stage));
+        let _ = app.update(Message::StageOpenWizard);
+        for _ in 0..4 {
+            let _ = app.update(Message::StageWizardEdit(story_wizard::Edit::Next));
+        }
+        let _ = app.update(Message::StageWizardSuggestMusic);
+        let old = app.stage.wizard_music_request.as_ref().unwrap().id;
+        let _ = app.update(Message::StageWizardEdit(story_wizard::Edit::Music(
+            story_music::Edit::Style("Meine Fassung".into()),
+        )));
+        assert!(app.stage.wizard_music_request.is_none());
+        let suggestion =
+            story_music::parse_suggestion(r#"{"style":"Model","moods":{"calm":"Soft harp"}}"#);
+        let _ = app.update(Message::StageWizardMusicSuggested(old, suggestion));
+        assert_eq!(
+            app.stage.wizard.as_ref().unwrap().music.style,
+            "Meine Fassung"
+        );
+        let _ = app.update(Message::StageWizardSuggestMusic);
+        let _ = app.update(Message::StageWizardEdit(story_wizard::Edit::Next));
+        assert!(app.stage.wizard_music_request.is_none());
     }
 
     #[test]

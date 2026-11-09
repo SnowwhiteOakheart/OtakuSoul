@@ -56,6 +56,7 @@
   "storyWizard.native.review": "Vorschau",
   "storyWizard.native.save": "Geschichte speichern",
   "storyWizard.native.ideaRequired": "Beschreibe zuerst, wie Deine Geschichte beginnt.",
+  "storyWizard.native.musicPlanHint": "Schreib die Musikbeschreibungen auf Englisch. Der Modellvorschlag verwendet Deinen eingestellten Chat-Endpunkt.",
   "gallery.native.mediaNameInvalid": "Gib einen Dateinamen ohne Verzeichnispfad an.",
   "gallery.native.classesInvalid": "Die importierten Klassenzuordnungen haben ein unbekanntes Format.",
   "home.native.chatHint": "Öffne den aktuellen Chat mit dieser Figur.",

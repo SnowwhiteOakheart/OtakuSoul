@@ -193,6 +193,10 @@ impl Draft {
         &self.values[field as usize]
     }
 
+    pub fn seeded_id(&self) -> Option<&str> {
+        self.original.as_ref()?.get("id")?.as_str()
+    }
+
     pub fn set(&mut self, field: Field, value: String) {
         self.values[field as usize] = value;
     }

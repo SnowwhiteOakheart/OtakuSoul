@@ -1,6 +1,7 @@
 //! Offline-Entwurf aus Tauris lokalisierten Geschichtenvorlagen.
 use crate::{
     stage_preview::{self, Genre, Scene},
+    story_music::{self, Music},
     ui_text::{UI_LANGUAGE, format, lookup_existing, text as label},
 };
 use iced::widget::text_editor;
@@ -24,15 +25,17 @@ pub enum Step {
     Player,
     Companions,
     Premise,
+    Music,
     Review,
 }
 
 impl Step {
-    pub const ALL: [Self; 5] = [
+    pub const ALL: [Self; 6] = [
         Self::Genre,
         Self::Player,
         Self::Companions,
         Self::Premise,
+        Self::Music,
         Self::Review,
     ];
 
@@ -42,6 +45,7 @@ impl Step {
             Self::Player => "storyWizard.step.you",
             Self::Companions => "storyWizard.step.companions",
             Self::Premise => "storyWizard.step.start",
+            Self::Music => "storyWizard.step.music",
             Self::Review => "storyWizard.native.review",
         }
     }
@@ -64,6 +68,7 @@ pub enum Edit {
     Roll,
     Idea(text_editor::Action),
     Location(String),
+    Music(story_music::Edit),
     Next,
     Back,
 }
@@ -77,6 +82,7 @@ pub struct Wizard {
     pub premise: Premise,
     pub idea: text_editor::Content,
     pub location: String,
+    pub music: Music,
 }
 
 impl Wizard {
@@ -94,6 +100,7 @@ impl Wizard {
             premise: Premise::First,
             idea: text_editor::Content::new(),
             location: String::new(),
+            music: Music::for_genre("fantasy", true),
         }
     }
 
@@ -103,6 +110,7 @@ impl Wizard {
                 if self.genre != genre {
                     self.genre = genre;
                     self.premise = Premise::First;
+                    self.music = Music::for_genre(genre_id(genre), self.music.enabled);
                 }
             }
             Edit::Player(value) => self.player = value,
@@ -124,6 +132,7 @@ impl Wizard {
             }
             Edit::Idea(action) => self.idea.perform(action),
             Edit::Location(value) => self.location = value,
+            Edit::Music(edit) => self.music.edit(edit, genre_id(self.genre)),
             Edit::Next if self.step != Step::Premise || self.ready() => {
                 if let Some(next) = Step::ALL.get(self.step as usize + 1) {
                     self.step = *next;
@@ -173,7 +182,7 @@ impl Wizard {
             ));
         }
         let style_key = format!("storyWizard.style.{}", genre_id(self.genre));
-        stage_preview::parse(json!({
+        let mut definition = json!({
             "id": id,
             "title": title,
             "description": hook,
@@ -191,7 +200,11 @@ impl Wizard {
                     "genre": genre_id(self.genre), "minutes": 30, "difficulty": "easy"
                 }
             }
-        }))
+        });
+        if let Some(music) = self.music.section(id) {
+            definition["extensions"]["otakusoul_music"] = music;
+        }
+        stage_preview::parse(definition)
     }
 }
 
@@ -213,7 +226,7 @@ pub fn premise_text(genre: Genre, premise: Premise, field: &str) -> &'static str
     lookup_existing(UI_LANGUAGE, &key).unwrap_or_default()
 }
 
-fn genre_id(genre: Genre) -> &'static str {
+pub fn genre_id(genre: Genre) -> &'static str {
     genre
         .key()
         .strip_prefix("gallery.filter.")
@@ -262,7 +275,7 @@ mod tests {
         wizard.idea = text_editor::Content::with_text("  Wir finden eine Tür. ");
         wizard.edit(Edit::Location("  Alte Bibliothek  ".into()));
         wizard.edit(Edit::Next);
-        assert_eq!(wizard.step, Step::Review);
+        assert_eq!(wizard.step, Step::Music);
         let scene = wizard.scene("story").unwrap();
         assert_eq!(scene.party, ["Ada", "Bela", "Cora", "Dora"]);
         assert_eq!(scene.location(UI_LANGUAGE), "Alte Bibliothek");

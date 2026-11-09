@@ -81,6 +81,8 @@ cargo build -p otakusoul-native
 ```
 
 Debug-Datei: `target/debug/otakusoul-native.exe`. Erster Build lädt GUI-/Grafikabhängigkeiten.
+Der Windows-Build bindet das gemeinsame OtakuSoul-Icon aus `src-tauri/icons/icon.ico` als
+EXE-Ressource ein.
 Release später: `cargo build -p otakusoul-native --release`.
 Bestehende App weiterhin über `npm run tauri dev`. Kein neuer Installer in der ersten Etappe.
 
@@ -799,7 +801,9 @@ geladenen Titelbilder der ersten Reihe. Die Aufnahme liegt lokal in
   Deaktivieren und beim Verlassen des Editors endet die Vorschau.
 - [x] Offline-Story-Wizard für Genre, Spielerfigur, bis zu vier Gefährten und Ausgangslage.
   Die Vorschau führt zum dauerhaften Szenenspeicher oder in den erweiterten Editor.
-- [ ] Musikschritt des Story-Wizards mit Stimmungsprofil und Modellvorschlägen.
+- [x] Musikschritt des Story-Wizards mit Genre-Vorlagen, Stimmungen, bearbeitbaren Captions,
+  optionalem Hintergrundgesang und Modellvorschlägen.
+- [ ] Musiktitel für Szenen in der nativen Stage erzeugen und wiedergeben.
 - [ ] Spielansicht mit echten Stage-Runden und Spielständen.
 - [ ] 5e-Spielbrett, Kampf und Erkundung über die vorhandene Stage-/Regel-Engine.
 
@@ -838,6 +842,11 @@ das konkrete Audiogerät gehört zur späteren Bedienprobe.
 `story_wizard.rs` verwendet die zwei Vorlagen pro Genre aus den Tauri-Sprachpaketen und
 speichert eigene Ideen, Startort, Spielerfigur und Begleiter in einer Szenendefinition.
 `story_wizard_view.rs` führt durch die Schritte und zeigt vor dem Speichern den Auftakt.
+Tauri und Rust lesen dieselben Genre-Vorlagen aus `presets/story_music_defaults.json`.
+`story_music.rs` speichert sie in `extensions.otakusoul_music`. Die Szenen-ID bleibt beim
+Übergang in den erweiterten Editor als Set-Kennung erhalten. Modellvorschläge verwenden
+den eingestellten Chat-Endpunkt und werden bei manuellen Änderungen oder beim Verlassen
+des Schritts abgebrochen.
 Tauris Lobby und die gemeinsamen Editorfelder wurden per WebDriver im isolierten E2E-Profil
 geprüft. Für die native Variante bestanden 152 Tests einschließlich JSON-Rundlauf und der
 Windows-Build. Der Live-Hub-Test war bei diesem Lauf ausgenommen.

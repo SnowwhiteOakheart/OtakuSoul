@@ -131,7 +131,9 @@ impl App {
         };
         let id = draft
             .target
-            .map_or_else(new_scene_id, |index| self.stage.scenes[index].id.clone());
+            .map(|index| self.stage.scenes[index].id.as_str())
+            .or_else(|| draft.seeded_id())
+            .map_or_else(new_scene_id, str::to_owned);
         match draft.apply(&id) {
             Ok(scene) => self.persist_scene(StageWrite::Editor(draft.target), scene),
             Err(error) => {

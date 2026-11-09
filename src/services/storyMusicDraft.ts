@@ -1,3 +1,4 @@
+import genreDefaults from '../../presets/story_music_defaults.json';
 import { MUSIC_MOODS, isMusicMood, type MusicMood } from './stageMusic';
 
 /**
@@ -16,83 +17,7 @@ export interface StoryMusicDraft {
 export type MusicGenre = 'fantasy' | 'adventure' | 'slice_of_life' | 'comedy' | 'romance' | 'mystery' | 'scifi' | 'horror';
 
 /** A ready-made suggestion per genre, used until the chat model suggests a better one. */
-export const GENRE_MUSIC: Record<MusicGenre, Omit<StoryMusicDraft, 'vocals'>> = {
-  fantasy: {
-    style: 'orchestral fantasy, celtic harp, strings, wooden flute, warm and wondrous',
-    moods: {
-      calm: 'gentle harp and flute over soft strings, peaceful village at dawn, slow tempo',
-      tavern: 'lively folk band, fiddle, lute and hand drum, cheerful inn, dancing rhythm',
-      adventure: 'sweeping strings and horns, open road through green hills, heroic, mid tempo',
-      mystery: 'celesta and low strings, ancient ruins at night, hushed, slow',
-      combat: 'driving orchestral percussion, brass stabs, fast strings, urgent battle',
-    },
-  },
-  adventure: {
-    style: 'cinematic adventure score, strings, brass, ethnic percussion, bold and bright',
-    moods: {
-      calm: 'soft guitar and strings by the campfire, warm night, slow tempo',
-      adventure: 'soaring brass theme, galloping strings, wide landscapes, energetic',
-      tension: 'pulsing low strings, ticking percussion, narrow escape, suspense',
-      combat: 'pounding drums, brass fanfares, fast strings, action chase',
-    },
-  },
-  slice_of_life: {
-    style: 'warm acoustic pop instrumental, piano, acoustic guitar, light percussion, cozy',
-    moods: {
-      calm: 'soft piano and acoustic guitar, sunny afternoon in a small town, relaxed',
-      tavern: 'jazzy cafe trio, brushed drums, upright bass, cozy coffee shop',
-      romance: 'tender piano melody with light strings, shy feelings, gentle tempo',
-      sorrow: 'solo piano, rain on the window, quiet and wistful',
-    },
-  },
-  comedy: {
-    style: 'playful orchestral comedy, pizzicato strings, bassoon, xylophone, bouncy',
-    moods: {
-      calm: 'light pizzicato and flute, sunny everyday mischief, easy tempo',
-      tavern: 'bouncy ragtime piano and clarinet, crowded festival, cheerful',
-      tension: 'sneaky pizzicato and muted brass, tiptoeing, comic suspense',
-      combat: 'frantic brass and xylophone, slapstick chase, fast tempo',
-    },
-  },
-  romance: {
-    style: 'romantic chamber music, piano, strings, soft woodwinds, tender and warm',
-    moods: {
-      calm: 'soft piano and cello, quiet evening walk, slow tempo',
-      romance: 'heartfelt piano and violin duet, blossoms in the wind, swelling strings',
-      tension: 'hesitant piano with trembling strings, unspoken words, restrained',
-      sorrow: 'lonely violin over sparse piano, farewell at the station, slow',
-    },
-  },
-  mystery: {
-    style: 'noir mystery score, muted piano, upright bass, low clarinet, smoky and tense',
-    moods: {
-      calm: 'muted piano and brushed drums, quiet office at night, slow tempo',
-      mystery: 'celesta, low clarinet and sparse piano, clues in the dark, hushed',
-      tension: 'pulsing double bass and ticking clock percussion, closing in, suspense',
-      sorrow: 'lonely saxophone over soft piano, rain-soaked street, melancholic',
-    },
-  },
-  scifi: {
-    style: 'atmospheric synthwave and ambient score, analog synths, pads, electronic pulses',
-    moods: {
-      calm: 'warm synth pads and soft arpeggios, drifting through space, slow tempo',
-      mystery: 'glassy synth textures and distant pings, derelict station, eerie',
-      tension: 'throbbing bass synth and ticking sequencer, alarm lights, suspense',
-      combat: 'aggressive synth bass, fast electronic drums, laser fight, driving',
-      boss: 'massive distorted synths and choir pads, colossal machine, epic',
-    },
-  },
-  horror: {
-    style: 'dark ambient horror score, drones, prepared piano, dissonant strings, unsettling',
-    moods: {
-      calm: 'faint music box and soft drone, empty house at dusk, uneasy calm',
-      mystery: 'creaking strings and whispers of wind, dark corridor, slow and eerie',
-      tension: 'rising dissonant strings and heartbeat drum, something is near',
-      combat: 'violent string stabs and pounding low drums, desperate struggle',
-      sorrow: 'detuned piano and cold drone, loss in the dark, slow',
-    },
-  },
-};
+export const GENRE_MUSIC: Record<MusicGenre, Omit<StoryMusicDraft, 'vocals'>> = genreDefaults;
 
 /** Lyrics for soft wordless singing; few tags, so ACE-Step doesn't sing them. */
 export const BACKGROUND_VOCALS = '[Intro]\n[Verse]\nooh, aah\nooh, aah\n[Outro]';

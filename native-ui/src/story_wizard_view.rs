@@ -1,9 +1,10 @@
 use crate::stage_draft::Draft;
 use crate::stage_lobby::new_scene_id;
+use crate::story_music::{self, Edit as MusicEdit, MOODS};
 use crate::story_wizard::{self, Edit, GENRES, MAX_COMPANIONS, Premise, Step, Wizard};
 use crate::ui_text::{CONTENT_LANGUAGE, format, text as label};
 use crate::views::{muted, scroll};
-use crate::{App, Message, Page, StageWrite, appearance};
+use crate::{App, Message, Page, StageWrite, appearance, background, connection};
 use iced::widget::{button, checkbox, column, container, row, text, text_editor, text_input};
 use iced::{Element, Fill, Task};
 use std::collections::HashSet;
@@ -54,6 +55,140 @@ impl App {
         } else {
             self.persist_scene(StageWrite::Wizard, scene)
         }
+    }
+
+    pub(super) fn suggest_story_music(&mut self) -> Task<Message> {
+        if self.page != Page::Stage
+            || self.stage.file_busy
+            || self.stage.selected.is_some()
+            || self.stage.wizard_music_request.is_some()
+        {
+            return Task::none();
+        }
+        let Some(wizard) = self
+            .stage
+            .wizard
+            .as_ref()
+            .filter(|wizard| wizard.step == Step::Music && wizard.music.enabled)
+        else {
+            return Task::none();
+        };
+        let Ok(scene) = wizard.scene("music-context") else {
+            return Task::none();
+        };
+        let genre = story_wizard::genre_id(wizard.genre);
+        let request = story_music::request(&scene, genre, &wizard.music.requested_moods(genre));
+        let settings = self.connection.clone();
+        self.stage.wizard_music_id += 1;
+        let id = self.stage.wizard_music_id;
+        let cancellation = connection::Cancellation::new();
+        self.stage.wizard_music_request = Some(connection::ActiveRequest {
+            id,
+            cancellation: cancellation.clone(),
+        });
+        self.stage.edit_error.clear();
+        Task::perform(
+            background(move || {
+                let answer = connection::run_chat(settings, cancellation, request)?;
+                story_music::parse_suggestion(&answer)
+            }),
+            move |result| Message::StageWizardMusicSuggested(id, result),
+        )
+    }
+
+    pub(super) fn finish_story_music(
+        &mut self,
+        id: u64,
+        result: Result<story_music::Suggestion, String>,
+    ) {
+        if self
+            .stage
+            .wizard_music_request
+            .as_ref()
+            .map(|active| active.id)
+            != Some(id)
+        {
+            return;
+        }
+        self.stage.wizard_music_request = None;
+        if let Some(wizard) = &mut self.stage.wizard {
+            let result = result.and_then(|suggestion| {
+                wizard
+                    .music
+                    .apply_suggestion(story_wizard::genre_id(wizard.genre), suggestion)
+            });
+            self.stage.edit_error = result.err().unwrap_or_default();
+        }
+    }
+
+    fn story_music_fields<'a>(&self, wizard: &'a Wizard) -> Element<'a, Message> {
+        let theme = self.theme();
+        let music = &wizard.music;
+        let edit = |action| Message::StageWizardEdit(Edit::Music(action));
+        let mut fields = column![
+            text(label("storyWizard.music.question")).size(16),
+            checkbox(music.enabled)
+                .label(label("storyWizard.music.enable"))
+                .on_toggle(move |enabled| edit(MusicEdit::Enabled(enabled))),
+        ]
+        .spacing(10);
+        if !music.enabled {
+            return fields.into();
+        }
+        let suggestion = if self.stage.wizard_music_request.is_some() {
+            button(label("common.cancel")).on_press(Message::StageWizardCancelMusic)
+        } else {
+            button(label("storyWizard.music.suggest")).on_press(Message::StageWizardSuggestMusic)
+        }
+        .style(appearance::subtle_button);
+        fields = fields.push(
+            row![
+                suggestion,
+                button(label("storyWizard.music.reset"))
+                    .style(appearance::subtle_button)
+                    .on_press(edit(MusicEdit::Reset)),
+            ]
+            .spacing(8)
+            .wrap(),
+        );
+        if self.stage.wizard_music_request.is_some() {
+            fields = fields.push(muted(label("storyWizard.music.suggesting"), 13, &theme));
+        }
+        fields = fields
+            .push(muted(label("storyWizard.music.style"), 12, &theme))
+            .push(
+                text_input(label("storyWizard.music.style"), &music.style)
+                    .on_input(move |style| edit(MusicEdit::Style(style)))
+                    .padding(9)
+                    .style(appearance::input),
+            )
+            .push(text(label("storyWizard.music.moods")).size(15));
+        for (mood, key) in MOODS {
+            let caption = music.captions.get(mood);
+            fields = fields.push(
+                checkbox(caption.is_some())
+                    .label(label(key))
+                    .on_toggle(move |enabled| edit(MusicEdit::Mood(mood, enabled))),
+            );
+            if let Some(caption) = caption {
+                let prompt = format("storyWizard.music.caption", &[("mood", label(key))]);
+                fields = fields.push(
+                    text_input(&prompt, caption)
+                        .on_input(move |caption| edit(MusicEdit::Caption(mood, caption)))
+                        .padding(8)
+                        .style(appearance::input),
+                );
+            }
+        }
+        fields
+            .push(
+                checkbox(music.vocals)
+                    .label(label("storyWizard.music.vocals"))
+                    .on_toggle(move |enabled| edit(MusicEdit::Vocals(enabled))),
+            )
+            .push(muted(label("storyWizard.music.vocalsHint"), 12, &theme))
+            .push(muted(label("storyWizard.native.musicPlanHint"), 12, &theme))
+            .into()
     }
 
     pub(super) fn story_wizard_view<'a>(&'a self, wizard: &'a Wizard) -> Element<'a, Message> {
@@ -191,6 +326,7 @@ impl App {
                         ));
                 }
             }
+            Step::Music => fields = fields.push(self.story_music_fields(wizard)),
             Step::Review => match wizard.scene("wizard-preview") {
                 Ok(scene) => {
                     fields = fields
