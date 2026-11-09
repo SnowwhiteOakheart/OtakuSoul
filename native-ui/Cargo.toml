@@ -27,3 +27,6 @@ rand = "0.9"
 rodio = { version = "0.23", default-features = false, features = ["playback", "wav", "mp3", "vorbis"] }
 
 tempfile = "3"
+
+[build-dependencies]
+tauri-winres = "0.3"

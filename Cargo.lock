@@ -5495,6 +5495,7 @@ dependencies = [
  "rodio",
  "rusqlite",
  "serde_json",
+ "tauri-winres",
  "tempfile",
  "tokio",
  "url",
