@@ -1357,7 +1357,7 @@ impl App {
         let selected = choices.get(self.lore_selected_entry).cloned();
         let mut content=column![
             row![text("Lorebook bearbeiten").size(26).width(Fill),control(Icon::Back,"Katalog",Message::Navigate(Page::Lorebooks))].align_y(Alignment::Center),
-            muted("Entwurf im Arbeitsspeicher · vorhandene Regeln und unbekannte Felder bleiben erhalten. Noch keine native Kontextevaluation.",12,&self.theme()),
+            muted("Entwurf im Arbeitsspeicher · übernommene Regeln kannst Du in der Prompt-Vorschau prüfen.",12,&self.theme()),
             row![text_input("Lorebook-Name",&draft.name).on_input(Message::LoreName).padding(10).style(appearance::input),
                 text_input("Beschreibung (optional)",&draft.description).on_input(Message::LoreDescription).padding(10).style(appearance::input)].spacing(10),
             row![iced::widget::pick_list(choices,selected,Message::LoreSelectEntry).placeholder("Noch kein Eintrag").padding(8).style(appearance::select).width(Fill),
@@ -1876,7 +1876,7 @@ impl App {
         } else {
             match &self.prompt_lore {
                 Some(Ok(report)) => format!(
-                    "{} Bücher geprüft · {} Hintergrundtexte · {} Anweisungen",
+                    "Geprüfte Bücher ({}) · Hintergrundtexte ({}) · Anweisungen ({})",
                     report.books,
                     report.passive.len(),
                     report.active.len()

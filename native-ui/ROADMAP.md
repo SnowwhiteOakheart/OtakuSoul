@@ -631,6 +631,22 @@ zwei Lorebook-Tests und der Referenztest für System-Prompt und Nachspann. Clipp
 Rust-Formatprüfung und der TypeScript-Check bestanden. Windows-Debugbuild unter
 `target/debug/otakusoul-native.exe`.
 
+Windows-Bedienprobe am 09.11.2026 mit synthetischem Test-Lorebook und der integrierten Shiori-Karte:
+
+- Chatsuche über Strg+F öffnet und fokussiert das Suchfeld. Geprüft wurden ein Treffer in der
+  Begrüßung, der Leerzustand bei null Treffern und das Zurücksetzen des Filters.
+- Ausdrucksbilder „Neutral“ und „Fröhlich“ laden lokal. Ein WebP ließ sich über den Dateidialog
+  einbetten, als Hauptporträt übernehmen und anschließend im Chat anzeigen.
+- Lorebook per Dateidialog geladen. Der Regelreiter sperrte Übernehmen und Entwurfsexport bei
+  101 Prozent. Nach Zurücksetzen war der Entwurf wieder gültig. Die deaktivierte Globalmarkierung
+  wurde im exportierten JSON bestätigt. Die Prüfsumme der Quelldatei blieb gleich.
+- Das nichtglobale Buch wurde an Shiori gebunden. Die Prompt-Vorschau zeigte ein geprüftes Buch,
+  einen Hintergrundtext und eine Regieanweisung. Beide Texte waren im Systemteil sichtbar.
+
+Der Test lief im Standardfenster mit dem lokalen Testchat. Die eigens gestartete Instanz wurde
+anschließend geschlossen. Ein veralteter Hinweis im Regel-Editor und die Anzeige der Trefferzahl
+wurden nach dem Durchlauf textlich korrigiert.
+
 - [ ] Einstellungen/Onboarding, Charakter-/Lorebook-Editoren, Gedächtnis, Hub und Im-/Export.
 - [ ] Stage und 5e einschließlich Battlemap; Fachlogik wiederverwenden.
 - [ ] Native Audioausgabe/-aufnahme separat planen, danach Avatarintegration separat bewerten.
