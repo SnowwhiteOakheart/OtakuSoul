@@ -18,6 +18,8 @@ WSL kann später Linux-Builds/erste WSLg-Tests ermöglichen; es ersetzt weder Li
 
 Aktuelle Nutzerentscheidung (08.11.2026): **Vollständige, funktionierende GUI vor Übersetzungen**.
 Übersetzungen integrieren, sobald die wesentlichen Oberflächen und Abläufe stehen; bis dahin Deutsch.
+Der Prototyp bekommt zuerst alle Funktionen. Die abschließende grafische Angleichung an Tauri
+und die gebündelten Bedienproben folgen auf dieser vollständigen Grundlage.
 Die native Oberfläche soll der bestehenden Tauri-Oberfläche möglichst nahekommen. Für Vergleiche
 die Tauri-Ansicht über `e2e/harness.mjs` im Wegwerfprofil öffnen und mit WebDriver prüfen.
 Die aktuellen React- und CSS-Quellen liefern die Gestaltungs- und Verhaltensdetails.
@@ -791,7 +793,9 @@ geladenen Titelbilder der ersten Reihe. Die Aufnahme liegt lokal in
   Deaktivieren des Ambient-Tons werden in der Definition gespeichert.
 - [x] Erzählung oder 5e wählen, Klassen zuordnen, eines der mitgelieferten Spielbretter
   auswählen und Gefährtensteuerung sowie Heldentod konfigurieren.
-- [ ] Medienimport, Bildvorschau und Tonwiedergabe, Story-Wizard.
+- [x] Native Bild- und Tonimporte mit wiederverwendbarer lokaler Sammlung und Bildvorschau
+  im Szeneneditor. Die Sammlung ist unabhängig von einer geladenen Profilkopie.
+- [ ] Tonwiedergabe und Story-Wizard.
 - [ ] Spielansicht mit echten Stage-Runden und Spielständen.
 - [ ] 5e-Spielbrett, Kampf und Erkundung über die vorhandene Stage-/Regel-Engine.
 
@@ -818,6 +822,11 @@ individuelle Tonfälle an. Vorhandene Werte und implizite Vorgaben bleiben bis z
 `stage_rules.rs` bearbeitet die 5e-Regeln. Klassen und Spielbretter werden über stabile IDs
 gespeichert. Der Editor erhält importierte Zuordnungen und andere Regelparameter bei gezielten
 Änderungen. Beim Speichern im Erzählmodus wird ein zuvor aktives 5e-Regelwerk entfernt.
+`stage_media.rs` kopiert ausgewählte Medien atomar und ohne Überschreiben in
+`stage/backgrounds` oder `stage/ambient` unter dem nativen Datenordner. Der Szenenexport
+enthält die Dateinamen. Bildimporte unterstützen PNG, JPEG und WebP (bis 16 MiB), Tonimporte
+WAV, MP3 und Ogg (bis 32 MiB). Die Bildvorschau löst Referenzen in der nativen Sammlung oder
+der ausdrücklich geladenen Profilkopie auf und dekodiert sie außerhalb des GUI-Threads.
 Tauris Lobby und die gemeinsamen Editorfelder wurden per WebDriver im isolierten E2E-Profil
 geprüft. Für die native Variante bestanden 152 Tests einschließlich JSON-Rundlauf und der
 Windows-Build. Der Live-Hub-Test war bei diesem Lauf ausgenommen.

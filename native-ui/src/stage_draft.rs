@@ -250,10 +250,7 @@ impl Draft {
                 }
                 Field::Background | Field::Ambient => {
                     let name = text.trim();
-                    if matches!(name, "." | "..")
-                        || name.contains(['/', '\\', ':'])
-                        || name.chars().any(char::is_control)
-                    {
+                    if !crate::stage_media::valid_name(name) {
                         return Err(crate::ui_text::text("gallery.native.mediaNameInvalid").into());
                     }
                     Value::from(name)

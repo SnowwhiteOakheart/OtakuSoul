@@ -189,7 +189,7 @@ fn read(root: &Path) -> Result<Library, String> {
     Ok(Library { scenes, folders })
 }
 
-fn store_root(root: &Path) -> Result<Option<PathBuf>, String> {
+pub(super) fn store_root(root: &Path) -> Result<Option<PathBuf>, String> {
     profile::validate_native_store(root)?;
     match fs::symlink_metadata(root) {
         Ok(metadata) if metadata.is_dir() && !profile::is_link(&metadata) => {

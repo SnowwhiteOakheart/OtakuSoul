@@ -1,6 +1,7 @@
 //! Szenenverwaltung und Dateifluss nach Tauris Szenen-Lobby.
 use crate::icons::{Icon, icon};
 use crate::stage_draft::{Draft, Field};
+use crate::stage_media::{self, Imported, Kind};
 use crate::stage_store::{FolderChange, Library};
 use crate::ui_text::{CONTENT_LANGUAGE, format, text as label};
 use crate::views::{control, muted, scroll, shorten};
@@ -108,6 +109,7 @@ impl App {
             self.stage.editor = text_editor::Content::with_text(draft.get(Field::Description));
             self.stage.edit_field = Field::Description;
             self.stage.draft = Some(draft);
+            self.stage.background_preview = None;
             self.stage.edit_error.clear();
         }
         self.stage.lobby = true;
@@ -217,6 +219,7 @@ impl App {
                     self.add_local_scene(scene);
                 }
                 self.stage.draft = None;
+                self.stage.background_preview = None;
                 self.stage.editing = false;
                 self.stage.notice = label("gallery.native.sceneApplied").into();
             }
@@ -283,6 +286,83 @@ impl App {
     fn add_local_scene(&mut self, scene: stage_preview::Scene) {
         self.stage.own.insert(self.stage.scenes.len());
         self.stage.scenes.push(scene);
+    }
+
+    pub(super) fn import_stage_media(&mut self, kind: Kind) -> Task<Message> {
+        if !self.stage.editing || self.stage.file_busy || self.profile_busy {
+            return Task::none();
+        }
+        let Some(root) = self.stage.store.clone() else {
+            self.stage.edit_error = label("gallery.native.storeUnavailable").into();
+            return Task::none();
+        };
+        self.stage.file_busy = true;
+        self.stage.edit_error.clear();
+        Task::perform(
+            async move {
+                let Some(file) = rfd::AsyncFileDialog::new()
+                    .set_title(kind.import_label())
+                    .add_filter(kind.import_label(), kind.extensions())
+                    .pick_file()
+                    .await
+                else {
+                    return Ok(None);
+                };
+                let source = file.path().to_path_buf();
+                background(move || stage_media::import(&root, kind, &source))
+                    .await
+                    .map(Some)
+            },
+            move |result| Message::StageMediaImported(kind, result),
+        )
+    }
+
+    pub(super) fn finish_stage_media_import(
+        &mut self,
+        kind: Kind,
+        result: Result<Option<Imported>, String>,
+    ) {
+        self.stage.file_busy = false;
+        let imported = match result {
+            Ok(Some(imported)) => imported,
+            Ok(None) => return,
+            Err(error) => {
+                self.stage.edit_error = error;
+                return;
+            }
+        };
+        let (names, field) = match kind {
+            Kind::Background => (&mut self.stage.native_media.backgrounds, Field::Background),
+            Kind::Ambient => (&mut self.stage.native_media.ambient, Field::Ambient),
+        };
+        names.push(imported.name.clone());
+        names.sort_unstable();
+        names.dedup();
+        if let Some(draft) = &mut self.stage.draft {
+            draft.set(field, imported.name);
+            if let Kind::Background = kind {
+                self.stage.background_preview = imported.image;
+            }
+        }
+    }
+
+    pub(super) fn preview_stage_background(&mut self) -> Task<Message> {
+        if !self.stage.editing || self.stage.file_busy || self.profile_busy {
+            return Task::none();
+        }
+        let Some(draft) = &self.stage.draft else {
+            return Task::none();
+        };
+        let name = draft.get(Field::Background).trim().to_owned();
+        let root = self.stage.store.clone();
+        let profile = self.profile_home.clone();
+        self.stage.file_busy = true;
+        self.stage.edit_error.clear();
+        self.stage.background_preview = None;
+        Task::perform(
+            background(move || stage_media::preview(root.as_deref(), profile.as_deref(), &name)),
+            Message::StageBackgroundLoaded,
+        )
     }
 
     pub(super) fn import_scene_file(&mut self) -> Task<Message> {
@@ -695,15 +775,43 @@ impl App {
             .width(Fill)
             .into()
         };
-        let media = column![
+        let available = !self.stage.file_busy && !self.profile_busy;
+        let mut names = self.stage.media.clone();
+        names.merge(self.stage.native_media.clone());
+        let import = |kind: Kind| {
+            button(kind.import_label())
+                .style(appearance::subtle_button)
+                .on_press_maybe(available.then_some(Message::StageImportMedia(kind)))
+        };
+        let mut media = column![
             text(label("sceneEdit.sectionMedia")).size(16),
             muted(label("gallery.native.mediaHint"), 12, &theme),
-            asset(Field::Background, &self.stage.media.backgrounds),
-            asset(Field::Ambient, &self.stage.media.ambient),
+            asset(Field::Background, &names.backgrounds),
+            row![
+                import(Kind::Background),
+                button(label("gallery.native.previewBackground"))
+                    .style(appearance::subtle_button)
+                    .on_press_maybe(
+                        (available && !draft.get(Field::Background).trim().is_empty())
+                            .then_some(Message::StagePreviewBackground)
+                    ),
+            ]
+            .spacing(8)
+            .wrap(),
+            asset(Field::Ambient, &names.ambient),
+            import(Kind::Ambient),
             toggle(Field::LockBackground),
             toggle(Field::DisableAmbient),
         ]
         .spacing(9);
+        if let Some(preview) = &self.stage.background_preview {
+            media = media.push(
+                iced::widget::image(preview.clone())
+                    .height(200)
+                    .width(Fill)
+                    .content_fit(iced::ContentFit::Contain),
+            );
+        }
         let (tones, tone) = tone_options(draft.get(Field::GmTone));
         let advanced = column![
             text(label("sceneEdit.sectionAdvanced")).size(16),

@@ -23,6 +23,7 @@ Desktopübernahme vorher abstimmen.
 Nutzerentscheidung 08.11.2026: Zuerst vollständige, funktionierende GUI-Elemente; Übersetzungen danach
 integrieren, sobald der Oberflächenstand dafür geeignet ist. Layout und Gestaltung der nativen
 GUI möglichst identisch zum vorhandenen Tauri-Frontend halten; aktuelle React-/CSS-Quellen als Referenz.
+Die abschließende grafische Angleichung an Tauri folgt nach der Funktionsvollständigkeit des Prototyps.
 Nutzerentscheidung 09.11.2026: Den Prototyp auf Produktionsreife hin ausbauen. Vorhandene Layouts,
 Stile und UI-Sprachschlüssel wiederverwenden. UI-Sprache und Inhaltssprache getrennt halten.
 Übersetzte Namen und Titel dienen der Anzeige. Persistenz, Verknüpfung und Import verwenden stabile IDs.

@@ -26,7 +26,20 @@ pub struct StageMedia {
     pub ambient: Vec<String>,
 }
 
-fn stage_media_names(root: &Path, directory: &Path, extensions: &[&str]) -> Vec<String> {
+impl StageMedia {
+    pub fn merge(&mut self, other: Self) {
+        for (names, incoming) in [
+            (&mut self.backgrounds, other.backgrounds),
+            (&mut self.ambient, other.ambient),
+        ] {
+            names.extend(incoming);
+            names.sort_unstable();
+            names.dedup();
+        }
+    }
+}
+
+pub(super) fn stage_media_names(root: &Path, directory: &Path, extensions: &[&str]) -> Vec<String> {
     let Ok(directory) = contained(root, directory) else {
         return Vec::new();
     };
@@ -44,11 +57,25 @@ fn stage_media_names(root: &Path, directory: &Path, extensions: &[&str]) -> Vec<
             if !metadata.is_file() || is_link(&metadata) {
                 return None;
             }
-            entry.file_name().into_string().ok()
+            entry
+                .file_name()
+                .into_string()
+                .ok()
+                .filter(|name| crate::stage_media::valid_name(name))
         })
         .collect();
     names.sort_unstable();
     names
+}
+
+pub(super) fn stage_background_path(home: &Path, name: &str) -> Option<PathBuf> {
+    let root = profile_root(home).ok()?;
+    let path = root.join("data/backgrounds").join(name);
+    let metadata = fs::symlink_metadata(&path).ok()?;
+    if !metadata.is_file() || is_link(&metadata) {
+        return None;
+    }
+    contained(&root, &path).ok()
 }
 
 #[derive(Debug, Clone)]
@@ -493,9 +520,13 @@ pub fn load_profile(home: &Path) -> Result<Profile, String> {
             backgrounds: stage_media_names(
                 &root,
                 &data.join("backgrounds"),
-                &["png", "jpg", "jpeg", "webp"],
+                crate::stage_media::Kind::Background.extensions(),
             ),
-            ambient: stage_media_names(&root, &data.join("ambient"), &["wav", "mp3", "ogg"]),
+            ambient: stage_media_names(
+                &root,
+                &data.join("ambient"),
+                crate::stage_media::Kind::Ambient.extensions(),
+            ),
         },
     })
 }

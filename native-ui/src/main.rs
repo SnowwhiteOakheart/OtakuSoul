@@ -23,6 +23,7 @@ mod profile;
 mod prompt_preview;
 mod stage_draft;
 mod stage_lobby;
+mod stage_media;
 mod stage_preview;
 mod stage_rule_view;
 mod stage_rules;
@@ -193,6 +194,14 @@ enum Message {
     StageEdit(Option<usize>),
     StageEditField(stage_draft::Field),
     StageSet(stage_draft::Field, String),
+    StageMediaLoaded(Result<profile::StageMedia, String>),
+    StageImportMedia(stage_media::Kind),
+    StageMediaImported(
+        stage_media::Kind,
+        Result<Option<stage_media::Imported>, String>,
+    ),
+    StagePreviewBackground,
+    StageBackgroundLoaded(Result<image::Handle, String>),
     StageRule(stage_rules::Edit),
     StageText(text_editor::Action),
     StageApply,
@@ -569,6 +578,8 @@ struct Stage {
     edit_field: stage_draft::Field,
     editor: text_editor::Content,
     media: profile::StageMedia,
+    native_media: profile::StageMedia,
+    background_preview: Option<image::Handle>,
     store: Option<PathBuf>,
     loading: bool,
     file_busy: bool,
@@ -636,6 +647,8 @@ impl Default for Stage {
             edit_field: stage_draft::Field::Description,
             editor: text_editor::Content::new(),
             media: profile::StageMedia::default(),
+            native_media: profile::StageMedia::default(),
+            background_preview: None,
             store: None,
             loading: false,
             file_busy: false,
@@ -1522,15 +1535,16 @@ impl App {
     }
     fn new(profile: Option<PathBuf>) -> (Self, Task<Message>) {
         let mut app = Self::default();
-        let (hub_library, stage_library) = match otakusoul_paths::native_data_dir() {
+        let libraries = match otakusoul_paths::native_data_dir() {
             Some(data) => {
                 let root = data.join("hub");
                 let stage_root = data.join("stage");
+                let media_root = stage_root.clone();
                 app.stage.store = Some(stage_root.clone());
                 app.stage.loading = true;
                 app.hub.store = Some(root.clone());
                 app.hub.library_loading = true;
-                (
+                Task::batch([
                     Task::perform(
                         background(move || HubLibrary::read(&root)),
                         Message::HubLibraryLoaded,
@@ -1539,12 +1553,16 @@ impl App {
                         background(move || stage_store::list(&stage_root)),
                         Message::StageLibraryLoaded,
                     ),
-                )
+                    Task::perform(
+                        background(move || stage_media::list(&media_root)),
+                        Message::StageMediaLoaded,
+                    ),
+                ])
             }
             None => {
                 app.hub.library_notice = ui_text::text("hub.native.storeUnavailable").into();
                 app.stage.notice = ui_text::text("gallery.native.storeUnavailable").into();
-                (Task::none(), Task::none())
+                Task::none()
             }
         };
         let task = if let Some(home) = profile {
@@ -1553,7 +1571,7 @@ impl App {
         } else {
             Task::none()
         };
-        (app, Task::batch([hub_library, stage_library, task]))
+        (app, Task::batch([libraries, task]))
     }
     fn portraits(preview: &Preview) -> Vec<Option<image::Handle>> {
         preview
@@ -2428,7 +2446,26 @@ impl App {
                     && let Some(draft) = &mut self.stage.draft
                 {
                     draft.set(field, value);
+                    if field == stage_draft::Field::Background {
+                        self.stage.background_preview = None;
+                    }
                     self.stage.edit_error.clear();
+                }
+            }
+            Message::StageMediaLoaded(result) => match result {
+                Ok(media) => self.stage.native_media.merge(media),
+                Err(error) => self.stage.notice = error,
+            },
+            Message::StageImportMedia(kind) => return self.import_stage_media(kind),
+            Message::StageMediaImported(kind, result) => {
+                self.finish_stage_media_import(kind, result)
+            }
+            Message::StagePreviewBackground => return self.preview_stage_background(),
+            Message::StageBackgroundLoaded(result) => {
+                self.stage.file_busy = false;
+                match result {
+                    Ok(image) => self.stage.background_preview = Some(image),
+                    Err(error) => self.stage.edit_error = error,
                 }
             }
             Message::StageRule(edit) => {
@@ -2456,6 +2493,7 @@ impl App {
             Message::StageDiscard => {
                 if !self.stage.file_busy && self.stage.editing {
                     self.stage.draft = None;
+                    self.stage.background_preview = None;
                     self.stage.editing = false;
                     self.stage.edit_error.clear();
                 }
@@ -2960,6 +2998,7 @@ impl App {
                         );
                         self.warnings = profile.warnings.clone();
                         self.stage.media = std::mem::take(&mut profile.stage_media);
+                        self.stage.background_preview = None;
                         let installed = std::mem::take(&mut self.preview.characters)
                             .into_iter()
                             .filter(|character| {
