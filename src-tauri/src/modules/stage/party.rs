@@ -79,13 +79,7 @@ pub fn ensure_party_vitals(state: &mut SceneState) {
 
 /// After a fight only the party stays; the next fight rolls initiative anew.
 pub fn remove_enemies(state: &mut SceneState) {
-    state
-        .combat
-        .combatants
-        .retain(|c| c.role == "player" || c.role == "companion");
-    for combatant in &mut state.combat.combatants {
-        combatant.initiative = 0;
-    }
+    super::rules5e::remove_enemies(&mut state.combat);
 }
 
 /// Outside combat, conditions last a number of turns.

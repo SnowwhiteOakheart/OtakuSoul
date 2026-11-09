@@ -13,10 +13,12 @@ pub mod encounter;
 pub mod equipment;
 pub mod explore;
 pub mod features;
+pub mod fight;
 pub mod map;
 pub mod roll;
 pub mod skills;
 pub mod spells;
+pub mod table;
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -31,10 +33,12 @@ pub use encounter::*;
 pub use equipment::*;
 pub use explore::*;
 pub use features::*;
+pub use fight::*;
 pub use map::*;
 pub use roll::*;
 pub use skills::*;
 pub use spells::*;
+pub use table::*;
 
 /// The six abilities, in the usual order (STR DEX CON INT WIS CHA).
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize, TS)]

@@ -679,7 +679,7 @@ RULES:
                 status: update
                     .status
                     .clone()
-                    .unwrap_or_else(default_objective_status),
+                    .unwrap_or_else(super::rules5e::default_objective_status),
             });
         }
     }

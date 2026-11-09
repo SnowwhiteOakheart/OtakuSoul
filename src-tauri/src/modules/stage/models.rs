@@ -82,47 +82,9 @@ pub struct StoryArc {
     pub is_resolved: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, TS)]
-#[ts(export)]
-pub struct InventoryItem {
-    pub id: String,
-    pub name: String,
-    pub description: String,
-    pub quantity: u32,
-    pub item_type: String, // "consumable" | "key" | "equipment"
-    #[serde(default)]
-    pub hp_restore: i32,
-    #[serde(default)]
-    pub stress_restore: i32,
-    #[serde(default)]
-    pub clears_condition: Option<String>,
-    /// SRD equipment id (`longsword`, `potion_of_healing` …) for 5e gear and loot.
-    #[serde(default)]
-    #[ts(optional)]
-    pub srd_id: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, TS)]
-#[ts(export)]
-pub struct CampaignObjective {
-    pub id: String,
-    pub title: String,
-    #[serde(default)]
-    pub description: String,
-    #[serde(default)]
-    pub current: u32,
-    #[serde(default = "default_objective_max")]
-    pub max: u32,
-    #[serde(default = "default_objective_status")]
-    pub status: String,
-}
-
-pub(super) fn default_objective_max() -> u32 {
-    1
-}
-pub(super) fn default_objective_status() -> String {
-    "active".to_string()
-}
+// Inventory entries, campaign objectives and the 5e scene rules live in the shared rules crate
+// (the 5e flow changes them); the scene keeps using them under their old names.
+pub use super::rules5e::{CampaignObjective, InventoryItem, SceneGoal, SceneRules};
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
@@ -394,46 +356,6 @@ pub struct SceneDefinition {
     pub rules: Option<SceneRules>,
 }
 
-/// A scene played with the 5e rules engine.
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, TS)]
-#[ts(export)]
-pub struct SceneRules {
-    /// `5e`; other values are treated as a narrative scene.
-    pub ruleset: String,
-    /// Class template per party member (`player` for the player), e.g. `{"Lyra": "wizard"}`.
-    #[serde(default)]
-    pub hero_classes: HashMap<String, String>,
-    /// The player chooses the companions' combat actions instead of the language model.
-    #[serde(default)]
-    pub control_companions: bool,
-    /// Three failed death saves kill a hero; otherwise the hero is out of the fight and wakes
-    /// afterwards with 1 hit point (default, so beloved companions cannot die by a roll).
-    #[serde(default)]
-    pub heroic_death: bool,
-    /// Battle map for fights (`presets/srd5/maps`); without one fights run without a board.
-    #[serde(default)]
-    #[ts(optional)]
-    pub map_id: Option<String>,
-    /// Goals of an adventure act that the engine checks off (prepared fights won, exits used).
-    #[serde(default)]
-    pub goals: Vec<SceneGoal>,
-    /// The next act (scene id) once every goal is reached.
-    #[serde(default)]
-    #[ts(optional)]
-    pub next_scene: Option<String>,
-}
-
-/// A goal of an adventure act: winning a prepared encounter of a map (`kind: "encounter"`,
-/// `target` = encounter id) or leaving through an exit to a map (`kind: "exit"`, `target` = map id).
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, TS)]
-#[ts(export)]
-pub struct SceneGoal {
-    pub id: String,
-    pub title: super::rules5e::LocalizedName,
-    pub kind: String,
-    pub target: String,
-}
-
 impl SceneDefinition {
     /// The scene uses the 5e rules engine.
     pub fn is_5e(&self) -> bool {
@@ -623,6 +545,19 @@ pub struct SceneState {
 }
 
 impl SceneState {
+    /// The parts the 5e flow (`rules5e::fight`, exploring) works on, borrowed field by field.
+    pub fn table(&mut self) -> super::rules5e::Table<'_> {
+        super::rules5e::Table {
+            combat: &mut self.combat,
+            map: &mut self.map,
+            rules: self.definition.rules.as_ref(),
+            party: &self.definition.party,
+            inventory: &mut self.inventory,
+            objectives: &mut self.objectives,
+            exploration: &mut self.exploration,
+        }
+    }
+
     /// Appends a line to the log and notes the background it was said in front of.
     pub fn push_message(&mut self, mut message: SceneTurnMessage) {
         if message.bg.is_none() {
