@@ -1,4 +1,5 @@
 {
+  "chat.native.selectText": "Text auswählen",
   "hub.native.intro": "Kuratierte Welten, Charaktere, Szenarien und Lorebooks für OtakuSoul.",
   "hub.native.results": "{{visible}} von {{total}} Einträgen",
   "hub.native.revision": "Revision {{revision}}",

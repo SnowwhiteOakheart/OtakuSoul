@@ -532,6 +532,11 @@ impl App {
         }
         for &index in &matches.indices {
             let message = &conversation.messages[index];
+            let selection = self
+                .message_selection
+                .as_ref()
+                .filter(|(open, _)| *open == index)
+                .map(|(_, content)| content);
             let user = message.role == "user";
             let label = match message.role.as_str() {
                 "user" => "Du",
@@ -542,6 +547,13 @@ impl App {
             let header = row![
                 muted(label, 12, &self.theme()),
                 Space::new().width(Fill),
+                button(ui_text::text(if selection.is_some() {
+                    "common.close"
+                } else {
+                    "chat.native.selectText"
+                }))
+                .style(appearance::subtle_button)
+                .on_press(Message::SelectMessageText(index)),
                 icon_control(
                     Icon::Copy,
                     "Nachricht kopieren",
@@ -549,7 +561,14 @@ impl App {
                 )
             ]
             .align_y(Alignment::Center);
-            let body: Element<'_, Message> = if let Some(rendered) = self.rendered.get(index) {
+            let body: Element<'_, Message> = if let Some(content) = selection {
+                text_editor(content)
+                    .on_action(Message::MessageTextAction)
+                    .height(140)
+                    .padding(8)
+                    .style(appearance::editor)
+                    .into()
+            } else if let Some(rendered) = self.rendered.get(index) {
                 if user {
                     rendered
                         .view_for_user(&self.theme(), true)

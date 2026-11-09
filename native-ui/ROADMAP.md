@@ -148,7 +148,9 @@ Lockfile-Vergleich: keine zuvor vorhandene Paketversion entfernt; GUI ergänzt z
 - [x] Mehrzeilige Eingabe: Enter = neue Zeile, Strg+Enter = hinzufügen; Entwürfe pro Testchat.
 - [x] Tab/Shift+Tab für Fokusnavigation, Kopierknöpfe für Nachrichten und vollständiges Karten-JSON.
 - [ ] Anhänge, Swipes, Gedanken und Gruppensprecher gezielt darstellen; aktuell nur Rolle und Text.
-- [ ] Freie Textauswahl in dargestellten Nachrichten und umfassende Tastatur-/IME-Abnahme.
+- [x] Nachrichten abschnittsweise kopieren. „Text auswählen“ öffnet den Rohtext der Nachricht
+  in einer schreibgeschützten Auswahlansicht.
+- [ ] Direkte Textauswahl in formatierten Nachrichten und umfassende Tastatur-/IME-Abnahme.
 - [ ] Markdown und lange Chats prüfen; Listenvirtualisierung/Begrenzung anhand Messungen entscheiden.
 
 ### Angleichung an Tauri – Stand 08.11.2026

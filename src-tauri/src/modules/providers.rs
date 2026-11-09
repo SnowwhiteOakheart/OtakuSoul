@@ -479,6 +479,14 @@ fn anthropic_blocks(msg: &crate::modules::inference::ChatMessage) -> Vec<serde_j
     blocks
 }
 
+/// Wireformat des Antwortstroms; Requestdetails bleiben im Provideradapter.
+pub fn stream_format(provider: &LlmProviderType) -> otakusoul_stream::WireFormat {
+    match provider {
+        LlmProviderType::Anthropic => otakusoul_stream::WireFormat::Anthropic,
+        _ => otakusoul_stream::WireFormat::OpenAi,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -594,13 +602,5 @@ mod tests {
         assert_eq!(delta.text.as_deref(), Some("Guten Morgen"));
         assert_eq!(delta.thought.as_deref(), Some("Denke nach"));
         assert!(!delta.is_done);
-    }
-}
-
-/// Wireformat des Antwortstroms; Requestdetails bleiben im Provideradapter.
-pub fn stream_format(provider: &LlmProviderType) -> otakusoul_stream::WireFormat {
-    match provider {
-        LlmProviderType::Anthropic => otakusoul_stream::WireFormat::Anthropic,
-        _ => otakusoul_stream::WireFormat::OpenAi,
     }
 }

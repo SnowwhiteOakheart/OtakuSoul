@@ -390,6 +390,8 @@ enum Message {
         result: Result<connection::Report, String>,
     },
     Copy(String),
+    SelectMessageText(usize),
+    MessageTextAction(text_editor::Action),
     CopyCard,
     Focus(bool),
     ProfilePathChanged(String),
@@ -735,6 +737,7 @@ struct App {
     dark: bool,
     portraits: Vec<Option<image::Handle>>,
     editor: text_editor::Content,
+    message_selection: Option<(usize, text_editor::Content)>,
     profile_input: String,
     profile_home: Option<PathBuf>,
     profile_busy: bool,
@@ -846,6 +849,7 @@ impl Default for App {
             dark: true,
             portraits,
             editor: text_editor::Content::new(),
+            message_selection: None,
             profile_input: demo_home.to_string_lossy().into_owned(),
             profile_home: None,
             profile_busy: false,
@@ -1673,6 +1677,7 @@ impl App {
     fn sync_editor(&mut self) {
         self.cancel_chat();
         self.invalidate_prompt_lore();
+        self.message_selection = None;
         self.editor = text_editor::Content::with_text(&self.preview.current().draft);
         self.rendered = self
             .preview
@@ -3207,6 +3212,29 @@ impl App {
                 };
             }
             Message::Copy(value) => return iced::clipboard::write(value),
+            Message::SelectMessageText(index) => {
+                if self.page == Page::Chat {
+                    self.message_selection = if self
+                        .message_selection
+                        .as_ref()
+                        .is_some_and(|(open, _)| *open == index)
+                    {
+                        None
+                    } else {
+                        self.preview.current().messages.get(index).map(|message| {
+                            (index, text_editor::Content::with_text(&message.content))
+                        })
+                    };
+                }
+            }
+            Message::MessageTextAction(action) => {
+                if self.page == Page::Chat
+                    && !action.is_edit()
+                    && let Some((_, content)) = &mut self.message_selection
+                {
+                    content.perform(action);
+                }
+            }
             Message::Focus(backwards) => {
                 return if backwards {
                     iced::widget::operation::focus_previous()
