@@ -590,7 +590,14 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `StdRng::seed_from_u64`); die Engine entscheidet alle Zahlen, das LLM erzählt nur aus `CombatEvent`s. Gespeichert werden
   nur Grundwerte (`Stats5e` an `Combatant`), Modifikatoren/Übungsbonus werden berechnet. Monster/Klassen kommen aus
   `presets/srd5/*.json` (per `include_str!`, Namen de/en/ru); SRD-Namensnennung (CC-BY-4.0) steht in den READMEs.
-  Ablauf in `stage/combat5e.rs`: `SceneDefinition.rules` (`SceneRules`: `ruleset "5e"`, `hero_classes`, `control_companions`)
+  Ablauf (seit 2026-11 im Crate, `fight.rs`/`exploration.rs`; Desktop `stage/combat5e.rs`/`explore5e.rs` sind dünne
+  Aufrufer über `SceneState::table()` → `rules5e::Table`, Android hält `TableState`): deterministisch mit übergebenem
+  `rng`, Zeitstempel (`stamp`, neue IDs) und Sprachcode; auf dem Desktop bleiben LLM (Gefährtenwahl über
+  `engine_plan` → `CompanionChoice::pick`, Erzählung, Prompt-/Berichtstexte), `ensure_party_vitals`/Kartensuche
+  (`start_requests`, `prepare_exploring` → Gruppe → `begin_exploring`), Snapshots und Speichern. Golden-Test
+  `stage/golden5e_tests.rs` vergleicht einen geskripteten Lauf mit `golden5e_snapshot.json` (byte-identisch; nur bei
+  gewollter Verhaltensänderung mit `OTAKUSOUL_BLESS_GOLDEN=1` erneuern). `SceneState`-Datenformat unverändert.
+  Ablauf im Einzelnen: `SceneDefinition.rules` (`SceneRules`: `ruleset "5e"`, `hero_classes`, `control_companions`)
   → `ensure_party_stats` (in `ensure_party_vitals`) gibt der Gruppe Klassenwerte; der Planer startet Kämpfe nur mit
   Monster-IDs (`PlanCombatant.monster/count`), `hp_updates`/`resource_delta.hp_delta` werden in 5e ignoriert.
   `run_stage_combat(scene_id, action)` (Sperre `stage_turn`, Snapshot) führt die Spieleraktion aus und spielt Monster
@@ -612,7 +619,7 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Magie (Schritt 3): Zauber in `presets/srd5/spells.json`, `rules5e/spells.rs` (`check_cast` → `cast_spell`, Flächen
   `area_squares` – gespiegelt in `utils/spellArea.ts`, Konzentration, wiederholte Rettungswürfe), Zustände mit Wirkung in
   `rules5e/conditions.rs` (GM-Namen per `normalize_condition`), Todesrettung in `combat.rs` (`SceneRules.heroic_death`),
-  Fertigkeiten in `rules5e/skills.rs` (`check_bonus` für `dice_check`), Rasten `combat5e::rest_party`.
+  Fertigkeiten in `rules5e/skills.rs` (`check_bonus` für `dice_check`), Rasten `rest_party`.
   Aktion `cast:<zauber>:<grad>:<ziel-id>` bzw. `…:@x:y`; Bonusaktions-Zauber lassen die Aktion offen
   (`TurnBudget.bonus_action_used`). `CombatOptions.spells` (`spell_options`) füllt das Zauberbuch `Combat5eSpells.tsx`;
   Flächenzauber werden über `stageAimedSpell` auf dem Brett gezielt (`data-cast-at`, Vorschau `data-area`).
@@ -620,9 +627,9 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Zaubernamen fürs Log/den Bogen über `list_srd_spells` (`utils/srdSpells.ts`). E2E `stage-spells.mjs`.
   Erkundung (Schritt 4): Karten-JSON mit `rooms` (Rechteck + englische GM-Beschreibung), `encounters` (Raum → Monster,
   Zone), `exits` (Zone → Karte), `traps`, `locks`; Laufzeitzustand in `BattleMap.revealed` (leer = kein Nebel) und
-  `triggered` (Begegnungen, `room:<id>`). Reine Logik `rules5e/explore.rs`, Szene `stage/explore5e.rs`
+  `triggered` (Begegnungen, `room:<id>`). Reine Logik `rules5e/explore.rs`, Ablauf `rules5e/exploration.rs`, Szene `stage/explore5e.rs`
   (`run_stage_exploration`: `move`/`use`/`pick`/`force:x:y`, ohne Aktion = Start; ein Snapshot je Schritt, auch wenn
-  eine Begegnung startet → `combat5e::finish_round`). Geschlossene Türen öffnen sich im Vorbeigehen (`open_doors_on`),
+  eine Begegnung startet → `combat5e::finish_round`, danach `record_round`/`close_round`). Geschlossene Türen öffnen sich im Vorbeigehen (`open_doors_on`),
   Schlösser blockieren (`walkable`). Erkundet die Gruppe, behält `place_on_map` Karte und Positionen und setzt nur
   Gegner auf die Zone. Planer: `planner_map_rule` (Räume, Begegnungen, Zonen, Karten), Plan-Felder
   `encounter.encounter`/`encounter.zone`/`map_change` → `apply_planner_map`. Mock erkennt
@@ -630,7 +637,7 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `StageBattleMap`, Log `utils/exploreEvents.ts`. E2E `stage-explore.mjs`.
   Starter-Abenteuer (Schritt 5): Paket `presets/crypt-of-shadows/` (Helden-Karten mit `extensions.otakusoul_5e.class`,
   Akte in `scenes/`, von `ensure_adventure_scenes` in den Szenenordner kopiert; Paket auch in `scan_available_characters`).
-  Klasse: Szenenwahl (`hero_classes`) > Karte (`combat5e::card_class`, nur beim Beitritt) > Platz in der Gruppe; ohne
+  Klasse: Szenenwahl (`hero_classes`) > Karte (`rules5e::card_class`, nur beim Beitritt) > Platz in der Gruppe; ohne
   Wahl behält eine Figur ihre Klasse. Akt-Ziele `SceneRules.goals` (`encounter` = vorbereitete Begegnung gewonnen über
   `BattleMap.active_encounter` → `won_fight`, `exit` = Ausgang zur Karte → `reach_goal`), `next_scene` →
   `continue_stage_adventure` (Gruppe, Klassen, Inventar, lange Rast). Abgewählte Gefährten verlassen außerhalb von
@@ -641,7 +648,7 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   Stufen & Merkmale (Schritt 6): `rules5e/features.rs` (Tabelle Klasse → Stufe → Merkmal, `hero_stats_at`, `level_up`
   bis `MAX_LEVEL` 3, Verbrauch in `Stats5e.resources_used`, `short_rest`/`long_rest`, `arcane_recovery`). Meilenstein:
   `continue_adventure` hebt die Gruppe um eine Stufe (`ExploreEvent::LevelUp`). Aktionen `feature:<id>`
-  (`feature_options`/`use_feature` in `combat5e.rs`, `TurnDecision::Feature`), Ereignis `CombatEvent::Feature`;
+  (`feature_options`/`use_feature` in `rules5e/fight.rs`, `TurnDecision::Feature`), Ereignis `CombatEvent::Feature`;
   Hinterhältiger Angriff und Krit ab 19 über `AttackSituation.sneak_dice`/`critical_from`, Vertriebene (`TURNED`)
   weichen zurück und verteidigen sich, Schaden beendet es. Gefährten nutzen Zweiter Atem selbst.
   Reaktion *Schild* (`CastingTime::Reaction`, `SpellEffect::Shield`): `resolve_attack_with` wirkt sie automatisch, wenn
@@ -652,7 +659,7 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `monsters.json` braucht ein Token `public/stage/tokens/monster_<id>.svg` (prüft `stageAssets.test.ts`).
   Ausrüstung: `presets/srd5/equipment.json` + `rules5e/equipment.rs` (`Stats5e.equipped`, `recompute_gear` setzt
   `armor_class` und Waffenangriffe neu, andere Vorlagenangriffe wie Feuerpfeil bleiben; Klassen haben `proficiencies`
-  und Startausrüstung `equipment`). Inventar-Einträge tragen `srd_id`; `explore5e::add_items` (Einträge `id`/`id*n`,
+  und Startausrüstung `equipment`). Inventar-Einträge tragen `srd_id`; `rules5e::add_items` (Einträge `id`/`id*n`,
   gleiche stapeln), Beute aus `BattleMap.loot` (Truhen) und `MapEncounter.loot` (Sieg), Planer `inventory_add.srd_id`.
   Anlegen/Ablegen nur außerhalb von Kämpfen (`equip_stage_item`/`unequip_stage_item`, Snapshot), Bogen-Abschnitt
   `sheet-gear`, Werte-Text `utils/srdItems.ts` (`itemSummary`, Katalog über `list_srd_items`).
