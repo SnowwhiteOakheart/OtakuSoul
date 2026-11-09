@@ -60,13 +60,18 @@ speichern die validierten Originaldownloads atomar in der eigenen nativen Hub-Bi
 (`native-ui/src/hub_store.rs`, Pfad über `otakusoul_paths::native_data_dir`). Beim Start wird nur gelesen.
 Profilkopien bleiben getrennt. Editoränderungen sind Entwürfe bis zum expliziten Export.
 Feste HTTPS-Quelle und Größenlimits. Der öffentliche Katalog filtert markierte 18+-Inhalte.
-Szenarien dienen der Vorschau. Der Hub vergleicht installierte Revisionen mit dem Katalog.
+Hub-Szenarien öffnen die lesende native Stage-Vorschau. Der Hub vergleicht installierte Revisionen mit dem Katalog.
 Ausdrückliche Updates speichern nur neuere Originale in derselben Bibliothek. Die aktive Fassung
 wechselt beim nächsten App-Start. Dauerhafte Editoränderungen und deren Konfliktbehandlung folgen später.
 Weltansichten verknüpfen die Originalreferenzen mit den passenden Katalogeinträgen. Das Weltenraster
 lädt Titelbilder beim Scrollen in der Nähe des sichtbaren Bereichs. Die Weltansicht nutzt denselben
 begrenzten Bildcache und priorisiert ihr Titelbild. Der Hub liest die mitgelieferten Tauri-Sprachpakete über
 `native-ui/src/ui_text.rs`. Zusätzliche Prototyp-Texte stehen in `native-ui/assets/locales/de.json`.
+Native Startseite in `native-ui/src/home_view.rs` nach Tauri `HomeView.tsx`. Story-Galerie, Genre-
+und Sammlungsfilter, Schauplatz, Einstiegsideen und Auftakt in `stage_views.rs` nach `StoryGallery.tsx`.
+`stage_preview.rs` liest die mitgelieferten Szenendefinitionen und öffentliche Gateway-Szenarien.
+Die Galerie verwendet die Inhaltslokalisierung separat von den gemeinsamen UI-Schlüsseln. Stage-Runden,
+Szenenverwaltung, Spielstände und 5e-Engine sind weitere Etappen.
 
 ### Allgemeine Arbeitsregeln
 

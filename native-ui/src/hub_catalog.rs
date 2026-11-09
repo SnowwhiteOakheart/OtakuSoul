@@ -11,6 +11,7 @@ pub(crate) const PUBLIC_BASE: &str =
 const REGISTRY_LIMIT: usize = 2 * 1024 * 1024;
 const CHARACTER_LIMIT: usize = 32 * 1024 * 1024;
 const LOREBOOK_LIMIT: usize = 4 * 1024 * 1024;
+const SCENE_LIMIT: usize = 4 * 1024 * 1024;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Kind {
@@ -106,7 +107,11 @@ impl Entry {
     }
 
     pub fn can_import(&self) -> bool {
-        self.download.is_some()
+        matches!(self.kind, Kind::Characters | Kind::Lorebooks) && self.download.is_some()
+    }
+
+    pub fn can_preview_scene(&self) -> bool {
+        self.kind == Kind::Scenes && self.download.is_some()
     }
 
     pub fn download_filename(&self) -> Option<&str> {
@@ -182,7 +187,8 @@ fn parse_entry(kind: Kind, entry: &Value) -> Option<Entry> {
     };
     let download = match kind {
         Kind::Characters | Kind::Lorebooks => Some(validate_download(kind, text("download_url")?)?),
-        Kind::Worlds | Kind::Scenes => None,
+        Kind::Scenes => text("download_url").and_then(|address| validate_download(kind, address)),
+        Kind::Worlds => None,
     };
     Some(Entry {
         id: id.into(),
@@ -211,7 +217,8 @@ fn validate_download(kind: Kind, address: &str) -> Option<Download> {
     let (folder, suffixes, limit) = match kind {
         Kind::Characters => ("cards_gateway/", &[".png", ".json"][..], CHARACTER_LIMIT),
         Kind::Lorebooks => ("lorebooks_gateway/", &[".json"][..], LOREBOOK_LIMIT),
-        Kind::Worlds | Kind::Scenes => return None,
+        Kind::Scenes => ("stages_gateway/", &[".json"][..], SCENE_LIMIT),
+        Kind::Worlds => return None,
     };
     let url = Url::parse(address).ok()?;
     if url.scheme() != "https"

@@ -8,6 +8,7 @@ mod chat_search;
 mod connection;
 mod expressions;
 mod file_export;
+mod home_view;
 mod hub_catalog;
 mod hub_cover;
 mod hub_store;
@@ -19,6 +20,8 @@ mod message_content;
 mod model;
 mod profile;
 mod prompt_preview;
+mod stage_preview;
+mod stage_views;
 mod ui_text;
 mod views;
 
@@ -127,6 +130,7 @@ enum Page {
     LorebookDetails,
     LorebookEditor,
     Hub,
+    Stage,
     Planned(&'static str),
 }
 
@@ -165,6 +169,13 @@ enum Message {
     LibrarySearch(String),
     LibraryTag(Option<String>),
     ResetLibraryFilters,
+    StageFilter(StageFilter),
+    StageSelect(usize),
+    StageBack,
+    StageOpening,
+    StageBrowseHub,
+    HubScenePreview(String),
+    HubSceneLoaded(String, u64, Result<stage_preview::Scene, String>),
     HubKind(hub_catalog::Kind),
     HubSearch(String),
     HubReload(hub_catalog::Kind),
@@ -470,6 +481,16 @@ impl Default for Hub {
 }
 
 impl Hub {
+    fn contains_visible_entry(&self, kind: hub_catalog::Kind, id: &str) -> bool {
+        self.world.as_ref().map_or(self.kind == kind, |world| {
+            world
+                .entry
+                .members
+                .iter()
+                .any(|member| member.kind == kind && member.id == id)
+        })
+    }
+
     fn entry_state(&self, key: &(hub_catalog::Kind, String), revision: u32) -> HubEntryState {
         match self.installed.get(key) {
             None => HubEntryState::Available,
@@ -483,6 +504,46 @@ impl Hub {
         self.covers.clear_pending();
         self.visible_covers.clear();
         self.cover_generation += 1;
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+enum StageFilter {
+    #[default]
+    All,
+    Beginner,
+    Genre(stage_preview::Genre),
+    Collection(stage_preview::Collection),
+}
+
+struct Stage {
+    scenes: Vec<stage_preview::Scene>,
+    filter: StageFilter,
+    selected: Option<usize>,
+    opening: bool,
+    from_hub: HashMap<String, usize>,
+    hub_loading: Option<String>,
+    hub_notice: String,
+}
+
+fn download_hub_scene(entry: &hub_catalog::Entry) -> Result<stage_preview::Scene, String> {
+    let bytes = hub_catalog::download(entry)?;
+    let raw = serde_json::from_slice(&bytes)
+        .map_err(|_| "Das Hub-Szenario enthält kein gültiges JSON.")?;
+    stage_preview::parse_hub(raw, &entry.id, entry.original_title())
+}
+
+impl Default for Stage {
+    fn default() -> Self {
+        Self {
+            scenes: stage_preview::bundled(),
+            filter: StageFilter::All,
+            selected: None,
+            opening: false,
+            from_hub: HashMap::new(),
+            hub_loading: None,
+            hub_notice: String::new(),
+        }
     }
 }
 
@@ -523,6 +584,7 @@ struct App {
     library_search: String,
     library_tag: Option<String>,
     hub: Hub,
+    stage: Stage,
     lorebooks: Vec<lore_catalog::Book>,
     lorebook_selected: Option<usize>,
     lore_entry_search: String,
@@ -632,6 +694,7 @@ impl Default for App {
             library_search: String::new(),
             library_tag: None,
             hub: Hub::default(),
+            stage: Stage::default(),
             lorebooks: Vec::new(),
             lorebook_selected: None,
             lore_entry_search: String::new(),
@@ -1074,19 +1137,8 @@ impl App {
 
     fn import_hub(&mut self, kind: hub_catalog::Kind, id: String) -> Task<Message> {
         let key = (kind, id);
-        let visible = self
-            .hub
-            .world
-            .as_ref()
-            .map_or(self.hub.kind == kind, |world| {
-                world
-                    .entry
-                    .members
-                    .iter()
-                    .any(|member| member.kind == kind && member.id == key.1)
-            });
         if self.page != Page::Hub
-            || !visible
+            || !self.hub.contains_visible_entry(kind, &key.1)
             || self.profile_busy
             || self.hub.library_loading
             || self.hub.loading.contains(&kind)
@@ -1123,6 +1175,49 @@ impl App {
                 import_hub_content(&root, protected_home.as_deref(), kind, &entry, update)
             }),
             Message::HubImported,
+        )
+    }
+
+    fn show_hub_scene(&mut self, index: usize) {
+        self.hub.world = None;
+        self.hub.reset_cover_requests();
+        self.stage.filter = StageFilter::All;
+        self.stage.selected = Some(index);
+        self.stage.opening = false;
+        self.page = Page::Stage;
+    }
+
+    fn preview_hub_scene(&mut self, id: String) -> Task<Message> {
+        let kind = hub_catalog::Kind::Scenes;
+        if self.page != Page::Hub
+            || !self.hub.contains_visible_entry(kind, &id)
+            || self.stage.hub_loading.is_some()
+        {
+            return Task::none();
+        }
+        let Some(entry) = self
+            .hub
+            .catalog
+            .get(&kind)
+            .and_then(|entries| {
+                entries
+                    .iter()
+                    .find(|entry| entry.id == id && entry.can_preview_scene())
+            })
+            .cloned()
+        else {
+            return Task::none();
+        };
+        self.stage.hub_notice.clear();
+        if let Some(&index) = self.stage.from_hub.get(&id) {
+            self.show_hub_scene(index);
+            return Task::none();
+        }
+        self.stage.hub_loading = Some(id.clone());
+        let generation = self.hub.cover_generation;
+        Task::perform(
+            background(move || download_hub_scene(&entry)),
+            move |result| Message::HubSceneLoaded(id.clone(), generation, result),
         )
     }
 
@@ -2133,6 +2228,59 @@ impl App {
                 self.library_search.clear();
                 self.library_tag = None;
             }
+            Message::StageFilter(filter) => {
+                self.stage.filter = filter;
+                self.stage.selected = None;
+                self.stage.opening = false;
+            }
+            Message::StageSelect(index) => {
+                if self.stage.scenes.get(index).is_some() {
+                    self.stage.selected = Some(index);
+                    self.stage.opening = false;
+                }
+            }
+            Message::StageBack => {
+                if self.stage.opening {
+                    self.stage.opening = false;
+                } else {
+                    self.stage.selected = None;
+                }
+            }
+            Message::StageOpening => {
+                if self.stage.selected.is_some() {
+                    self.stage.opening = true;
+                }
+            }
+            Message::StageBrowseHub => {
+                self.hub.kind = hub_catalog::Kind::Scenes;
+                return self.update(Message::Navigate(Page::Hub));
+            }
+            Message::HubScenePreview(id) => return self.preview_hub_scene(id),
+            Message::HubSceneLoaded(id, generation, result) => {
+                if self.stage.hub_loading.as_deref() != Some(&id) {
+                    return Task::none();
+                }
+                self.stage.hub_loading = None;
+                match result {
+                    Ok(scene) => {
+                        let index = self.stage.scenes.len();
+                        self.stage.scenes.push(scene);
+                        if self.page == Page::Hub
+                            && self.hub.cover_generation == generation
+                            && self
+                                .hub
+                                .contains_visible_entry(hub_catalog::Kind::Scenes, &id)
+                        {
+                            self.show_hub_scene(index);
+                        }
+                        self.stage.from_hub.insert(id, index);
+                    }
+                    Err(error) => {
+                        self.stage.hub_notice =
+                            ui_text::format("hub.loadError", &[("error", &error)]);
+                    }
+                }
+            }
             Message::HubKind(kind) => {
                 self.hub.kind = kind;
                 self.hub.world = None;
@@ -2326,6 +2474,10 @@ impl App {
                 }
                 if page == Page::Prompt {
                     self.refresh_prompt();
+                }
+                if page == Page::Stage {
+                    self.stage.selected = None;
+                    self.stage.opening = false;
                 }
                 self.page = page;
                 if page == Page::Hub && !self.hub.catalog.contains_key(&self.hub.kind) {
@@ -2651,6 +2803,15 @@ mod tests {
         for kind in Kind::ALL {
             let entries = hub_catalog::load(kind).unwrap();
             assert!(!entries.is_empty(), "{kind:?}");
+            if kind == Kind::Scenes {
+                let entry = entries
+                    .iter()
+                    .find(|entry| entry.can_preview_scene())
+                    .unwrap();
+                let scene = download_hub_scene(entry).unwrap();
+                assert_eq!(scene.id, entry.id);
+                assert!(!scene.title("de").is_empty());
+            }
             if let Some(entry) = entries.iter().find(|entry| entry.can_import()) {
                 let HubImportResult::Installed(installed) =
                     import_hub_content(directory.path(), None, kind, entry, false).unwrap()
@@ -2741,6 +2902,42 @@ mod tests {
         assert_eq!(reopened.hub.installed.len(), 2);
         assert_eq!(reopened.preview.characters.len(), 5);
         assert_eq!(reopened.lorebooks.len(), 1);
+    }
+
+    #[test]
+    fn stage_opening_returns_to_the_same_story_and_collection() {
+        let mut app = App::default();
+        let _ = app.update(Message::Navigate(Page::Stage));
+        let collection = StageFilter::Collection(stage_preview::Collection::Starter);
+        let _ = app.update(Message::StageFilter(collection));
+        let _ = app.update(Message::StageSelect(0));
+        let _ = app.update(Message::StageOpening);
+        assert!(app.stage.opening);
+        let _ = app.update(Message::StageBack);
+        assert_eq!(app.stage.selected, Some(0));
+        assert!(!app.stage.opening);
+        let _ = app.update(Message::StageBack);
+        assert_eq!(app.stage.selected, None);
+        assert_eq!(app.stage.filter, collection);
+    }
+
+    #[test]
+    fn late_hub_scene_is_cached_without_leaving_the_current_page() {
+        let mut app = App::default();
+        let _ = app.update(Message::Navigate(Page::Hub));
+        let id = "hub-scene".to_owned();
+        app.stage.hub_loading = Some(id.clone());
+        let generation = app.hub.cover_generation;
+        let _ = app.update(Message::Navigate(Page::Chat));
+        let scene = stage_preview::parse_hub(
+            serde_json::json!({"title": "Hub-Szene", "description": "Vorschau"}),
+            &id,
+            "",
+        )
+        .unwrap();
+        let _ = app.update(Message::HubSceneLoaded(id.clone(), generation, Ok(scene)));
+        assert_eq!(app.page, Page::Chat);
+        assert_eq!(app.stage.scenes[app.stage.from_hub[&id]].id, id);
     }
 
     #[test]

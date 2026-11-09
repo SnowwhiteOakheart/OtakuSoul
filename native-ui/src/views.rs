@@ -55,7 +55,7 @@ fn read_only_keys(press: text_editor::KeyPress) -> Option<text_editor::Binding<M
     }
 }
 
-fn muted<'a>(
+pub(super) fn muted<'a>(
     label: impl Into<std::borrow::Cow<'a, str>>,
     size: u32,
     theme: &Theme,
@@ -65,7 +65,7 @@ fn muted<'a>(
         .color(appearance::muted(theme))
 }
 
-fn control<'a>(
+pub(super) fn control<'a>(
     symbol: Icon,
     label: impl Into<std::borrow::Cow<'a, str>>,
     action: Message,
@@ -167,6 +167,7 @@ impl App {
             Page::LorebookDetails => self.lorebook_details(),
             Page::LorebookEditor => self.lorebook_editor(),
             Page::Hub => self.hub_view(),
+            Page::Stage => self.stage_view(),
             Page::Planned(label) => self.planned(label),
         };
         column![self.header(), row![self.navigation(), content].height(Fill)]
@@ -235,7 +236,7 @@ impl App {
                 &[
                     (Page::Home, Icon::Home, "Start"),
                     (Page::Chat, Icon::Chat, "Chat"),
-                    (Page::Planned("Stage"), Icon::Stage, "Stage"),
+                    (Page::Stage, Icon::Stage, "Stage"),
                     (Page::Planned("Companion"), Icon::Companion, "Companion"),
                 ],
             ),
@@ -817,21 +818,6 @@ impl App {
             .into()
     }
 
-    fn home(&self) -> Element<'_, Message> {
-        container(
-            column![
-                text("Schön, dass Du da bist!").size(30),
-                muted("Mit wem möchtest Du heute sprechen?", 16, &self.theme()),
-                self.characters()
-            ]
-            .spacing(18),
-        )
-        .padding(24)
-        .height(Fill)
-        .width(Fill)
-        .into()
-    }
-
     fn characters(&self) -> Element<'_, Message> {
         iced::widget::responsive(move |size| self.character_library(size.width)).into()
     }
@@ -1172,6 +1158,9 @@ impl App {
         if !hub.notice.is_empty() {
             list = list.push(text(&hub.notice).size(14));
         }
+        if !self.stage.hub_notice.is_empty() {
+            list = list.push(text(&self.stage.hub_notice).size(14));
+        }
         if !self.hub_library_notice().is_empty() {
             list = list.push(text(self.hub_library_notice()).size(14));
         }
@@ -1235,6 +1224,8 @@ impl App {
         }
         if entry.can_import() {
             item = item.push(self.hub_import_button(kind, entry));
+        } else if entry.can_preview_scene() {
+            item = item.push(self.hub_scene_button(entry));
         } else if kind == HubKind::Worlds {
             item = item.push(control(
                 Icon::Eye,
@@ -1271,6 +1262,23 @@ impl App {
             .style(appearance::card)
             .clip(true)
             .into()
+    }
+
+    fn hub_scene_button<'a>(&self, entry: &HubEntry) -> Element<'a, Message> {
+        let loading = self.stage.hub_loading.as_deref() == Some(entry.id.as_str());
+        button(ui_text::text(if loading {
+            "common.loading"
+        } else {
+            "gallery.look"
+        }))
+        .style(appearance::subtle_button)
+        .on_press_maybe(
+            self.stage
+                .hub_loading
+                .is_none()
+                .then(|| Message::HubScenePreview(entry.id.clone())),
+        )
+        .into()
     }
 
     fn hub_import_button<'a>(&self, kind: HubKind, entry: &HubEntry) -> Element<'a, Message> {
@@ -1360,6 +1368,9 @@ impl App {
         if !self.hub.notice.is_empty() {
             content = content.push(text(&self.hub.notice).size(14));
         }
+        if !self.stage.hub_notice.is_empty() {
+            content = content.push(text(&self.stage.hub_notice).size(14));
+        }
         if !self.hub_library_notice().is_empty() {
             content = content.push(text(self.hub_library_notice()).size(14));
         }
@@ -1419,6 +1430,8 @@ impl App {
                 let mut item = row![metadata].spacing(12).align_y(Alignment::Center);
                 if entry.can_import() {
                     item = item.push(self.hub_import_button(kind, entry));
+                } else if entry.can_preview_scene() {
+                    item = item.push(self.hub_scene_button(entry));
                 } else {
                     item = item.push(muted(
                         ui_text::text("hub.native.stagePreview"),
@@ -2396,7 +2409,7 @@ impl App {
     }
 }
 
-fn shorten(value: &str, limit: usize) -> String {
+pub(super) fn shorten(value: &str, limit: usize) -> String {
     let mut chars = value.chars();
     let shortened: String = chars.by_ref().take(limit).collect();
     if chars.next().is_some() {
@@ -2436,7 +2449,9 @@ fn hub_byline(entry: &HubEntry) -> String {
     }
 }
 
-fn scroll<'a>(content: impl Into<Element<'a, Message>>) -> iced::widget::Scrollable<'a, Message> {
+pub(super) fn scroll<'a>(
+    content: impl Into<Element<'a, Message>>,
+) -> iced::widget::Scrollable<'a, Message> {
     scrollable(content)
         .style(appearance::scrollbar)
         .direction(scrollable::Direction::Vertical(

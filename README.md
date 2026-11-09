@@ -13,6 +13,7 @@
 > Settings can create a demo profile with fictional conversations; imported conversations remain read-only.
 > A separate connection test checks an existing AI endpoint with a short fixed request.
 > The native Hub browses the public worlds, characters, scenarios and lorebooks catalogs. The worlds grid loads covers on demand, and world details include linked content. A separate native library stores imported character cards, lorebooks and explicitly requested updates. Updates take effect on restart.
+> The native home screen opens Chat, Stage and Hub. Stage previews the bundled stories, three adventure acts and public Hub scenarios, including the opening narration and suggested starting actions.
 
 **English** · [Deutsch](README.de.md) · [Русский](README.ru.md)
 

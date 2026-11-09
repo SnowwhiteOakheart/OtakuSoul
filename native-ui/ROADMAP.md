@@ -674,7 +674,9 @@ wurden nach dem Durchlauf textlich korrigiert.
 - [x] Versionsabgleich und ausdrücklich angeforderte Updates für importierte Originale.
 - [ ] Konfliktbehandlung für dauerhaft gespeicherte Bearbeitungen und Aktivierung während der Sitzung.
 - [ ] Registry und Downloads für Updates an denselben Repository-Stand binden.
-- [ ] Szenarien an die native Stage anbinden. Avatare und Chub AI separat integrieren.
+- [x] Öffentliche Hub-Szenarien direkt in der nativen Stage-Vorschau öffnen.
+- [ ] Szenario-Installation und Spielfortschritt an die Stage-Laufzeit anbinden. Avatare und Chub AI
+  separat integrieren.
 
 `src/hub_catalog.rs` lädt den angewählten Reiter im Hintergrund von der festen öffentlichen
 OtakuSoul-Quelle. „Neu laden“ fragt den Reiter erneut ab. Ein Fehler beim Aktualisieren erhält den
@@ -698,7 +700,7 @@ Oberfläche und Inhalte. App-weite Sprachauswahl und die restlichen Ansichten fo
 Karten- und Lorebook-Downloads sind auf die jeweiligen Gateway-Ordner und Dateitypen begrenzt.
 Markierte 18+-Einträge und markierte Downloads bleiben ausgefiltert. Ein gleich referenziertes
 Lorebook bleibt beim Import erhalten. Die importierten Inhalte nutzen die bestehenden Editoren und
-die explizite Exportfunktion. Für das Starten eines Szenarios ist die native Stage Voraussetzung.
+die explizite Exportfunktion. „Ansehen“ lädt öffentliche Hub-Szenarien in die lesende Stage-Vorschau.
 
 Prüfstand 09.11.2026: Der Nutzer hat Charakter- und Lorebook-Import im Hub-Fenster bestätigt.
 Für die neue Weltansicht bestanden 131 native Tests und der separate Live-Test mit allen vier
@@ -745,8 +747,28 @@ Live-Test aktualisierte eine temporäre Bibliothek von Testrevision 3 auf Katalo
 Der lokale Test mit unterschiedlichen Lorebook-Fassungen prüft, dass ein offener Entwurf
 erhalten bleibt und erst eine frische App-Instanz die neue Fassung liest.
 
+### Startseite und Stage-Galerie
+
+- [x] Startseite nach `HomeView.tsx` mit responsiven Einstiegskarten für Chat, Stage und Hub,
+  aktivem Charakterporträt sowie Zugriff auf Einstellungen, Charaktere und Lorebooks.
+- [x] Stage-Galerie nach `StoryGallery.tsx` mit den zwei mitgelieferten Titelbildern, Starter-
+  Geschichten, den drei Gruft-Akten und Filtern für Genre und Einsteiger.
+- [x] Szenariovorschau mit Schauplatz, Tageszeit, Gruppe, Inhaltsangaben, Einstiegsideen und
+  lesbarem Auftakt. Öffentliche Hub-Szenarien werden beim Ansehen für die Sitzung geladen.
+- [ ] Szenenverwaltung und Story-Wizard, Spielansicht mit echten Stage-Runden und Speichern.
+- [ ] 5e-Spielbrett, Kampf und Erkundung über die vorhandene Stage-/Regel-Engine.
+
+Gemeinsame UI-Schlüssel kommen aus den mitgelieferten Tauri-Sprachpaketen. `stage_preview.rs`
+verwendet dieselben Szenendateien und die vorhandene Inhaltslokalisierung. Szenario-IDs sind von
+lokalisierten Titeln getrennt. Hub-Downloads werden auf öffentliche Gateway-JSONs begrenzt.
+Die Vorschau lädt keine referenzierten Figuren, Lorebooks oder Medien zusätzlich.
+
+Windows-Bedienprobe am 09.11.2026 im Standardfenster und maximiert. Geprüft wurden Startkarten
+mit Charakterporträt, beide Sammlungscover, die drei Gruft-Akte, der Science-Fiction-Filter, der
+Auftakt von Kepler-9 und der Einstieg aus dem Hub in „Redaktionsschluss“. Der Vergleich orientierte
+sich an den React-Quellen. Der vollständige Funktionsvergleich folgt mit den weiteren Stage-Teilen.
+
 - [ ] Einstellungen/Onboarding, weitere Charakter-/Lorebook-Editoren, Gedächtnis und Im-/Export.
-- [ ] Stage und 5e einschließlich Battlemap; Fachlogik wiederverwenden.
 - [ ] Native Audioausgabe/-aufnahme separat planen, danach Avatarintegration separat bewerten.
 - [ ] Windows: DPI (100/150/200 %), mehrere Monitore, Tastatur, Screenreader, Zwischenablage, Dateidialoge.
 - [ ] Linux: reale X11-/Wayland-Tests, GNOME/KDE, Portale und Grafiktreiber.
