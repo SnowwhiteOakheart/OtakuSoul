@@ -109,13 +109,8 @@ fn run_request(
         .block_on(receive(settings, cancellation, body, timeout))
 }
 
-async fn receive(
-    settings: Settings,
-    cancellation: Cancellation,
-    body: serde_json::Value,
-    timeout: Duration,
-) -> Result<Report, String> {
-    let url = url::Url::parse(settings.endpoint.trim())
+fn endpoint(value: &str) -> Result<url::Url, String> {
+    let url = url::Url::parse(value.trim())
         .map_err(|_| "Bitte eine vollständige HTTP- oder HTTPS-Adresse eingeben.")?;
     if !matches!(url.scheme(), "http" | "https")
         || !url.username().is_empty()
@@ -123,16 +118,29 @@ async fn receive(
     {
         return Err("Bitte HTTP/HTTPS ohne Zugangsdaten in der Adresse verwenden.".into());
     }
-    if settings.format == Format::Anthropic && settings.model.trim().is_empty() {
-        return Err("Bitte den Modellnamen für Anthropic eingeben.".into());
-    }
-    let client = reqwest::Client::builder()
+    Ok(url)
+}
+
+fn client(url: &url::Url, timeout: Duration) -> Result<reqwest::Client, String> {
+    let mut builder = reqwest::Client::builder()
         .redirect(reqwest::redirect::Policy::none())
         .connect_timeout(Duration::from_secs(5))
-        .timeout(timeout)
+        .timeout(timeout);
+    if url
+        .host_str()
+        .is_some_and(|host| matches!(host, "localhost" | "127.0.0.1" | "[::1]"))
+    {
+        builder = builder.no_proxy();
+    }
+    builder
         .build()
-        .map_err(|_| "Der HTTP-Client konnte nicht vorbereitet werden.")?;
-    let mut request = client.post(url).json(&body);
+        .map_err(|_| "Der HTTP-Client konnte nicht vorbereitet werden.".into())
+}
+
+fn authenticate(
+    mut request: reqwest::RequestBuilder,
+    settings: &Settings,
+) -> reqwest::RequestBuilder {
     match settings.format {
         Format::OpenAi => {
             if !settings.key.0.is_empty() {
@@ -146,6 +154,76 @@ async fn receive(
             }
         }
     }
+    request
+}
+
+fn model_url(settings: &Settings) -> Result<url::Url, String> {
+    let mut url = endpoint(&settings.endpoint)?;
+    let suffix = match settings.format {
+        Format::OpenAi => "/chat/completions",
+        Format::Anthropic => "/messages",
+    };
+    let Some(prefix) = url.path().trim_end_matches('/').strip_suffix(suffix) else {
+        return Err("Aus diesem Chat-Endpunkt lässt sich keine Modellliste ableiten. Gib die Modell-ID direkt ein.".into());
+    };
+    let path = format!("{prefix}/models");
+    url.set_path(&path);
+    url.set_query(None);
+    url.set_fragment(None);
+    Ok(url)
+}
+
+pub fn list_models(settings: Settings, cancellation: Cancellation) -> Result<Vec<String>, String> {
+    let url = model_url(&settings)?;
+    let client = client(&url, Duration::from_secs(20))?;
+    let request = authenticate(client.get(url), &settings);
+    tokio::runtime::Builder::new_current_thread().enable_all().build()
+        .map_err(|_| "Der Netzwerkdienst konnte nicht gestartet werden.")?
+        .block_on(async {
+            let response = tokio::select! {
+                biased;
+                _ = cancellation.cancelled() => return Err("Anfrage abgebrochen.".into()),
+                response = request.send() => response.map_err(|_| "Die Modellliste konnte nicht abgerufen werden.")?,
+            };
+            if !response.status().is_success() {
+                return Err(format!("Modellliste nicht verfügbar (HTTP {}).", response.status().as_u16()));
+            }
+            let mut chunks = response.bytes_stream();
+            let mut bytes = Vec::new();
+            while let Some(chunk) = tokio::select! {
+                biased;
+                _ = cancellation.cancelled() => return Err("Anfrage abgebrochen.".into()),
+                chunk = chunks.next() => chunk,
+            } {
+                let chunk = chunk.map_err(|_| "Die Modellliste wurde nicht vollständig übertragen.")?;
+                if bytes.len().saturating_add(chunk.len()) > 8 * 1024 * 1024 {
+                    return Err("Die Modellliste ist zu groß.".into());
+                }
+                bytes.extend_from_slice(&chunk);
+            }
+            let body: serde_json::Value = serde_json::from_slice(&bytes).map_err(|_| "Die Modellliste ist ungültig.")?;
+            let models = body["data"].as_array().ok_or("Die Antwort enthält keine Modellliste.")?;
+            let mut ids: Vec<String> = models.iter().filter_map(|model| {
+                model["id"].as_str().filter(|id| !id.trim().is_empty() && id.len() <= 512).map(str::to_owned)
+            }).collect();
+            ids.sort_unstable();
+            ids.dedup();
+            Ok(ids)
+        })
+}
+
+async fn receive(
+    settings: Settings,
+    cancellation: Cancellation,
+    body: serde_json::Value,
+    timeout: Duration,
+) -> Result<Report, String> {
+    let url = endpoint(&settings.endpoint)?;
+    if settings.format == Format::Anthropic && settings.model.trim().is_empty() {
+        return Err("Bitte den Modellnamen für Anthropic eingeben.".into());
+    }
+    let client = client(&url, timeout)?;
+    let request = authenticate(client.post(url).json(&body), &settings);
     let response = tokio::select! {
         biased;
         _=cancellation.cancelled()=>return Err("Anfrage abgebrochen.".into()),
@@ -279,6 +357,27 @@ mod tests {
             stream.write_all(response.as_bytes()).unwrap();
         });
         (endpoint, received)
+    }
+
+    #[test]
+    fn model_catalog_uses_the_same_origin_and_deduplicates_model_ids() {
+        let (base, received) = server_with_request(
+            "200 OK",
+            r#"{"data":[{"id":"b"},{"id":"a"},{"id":"b"},{"id":""}]}"#,
+        );
+        let settings = Settings {
+            endpoint: base.replace("/v1/", "/api/v1/") + "?chat=1",
+            key: Secret("fixture-secret".into()),
+            ..Settings::default()
+        };
+        assert_eq!(
+            list_models(settings, Cancellation::new()).unwrap(),
+            ["a", "b"]
+        );
+        let bytes = received.recv_timeout(Duration::from_secs(3)).unwrap();
+        let request = String::from_utf8(bytes).unwrap().to_ascii_lowercase();
+        assert!(request.starts_with("get /api/v1/models http/"));
+        assert!(request.contains("authorization: bearer fixture-secret"));
     }
 
     #[test]

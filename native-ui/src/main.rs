@@ -15,6 +15,9 @@ mod hub_cover;
 mod hub_store;
 mod icons;
 mod library;
+mod llm_control;
+mod llm_view;
+mod local_llm;
 mod lore_catalog;
 mod lore_draft;
 mod message_content;
@@ -363,6 +366,18 @@ enum Message {
     ModelChanged(String),
     KeyChanged(connection::Secret),
     FormatChanged(connection::Format),
+    LlmBackend(llm_control::Backend),
+    LlmFetchCatalog,
+    LlmCancelCatalog,
+    LlmCatalogLoaded(u64, Result<Vec<String>, String>),
+    LlmFilter(String),
+    LlmPickFile(local_llm::FileKind),
+    LlmFilePicked(local_llm::FileKind, Option<PathBuf>),
+    LlmContext(String),
+    LlmGpuLayers(String),
+    LlmStart,
+    LlmStop,
+    LlmServerEvent(local_llm::Event),
     TestConnection,
     CancelConnection,
     ConnectionFinished {
@@ -731,6 +746,7 @@ struct App {
     rendered: Vec<message_content::Content>,
     greeting: message_content::Content,
     connection: connection::Settings,
+    llm: llm_control::Control,
     diagnostic: Option<connection::ActiveRequest>,
     diagnostic_id: u64,
     connection_status: String,
@@ -841,6 +857,7 @@ impl Default for App {
             rendered: Vec::new(),
             greeting,
             connection: connection::Settings::default(),
+            llm: llm_control::Control::default(),
             diagnostic: None,
             diagnostic_id: 0,
             connection_status: "Noch kein Verbindungstest ausgeführt.".into(),
@@ -1773,6 +1790,10 @@ impl App {
             || self.chat_request.is_some()
             || self.profile_busy
         {
+            return Task::none();
+        }
+        if !self.llm.ready() {
+            self.notice = ui_text::text("llm.native.startFirst").into();
             return Task::none();
         }
         let character = self.preview.character();
@@ -3071,8 +3092,14 @@ impl App {
                 }
             }
             Message::EndpointChanged(value) => {
-                if self.diagnostic.is_none() {
+                if self.diagnostic.is_none()
+                    && self.llm.backend == llm_control::Backend::Custom
+                    && self.connection.endpoint != value
+                {
                     self.connection.endpoint = value;
+                    self.connection.key = connection::Secret::default();
+                    self.llm.clear_catalog();
+                    self.connection_status.clear();
                 }
             }
             Message::ModelChanged(value) => {
@@ -3081,17 +3108,45 @@ impl App {
                 }
             }
             Message::KeyChanged(value) => {
-                if self.diagnostic.is_none() {
+                if self.diagnostic.is_none() && self.llm.backend != llm_control::Backend::Local {
                     self.connection.key = value;
+                    self.llm.clear_catalog();
+                    self.connection_status.clear();
                 }
             }
             Message::FormatChanged(value) => {
-                if self.diagnostic.is_none() {
+                if self.diagnostic.is_none()
+                    && self.llm.backend == llm_control::Backend::Custom
+                    && self.connection.format != value
+                {
                     self.connection.format = value;
+                    self.connection.key = connection::Secret::default();
+                    self.llm.clear_catalog();
+                    self.connection_status.clear();
                 }
             }
+            Message::LlmBackend(backend) => self.select_llm_backend(backend),
+            Message::LlmFetchCatalog => return self.request_model_catalog(),
+            Message::LlmCancelCatalog => self.cancel_model_catalog(),
+            Message::LlmCatalogLoaded(id, result) => self.finish_model_catalog(id, result),
+            Message::LlmFilter(value) => self.llm.filter = value,
+            Message::LlmPickFile(kind) => return self.pick_local_llm(kind),
+            Message::LlmFilePicked(kind, path) => self.finish_local_llm_pick(kind, path),
+            Message::LlmContext(value) => {
+                if self.llm.server.is_none() {
+                    self.llm.local.context = value;
+                }
+            }
+            Message::LlmGpuLayers(value) => {
+                if self.llm.server.is_none() {
+                    self.llm.local.gpu_layers = value;
+                }
+            }
+            Message::LlmStart => return self.start_local_llm(),
+            Message::LlmStop => self.stop_local_llm(),
+            Message::LlmServerEvent(event) => self.local_llm_event(event),
             Message::TestConnection => {
-                if self.diagnostic.is_some() {
+                if self.diagnostic.is_some() || self.llm.catalog.is_some() || !self.llm.ready() {
                     return Task::none();
                 }
                 self.diagnostic_id += 1;
@@ -3362,6 +3417,33 @@ mod tests {
         let _ = app.update(Message::HubRefresh);
         assert_eq!(app.hub.loading.len(), Kind::ALL.len());
         assert_eq!(app.hub.catalog.len(), Kind::ALL.len());
+    }
+
+    #[test]
+    fn llm_backend_switch_keeps_keys_separate_and_rejects_late_catalog_results() {
+        use llm_control::Backend;
+        let mut app = App::default();
+        let _ = app.update(Message::LlmBackend(Backend::OpenRouter));
+        let _ = app.update(Message::KeyChanged(connection::Secret("router-key".into())));
+        let _ = app.update(Message::ModelChanged("router/model".into()));
+        let _ = app.update(Message::LlmFetchCatalog);
+        let id = app.llm.catalog.as_ref().unwrap().id;
+        let _ = app.update(Message::LlmBackend(Backend::Anthropic));
+        assert!(app.connection.key.0.is_empty());
+        assert_eq!(app.connection.format, connection::Format::Anthropic);
+        let _ = app.update(Message::LlmCatalogLoaded(id, Ok(vec!["stale".into()])));
+        assert!(app.llm.models.is_empty());
+        let _ = app.update(Message::LlmBackend(Backend::OpenRouter));
+        assert_eq!(app.connection.key.0, "router-key");
+        assert_eq!(app.connection.model, "router/model");
+        let _ = app.update(Message::LlmBackend(Backend::Custom));
+        let _ = app.update(Message::KeyChanged(connection::Secret("custom-key".into())));
+        let _ = app.update(Message::EndpointChanged(
+            "http://localhost:8080/v1/chat/completions".into(),
+        ));
+        assert!(app.connection.key.0.is_empty());
+        let _ = app.update(Message::LlmBackend(Backend::Local));
+        assert!(!app.llm.ready());
     }
 
     #[test]

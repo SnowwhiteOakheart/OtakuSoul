@@ -203,7 +203,9 @@ impl App {
                     .padding([4, 8])
                     .style(appearance::card),
                 Space::new().width(Fill),
-                muted("Native Vorschau", 12, &self.theme()),
+                button(text(self.active_llm_label()).size(12))
+                    .style(appearance::subtle_button)
+                    .on_press(Message::Navigate(Page::Settings)),
                 icon_control(
                     if self.dark { Icon::Sun } else { Icon::Moon },
                     "Hell / Dunkel",
@@ -2558,44 +2560,6 @@ impl App {
             .width(Fill)
             .height(Fill)
             .into()
-    }
-
-    fn connection_settings(&self) -> Element<'_, Message> {
-        let editable = self.diagnostic.is_none();
-        let format: Element<'_, Message> = if editable {
-            iced::widget::pick_list(
-                [
-                    crate::connection::Format::OpenAi,
-                    crate::connection::Format::Anthropic,
-                ],
-                Some(self.connection.format),
-                Message::FormatChanged,
-            )
-            .padding(10)
-            .style(appearance::select)
-            .into()
-        } else {
-            text(self.connection.format.to_string()).size(14).into()
-        };
-        container(column![
-            text("Modell-Endpunkt").size(19),
-            text("Sendet eine kurze feste Testanfrage an den gewählten Server. Deine Charaktere und Chats werden dabei nicht übertragen. Bei Cloud-Anbietern kann die Anfrage kostenpflichtig sein.").size(14),
-            row![text("Format").size(13), format].spacing(12).align_y(Alignment::Center),
-            text_input("Vollständiger Streaming-Endpunkt", &self.connection.endpoint)
-                .style(appearance::input)
-                .on_input_maybe(editable.then_some(Message::EndpointChanged)).padding(10),
-            text_input("Modellname (bei lokalen Servern häufig optional)", &self.connection.model)
-                .style(appearance::input)
-                .on_input_maybe(editable.then_some(Message::ModelChanged)).padding(10),
-            text_input("API-Schlüssel (optional, nur im Arbeitsspeicher)", &self.connection.key.0).secure(true).style(appearance::input)
-                .on_input_maybe(editable.then_some(|value| Message::KeyChanged(crate::connection::Secret(value)))).padding(10),
-            row![button("Verbindung testen").padding(10).style(appearance::primary_button)
-                .on_press_maybe(editable.then_some(Message::TestConnection)),
-                button("Abbrechen").padding(10).style(appearance::subtle_button)
-                .on_press_maybe((!editable).then_some(Message::CancelConnection))].spacing(10),
-            text(&self.connection_status).size(13).width(Fill),
-            muted("„An Modell senden“ im Testchat überträgt Charakter-Prompt und Testverlauf an diesen Endpunkt. Der Verbindungstest verwendet eine feste Testnachricht.",12,&self.theme()),
-        ].spacing(12)).padding(20).width(Fill).style(appearance::card).into()
     }
 
     fn settings(&self) -> Element<'_, Message> {

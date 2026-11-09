@@ -28,8 +28,11 @@ Nutzerentscheidung 09.11.2026: Den Prototyp auf Produktionsreife hin ausbauen. V
 Stile und UI-Sprachschlüssel wiederverwenden. UI-Sprache und Inhaltssprache getrennt halten.
 Übersetzte Namen und Titel dienen der Anzeige. Persistenz, Verknüpfung und Import verwenden stabile IDs.
 Gemeinsamer Antwortdecoder: `crates/otakusoul-stream` (Tauri-Inferenz, native Verbindungsdiagnose und Modellchat).
-„An Modell senden“ im lokalen Testchat nutzt den manuell eingestellten Endpunkt und den vorbereiteten
-Charakterkontext. Strg+Enter fügt weiterhin lokal hinzu. Der Verbindungstest sendet einen festen Testprompt.
+Chat, Stage und Story-Wizard nutzen den in den nativen Einstellungen gewählten Modellanbieter.
+`llm_control.rs` verwaltet Anbieter, Modelllisten und den sitzungsgebundenen Wechsel.
+`local_llm.rs` startet eine ausdrücklich gewählte llama-server-Laufzeit mit vorhandenem GGUF
+auf Loopback und beendet ihren eigenen Kindprozess. Strg+Enter fügt weiterhin lokal hinzu.
+Der Verbindungstest sendet einen festen Testprompt.
 Gemeinsame Makros und Prompt-Renderer: `crates/otakusoul-macros` und `crates/otakusoul-prompt`.
 Tauri bleibt Adapter; native Prompt-Vorschau mit Persona, Vorlage, Autorennotiz und Antwortlänge.
 Die native Prompt-Vorschau wertet geladene globale und an die Karte gebundene Lorebooks über

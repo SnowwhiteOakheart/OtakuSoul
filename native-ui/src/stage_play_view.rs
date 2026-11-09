@@ -71,6 +71,10 @@ impl App {
             return Task::none();
         };
         let draft = play.editor.text();
+        if !self.llm.ready() {
+            play.error = label("llm.native.startFirst").into();
+            return Task::none();
+        }
         let input = draft.trim();
         if input.is_empty() || play.saving || scene.genre == Genre::Adventure5e {
             return Task::none();

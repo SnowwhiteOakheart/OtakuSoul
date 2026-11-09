@@ -66,6 +66,10 @@ impl App {
         {
             return Task::none();
         }
+        if !self.llm.ready() {
+            self.stage.edit_error = label("llm.native.startFirst").into();
+            return Task::none();
+        }
         let Some(wizard) = self
             .stage
             .wizard

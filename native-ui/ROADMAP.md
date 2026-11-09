@@ -224,11 +224,29 @@ Die Formatabnahme erfolgt gezielt für die App-Pakete und die neue Pfad-Crate.
 - [ ] Prompt-/Lore-Aufbereitung, Providerwahl und Kontextberechnung vollständig erfassen. Relevante
   TypeScript-Fachlogik in gemeinsame Rust-Services portieren, statt einen reduzierten zweiten Chat zu bauen.
 - [ ] Typisierte Streaming-Ereignisse inkl. Generierungs-ID, Fehlern, Abbruch und Ende definieren.
-- [ ] Anbieter/Modell auswählen, vorhandene Secret-Verwaltung nutzen; keine Schlüssel in Logs/Commits.
+- [x] Anbieter und Modell auswählen, Modellliste abrufen oder ID eingeben.
+- [x] Vorhandenen lokalen llama-server mit gewähltem GGUF, Kontext und GPU-Schichten starten
+  und beenden. Der aktive Anbieter ist in der Kopfzeile erreichbar.
+- [ ] Persistente Modellprofile, sichere Secret-Ablage, Laufzeit- und GGUF-Downloads.
 - [ ] Streaming anzeigen, Abbruch und Teilantworten; konsistente Persistenz im isolierten Profil.
 - [ ] Tauri-Adapter auf denselben Service umstellen und betroffene bestehende Szenarien prüfen.
 
 Abnahme: echter Chat, Verlauf nach Neustart, sauberer Abbruch und verständliche Verbindungsfehler.
+
+### LLM-Auswahl und lokaler Server
+
+Unter Einstellungen stehen ein verwalteter lokaler llama-server, OpenRouter, OpenAI,
+Anthropic, Gemini, DeepSeek, Mistral und ein frei konfigurierbarer Endpunkt zur Auswahl.
+Modelllisten werden auf Wunsch beim gewählten Anbieter abgerufen. Endpunkt, Modell-ID und
+Schlüssel bleiben pro Anbieter für die laufende App-Sitzung getrennt. Änderungen am
+benutzerdefinierten Endpunkt oder Protokoll setzen dessen bisherigen Schlüssel zurück.
+Chat, Stage und Story-Wizard nutzen dieselbe aktive Verbindung.
+
+Die native GUI startet eine ausdrücklich gewählte llama-server-Datei mit einem vorhandenen
+GGUF. Der Prozess bindet sich an einen freien Loopback-Port und verwendet einen
+sitzungsgebundenen Zugriffsschlüssel. Die GUI prüft `/health` und den authentifizierten
+`/v1/models`-Abruf. Beim Beenden wird nur der eigene Kindprozess gestoppt. Ein Modellwechsel
+erfolgt über Stoppen, Auswählen und Starten. Kontext- und GPU-Vorgaben gelten pro Start.
 An diesem Punkt gemeinsam entscheiden, ob die Migration fortgesetzt wird.
 
 ### Zwischenstand: gemeinsame Streams und Verbindungsdiagnose
