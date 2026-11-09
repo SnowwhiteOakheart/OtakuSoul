@@ -3,6 +3,7 @@
 mod appearance;
 mod card_files;
 mod character_draft;
+mod chat_request;
 mod chat_search;
 mod connection;
 mod expressions;
@@ -231,6 +232,12 @@ enum Message {
     SelectConversation(usize),
     Edit(text_editor::Action),
     Submit,
+    SendChat,
+    CancelChat,
+    ChatFinished {
+        id: u64,
+        result: Result<String, String>,
+    },
     Clear,
     LocalChat,
     ToggleTheme,
@@ -301,9 +308,11 @@ struct App {
     rendered: Vec<message_content::Content>,
     greeting: message_content::Content,
     connection: connection::Settings,
-    diagnostic: Option<connection::ActiveTest>,
+    diagnostic: Option<connection::ActiveRequest>,
     diagnostic_id: u64,
     connection_status: String,
+    chat_request: Option<connection::ActiveRequest>,
+    chat_request_id: u64,
     prompt_settings: prompt_preview::Settings,
     prompt: Result<otakusoul_prompt::AssembledPrompt, String>,
     prompt_lore: Option<Result<prompt_preview::LoreReport, String>>,
@@ -396,7 +405,7 @@ impl Default for App {
             profile_busy: false,
             epoch: 0,
             pending: HashSet::new(),
-            notice: "Vorschau ohne KI · Testnachrichten bleiben im Arbeitsspeicher.".into(),
+            notice: "Testnachrichten bleiben im Arbeitsspeicher.".into(),
             warnings: Vec::new(),
             collapsed: false,
             show_avatar: true,
@@ -410,6 +419,8 @@ impl Default for App {
             diagnostic: None,
             diagnostic_id: 0,
             connection_status: "Noch kein Verbindungstest ausgeführt.".into(),
+            chat_request: None,
+            chat_request_id: 0,
             prompt_settings,
             prompt,
             prompt_lore: None,
@@ -951,6 +962,7 @@ impl App {
         appearance::theme(self.dark)
     }
     fn sync_editor(&mut self) {
+        self.cancel_chat();
         self.invalidate_prompt_lore();
         self.editor = text_editor::Content::with_text(&self.preview.current().draft);
         self.rendered = self
@@ -963,6 +975,14 @@ impl App {
         self.refresh_prompt();
     }
 
+    fn prompt_seed(&self) -> String {
+        let conversation = self.preview.current();
+        conversation
+            .source_id
+            .clone()
+            .unwrap_or_else(|| format!("native-test:{}", conversation.character_id))
+    }
+
     fn refresh_prompt(&mut self) {
         let previous_greeting = self
             .preview
@@ -971,12 +991,7 @@ impl App {
             .as_ref()
             .map(|(_, text)| text.clone())
             .unwrap_or_default();
-        let seed = self
-            .preview
-            .current()
-            .source_id
-            .clone()
-            .unwrap_or_else(|| format!("native-test:{}", self.preview.current().character_id));
+        let seed = self.prompt_seed();
         let persona = self.prompt_settings.persona_name.trim().to_owned();
         let greeting_text = if self.preview.current().is_read_only() {
             String::new()
@@ -1062,11 +1077,66 @@ impl App {
             .into_iter()
             .map(|book| book.raw.clone())
             .collect();
-        let context = prompt_preview::recent_lore_context(self.preview.current());
+        let context = prompt_preview::recent_lore_context(self.preview.current(), None);
         Task::perform(
             background(move || Ok(prompt_preview::evaluate_lore(books, &context))),
             move |result| Message::PromptLoreEvaluated { id, result },
         )
+    }
+
+    fn send_chat(&mut self) -> Task<Message> {
+        let conversation = self.preview.current();
+        let draft = conversation.draft.trim();
+        if self.page != Page::Chat
+            || conversation.is_read_only()
+            || draft.is_empty()
+            || self.chat_request.is_some()
+            || self.profile_busy
+        {
+            return Task::none();
+        }
+        let character = self.preview.character();
+        let prompt =
+            match prompt_preview::prepare(character, &self.prompt_settings, &self.prompt_seed()) {
+                Ok(prompt) => prompt,
+                Err(error) => {
+                    self.notice = error;
+                    return Task::none();
+                }
+            };
+        let settings = self.connection.clone();
+        let books = prompt_preview::candidate_books(character, &self.lorebooks)
+            .into_iter()
+            .map(|book| book.raw.clone())
+            .collect();
+        let lore_context = prompt_preview::recent_lore_context(conversation, Some(draft));
+        let draft = draft.to_owned();
+        let greeting = conversation.greeting.as_ref().map(|(_, text)| text.clone());
+        let messages = conversation.messages.clone();
+        self.chat_request_id += 1;
+        let id = self.chat_request_id;
+        let cancellation = connection::Cancellation::new();
+        self.chat_request = Some(connection::ActiveRequest {
+            id,
+            cancellation: cancellation.clone(),
+        });
+        self.notice = "Modellantwort wird abgerufen …".into();
+        Task::perform(
+            background(move || {
+                let lore = prompt_preview::evaluate_lore(books, &lore_context);
+                let prompt = prompt_preview::render(prompt, Some(&lore));
+                let request =
+                    chat_request::Request::new(&prompt, greeting.as_deref(), &messages, &draft);
+                connection::run_chat(settings, cancellation, request)
+            }),
+            move |result| Message::ChatFinished { id, result },
+        )
+    }
+
+    fn cancel_chat(&mut self) {
+        if self.chat_request.take().is_some() {
+            self.notice = "Modellanfrage abgebrochen. Der Entwurf ist weiterhin verfügbar.".into();
+        }
     }
     fn load(&mut self, create: bool) -> Task<Message> {
         if self.card_busy {
@@ -1567,6 +1637,7 @@ impl App {
             }
             Message::ChatGreeting(choice) => {
                 if !self.preview.current().is_read_only()
+                    && self.chat_request.is_none()
                     && self.preview.current().messages.is_empty()
                     && self.chat_greeting_choices().contains(&choice)
                 {
@@ -1762,6 +1833,9 @@ impl App {
             }
             Message::SaveCharacter => self.save_character(),
             Message::Navigate(page) => {
+                if page != Page::Chat {
+                    self.cancel_chat();
+                }
                 if page == Page::Prompt {
                     self.refresh_prompt();
                 }
@@ -1789,17 +1863,48 @@ impl App {
                 }
             }
             Message::Edit(action) => {
-                if !self.preview.current().is_read_only() {
+                if !self.preview.current().is_read_only() && self.chat_request.is_none() {
                     self.editor.perform(action);
                     self.preview.current_mut().draft = self.editor.text();
                 }
             }
             Message::Submit => {
+                if self.chat_request.is_some() {
+                    return Task::none();
+                }
                 self.preview.submit();
                 self.sync_editor();
                 return iced::widget::operation::snap_to_end("conversation");
             }
+            Message::SendChat => return self.send_chat(),
+            Message::CancelChat => self.cancel_chat(),
+            Message::ChatFinished { id, result } => {
+                if self.chat_request.as_ref().map(|active| active.id) != Some(id) {
+                    return Task::none();
+                }
+                self.chat_request = None;
+                match result {
+                    Ok(answer) => {
+                        self.preview.submit();
+                        let conversation = self.preview.current_mut();
+                        conversation.messages.push(StoredMessage {
+                            role: "assistant".into(),
+                            content: answer,
+                        });
+                        conversation.message_count = conversation.messages.len();
+                        self.notice =
+                            "Modellantwort erhalten. Der Testchat bleibt im Arbeitsspeicher."
+                                .into();
+                        self.sync_editor();
+                        return iced::widget::operation::snap_to_end("conversation");
+                    }
+                    Err(error) => self.notice = error,
+                }
+            }
             Message::Clear => {
+                if self.chat_request.is_some() {
+                    return Task::none();
+                }
                 self.preview.clear();
                 self.search.clear();
                 self.sync_editor();
@@ -1906,7 +2011,7 @@ impl App {
                 self.diagnostic_id += 1;
                 let id = self.diagnostic_id;
                 let cancellation = connection::Cancellation::new();
-                self.diagnostic = Some(connection::ActiveTest {
+                self.diagnostic = Some(connection::ActiveRequest {
                     id,
                     cancellation: cancellation.clone(),
                 });
@@ -2022,6 +2127,65 @@ mod tests {
     use super::*;
 
     #[test]
+    fn model_chat_only_commits_the_draft_and_reply_on_success() {
+        let mut app = App::default();
+        app.preview.current_mut().draft = "  Neue Frage ".into();
+        let _ = app.update(Message::SendChat);
+        let id = app.chat_request.as_ref().unwrap().id;
+        let _ = app.update(Message::Submit);
+        assert!(app.preview.current().messages.is_empty());
+        let _ = app.update(Message::ChatFinished {
+            id,
+            result: Err("Testfehler".into()),
+        });
+        assert_eq!(app.preview.current().draft, "  Neue Frage ");
+        assert!(app.preview.current().messages.is_empty());
+        assert_eq!(app.notice, "Testfehler");
+
+        let _ = app.update(Message::SendChat);
+        let id = app.chat_request.as_ref().unwrap().id;
+        let _ = app.update(Message::ChatFinished {
+            id,
+            result: Ok("Antwort".into()),
+        });
+        let chat = app.preview.current();
+        assert!(chat.draft.is_empty());
+        assert_eq!(chat.message_count, 2);
+        assert_eq!(chat.messages[0].role, "user");
+        assert_eq!(chat.messages[0].content, "Neue Frage");
+        assert_eq!(chat.messages[1].role, "assistant");
+        assert_eq!(chat.messages[1].content, "Antwort");
+    }
+
+    #[test]
+    fn switching_chat_cancels_the_request_and_ignores_its_late_answer() {
+        let mut app = App::default();
+        app.preview.current_mut().draft = "Entwurf für Shiori".into();
+        let _ = app.update(Message::SendChat);
+        let id = app.chat_request.as_ref().unwrap().id;
+        let _ = app.update(Message::SelectCharacter(1));
+        let _ = app.update(Message::ChatFinished {
+            id,
+            result: Ok("Verspätete Antwort".into()),
+        });
+        assert!(app.chat_request.is_none());
+        assert!(app.preview.current().messages.is_empty());
+        let _ = app.update(Message::SelectCharacter(0));
+        assert_eq!(app.preview.current().draft, "Entwurf für Shiori");
+        assert!(app.preview.current().messages.is_empty());
+    }
+
+    #[test]
+    fn archived_conversations_cannot_start_model_requests() {
+        let mut app = App::default();
+        let archive = app.preview.current_mut();
+        archive.source_id = Some("archiv".into());
+        archive.draft = "Darf nicht gesendet werden".into();
+        let _ = app.update(Message::SendChat);
+        assert!(app.chat_request.is_none());
+    }
+
+    #[test]
     fn greeting_stays_stable_when_submitting_and_switching_chats() {
         let mut app = App::default();
         app.preview.current_mut().greeting =
@@ -2039,7 +2203,7 @@ mod tests {
     #[test]
     fn stale_connection_report_cannot_finish_the_active_test() {
         let mut app = App {
-            diagnostic: Some(connection::ActiveTest {
+            diagnostic: Some(connection::ActiveRequest {
                 id: 2,
                 cancellation: connection::Cancellation::new(),
             }),

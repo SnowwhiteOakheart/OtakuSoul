@@ -46,8 +46,9 @@ Konzept. Vergleichsquelle ist der aktuelle React-/CSS-Code; vorhandene Screensho
 - `crates/otakusoul-stream`: GUI-/HTTP-unabhängiger Decoder für OpenAI-kompatible und Anthropic-SSEs,
   UTF-8-Zeilen und `<think>`-Trennung. Der vorhandene Tauri-Inferenzcode und die native Diagnose
   verwenden denselben Decoder; die bisherige Parsingkopie im Tauri-Code wurde entfernt.
-- `src/connection.rs`: ausdrücklich gestartete feste Testanfrage, keine zweite Charakter-Chat-Pipeline.
-  Eigener Tokio-Hintergrunddienst mit Abbruch, begrenzter Antwort und klaren Verbindungsfehlern.
+- `src/connection.rs`: gemeinsamer nativer HTTP-Transport für Verbindungstest und Modellchat.
+  Eigener Tokio-Hintergrunddienst mit Abbruch, begrenzter Antwort und Verbindungsfehlern.
+  `src/chat_request.rs` übernimmt die providerabhängige Aufbereitung des Textverlaufs.
 - `crates/otakusoul-paths`: gemeinsame Funktionen `base_dirs`, `isolated_home`, `production_dirs`.
   Das Tauri-Modul re-exportiert die bisherigen Namen, die Standardpfade bleiben unverändert.
 - Ressourcen über `include_bytes!`, keine absoluten Rechnerpfade. Keine derzeitige Verbindung zum Tauri-Crate.
@@ -207,7 +208,8 @@ Die Formatabnahme erfolgt gezielt für die App-Pakete und die neue Pfad-Crate.
   und Formatwahl (OpenAI-kompatibel oder Anthropic), Rückmeldung und Abbruch.
 - [x] Makros und Prompt-Renderer ohne Tauri herauslösen; beide Oberflächen nutzen dieselben Crates.
 - [x] Native Prompt-Vorschau: Persona-Name, eingebaute Vorlage, Autorennotiz, Antwortlänge,
-  auswählbarer/kopierbarer System-Prompt und Nachspann. Noch kein Versand von Charakterdaten.
+  auswählbarer/kopierbarer System-Prompt und Nachspann.
+- [x] Expliziter Modellaufruf im nativen Testchat mit Chatkontext, Abbruch und vollständiger Antwort im RAM.
 
 - [ ] Chat-Vorbereitung und Inferenz aus Tauri lösen; Referenzen:
   `src-tauri/src/commands/chat.rs`, `modules/inference.rs`, `state.rs`,
@@ -250,20 +252,30 @@ weil dort Loopback-Verbindungen blockiert sind. Im Windows-Fenster wurde mit `e2
 erfolgreiche Antwort mit 10 Textsegmenten beobachtet. Der Mock-Server wurde anschließend beendet.
 Kein echtes Modell oder Cloud-Anbieter wurde aufgerufen. Kein vollständiger E2E-Lauf.
 
-Nächster enger Arbeitsschritt für **echte Charakterchats**:
+### Modellantwort im nativen Testchat
 
-1. Auf den gemeinsamen Prompt-Eingaben aufbauen; Request-/Event-Typen ohne Tauri herauslösen und
-   die noch fehlenden Rust-/TypeScript-Verantwortlichkeiten abbilden. Der Renderer nimmt bereits
-   Projektionen von Karte, Lore, Gedächtnis und Zustandswerten entgegen. Lore wird bereits für die
-   lokale Vorschau ausgewählt. Für echte Chats fehlt der gemeinsame Vorbereitungspfad.
-2. Insbesondere `src/store/helpers.ts` und `src/store/slices/chatSlice.ts` prüfen: Auswahl von Lore,
-   Persona, Vorlage und Verlauf nicht durch eine kurze zweite System-Prompt-Funktion ersetzen.
-3. Gemeinsamen Prompt-/Inferenz-Service mit typisierten Ereignissen herstellen; Tauri bleibt Adapter.
-   Abbruch und Generierungs-ID müssen Vorbereitung, Streaming und Abschluss gemeinsam absichern.
-4. Erst dann „Hinzufügen“ im lokalen Testchat um einen ausdrücklichen echten Sendemodus erweitern;
-   importierte Archivchats weiterhin schreibgeschützt. Persistenz nur im eigenen isolierten Profil.
+„An Modell senden“ überträgt den vorbereiteten Charakter-Prompt und Testverlauf an den Endpunkt unter
+Einstellungen. Der Verlauf beginnt mit der gewählten Begrüßung, gefolgt von den bisherigen Nachrichten
+und der neuen Eingabe. Lore-Regeln werden mit den letzten fünf Nachrichten einschließlich der neuen
+Eingabe und Spannung 0 ausgewertet. Die Auswahl verwendet geladene globale und an die Karte gebundene
+Bücher. Strg+Enter und das bisherige Symbol fügen weiterhin lokal eine Testnachricht hinzu.
 
-Die Charakter-Chat-Anbindung ist durch die Diagnose **noch nicht erledigt**. Übersetzungen weiterhin zuletzt.
+Der Transport nutzt den gemeinsamen SSE-Decoder. Der native OpenAI-kompatible Request folgt der
+LocalLlama-/Custom-Normalisierung aus Tauri und hängt den Nachspann an den letzten User-Turn.
+Anthropic erhält die Systemteile gemeinsam und den Verlauf in alternierenden Turns.
+Der Prototyp fordert bis zu 1024 Ausgabetokens an und wartet höchstens 120 Sekunden.
+Er zeigt die Antwort nach Abschluss und übernimmt dann Eingabe und Antwort gemeinsam. Abbruch, Fehler
+und Chatwechsel erhalten den Entwurf. Die Generierungs-ID verwirft verspätete Ergebnisse. Archive
+bleiben lesbar, und die App sendet nur aus dem lokalen Testchat.
+
+Der nächste Schritt ist eine laufende Antwortanzeige mit typisierten Delta-Ereignissen. Für die
+gemeinsame Vorbereitung sind Kontextbudget und Gedächtnis aus `src/store/helpers.ts` und
+`src/store/slices/chatSlice.ts` zu berücksichtigen. Tauri-Adapter und isolierte Persistenz bleiben
+eigene Etappenziele. Übersetzungen folgen nach den GUI-Funktionen.
+
+Prüfstand 09.11.2026: 124 native Tests und 27 Tests der Lore-, Prompt- und Stream-Crates. Die
+Tests decken beide Request-Formate, den HTTP-Aufruf gegen einen Loopback-Testserver, die Lore-Auswahl
+und das Verhalten bei Fehler, Chatwechsel und Abschluss ab.
 
 ### Zwischenstand: gemeinsamer Prompt-Renderer und native Vorschau
 
@@ -624,7 +636,7 @@ Nachrichten einschließlich der lokalen Begrüßung, sofern sie noch in diesem A
 Hintergrund und Anweisungen werden in die gemeinsame Prompt-Struktur übernommen. Die Vorschau
 zeigt die Zahl der Bücher und Treffer. Ein Wechsel des Chatkontexts verwirft das Ergebnis.
 Eine erneute Prüfung würfelt Wahrscheinlichkeitsregeln neu. Die Vorschau arbeitet lokal im RAM.
-Als Nächstes folgen Chat-Vorbereitung mit Persona, Gedächtnis und Verlauf sowie echte Inferenz.
+Der Abschnitt „Modellantwort im nativen Testchat“ beschreibt die anschließende Verwendung beim Senden.
 
 Prüfstand am 09.11.2026: 117 Native-, 10 Lore- und 11 Prompt-Tests bestanden. In Tauri bestanden
 zwei Lorebook-Tests und der Referenztest für System-Prompt und Nachspann. Clippy, die gezielte

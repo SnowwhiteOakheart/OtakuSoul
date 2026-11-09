@@ -196,7 +196,7 @@ impl App {
                     .padding([4, 8])
                     .style(appearance::card),
                 Space::new().width(Fill),
-                muted("Vorschau ohne KI", 12, &self.theme()),
+                muted("Native Vorschau", 12, &self.theme()),
                 icon_control(
                     if self.dark { Icon::Sun } else { Icon::Moon },
                     "Hell / Dunkel",
@@ -445,7 +445,10 @@ impl App {
                 && !conversation.is_read_only()
             {
                 let choices = self.chat_greeting_choices();
-                if conversation.messages.is_empty() && choices.len() > 1 {
+                if conversation.messages.is_empty()
+                    && choices.len() > 1
+                    && self.chat_request.is_none()
+                {
                     messages = messages.push(
                         row![
                             muted("Begrüßung", 11, &self.theme()),
@@ -679,6 +682,8 @@ impl App {
     fn composer(&self) -> Element<'_, Message> {
         let conversation = self.preview.current();
         let readonly = conversation.is_read_only();
+        let busy = self.chat_request.is_some();
+        let has_draft = !conversation.draft.trim().is_empty();
         let mut editor = text_editor(&self.editor)
             .id("composer")
             .placeholder(if readonly {
@@ -690,7 +695,7 @@ impl App {
             .padding([10, 14])
             .size(14)
             .style(appearance::editor);
-        if !readonly {
+        if !readonly && !busy {
             editor = editor.on_action(Message::Edit).key_binding(|press| {
                 if press.key == Key::Named(Named::Enter) && press.modifiers.control() {
                     Some(text_editor::Binding::Custom(Message::Submit))
@@ -713,7 +718,7 @@ impl App {
             icon_control(
                 Icon::Send,
                 "Testnachricht hinzufügen · Strg+Enter",
-                (!readonly && !conversation.draft.trim().is_empty()).then_some(Message::Submit)
+                (!readonly && !busy && has_draft).then_some(Message::Submit)
             ),
             icon_control(
                 Icon::Microphone,
@@ -733,17 +738,20 @@ impl App {
             .align_y(Alignment::Center)
             .into()
         } else {
+            let model_action = if busy {
+                button("Antwort abbrechen").on_press(Message::CancelChat)
+            } else {
+                button("An Modell senden")
+                    .on_press_maybe((has_draft && !self.profile_busy).then_some(Message::SendChat))
+            };
             row![
-                muted(
-                    "Enter: neue Zeile · Strg+Enter: hinzufügen",
-                    11,
-                    &self.theme()
-                )
-                .width(Fill),
+                muted("Strg+Enter · lokal hinzufügen", 11, &self.theme()).width(Fill),
+                model_action.style(appearance::subtle_button),
                 button("Testchat leeren")
                     .style(appearance::navigation)
-                    .on_press(Message::Clear)
+                    .on_press_maybe((!busy).then_some(Message::Clear))
             ]
+            .spacing(8)
             .align_y(Alignment::Center)
             .into()
         };
@@ -1966,7 +1974,7 @@ impl App {
             text(self.connection.format.to_string()).size(14).into()
         };
         container(column![
-            text("KI-Verbindung testen").size(19),
+            text("Modell-Endpunkt").size(19),
             text("Sendet eine kurze feste Testanfrage an den gewählten Server. Deine Charaktere und Chats werden dabei nicht übertragen. Bei Cloud-Anbietern kann die Anfrage kostenpflichtig sein.").size(14),
             row![text("Format").size(13), format].spacing(12).align_y(Alignment::Center),
             text_input("Vollständiger Streaming-Endpunkt", &self.connection.endpoint)
@@ -1982,7 +1990,7 @@ impl App {
                 button("Abbrechen").padding(10).style(appearance::subtle_button)
                 .on_press_maybe((!editable).then_some(Message::CancelConnection))].spacing(10),
             text(&self.connection_status).size(13).width(Fill),
-            muted("Dieser Test prüft Streaming und Erreichbarkeit. Die Charakter-Chat-Anbindung folgt separat.",12,&self.theme()),
+            muted("„An Modell senden“ im Testchat überträgt Charakter-Prompt und Testverlauf an diesen Endpunkt. Der Verbindungstest verwendet eine feste Testnachricht.",12,&self.theme()),
         ].spacing(12)).padding(20).width(Fill).style(appearance::card).into()
     }
 
@@ -2009,7 +2017,7 @@ impl App {
 
     fn planned(&self, label: &'static str) -> Element<'_, Message> {
         let detail = if label == "Hilfe" {
-            "Wähle eine Figur in der Bibliothek. Über den Titel oben im Chat öffnest Du die Verläufe. Avatar und Navigation lassen sich einklappen. Enter erzeugt eine neue Zeile, Strg+Enter fügt eine Testnachricht hinzu. Die Vorschau antwortet noch nicht mit KI."
+            "Wähle eine Figur in der Bibliothek. Über den Titel oben im Chat öffnest Du die Verläufe. Strg+Enter fügt eine Testnachricht hinzu. Über „An Modell senden“ fragst Du den eingestellten Modell-Endpunkt nach einer Antwort."
         } else {
             "Dieser Bereich ist in der nativen Vorschau noch nicht angebunden. Charaktere, Profilkopien und die Chatansicht kannst Du bereits ausprobieren."
         };

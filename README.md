@@ -2,14 +2,14 @@
 
 > This branch contains an experimental native Rust UI for Windows. Run
 > `cargo run -p otakusoul-native`. See [`native-ui/ROADMAP.md`](native-ui/ROADMAP.md) for the German working plan.
-> The prototype includes a prompt preview using the shared Rust renderer and macros; character chat integration is still in progress.
+> The prototype includes a prompt preview using the shared Rust renderer and macros.
 > Its character library supports search, an in-memory card editor, creation and duplication, and explicit JSON/PNG file import/export through native dialogs. PNG exports include the portrait; loaded profiles remain read-only.
 > The editor includes alternate greetings and a read-only JSON preview. Empty local test chats can select a greeting variant.
 > The character library uses a responsive portrait grid with combined text search and tag filtering.
 > Its expression editor supports 15 portrait slots, PNG/WebP embedding and main portrait selection; file exports embed bundled expression assets for portability.
 > Lorebooks can be loaded, edited in memory, exported as JSON and assigned to character cards. The prompt preview can evaluate loaded global and card-bound lorebooks using the shared Rust rules.
 > The lorebook editor includes activation rules, priorities, probabilities, keyword options and entry chains with input validation.
-> The preview uses in-memory test messages without AI integration and can read explicitly selected profile copies.
+> In-memory test chats can request a character reply from a configured OpenAI-compatible or Anthropic endpoint. Replies appear after completion. Imported conversations stay read-only.
 > Settings can create a demo profile with fictional conversations; imported conversations remain read-only.
 > A separate connection test checks an existing AI endpoint with a short fixed request.
 

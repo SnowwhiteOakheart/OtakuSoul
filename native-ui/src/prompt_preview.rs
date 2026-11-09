@@ -1,4 +1,4 @@
-//! Vorschau mit demselben Renderer wie Tauri; noch keine Lore-/Gedächtnisauswahl.
+//! Prompt-Vorbereitung für Vorschau und Modellchat mit dem Renderer aus Tauri.
 use crate::model::Character;
 use otakusoul_prompt::{AssembledPrompt, Context, Services};
 use std::fmt;
@@ -122,6 +122,10 @@ pub fn build(
     seed: &str,
     lore: Option<&LoreReport>,
 ) -> Result<AssembledPrompt, String> {
+    prepare(character, settings, seed).map(|context| render(context, lore))
+}
+
+pub fn prepare(character: &Character, settings: &Settings, seed: &str) -> Result<Context, String> {
     if settings.persona_name.trim().is_empty() {
         return Err("Bitte einen Persona-Namen eingeben.".into());
     }
@@ -140,7 +144,7 @@ pub fn build(
         .ok_or("Die gewählte Prompt-Vorlage ist nicht verfügbar.")?
         .template;
     let system_character = Some(otakusoul_prompt::localized_character(&character, "de"));
-    let context = Context {
+    Ok(Context {
         system_character,
         char_name,
         user_name: settings.persona_name.trim().into(),
@@ -151,8 +155,6 @@ pub fn build(
             .then(|| settings.author_note.clone()),
         template: Some(template),
         macro_seed: Some(seed.into()),
-        active_lore: lore.map_or_else(Vec::new, |report| report.passive.clone()),
-        active_directives: lore.map_or_else(Vec::new, |report| report.active.clone()),
         reply_length: match settings.reply_length {
             ReplyLength::Standard => None,
             ReplyLength::Short => Some("short".into()),
@@ -160,8 +162,15 @@ pub fn build(
             ReplyLength::Long => Some("long".into()),
         },
         ..Context::default()
-    };
-    Ok(otakusoul_prompt::assemble(&context, &NativeServices))
+    })
+}
+
+pub fn render(mut context: Context, lore: Option<&LoreReport>) -> AssembledPrompt {
+    if let Some(lore) = lore {
+        context.active_lore.clone_from(&lore.passive);
+        context.active_directives.clone_from(&lore.active);
+    }
+    otakusoul_prompt::assemble(&context, &NativeServices)
 }
 
 #[derive(Debug, Clone)]
@@ -208,7 +217,10 @@ pub fn evaluate_lore(books: Vec<serde_json::Value>, context: &str) -> LoreReport
     }
 }
 
-pub fn recent_lore_context(conversation: &crate::model::Conversation) -> String {
+pub fn recent_lore_context(
+    conversation: &crate::model::Conversation,
+    draft: Option<&str>,
+) -> String {
     let greeting = conversation
         .greeting
         .as_ref()
@@ -223,6 +235,7 @@ pub fn recent_lore_context(conversation: &crate::model::Conversation) -> String 
                 .iter()
                 .map(|message| message.content.as_str()),
         )
+        .chain(draft)
         .rev()
         .take(5)
         .collect();
@@ -234,6 +247,27 @@ pub fn recent_lore_context(conversation: &crate::model::Conversation) -> String 
 mod tests {
     use super::*;
     use crate::model::Preview;
+
+    #[test]
+    fn model_lore_window_includes_the_new_message_before_the_chat_is_updated() {
+        let mut preview = Preview::default();
+        let chat = preview.current_mut();
+        chat.greeting = Some(("User".into(), "Begrüßung".into()));
+        chat.messages = (1..=4)
+            .map(|number| crate::profile::StoredMessage {
+                role: "user".into(),
+                content: format!("Nachricht{number}"),
+            })
+            .collect();
+        assert_eq!(
+            recent_lore_context(chat, Some("Entwurf")),
+            "Nachricht1 Nachricht2 Nachricht3 Nachricht4 Entwurf"
+        );
+        assert_eq!(
+            recent_lore_context(chat, None),
+            "Begrüßung Nachricht1 Nachricht2 Nachricht3 Nachricht4"
+        );
+    }
 
     #[test]
     fn shared_lore_rules_put_only_matching_bound_and_global_entries_in_the_prompt() {

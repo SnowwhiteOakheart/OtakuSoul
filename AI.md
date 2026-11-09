@@ -23,12 +23,16 @@ Desktopübernahme vorher abstimmen.
 Nutzerentscheidung 08.11.2026: Zuerst vollständige, funktionierende GUI-Elemente; Übersetzungen danach
 integrieren, sobald der Oberflächenstand dafür geeignet ist. Layout und Gestaltung der nativen
 GUI möglichst identisch zum vorhandenen Tauri-Frontend halten; aktuelle React-/CSS-Quellen als Referenz.
-Gemeinsamer Antwortdecoder: `crates/otakusoul-stream` (Tauri-Inferenz und native Verbindungsdiagnose).
-Die native Diagnose sendet nur einen festen Testprompt; echte Charakter-Prompt-/Chatlogik ist noch offen.
+Gemeinsamer Antwortdecoder: `crates/otakusoul-stream` (Tauri-Inferenz, native Verbindungsdiagnose und Modellchat).
+„An Modell senden“ im lokalen Testchat nutzt den manuell eingestellten Endpunkt und den vorbereiteten
+Charakterkontext. Strg+Enter fügt weiterhin lokal hinzu. Der Verbindungstest sendet einen festen Testprompt.
 Gemeinsame Makros und Prompt-Renderer: `crates/otakusoul-macros` und `crates/otakusoul-prompt`.
 Tauri bleibt Adapter; native Prompt-Vorschau mit Persona, Vorlage, Autorennotiz und Antwortlänge.
 Die native Prompt-Vorschau wertet geladene globale und an die Karte gebundene Lorebooks über
-`crates/otakusoul-lore` aus. Der gemeinsame Chat-Service für Gedächtnis, Verlauf und Sendepfad ist offen.
+`crates/otakusoul-lore` aus. Beim Senden enthält das Lore-Fenster zusätzlich die neue Nachricht und ist
+weiterhin auf fünf Nachrichten begrenzt. Der Testchat übernimmt das Nachrichtenpaar erst nach einer
+vollständigen Antwort. Abbruch und Fehler erhalten den Entwurf. Gemeinsamer Inferenzservice, laufende
+Textanzeige, Gedächtnis und persistenter Verlauf sind offen.
 Charakterbibliothek im adaptiven Porträt-Kartenraster mit kombinierter Textsuche und exaktem Tagfilter.
 Karteneditor im RAM und expliziter JSON-/PNG-Dateiimport/-export über native Dialoge (`rfd`);
 PNG bewahrt das Porträt. Profilkopien und Archivnachrichten bleiben

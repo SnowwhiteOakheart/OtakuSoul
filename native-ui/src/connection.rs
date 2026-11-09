@@ -1,4 +1,4 @@
-//! Expliziter Verbindungstest, noch keine zweite Charakter-/Prompt-Pipeline.
+//! HTTP-Transport für Verbindungstest und Charakterchat mit gemeinsamem SSE-Decoder.
 use iced::futures::StreamExt;
 use otakusoul_stream::{StreamDecoder, WireFormat};
 use std::fmt;
@@ -62,11 +62,11 @@ impl Cancellation {
     }
 }
 
-pub struct ActiveTest {
+pub struct ActiveRequest {
     pub id: u64,
     pub cancellation: Cancellation,
 }
-impl Drop for ActiveTest {
+impl Drop for ActiveRequest {
     fn drop(&mut self) {
         self.cancellation.cancel();
     }
@@ -80,14 +80,41 @@ pub struct Report {
 
 /// Ein eigener Hintergrundthread betreibt den Tokio-Client; keine Netzwerk-Polls im UI-Thread.
 pub fn run(settings: Settings, cancellation: Cancellation) -> Result<Report, String> {
+    let mut body = serde_json::json!({"messages":[{"role":"user","content":"Reply with the word OK."}],"max_tokens":32,"stream":true});
+    if !settings.model.trim().is_empty() {
+        body["model"] = settings.model.trim().into();
+    }
+    run_request(settings, cancellation, body, Duration::from_secs(30))
+}
+
+pub fn run_chat(
+    settings: Settings,
+    cancellation: Cancellation,
+    request: crate::chat_request::Request,
+) -> Result<String, String> {
+    let body = request.body(settings.format, settings.model.trim());
+    run_request(settings, cancellation, body, Duration::from_secs(120)).map(|report| report.answer)
+}
+
+fn run_request(
+    settings: Settings,
+    cancellation: Cancellation,
+    body: serde_json::Value,
+    timeout: Duration,
+) -> Result<Report, String> {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
         .map_err(|_| "Der Netzwerkdienst konnte nicht gestartet werden.".to_string())?
-        .block_on(diagnose(settings, cancellation))
+        .block_on(receive(settings, cancellation, body, timeout))
 }
 
-async fn diagnose(settings: Settings, cancellation: Cancellation) -> Result<Report, String> {
+async fn receive(
+    settings: Settings,
+    cancellation: Cancellation,
+    body: serde_json::Value,
+    timeout: Duration,
+) -> Result<Report, String> {
     let url = url::Url::parse(settings.endpoint.trim())
         .map_err(|_| "Bitte eine vollständige HTTP- oder HTTPS-Adresse eingeben.")?;
     if !matches!(url.scheme(), "http" | "https")
@@ -102,13 +129,9 @@ async fn diagnose(settings: Settings, cancellation: Cancellation) -> Result<Repo
     let client = reqwest::Client::builder()
         .redirect(reqwest::redirect::Policy::none())
         .connect_timeout(Duration::from_secs(5))
-        .timeout(Duration::from_secs(30))
+        .timeout(timeout)
         .build()
         .map_err(|_| "Der HTTP-Client konnte nicht vorbereitet werden.")?;
-    let mut body = serde_json::json!({"messages":[{"role":"user","content":"Reply with the word OK."}],"max_tokens":32,"stream":true});
-    if !settings.model.trim().is_empty() {
-        body["model"] = settings.model.trim().into();
-    }
     let mut request = client.post(url).json(&body);
     match settings.format {
         Format::OpenAi => {
@@ -125,7 +148,7 @@ async fn diagnose(settings: Settings, cancellation: Cancellation) -> Result<Repo
     }
     let response = tokio::select! {
         biased;
-        _=cancellation.cancelled()=>return Err("Verbindungstest abgebrochen.".into()),
+        _=cancellation.cancelled()=>return Err("Anfrage abgebrochen.".into()),
         response=request.send()=>response.map_err(|error| if error.is_timeout() {"Zeitüberschreitung beim Verbindungsaufbau."} else {"Keine Verbindung. Bitte Adresse prüfen und den Modellserver starten."})?,
     };
     if !response.status().is_success() {
@@ -146,7 +169,7 @@ async fn diagnose(settings: Settings, cancellation: Cancellation) -> Result<Repo
     loop {
         let chunk = tokio::select! {
             biased;
-            _=cancellation.cancelled()=>return Err("Verbindungstest abgebrochen.".into()),
+            _=cancellation.cancelled()=>return Err("Anfrage abgebrochen.".into()),
             chunk=chunks.next()=>chunk,
         };
         let Some(chunk) = chunk else {
@@ -157,7 +180,7 @@ async fn diagnose(settings: Settings, cancellation: Cancellation) -> Result<Repo
         )?;
         received_bytes = received_bytes.saturating_add(chunk.len());
         if received_bytes > 1024 * 1024 {
-            return Err("Die Testantwort ist unerwartet groß.".into());
+            return Err("Der Antwortstream ist unerwartet groß.".into());
         }
         for (thought, text) in decoder
             .push(&chunk)
@@ -169,7 +192,7 @@ async fn diagnose(settings: Settings, cancellation: Cancellation) -> Result<Repo
             }
         }
         if answer.len() > 16 * 1024 {
-            return Err("Die Testantwort überschreitet die Vorschaugrenze.".into());
+            return Err("Die Antwort überschreitet die Textgrenze.".into());
         }
         if decoder.is_done() {
             break;
@@ -194,7 +217,7 @@ async fn diagnose(settings: Settings, cancellation: Cancellation) -> Result<Repo
         return Err("Der Server hat keine sichtbare Streaming-Textantwort geliefert. Bitte Endpunkt und Format prüfen.".into());
     }
     if answer.len() > 16 * 1024 {
-        return Err("Die Testantwort überschreitet die Vorschaugrenze.".into());
+        return Err("Die Antwort überschreitet die Textgrenze.".into());
     }
     Ok(Report {
         answer: answer.trim().into(),
@@ -208,6 +231,13 @@ mod tests {
     use std::io::{Read, Write};
 
     fn server(status: &str, body: &str) -> String {
+        server_with_request(status, body).0
+    }
+
+    fn server_with_request(
+        status: &str,
+        body: &str,
+    ) -> (String, std::sync::mpsc::Receiver<Vec<u8>>) {
         let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
         let endpoint = format!(
             "http://{}/v1/chat/completions",
@@ -217,6 +247,7 @@ mod tests {
             "HTTP/1.1 {status}\r\nContent-Type: text/event-stream\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
             body.len()
         );
+        let (sent, received) = std::sync::mpsc::channel();
         std::thread::spawn(move || {
             let (mut stream, _) = listener.accept().unwrap();
             stream
@@ -244,9 +275,47 @@ mod tests {
                     }
                 }
             }
+            let _ = sent.send(bytes);
             stream.write_all(response.as_bytes()).unwrap();
         });
-        endpoint
+        (endpoint, received)
+    }
+
+    #[test]
+    fn model_chat_posts_prepared_context_and_returns_only_visible_text() {
+        let (endpoint, received) = server_with_request(
+            "200 OK",
+            "data: {\"choices\":[{\"delta\":{\"content\":\"<think>intern</think>Antwort\"}}]}\n\ndata: [DONE]\n\n",
+        );
+        let request = crate::chat_request::Request::new(
+            &otakusoul_prompt::AssembledPrompt {
+                system: "Figurenprofil".into(),
+                post_history: Some("Nachspann".into()),
+            },
+            Some("Begrüßung"),
+            &[],
+            "Neue Frage",
+        );
+        let answer = run_chat(
+            Settings {
+                endpoint,
+                ..Settings::default()
+            },
+            Cancellation::new(),
+            request,
+        )
+        .unwrap();
+        let request = received.recv_timeout(Duration::from_secs(3)).unwrap();
+        let body_offset = request
+            .windows(4)
+            .position(|window| window == b"\r\n\r\n")
+            .unwrap()
+            + 4;
+        let body: serde_json::Value = serde_json::from_slice(&request[body_offset..]).unwrap();
+        assert_eq!(body["messages"][0]["content"], "Figurenprofil");
+        assert_eq!(body["messages"][1]["content"], "Begrüßung");
+        assert_eq!(body["messages"][2]["content"], "Neue Frage\n\nNachspann");
+        assert_eq!(answer, "Antwort");
     }
 
     #[test]
