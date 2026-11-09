@@ -67,14 +67,18 @@ Weltansichten verknüpfen die Originalreferenzen mit den passenden Katalogeintr�
 lädt Titelbilder beim Scrollen in der Nähe des sichtbaren Bereichs. Die Weltansicht nutzt denselben
 begrenzten Bildcache und priorisiert ihr Titelbild. Der Hub liest die mitgelieferten Tauri-Sprachpakete über
 `native-ui/src/ui_text.rs`. Zusätzliche Prototyp-Texte stehen in `native-ui/assets/locales/de.json`.
-Für die Hub-Optik gilt der Nutzerscreenshot der Tauri-Variante v0.7.5 als Referenz. Cyanfarbene
-Filter, zweistufige Kopfzeile und große klickbare Sammlungscovers sind in `hub_appearance.rs` und
-`views.rs` gekapselt. Chub AI, Avatare und URL-Import bleiben eigene Funktionsschritte.
+Für GUI-Vergleiche die Tauri-Variante im isolierten `e2e/harness.mjs` starten und die passende
+Ansicht per WebDriver prüfen. React- und CSS-Quellen ergänzen die Referenz für Details. Für den Hub
+in der cyanfarbenen Variante das Theme `midnight` wählen. Seine Stile liegen in
+`hub_appearance.rs` und `views.rs`. Chub AI, Avatare und URL-Import bleiben eigene Funktionsschritte.
 Native Startseite in `native-ui/src/home_view.rs` nach Tauri `HomeView.tsx`. Story-Galerie, Genre-
 und Sammlungsfilter, Schauplatz, Einstiegsideen und Auftakt in `stage_views.rs` nach `StoryGallery.tsx`.
 `stage_preview.rs` liest die mitgelieferten Szenendefinitionen und öffentliche Gateway-Szenarien.
-Die Galerie verwendet die Inhaltslokalisierung separat von den gemeinsamen UI-Schlüsseln. Stage-Runden,
-Szenenverwaltung, Spielstände und 5e-Engine sind weitere Etappen.
+Die Galerie verwendet die Inhaltslokalisierung separat von den gemeinsamen UI-Schlüsseln.
+`stage_lobby.rs` enthält Szenen-Lobby und JSON-Dateidialoge. `stage_draft.rs` bearbeitet
+Szenendefinitionen unter Erhalt der übrigen Felder. Eigene Szenen liegen für die Sitzung im
+Speicher und lassen sich als Definition exportieren. Stage-Runden, Spielstände und 5e-Engine
+sind weitere Etappen.
 
 ### Allgemeine Arbeitsregeln
 

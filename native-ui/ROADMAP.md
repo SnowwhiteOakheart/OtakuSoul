@@ -18,8 +18,9 @@ WSL kann später Linux-Builds/erste WSLg-Tests ermöglichen; es ersetzt weder Li
 
 Aktuelle Nutzerentscheidung (08.11.2026): **Vollständige, funktionierende GUI vor Übersetzungen**.
 Übersetzungen integrieren, sobald die wesentlichen Oberflächen und Abläufe stehen; bis dahin Deutsch.
-Die native Oberfläche soll der bestehenden Tauri-Oberfläche möglichst nahekommen, kein neues visuelles
-Konzept. Vergleichsquelle ist der aktuelle React-/CSS-Code; vorhandene Screenshots dienen als Ergänzung.
+Die native Oberfläche soll der bestehenden Tauri-Oberfläche möglichst nahekommen. Für Vergleiche
+die Tauri-Ansicht über `e2e/harness.mjs` im Wegwerfprofil öffnen und mit WebDriver prüfen.
+Die aktuellen React- und CSS-Quellen liefern die Gestaltungs- und Verhaltensdetails.
 Produktionsreife (Nutzerwunsch 09.11.2026): vorhandene Bausteine und UI-Schlüssel wiederverwenden.
 UI-Sprache und Inhaltssprache getrennt behandeln und veränderliche Anzeigetexte von stabilen IDs trennen.
 
@@ -749,8 +750,9 @@ erhalten bleibt und erst eine frische App-Instanz die neue Fassung liest.
 
 #### Hub-Oberfläche nach Tauri v0.7.5
 
-Der Windows-Screenshot des Nutzers vom 09.11.2026 dient als visuelle Vorlage. Die native Ansicht
-hat eine eigene Hub-Kopfzeile mit Suche, Kennzeichnung und Aktualisieren-Symbol. Darunter stehen
+Der Hub-Vergleich verwendet die Tauri-App im E2E-Harness mit Theme `midnight`. Relevante Abläufe
+stehen in `e2e/hub-collections.mjs` und `e2e/hub-scroll.mjs`. Die native Ansicht hat eine eigene
+Hub-Kopfzeile mit Suche, Kennzeichnung und Aktualisieren-Symbol. Darunter stehen
 Welten-Reiter und Inhaltsfilter mit aktuellen Zählern. Cyan-Akzente, dunkler Katalogbereich und
 Sammlungskarten mit 16:9-Cover, Titel im Bild und farbigen Zählern folgen der Vorlage.
 Das Raster passt sich der Breite an. Ein Klick auf die Karte öffnet die Sammlung. Die Suche
@@ -762,6 +764,12 @@ Titelbild. Danach wurden Kontrast des Aktualisieren-Symbols und Breite der Samml
 angepasst. Chub AI, Avatare und URL-Import werden mit den jeweiligen Funktionen ergänzt.
 148 native Tests, der Hub-Live-Test, Clippy und der Windows-Build bestanden.
 
+Tauri-Referenz am 09.11.2026 über den vorhandenen E2E-Build aufgenommen. Der Sammlungstest
+bestand im isolierten Wegwerfprofil. Die Referenz verwendet die lokalen öffentlichen
+Katalogdaten und Titelbilder. WebDriver bestätigte Theme, alle vier Filter und die drei
+geladenen Titelbilder der ersten Reihe. Die Aufnahme liegt lokal in
+`e2e/screenshots/native-reference-tauri-hub-midnight.png`.
+
 ### Startseite und Stage-Galerie
 
 - [x] Startseite nach `HomeView.tsx` mit responsiven Einstiegskarten für Chat, Stage und Hub,
@@ -770,13 +778,23 @@ angepasst. Chub AI, Avatare und URL-Import werden mit den jeweiligen Funktionen 
   Geschichten, den drei Gruft-Akten und Filtern für Genre und Einsteiger.
 - [x] Szenariovorschau mit Schauplatz, Tageszeit, Gruppe, Inhaltsangaben, Einstiegsideen und
   lesbarem Auftakt. Öffentliche Hub-Szenarien werden beim Ansehen für die Sitzung geladen.
-- [ ] Szenenverwaltung und Story-Wizard, Spielansicht mit echten Stage-Runden und Speichern.
+- [x] Szenen-Lobby mit Suche und Herkunftsfiltern, Vorschau, Basis-Editor und JSON-Import
+  und -Export. Eigene Szenen und Entwürfe liegen für die Dauer der Sitzung im Speicher.
+- [ ] Dauerhafter Szenenspeicher, Ordnerverwaltung, erweiterte Szenenfelder und Story-Wizard.
+- [ ] Spielansicht mit echten Stage-Runden und Spielständen.
 - [ ] 5e-Spielbrett, Kampf und Erkundung über die vorhandene Stage-/Regel-Engine.
 
 Gemeinsame UI-Schlüssel kommen aus den mitgelieferten Tauri-Sprachpaketen. `stage_preview.rs`
 verwendet dieselben Szenendateien und die vorhandene Inhaltslokalisierung. Szenario-IDs sind von
 lokalisierten Titeln getrennt. Hub-Downloads werden auf öffentliche Gateway-JSONs begrenzt.
 Die Vorschau lädt keine referenzierten Figuren, Lorebooks oder Medien zusätzlich.
+`stage_lobby.rs` verbindet Lobby und Editor mit den nativen Dateidialogen. `stage_draft.rs`
+ändert nur bearbeitete Definitionsfelder. Der JSON-Import akzeptiert eine Definition oder
+einen Spielstand mit `definition`. Der Export speichert die Definition einschließlich
+unveränderter Regel- und Erweiterungsfelder. Spielverlauf und Medien sind separate Etappen.
+Tauris Lobby und die gemeinsamen Editorfelder wurden per WebDriver im isolierten E2E-Profil
+geprüft. Für die native Variante bestanden 152 Tests einschließlich JSON-Rundlauf und der
+Windows-Build. Der Live-Hub-Test war bei diesem Lauf ausgenommen.
 
 Windows-Bedienprobe am 09.11.2026 im Standardfenster und maximiert. Geprüft wurden Startkarten
 mit Charakterporträt, beide Sammlungscover, die drei Gruft-Akte, der Science-Fiction-Filter, der

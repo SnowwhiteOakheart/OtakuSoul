@@ -97,6 +97,16 @@ impl Scene {
         self.collection
     }
 
+    pub fn definition(&self) -> Value {
+        let mut definition = self.raw.clone();
+        definition["id"] = self.id.clone().into();
+        definition["title"] = self.title.clone().into();
+        if !definition["description"].is_string() {
+            definition["description"] = "".into();
+        }
+        definition
+    }
+
     fn localized(&self, field: &str, language: &str) -> Option<&str> {
         let extension = self.raw["extensions"].get("otakusoul_i18n");
         let translation = otakusoul_prompt::i18n_translation(extension, language)?;
@@ -116,6 +126,22 @@ pub fn parse(raw: Value) -> Result<Scene, String> {
 
 pub fn parse_hub(raw: Value, id: &str, fallback_title: &str) -> Result<Scene, String> {
     project(raw, Some((id, fallback_title)))
+}
+
+pub fn parse_file(mut raw: Value, fallback_id: &str) -> Result<Scene, String> {
+    let definition = if raw.get("definition").is_some_and(Value::is_object) {
+        &mut raw["definition"]
+    } else {
+        &mut raw
+    };
+    if let Some(object) = definition.as_object_mut()
+        && object
+            .get("id")
+            .is_none_or(|id| id.as_str().is_some_and(|value| value.trim().is_empty()))
+    {
+        object.insert("id".into(), fallback_id.into());
+    }
+    parse(raw)
 }
 
 fn project(mut raw: Value, registry: Option<(&str, &str)>) -> Result<Scene, String> {
@@ -321,6 +347,35 @@ mod tests {
         assert_eq!(scene.notes, ["gallery.note.action"]);
         assert_eq!(scene.minutes, None);
         assert_eq!(scene.difficulty, None);
+    }
+
+    #[test]
+    fn stage_scene_file_roundtrip_preserves_the_definition_only() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("scene.json");
+        let state = json!({
+            "definition": {
+                "id": "",
+                "title": "Kampagne",
+                "description": "Ein neuer Anfang",
+                "rules": {"ruleset": "5e"},
+                "extensions": {"custom": {"enabled": true}}
+            },
+            "chat_log": [{"content": "Fortschritt"}]
+        });
+        crate::file_export::write_json(&path, &state, None).unwrap();
+        let scene = parse_file(
+            crate::profile::read_standalone_json(&path).unwrap(),
+            "local-id",
+        )
+        .unwrap();
+        let export_path = temp.path().join("export.json");
+        crate::file_export::write_json(&export_path, &scene.definition(), None).unwrap();
+        let exported = crate::profile::read_standalone_json(&export_path).unwrap();
+        let mut expected = state["definition"].clone();
+        expected["id"] = "local-id".into();
+        assert_eq!(exported, expected);
+        assert_eq!(parse_file(exported, "unused").unwrap().id, "local-id");
     }
 
     #[test]

@@ -11,6 +11,11 @@ use std::sync::LazyLock;
 
 impl App {
     pub(super) fn stage_view(&self) -> Element<'_, Message> {
+        if self.stage.editing
+            && let Some(draft) = &self.stage.draft
+        {
+            return self.scene_editor(draft);
+        }
         if let Some(scene) = self
             .stage
             .selected
@@ -18,18 +23,34 @@ impl App {
         {
             return self.scene_preview(scene);
         }
+        if self.stage.lobby {
+            return self.scene_lobby();
+        }
         iced::widget::responsive(move |size| self.story_gallery(size.width)).into()
     }
 
     fn story_gallery(&self, width: f32) -> Element<'_, Message> {
         let mut gallery = column![
+            column![
+                text(label("gallery.title")).size(26),
+                muted(label("gallery.native.intro"), 14, &self.theme()),
+            ]
+            .spacing(6),
             row![
-                column![
-                    text(label("gallery.title")).size(26),
-                    muted(label("gallery.native.intro"), 14, &self.theme()),
-                ]
-                .spacing(6)
-                .width(Fill),
+                control(
+                    Icon::Plus,
+                    label(if self.stage.draft.is_some() {
+                        "gallery.native.resumeScene"
+                    } else {
+                        "lobby.newScene"
+                    }),
+                    Message::StageEdit(None)
+                ),
+                control(
+                    Icon::Settings,
+                    label("gallery.manage"),
+                    Message::StageManage
+                ),
                 control(
                     Icon::Hub,
                     label("gallery.native.hub"),
@@ -37,7 +58,7 @@ impl App {
                 ),
             ]
             .spacing(12)
-            .align_y(Alignment::Center),
+            .wrap(),
         ]
         .spacing(18);
         let width = (width - 48.0).max(1.0);

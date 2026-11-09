@@ -21,6 +21,8 @@ mod message_content;
 mod model;
 mod profile;
 mod prompt_preview;
+mod stage_draft;
+mod stage_lobby;
 mod stage_preview;
 mod stage_views;
 mod ui_text;
@@ -175,6 +177,19 @@ enum Message {
     StageBack,
     StageOpening,
     StageBrowseHub,
+    StageManage,
+    StageLobbySearch(String),
+    StageLobbySource(StageSource),
+    StageEdit(Option<usize>),
+    StageEditField(stage_draft::Field),
+    StageSet(stage_draft::Field, String),
+    StageText(text_editor::Action),
+    StageApply,
+    StageDiscard,
+    StageImport,
+    StageImported(Result<Option<stage_preview::Scene>, String>),
+    StageExport(usize),
+    StageExported(Result<bool, String>),
     HubScenePreview(String),
     HubSceneLoaded(String, u64, Result<stage_preview::Scene, String>),
     HubKind(hub_catalog::Kind),
@@ -526,6 +541,26 @@ struct Stage {
     from_hub: HashMap<String, usize>,
     hub_loading: Option<String>,
     hub_notice: String,
+    lobby: bool,
+    lobby_query: String,
+    lobby_source: StageSource,
+    own: HashSet<usize>,
+    draft: Option<stage_draft::Draft>,
+    editing: bool,
+    edit_field: stage_draft::Field,
+    editor: text_editor::Content,
+    file_busy: bool,
+    notice: String,
+    edit_error: String,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+enum StageSource {
+    #[default]
+    All,
+    Presets,
+    Own,
+    Hub,
 }
 
 fn download_hub_scene(entry: &hub_catalog::Entry) -> Result<stage_preview::Scene, String> {
@@ -545,6 +580,17 @@ impl Default for Stage {
             from_hub: HashMap::new(),
             hub_loading: None,
             hub_notice: String::new(),
+            lobby: false,
+            lobby_query: String::new(),
+            lobby_source: StageSource::All,
+            own: HashSet::new(),
+            draft: None,
+            editing: false,
+            edit_field: stage_draft::Field::Description,
+            editor: text_editor::Content::new(),
+            file_busy: false,
+            notice: String::new(),
+            edit_error: String::new(),
         }
     }
 }
@@ -1196,6 +1242,8 @@ impl App {
         self.stage.filter = StageFilter::All;
         self.stage.selected = Some(index);
         self.stage.opening = false;
+        self.stage.lobby = false;
+        self.stage.editing = false;
         self.page = Page::Stage;
     }
 
@@ -1635,7 +1683,7 @@ impl App {
         }
     }
     fn load(&mut self, create: bool) -> Task<Message> {
-        if self.card_busy || self.hub.importing.is_some() {
+        if self.card_busy || self.hub.importing.is_some() || self.stage.file_busy {
             self.notice = "Bitte den laufenden Import oder Export abwarten.".into();
             return Task::none();
         }
@@ -2244,18 +2292,22 @@ impl App {
                 self.stage.filter = filter;
                 self.stage.selected = None;
                 self.stage.opening = false;
+                self.stage.lobby = false;
+                self.stage.editing = false;
             }
             Message::StageSelect(index) => {
-                if self.stage.scenes.get(index).is_some() {
+                if !self.stage.editing && self.stage.scenes.get(index).is_some() {
                     self.stage.selected = Some(index);
                     self.stage.opening = false;
                 }
             }
             Message::StageBack => {
-                if self.stage.opening {
+                if self.stage.editing {
+                    self.stage.editing = false;
+                } else if self.stage.opening {
                     self.stage.opening = false;
-                } else {
-                    self.stage.selected = None;
+                } else if self.stage.selected.take().is_none() {
+                    self.stage.lobby = false;
                 }
             }
             Message::StageOpening => {
@@ -2266,6 +2318,94 @@ impl App {
             Message::StageBrowseHub => {
                 self.hub.kind = hub_catalog::Kind::Scenes;
                 return self.update(Message::Navigate(Page::Hub));
+            }
+            Message::StageManage => {
+                self.stage.lobby = true;
+                self.stage.selected = None;
+                self.stage.opening = false;
+                self.stage.editing = false;
+            }
+            Message::StageLobbySearch(query) => self.stage.lobby_query = query,
+            Message::StageLobbySource(source) => self.stage.lobby_source = source,
+            Message::StageEdit(index) => self.open_scene_editor(index),
+            Message::StageEditField(field) => {
+                if self.stage.editing
+                    && stage_draft::Field::MULTILINE.contains(&field)
+                    && let Some(draft) = &self.stage.draft
+                {
+                    self.stage.edit_field = field;
+                    self.stage.editor = text_editor::Content::with_text(draft.get(field));
+                }
+            }
+            Message::StageSet(field, value) => {
+                if self.stage.editing
+                    && let Some(draft) = &mut self.stage.draft
+                {
+                    draft.set(field, value);
+                    self.stage.edit_error.clear();
+                }
+            }
+            Message::StageText(action) => {
+                if self.stage.editing
+                    && let Some(draft) = &mut self.stage.draft
+                {
+                    let changed = action.is_edit();
+                    self.stage.editor.perform(action);
+                    if changed {
+                        draft.set(self.stage.edit_field, self.stage.editor.text());
+                        self.stage.edit_error.clear();
+                    }
+                }
+            }
+            Message::StageApply => self.save_scene_draft(),
+            Message::StageDiscard => {
+                if self.stage.editing {
+                    self.stage.draft = None;
+                    self.stage.editing = false;
+                    self.stage.edit_error.clear();
+                }
+            }
+            Message::StageImport => return self.import_scene_file(),
+            Message::StageImported(result) => {
+                self.stage.file_busy = false;
+                self.stage.notice = match result {
+                    Ok(Some(scene))
+                        if self.stage.scenes.iter().any(|known| known.id == scene.id) =>
+                    {
+                        ui_text::text("gallery.native.duplicateScene").into()
+                    }
+                    Ok(Some(scene)) => {
+                        let notice = ui_text::format(
+                            "gallery.native.sceneImported",
+                            &[("title", scene.title(ui_text::CONTENT_LANGUAGE))],
+                        );
+                        self.add_local_scene(scene);
+                        if self.page == Page::Stage
+                            && self.stage.lobby
+                            && !self.stage.editing
+                            && self.stage.selected.is_none()
+                        {
+                            self.stage.lobby_source = StageSource::Own;
+                            self.stage.lobby_query.clear();
+                        }
+                        notice
+                    }
+                    Ok(None) => String::new(),
+                    Err(error) => {
+                        ui_text::format("gallery.native.sceneFileError", &[("error", &error)])
+                    }
+                };
+            }
+            Message::StageExport(index) => return self.export_scene_file(index),
+            Message::StageExported(result) => {
+                self.stage.file_busy = false;
+                self.stage.notice = match result {
+                    Ok(true) => ui_text::text("gallery.native.sceneExported").into(),
+                    Ok(false) => String::new(),
+                    Err(error) => {
+                        ui_text::format("gallery.native.sceneFileError", &[("error", &error)])
+                    }
+                };
             }
             Message::HubScenePreview(id) => return self.preview_hub_scene(id),
             Message::HubSceneLoaded(id, generation, result) => {
@@ -2495,6 +2635,8 @@ impl App {
                 if page == Page::Stage {
                     self.stage.selected = None;
                     self.stage.opening = false;
+                    self.stage.lobby = false;
+                    self.stage.editing = false;
                 }
                 self.page = page;
                 if page == Page::Hub {
@@ -2934,6 +3076,40 @@ mod tests {
         let _ = app.update(Message::HubRefresh);
         assert_eq!(app.hub.loading.len(), Kind::ALL.len());
         assert_eq!(app.hub.catalog.len(), Kind::ALL.len());
+    }
+
+    #[test]
+    fn stage_editor_resumes_draft_and_keeps_scene_id_after_edit() {
+        use stage_draft::Field;
+
+        let mut app = App::default();
+        let _ = app.update(Message::Navigate(Page::Stage));
+        let _ = app.update(Message::StageManage);
+        let _ = app.update(Message::StageEdit(None));
+        let _ = app.update(Message::StageSet(Field::Title, "Kampagne".into()));
+        let _ = app.update(Message::StageBack);
+        assert!(app.stage.lobby);
+        assert!(!app.stage.editing);
+        let _ = app.update(Message::StageEdit(None));
+        let _ = app.update(Message::StageApply);
+
+        let index = app.stage.scenes.len() - 1;
+        let id = app.stage.scenes[index].id.clone();
+        assert!(app.stage.own.contains(&index));
+        assert!(app.stage.lobby_source == StageSource::Own);
+        assert_eq!(app.stage.scenes[index].title("de"), "Kampagne");
+        let _ = app.update(Message::StageEdit(Some(index)));
+        let _ = app.update(Message::StageSet(Field::Title, "Kampagne II".into()));
+        let _ = app.update(Message::StageApply);
+        assert_eq!(app.stage.scenes[index].id, id);
+        assert_eq!(app.stage.scenes[index].title("de"), "Kampagne II");
+
+        let duplicate =
+            stage_preview::parse_file(serde_json::json!({"id": id, "title": "Duplikat"}), "unused")
+                .unwrap();
+        let _ = app.update(Message::StageImported(Ok(Some(duplicate))));
+        assert_eq!(app.stage.scenes.len(), index + 1);
+        assert_eq!(app.stage.scenes[index].title("de"), "Kampagne II");
     }
 
     #[test]
