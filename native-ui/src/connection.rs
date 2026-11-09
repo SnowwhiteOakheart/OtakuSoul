@@ -12,7 +12,8 @@ impl fmt::Debug for Secret {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum Format {
     OpenAi,
     Anthropic,
@@ -109,7 +110,7 @@ fn run_request(
         .block_on(receive(settings, cancellation, body, timeout))
 }
 
-fn endpoint(value: &str) -> Result<url::Url, String> {
+pub(super) fn endpoint(value: &str) -> Result<url::Url, String> {
     let url = url::Url::parse(value.trim())
         .map_err(|_| "Bitte eine vollständige HTTP- oder HTTPS-Adresse eingeben.")?;
     if !matches!(url.scheme(), "http" | "https")

@@ -227,7 +227,8 @@ Die Formatabnahme erfolgt gezielt für die App-Pakete und die neue Pfad-Crate.
 - [x] Anbieter und Modell auswählen, Modellliste abrufen oder ID eingeben.
 - [x] Vorhandenen lokalen llama-server mit gewähltem GGUF, Kontext und GPU-Schichten starten
   und beenden. Der aktive Anbieter ist in der Kopfzeile erreichbar.
-- [ ] Persistente Modellprofile, sichere Secret-Ablage, Laufzeit- und GGUF-Downloads.
+- [x] Aktiven Anbieter, Modell-IDs pro Anbieter und lokale Servereinstellungen über Neustarts speichern.
+- [ ] Sichere dauerhafte Secret-Ablage, mehrere lokale Modellprofile, Laufzeit- und GGUF-Downloads.
 - [ ] Streaming anzeigen, Abbruch und Teilantworten; konsistente Persistenz im isolierten Profil.
 - [ ] Tauri-Adapter auf denselben Service umstellen und betroffene bestehende Szenarien prüfen.
 
@@ -237,9 +238,12 @@ Abnahme: echter Chat, Verlauf nach Neustart, sauberer Abbruch und verständliche
 
 Unter Einstellungen stehen ein verwalteter lokaler llama-server, OpenRouter, OpenAI,
 Anthropic, Gemini, DeepSeek, Mistral und ein frei konfigurierbarer Endpunkt zur Auswahl.
-Modelllisten werden auf Wunsch beim gewählten Anbieter abgerufen. Endpunkt, Modell-ID und
-Schlüssel bleiben pro Anbieter für die laufende App-Sitzung getrennt. Änderungen am
-benutzerdefinierten Endpunkt oder Protokoll setzen dessen bisherigen Schlüssel zurück.
+Modelllisten werden auf Wunsch beim gewählten Anbieter abgerufen. „LLM-Einstellungen speichern“
+schreibt die aktive Auswahl, Modell-IDs, den benutzerdefinierten Endpunkt und die lokalen
+Pfade und Startoptionen atomar nach `llm/profiles.json` unter dem nativen Datenordner.
+API-Schlüssel bleiben pro Anbieter für die laufende Sitzung getrennt. Der gespeicherte
+benutzerdefinierte Endpunkt akzeptiert keine Zugangsdaten, Abfrageparameter oder URL-Fragmente.
+Der lokale Server wartet auch nach dem Wiederherstellen seiner Einstellungen auf „Starten“.
 Chat, Stage und Story-Wizard nutzen dieselbe aktive Verbindung.
 
 Die native GUI startet eine ausdrücklich gewählte llama-server-Datei mit einem vorhandenen

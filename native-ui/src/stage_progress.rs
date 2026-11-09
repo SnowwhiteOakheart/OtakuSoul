@@ -1,5 +1,5 @@
 //! Native Erzählverläufe, getrennt von Szenendefinitionen und Tauri-Spielständen.
-use crate::{file_export, stage_play::Round, stage_preview, stage_store};
+use crate::{file_export, native_store, stage_play::Round, stage_preview};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{collections::HashSet, fs::File, io::Read, path::Path};
@@ -41,7 +41,7 @@ struct Catalog {
 }
 
 pub fn list(root: &Path) -> Result<Vec<Saved>, String> {
-    match stage_store::store_root(root)? {
+    match native_store::store_root(root)? {
         Some(root) => read(&root),
         None => Ok(Vec::new()),
     }
@@ -49,7 +49,7 @@ pub fn list(root: &Path) -> Result<Vec<Saved>, String> {
 
 pub fn append(root: &Path, pending: Saved, expected: usize) -> Result<usize, String> {
     validate(&pending)?;
-    stage_store::with_write_lock(root, "plays.lock", |root| {
+    native_store::with_write_lock(root, "plays.lock", |root| {
         let mut plays = read(root)?;
         let count = expected.checked_add(pending.rounds.len()).ok_or(CAPACITY)?;
         if let Some(stored) = plays.iter_mut().find(|play| play.key == pending.key) {
@@ -85,7 +85,7 @@ pub fn append(root: &Path, pending: Saved, expected: usize) -> Result<usize, Str
 
 fn read(root: &Path) -> Result<Vec<Saved>, String> {
     let path = root.join(FILE);
-    if !stage_store::regular_file(&path)? {
+    if !native_store::regular_file(&path)? {
         return Ok(Vec::new());
     }
     let mut bytes = Vec::new();

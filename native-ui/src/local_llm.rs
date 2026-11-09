@@ -17,7 +17,7 @@ pub enum FileKind {
     Model,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct Config {
     pub binary: Option<PathBuf>,
     pub model: Option<PathBuf>,

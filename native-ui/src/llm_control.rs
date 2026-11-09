@@ -1,8 +1,23 @@
-use crate::{App, Message, background, connection, local_llm, ui_text::text as label};
+use crate::{
+    App, Message, background, connection, llm_profiles, local_llm, ui_text::text as label,
+};
 use iced::Task;
 use std::{collections::HashMap, path::PathBuf};
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Default,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    serde::Serialize,
+    serde::Deserialize,
+)]
+#[serde(rename_all = "snake_case")]
 pub enum Backend {
     Local,
     OpenRouter,
@@ -81,11 +96,17 @@ pub struct Control {
     local_settings: Option<connection::Settings>,
     pub stopping: bool,
     pub server_status: String,
+    pub profile_store: Option<PathBuf>,
+    pub profiles_loading: bool,
+    pub profiles_saving: bool,
+    pub profiles_status: String,
+    profiles_revision: u64,
 }
 
 impl Control {
     pub fn ready(&self) -> bool {
-        self.backend != Backend::Local || (self.local_settings.is_some() && !self.stopping)
+        !self.profiles_loading
+            && (self.backend != Backend::Local || (self.local_settings.is_some() && !self.stopping))
     }
 
     pub fn clear_catalog(&mut self) {
@@ -96,8 +117,110 @@ impl Control {
 }
 
 impl App {
+    pub(super) fn llm_settings_editable(&self) -> bool {
+        self.diagnostic.is_none() && !self.llm.profiles_loading && !self.llm.profiles_saving
+    }
+
+    pub(super) fn llm_preferences(&self) -> llm_profiles::Preferences {
+        let settings = |backend| {
+            if backend == self.llm.backend {
+                Some(&self.connection)
+            } else {
+                self.llm.configs.get(&backend)
+            }
+        };
+        let default = connection::Settings::default();
+        let custom = settings(Backend::Custom).unwrap_or(&default);
+        let models = Backend::ALL
+            .into_iter()
+            .filter(|backend| *backend != Backend::Local)
+            .filter_map(|backend| {
+                let model = settings(backend)?.model.trim();
+                (!model.is_empty()).then(|| (backend, model.to_owned()))
+            })
+            .collect();
+        llm_profiles::Preferences {
+            active: self.llm.backend,
+            models,
+            custom_endpoint: custom.endpoint.trim().to_owned(),
+            custom_format: custom.format,
+            local: self.llm.local.clone(),
+        }
+    }
+
+    pub(super) fn save_llm_preferences(&mut self) -> Task<Message> {
+        if !self.llm_settings_editable() || self.llm.picking {
+            return Task::none();
+        }
+        let Some(root) = self.llm.profile_store.clone() else {
+            self.llm.profiles_status = label("llm.native.profilesUnavailable").into();
+            return Task::none();
+        };
+        let preferences = self.llm_preferences();
+        let revision = self.llm.profiles_revision;
+        self.llm.profiles_saving = true;
+        self.llm.profiles_status = label("llm.native.profilesSaving").into();
+        Task::perform(
+            background(move || llm_profiles::save(&root, preferences, revision)),
+            Message::LlmProfilesSaved,
+        )
+    }
+
+    pub(super) fn finish_llm_preferences_save(&mut self, result: Result<u64, String>) {
+        self.llm.profiles_saving = false;
+        self.llm.profiles_status = match result {
+            Ok(revision) => {
+                self.llm.profiles_revision = revision;
+                label("llm.native.profilesSaved").into()
+            }
+            Err(error) => error,
+        };
+    }
+
+    pub(super) fn restore_llm_preferences(
+        &mut self,
+        result: Result<Option<llm_profiles::Saved>, String>,
+    ) {
+        if !self.llm.profiles_loading {
+            return;
+        }
+        self.llm.profiles_loading = false;
+        let saved = match result {
+            Ok(Some(saved)) => saved,
+            Ok(None) => return,
+            Err(error) => {
+                self.llm.profiles_status = error;
+                return;
+            }
+        };
+        self.llm.profiles_revision = saved.revision;
+        let preferences = saved.preferences;
+        self.llm.local = preferences.local;
+        self.llm.configs = Backend::ALL
+            .into_iter()
+            .filter(|backend| *backend != Backend::Local)
+            .map(|backend| {
+                let mut settings = backend.settings();
+                if backend == Backend::Custom {
+                    settings.endpoint = preferences.custom_endpoint.clone();
+                    settings.format = preferences.custom_format;
+                }
+                if let Some(model) = preferences.models.get(&backend) {
+                    settings.model = model.clone();
+                }
+                (backend, settings)
+            })
+            .collect();
+        self.llm.backend = preferences.active;
+        self.connection = self
+            .llm
+            .configs
+            .remove(&preferences.active)
+            .unwrap_or_else(|| preferences.active.settings());
+    }
+
     pub(super) fn select_llm_backend(&mut self, backend: Backend) {
-        if self.diagnostic.is_some() || self.llm.backend == backend {
+        if !self.llm_settings_editable() || self.llm.backend == backend {
             return;
         }
         let previous = self.llm.backend;
@@ -120,6 +243,7 @@ impl App {
                 .unwrap_or_else(|| backend.settings())
         };
         self.connection_status.clear();
+        self.llm.profiles_status.clear();
     }
 
     pub(super) fn request_model_catalog(&mut self) -> Task<Message> {
@@ -166,7 +290,11 @@ impl App {
     }
 
     pub(super) fn pick_local_llm(&mut self, kind: local_llm::FileKind) -> Task<Message> {
-        if self.llm.backend != Backend::Local || self.llm.picking || self.llm.server.is_some() {
+        if !self.llm_settings_editable()
+            || self.llm.backend != Backend::Local
+            || self.llm.picking
+            || self.llm.server.is_some()
+        {
             return Task::none();
         }
         self.llm.picking = true;
@@ -201,6 +329,7 @@ impl App {
     ) {
         self.llm.picking = false;
         if let Some(path) = path {
+            self.llm.profiles_status.clear();
             match kind {
                 local_llm::FileKind::Executable => self.llm.local.binary = Some(path),
                 local_llm::FileKind::Model => self.llm.local.model = Some(path),
@@ -209,7 +338,11 @@ impl App {
     }
 
     pub(super) fn start_local_llm(&mut self) -> Task<Message> {
-        if self.llm.backend != Backend::Local || self.llm.server.is_some() || self.llm.picking {
+        if !self.llm_settings_editable()
+            || self.llm.backend != Backend::Local
+            || self.llm.server.is_some()
+            || self.llm.picking
+        {
             return Task::none();
         }
         let (server, events) = local_llm::Server::launch(self.llm.local.clone());

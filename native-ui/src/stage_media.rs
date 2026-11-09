@@ -1,5 +1,5 @@
 //! Separat gespeicherte Stage-Medien und begrenzte lokale Bildvorschauen.
-use crate::{profile, stage_store, ui_text::text as label};
+use crate::{native_store, profile, ui_text::text as label};
 use iced::widget::image::Handle;
 use image::{ImageFormat, ImageReader, Limits, imageops::FilterType};
 use std::{
@@ -49,7 +49,7 @@ pub struct Imported {
 }
 
 pub fn list(root: &Path) -> Result<profile::StageMedia, String> {
-    let Some(root) = stage_store::store_root(root)? else {
+    let Some(root) = native_store::store_root(root)? else {
         return Ok(profile::StageMedia::default());
     };
     let names = |kind: Kind| -> Result<Vec<String>, String> {
@@ -87,7 +87,7 @@ pub fn import(root: &Path, kind: Kind, source: &Path) -> Result<Imported, String
     };
     profile::validate_native_store(root)?;
     fs::create_dir_all(root).map_err(|_| label(ACCESS))?;
-    let root = stage_store::store_root(root)?.ok_or_else(|| label(ACCESS))?;
+    let root = native_store::store_root(root)?.ok_or_else(|| label(ACCESS))?;
     fs::create_dir_all(root.join(kind.directory())).map_err(|_| label(ACCESS))?;
     let dir = directory(&root, kind)?.ok_or_else(|| label(ACCESS))?;
     let mut temporary = tempfile::Builder::new()
@@ -173,7 +173,7 @@ fn resolve(
         return Err(missing.into());
     }
     let local = if let Some(root) = root {
-        match stage_store::store_root(root)? {
+        match native_store::store_root(root)? {
             Some(root) => directory(&root, kind)?,
             None => None,
         }

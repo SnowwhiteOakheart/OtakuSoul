@@ -30,6 +30,8 @@ Stile und UI-Sprachschlüssel wiederverwenden. UI-Sprache und Inhaltssprache get
 Gemeinsamer Antwortdecoder: `crates/otakusoul-stream` (Tauri-Inferenz, native Verbindungsdiagnose und Modellchat).
 Chat, Stage und Story-Wizard nutzen den in den nativen Einstellungen gewählten Modellanbieter.
 `llm_control.rs` verwaltet Anbieter, Modelllisten und den sitzungsgebundenen Wechsel.
+`llm_profiles.rs` speichert die Auswahl und Startparameter explizit und atomar in
+`llm/profiles.json`. Schlüssel und laufende Serverzustände liegen in der Sitzung.
 `local_llm.rs` startet eine ausdrücklich gewählte llama-server-Laufzeit mit vorhandenem GGUF
 auf Loopback und beendet ihren eigenen Kindprozess. Strg+Enter fügt weiterhin lokal hinzu.
 Der Verbindungstest sendet einen festen Testprompt.

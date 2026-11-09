@@ -16,12 +16,14 @@ mod hub_store;
 mod icons;
 mod library;
 mod llm_control;
+mod llm_profiles;
 mod llm_view;
 mod local_llm;
 mod lore_catalog;
 mod lore_draft;
 mod message_content;
 mod model;
+mod native_store;
 mod profile;
 mod prompt_preview;
 mod stage_audio;
@@ -378,6 +380,9 @@ enum Message {
     LlmStart,
     LlmStop,
     LlmServerEvent(local_llm::Event),
+    LlmProfilesLoaded(Result<Option<llm_profiles::Saved>, String>),
+    LlmSaveProfiles,
+    LlmProfilesSaved(Result<u64, String>),
     TestConnection,
     CancelConnection,
     ConnectionFinished {
@@ -1610,6 +1615,9 @@ impl App {
                 let stage_root = data.join("stage");
                 let media_root = stage_root.clone();
                 let progress_root = stage_root.clone();
+                let llm_root = data.join("llm");
+                app.llm.profile_store = Some(llm_root.clone());
+                app.llm.profiles_loading = true;
                 app.stage.store = Some(stage_root.clone());
                 app.stage.loading = true;
                 app.stage.progress_loading = true;
@@ -1631,6 +1639,10 @@ impl App {
                     Task::perform(
                         background(move || stage_progress::list(&progress_root)),
                         Message::StageProgressLoaded,
+                    ),
+                    Task::perform(
+                        background(move || llm_profiles::load(&llm_root)),
+                        Message::LlmProfilesLoaded,
                     ),
                 ])
             }
@@ -1857,10 +1869,14 @@ impl App {
             return Task::none();
         }
         let home = PathBuf::from(self.profile_input.trim());
-        if [self.hub.store.as_ref(), self.stage.store.as_ref()]
-            .into_iter()
-            .flatten()
-            .any(|root| profile::native_store_overlaps(root, &home))
+        if [
+            self.hub.store.as_ref(),
+            self.stage.store.as_ref(),
+            self.llm.profile_store.as_ref(),
+        ]
+        .into_iter()
+        .flatten()
+        .any(|root| profile::native_store_overlaps(root, &home))
         {
             self.notice = "Bitte wähle eine Profilkopie außerhalb der nativen Bibliotheken.".into();
             return Task::none();
@@ -3092,7 +3108,7 @@ impl App {
                 }
             }
             Message::EndpointChanged(value) => {
-                if self.diagnostic.is_none()
+                if self.llm_settings_editable()
                     && self.llm.backend == llm_control::Backend::Custom
                     && self.connection.endpoint != value
                 {
@@ -3100,22 +3116,24 @@ impl App {
                     self.connection.key = connection::Secret::default();
                     self.llm.clear_catalog();
                     self.connection_status.clear();
+                    self.llm.profiles_status.clear();
                 }
             }
             Message::ModelChanged(value) => {
-                if self.diagnostic.is_none() {
+                if self.llm_settings_editable() && self.llm.ready() {
                     self.connection.model = value;
+                    self.llm.profiles_status.clear();
                 }
             }
             Message::KeyChanged(value) => {
-                if self.diagnostic.is_none() && self.llm.backend != llm_control::Backend::Local {
+                if self.llm_settings_editable() && self.llm.backend != llm_control::Backend::Local {
                     self.connection.key = value;
                     self.llm.clear_catalog();
                     self.connection_status.clear();
                 }
             }
             Message::FormatChanged(value) => {
-                if self.diagnostic.is_none()
+                if self.llm_settings_editable()
                     && self.llm.backend == llm_control::Backend::Custom
                     && self.connection.format != value
                 {
@@ -3123,6 +3141,7 @@ impl App {
                     self.connection.key = connection::Secret::default();
                     self.llm.clear_catalog();
                     self.connection_status.clear();
+                    self.llm.profiles_status.clear();
                 }
             }
             Message::LlmBackend(backend) => self.select_llm_backend(backend),
@@ -3133,18 +3152,23 @@ impl App {
             Message::LlmPickFile(kind) => return self.pick_local_llm(kind),
             Message::LlmFilePicked(kind, path) => self.finish_local_llm_pick(kind, path),
             Message::LlmContext(value) => {
-                if self.llm.server.is_none() {
+                if self.llm_settings_editable() && self.llm.server.is_none() {
                     self.llm.local.context = value;
+                    self.llm.profiles_status.clear();
                 }
             }
             Message::LlmGpuLayers(value) => {
-                if self.llm.server.is_none() {
+                if self.llm_settings_editable() && self.llm.server.is_none() {
                     self.llm.local.gpu_layers = value;
+                    self.llm.profiles_status.clear();
                 }
             }
             Message::LlmStart => return self.start_local_llm(),
             Message::LlmStop => self.stop_local_llm(),
             Message::LlmServerEvent(event) => self.local_llm_event(event),
+            Message::LlmProfilesLoaded(result) => self.restore_llm_preferences(result),
+            Message::LlmSaveProfiles => return self.save_llm_preferences(),
+            Message::LlmProfilesSaved(result) => self.finish_llm_preferences_save(result),
             Message::TestConnection => {
                 if self.diagnostic.is_some() || self.llm.catalog.is_some() || !self.llm.ready() {
                     return Task::none();
@@ -3417,6 +3441,65 @@ mod tests {
         let _ = app.update(Message::HubRefresh);
         assert_eq!(app.hub.loading.len(), Kind::ALL.len());
         assert_eq!(app.hub.catalog.len(), Kind::ALL.len());
+    }
+
+    #[test]
+    fn llm_preferences_restore_model_selection_without_credentials_or_a_running_server() {
+        use llm_control::Backend;
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path();
+        let mut app = App::default();
+        app.llm.profile_store = Some(root.to_path_buf());
+        let _ = app.update(Message::EndpointChanged(
+            "http://localhost:8080/v1/messages".into(),
+        ));
+        let _ = app.update(Message::FormatChanged(connection::Format::Anthropic));
+        let _ = app.update(Message::ModelChanged("custom-model".into()));
+        let _ = app.update(Message::KeyChanged(connection::Secret(
+            "custom-secret".into(),
+        )));
+        let _ = app.update(Message::LlmBackend(Backend::OpenRouter));
+        let _ = app.update(Message::KeyChanged(connection::Secret(
+            "router-secret".into(),
+        )));
+        let _ = app.update(Message::ModelChanged("router/model".into()));
+        let _ = app.update(Message::LlmBackend(Backend::Local));
+        let _ = app.update(Message::LlmFilePicked(
+            local_llm::FileKind::Executable,
+            Some("llama-server.exe".into()),
+        ));
+        let _ = app.update(Message::LlmFilePicked(
+            local_llm::FileKind::Model,
+            Some("model.gguf".into()),
+        ));
+        let _ = app.update(Message::LlmContext("8192".into()));
+        let _ = app.update(Message::LlmGpuLayers("12".into()));
+        let _ = app.update(Message::LlmSaveProfiles);
+        assert!(app.llm.profiles_saving);
+        let revision = llm_profiles::save(root, app.llm_preferences(), 0).unwrap();
+        let _ = app.update(Message::LlmProfilesSaved(Ok(revision)));
+        let file = std::fs::read_to_string(root.join("profiles.json")).unwrap();
+        assert!(!file.contains("secret"));
+
+        let mut reopened = App::default();
+        reopened.llm.profiles_loading = true;
+        assert!(!reopened.llm.ready());
+        let _ = reopened.update(Message::LlmProfilesLoaded(llm_profiles::load(root)));
+        assert_eq!(reopened.llm.backend, Backend::Local);
+        assert_eq!(reopened.llm.local, app.llm.local);
+        assert!(reopened.llm.server.is_none());
+        assert!(!reopened.llm.ready());
+        let _ = reopened.update(Message::LlmBackend(Backend::OpenRouter));
+        assert_eq!(reopened.connection.model, "router/model");
+        assert!(reopened.connection.key.0.is_empty());
+        let _ = reopened.update(Message::LlmBackend(Backend::Custom));
+        assert_eq!(
+            reopened.connection.endpoint,
+            "http://localhost:8080/v1/messages"
+        );
+        assert_eq!(reopened.connection.model, "custom-model");
+        assert_eq!(reopened.connection.format, connection::Format::Anthropic);
+        assert!(reopened.connection.key.0.is_empty());
     }
 
     #[test]

@@ -10,6 +10,9 @@ use std::path::Path;
 
 impl App {
     pub(super) fn active_llm_label(&self) -> String {
+        if self.llm.profiles_loading {
+            return label("llm.native.profilesLoading").into();
+        }
         let backend = self.llm.backend;
         if backend == Backend::Local && !self.llm.ready() {
             return label(if self.llm.stopping {
@@ -40,7 +43,7 @@ impl App {
     }
 
     pub(super) fn connection_settings(&self) -> Element<'_, Message> {
-        let editable = self.diagnostic.is_none();
+        let editable = self.llm_settings_editable();
         let local = self.llm.backend == Backend::Local;
         let custom = self.llm.backend == Backend::Custom;
         let theme = self.theme();
@@ -141,14 +144,30 @@ impl App {
                         .on_press_maybe(if self.llm.catalog.is_some() {
                             Some(Message::LlmCancelCatalog)
                         } else {
-                            (!editable).then_some(Message::CancelConnection)
+                            self.diagnostic
+                                .is_some()
+                                .then_some(Message::CancelConnection)
                         }),
                 ]
                 .spacing(8)
                 .wrap(),
             )
             .push(text(&self.connection_status).size(13))
-            .push(muted(label("llm.native.usage"), 12, &theme));
+            .push(muted(label("llm.native.usage"), 12, &theme))
+            .push(
+                button(label("llm.native.saveProfiles"))
+                    .padding(9)
+                    .style(appearance::subtle_button)
+                    .on_press_maybe(
+                        (editable && !self.llm.picking).then_some(Message::LlmSaveProfiles),
+                    ),
+            )
+            .push(muted(label("llm.native.profilesHint"), 12, &theme));
+        if self.llm.profiles_loading {
+            content = content.push(muted(label("llm.native.profilesLoading"), 13, &theme));
+        } else if !self.llm.profiles_status.is_empty() {
+            content = content.push(text(&self.llm.profiles_status).size(13));
+        }
         container(content)
             .padding(20)
             .width(Fill)
@@ -159,7 +178,8 @@ impl App {
     fn local_llm_settings(&self) -> Element<'_, Message> {
         let theme = self.theme();
         let config = &self.llm.local;
-        let editable = self.llm.server.is_none() && !self.llm.picking;
+        let editable =
+            self.llm_settings_editable() && self.llm.server.is_none() && !self.llm.picking;
         let file = |key, path: Option<&Path>, kind| {
             column![
                 muted(
