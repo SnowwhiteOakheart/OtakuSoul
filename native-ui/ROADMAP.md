@@ -779,8 +779,9 @@ geladenen Titelbilder der ersten Reihe. Die Aufnahme liegt lokal in
 - [x] Szenariovorschau mit Schauplatz, Tageszeit, Gruppe, Inhaltsangaben, Einstiegsideen und
   lesbarem Auftakt. Öffentliche Hub-Szenarien werden beim Ansehen für die Sitzung geladen.
 - [x] Szenen-Lobby mit Suche und Herkunftsfiltern, Vorschau, Basis-Editor und JSON-Import
-  und -Export. Eigene Szenen und Entwürfe liegen für die Dauer der Sitzung im Speicher.
-- [ ] Dauerhafter Szenenspeicher, Ordnerverwaltung, erweiterte Szenenfelder und Story-Wizard.
+  und -Export.
+- [x] Dauerhafter Szenenspeicher. Gespeicherte und importierte Szenen werden beim Start geladen.
+- [ ] Ordnerverwaltung, erweiterte Szenenfelder und Story-Wizard.
 - [ ] Spielansicht mit echten Stage-Runden und Spielständen.
 - [ ] 5e-Spielbrett, Kampf und Erkundung über die vorhandene Stage-/Regel-Engine.
 
@@ -792,6 +793,11 @@ Die Vorschau lädt keine referenzierten Figuren, Lorebooks oder Medien zusätzli
 ändert nur bearbeitete Definitionsfelder. Der JSON-Import akzeptiert eine Definition oder
 einen Spielstand mit `definition`. Der Export speichert die Definition einschließlich
 unveränderter Regel- und Erweiterungsfelder. Spielverlauf und Medien sind separate Etappen.
+`stage_store.rs` speichert eigene Szenendefinitionen in `stage/scenes.json` unter
+`otakusoul_paths::native_data_dir()`. Der Katalog ist versioniert und wird atomar ersetzt.
+Parallele Schreibvorgänge werden serialisiert. Ein veralteter Entwurf kann keine neuere
+Fassung überschreiben. Der Katalog entsteht erst beim Speichern oder Import. Offene Entwürfe
+liegen bis zum Speichern im Arbeitsspeicher. Manuelle Bedienproben sind für später gebündelt.
 Tauris Lobby und die gemeinsamen Editorfelder wurden per WebDriver im isolierten E2E-Profil
 geprüft. Für die native Variante bestanden 152 Tests einschließlich JSON-Rundlauf und der
 Windows-Build. Der Live-Hub-Test war bei diesem Lauf ausgenommen.

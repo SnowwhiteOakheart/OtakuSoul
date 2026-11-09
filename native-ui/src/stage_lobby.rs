@@ -4,7 +4,8 @@ use crate::stage_draft::{Draft, Field};
 use crate::ui_text::{CONTENT_LANGUAGE, format, text as label};
 use crate::views::{control, muted, scroll, shorten};
 use crate::{
-    App, Message, Page, StageSource, appearance, background, file_export, profile, stage_preview,
+    App, Message, Page, StageSource, StageWrite, appearance, background, file_export, profile,
+    stage_preview, stage_store,
 };
 use iced::widget::{button, column, container, pick_list, row, text, text_editor, text_input};
 use iced::{Alignment, Element, Fill, Task};
@@ -29,7 +30,7 @@ impl std::fmt::Display for Field {
 
 impl App {
     pub(super) fn open_scene_editor(&mut self, target: Option<usize>) {
-        if self.page != Page::Stage {
+        if self.page != Page::Stage || self.stage.file_busy {
             return;
         }
         if self.stage.draft.is_none() {
@@ -54,37 +55,121 @@ impl App {
         self.stage.editing = true;
     }
 
-    pub(super) fn save_scene_draft(&mut self) {
+    pub(super) fn save_scene_draft(&mut self) -> Task<Message> {
+        if self.stage.file_busy || self.stage.loading {
+            return Task::none();
+        }
         let Some(draft) = self.stage.draft.as_ref().filter(|_| self.stage.editing) else {
-            return;
+            return Task::none();
         };
         let id = draft
             .target
             .map_or_else(new_scene_id, |index| self.stage.scenes[index].id.clone());
         match draft.apply(&id) {
-            Ok(scene) => {
-                if let Some(index) = draft.target {
+            Ok(scene) => self.persist_scene(StageWrite::Editor(draft.target), scene),
+            Err(error) => {
+                self.stage.edit_error = error;
+                Task::none()
+            }
+        }
+    }
+
+    pub(super) fn persist_scene(
+        &mut self,
+        write: StageWrite,
+        scene: stage_preview::Scene,
+    ) -> Task<Message> {
+        let Some(root) = self.stage.store.clone() else {
+            self.finish_stage_write(write, Err(label("gallery.native.storeUnavailable").into()));
+            return Task::none();
+        };
+        let previous = match write {
+            StageWrite::Editor(Some(index)) => Some(self.stage.scenes[index].definition()),
+            _ => None,
+        };
+        self.stage.file_busy = true;
+        self.stage.edit_error.clear();
+        Task::perform(
+            background(move || {
+                stage_store::save(&root, &scene, previous.as_ref())?;
+                Ok(scene)
+            }),
+            move |result| Message::StageStored(write, result),
+        )
+    }
+
+    pub(super) fn finish_stage_load(&mut self, result: Result<Vec<stage_preview::Scene>, String>) {
+        self.stage.loading = false;
+        match result {
+            Ok(scenes) => {
+                for scene in scenes {
+                    if self
+                        .stage
+                        .scenes
+                        .iter()
+                        .any(|known| known.collection().is_some() && known.id == scene.id)
+                    {
+                        self.stage.notice = label("gallery.native.duplicateScene").into();
+                    } else {
+                        self.add_local_scene(scene);
+                    }
+                }
+            }
+            Err(error) => {
+                self.stage.notice = format("gallery.native.storeError", &[("error", &error)])
+            }
+        }
+    }
+
+    pub(super) fn finish_stage_write(
+        &mut self,
+        write: StageWrite,
+        result: Result<stage_preview::Scene, String>,
+    ) {
+        self.stage.file_busy = false;
+        let scene = match result {
+            Ok(scene) => scene,
+            Err(error) => {
+                let error = format("gallery.native.storeError", &[("error", &error)]);
+                match write {
+                    StageWrite::Import => self.stage.notice = error,
+                    StageWrite::Editor(_) => self.stage.edit_error = error,
+                }
+                return;
+            }
+        };
+        match write {
+            StageWrite::Editor(target) => {
+                if let Some(index) = target {
                     self.stage.scenes[index] = scene;
                 } else {
                     self.add_local_scene(scene);
                 }
                 self.stage.draft = None;
                 self.stage.editing = false;
-                self.stage.lobby_source = StageSource::Own;
-                self.stage.lobby_query.clear();
                 self.stage.notice = label("gallery.native.sceneApplied").into();
             }
-            Err(error) => self.stage.edit_error = error,
+            StageWrite::Import => {
+                self.stage.notice = format(
+                    "gallery.native.sceneImported",
+                    &[("title", scene.title(CONTENT_LANGUAGE))],
+                );
+                self.add_local_scene(scene);
+            }
+        }
+        if self.stage.lobby && !self.stage.editing && self.stage.selected.is_none() {
+            self.stage.lobby_source = StageSource::Own;
+            self.stage.lobby_query.clear();
         }
     }
 
-    pub(super) fn add_local_scene(&mut self, scene: stage_preview::Scene) {
+    fn add_local_scene(&mut self, scene: stage_preview::Scene) {
         self.stage.own.insert(self.stage.scenes.len());
         self.stage.scenes.push(scene);
     }
 
     pub(super) fn import_scene_file(&mut self) -> Task<Message> {
-        if self.stage.file_busy {
+        if self.stage.file_busy || self.stage.loading {
             return Task::none();
         }
         self.stage.file_busy = true;
@@ -114,7 +199,7 @@ impl App {
     }
 
     pub(super) fn export_scene_file(&mut self, index: usize) -> Task<Message> {
-        if self.stage.file_busy || self.profile_busy {
+        if self.stage.file_busy || self.stage.loading || self.profile_busy {
             return Task::none();
         }
         let Some(scene) = self.stage.scenes.get(index) else {
@@ -122,6 +207,7 @@ impl App {
         };
         let definition = scene.definition();
         let protected = self.profile_home.clone();
+        let store = self.stage.store.clone();
         self.stage.file_busy = true;
         self.stage.notice.clear();
         Task::perform(
@@ -143,6 +229,12 @@ impl App {
                     return Err(label("gallery.native.jsonExtension").into());
                 }
                 background(move || {
+                    if store
+                        .as_ref()
+                        .is_some_and(|root| profile::native_store_overlaps(root, &path))
+                    {
+                        return Err(label("gallery.native.storeExport").into());
+                    }
                     file_export::write_json(&path, &definition, protected.as_deref())
                 })
                 .await
@@ -154,7 +246,7 @@ impl App {
 
     pub(super) fn scene_lobby(&self) -> Element<'_, Message> {
         let theme = self.theme();
-        let available = !self.stage.file_busy;
+        let available = !self.stage.file_busy && !self.stage.loading;
         let tools = row![
             button(label("lobby.importJson"))
                 .style(appearance::subtle_button)
@@ -232,7 +324,7 @@ impl App {
             filters.wrap(),
         ]
         .spacing(12);
-        if self.stage.file_busy {
+        if !available {
             content = content.push(muted(label("common.loading"), 13, &theme));
         } else if !self.stage.notice.is_empty() {
             content = content.push(text(&self.stage.notice).size(13));
@@ -356,16 +448,22 @@ impl App {
             row![
                 button(label("gallery.native.applyScene"))
                     .style(appearance::primary_button)
-                    .on_press(Message::StageApply),
+                    .on_press_maybe(
+                        (!self.stage.file_busy && !self.stage.loading)
+                            .then_some(Message::StageApply)
+                    ),
                 button(label("gallery.native.discardScene"))
                     .style(appearance::subtle_button)
-                    .on_press(Message::StageDiscard),
+                    .on_press_maybe((!self.stage.file_busy).then_some(Message::StageDiscard)),
             ]
             .spacing(8),
         ]
         .spacing(12);
         if matches!(self.stage.edit_field, Field::Party | Field::Lorebooks) {
             content = content.push(muted(label("gallery.native.onePerLine"), 12, &theme));
+        }
+        if self.stage.file_busy || self.stage.loading {
+            content = content.push(muted(label("common.loading"), 13, &theme));
         }
         if !self.stage.edit_error.is_empty() {
             content = content.push(

@@ -76,9 +76,10 @@ und Sammlungsfilter, Schauplatz, Einstiegsideen und Auftakt in `stage_views.rs` 
 `stage_preview.rs` liest die mitgelieferten Szenendefinitionen und öffentliche Gateway-Szenarien.
 Die Galerie verwendet die Inhaltslokalisierung separat von den gemeinsamen UI-Schlüsseln.
 `stage_lobby.rs` enthält Szenen-Lobby und JSON-Dateidialoge. `stage_draft.rs` bearbeitet
-Szenendefinitionen unter Erhalt der übrigen Felder. Eigene Szenen liegen für die Sitzung im
-Speicher und lassen sich als Definition exportieren. Stage-Runden, Spielstände und 5e-Engine
-sind weitere Etappen.
+Szenendefinitionen unter Erhalt der übrigen Felder. `stage_store.rs` speichert eigene
+Definitionen atomar unter `native_data_dir()/stage/scenes.json` und lädt sie beim Start.
+Editor und JSON-Import übernehmen Änderungen nach erfolgreichem Speichern in die Lobby.
+Stage-Runden, Spielstände und 5e-Engine sind weitere Etappen.
 
 ### Allgemeine Arbeitsregeln
 

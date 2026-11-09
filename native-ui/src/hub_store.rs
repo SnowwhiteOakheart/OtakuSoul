@@ -1,5 +1,8 @@
 //! Dauerhafte Originaldownloads für die separate native Hub-Bibliothek.
-use crate::{hub_catalog::Kind, profile::validate_hub_store};
+use crate::{
+    hub_catalog::Kind,
+    profile::{is_link, validate_hub_store},
+};
 use rusqlite::{Connection, OpenFlags, OptionalExtension, Row, TransactionBehavior, params};
 use std::{
     fs::{self, File, Metadata},
@@ -305,19 +308,6 @@ fn metadata(path: &Path) -> Result<Option<Metadata>, String> {
         Ok(metadata) => Ok(Some(metadata)),
         Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
         Err(_) => Err(ACCESS_ERROR.into()),
-    }
-}
-
-fn is_link(metadata: &Metadata) -> bool {
-    #[cfg(windows)]
-    {
-        use std::os::windows::fs::MetadataExt;
-        const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x0400;
-        metadata.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0
-    }
-    #[cfg(not(windows))]
-    {
-        metadata.file_type().is_symlink()
     }
 }
 

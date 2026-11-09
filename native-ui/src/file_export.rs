@@ -5,7 +5,7 @@ use std::path::Path;
 
 const MAX_JSON_BYTES: usize = 4 * 1024 * 1024;
 
-/// Der Aufrufer hat das Ziel ausdrücklich gewählt und ein Überschreiben bestätigt.
+/// Der Aufrufer ist für die Wahl und Freigabe des Ziels zuständig.
 /// Erst vollständig schreiben/synchronisieren, danach die Zieldatei atomar ersetzen.
 pub fn write_bytes(path: &Path, bytes: &[u8], protected_home: Option<&Path>) -> Result<(), String> {
     let target = crate::profile::validate_export_target(path, protected_home)?;

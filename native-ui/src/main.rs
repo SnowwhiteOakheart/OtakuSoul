@@ -24,6 +24,7 @@ mod prompt_preview;
 mod stage_draft;
 mod stage_lobby;
 mod stage_preview;
+mod stage_store;
 mod stage_views;
 mod ui_text;
 mod views;
@@ -188,6 +189,8 @@ enum Message {
     StageDiscard,
     StageImport,
     StageImported(Result<Option<stage_preview::Scene>, String>),
+    StageLibraryLoaded(Result<Vec<stage_preview::Scene>, String>),
+    StageStored(StageWrite, Result<stage_preview::Scene, String>),
     StageExport(usize),
     StageExported(Result<bool, String>),
     HubScenePreview(String),
@@ -376,7 +379,7 @@ fn import_hub_content(
     entry: &hub_catalog::Entry,
     update: bool,
 ) -> Result<HubImportResult, String> {
-    if protected_home.is_some_and(|home| profile::hub_store_overlaps(root, home)) {
+    if protected_home.is_some_and(|home| profile::native_store_overlaps(root, home)) {
         return Err(
             "Der native Hub-Speicher überschneidet sich mit der geladenen Profilkopie.".into(),
         );
@@ -549,9 +552,17 @@ struct Stage {
     editing: bool,
     edit_field: stage_draft::Field,
     editor: text_editor::Content,
+    store: Option<PathBuf>,
+    loading: bool,
     file_busy: bool,
     notice: String,
     edit_error: String,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum StageWrite {
+    Import,
+    Editor(Option<usize>),
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -588,6 +599,8 @@ impl Default for Stage {
             editing: false,
             edit_field: stage_draft::Field::Description,
             editor: text_editor::Content::new(),
+            store: None,
+            loading: false,
             file_busy: false,
             notice: String::new(),
             edit_error: String::new(),
@@ -1472,19 +1485,29 @@ impl App {
     }
     fn new(profile: Option<PathBuf>) -> (Self, Task<Message>) {
         let mut app = Self::default();
-        let library = match otakusoul_paths::native_data_dir() {
+        let (hub_library, stage_library) = match otakusoul_paths::native_data_dir() {
             Some(data) => {
                 let root = data.join("hub");
+                let stage_root = data.join("stage");
+                app.stage.store = Some(stage_root.clone());
+                app.stage.loading = true;
                 app.hub.store = Some(root.clone());
                 app.hub.library_loading = true;
-                Task::perform(
-                    background(move || HubLibrary::read(&root)),
-                    Message::HubLibraryLoaded,
+                (
+                    Task::perform(
+                        background(move || HubLibrary::read(&root)),
+                        Message::HubLibraryLoaded,
+                    ),
+                    Task::perform(
+                        background(move || stage_store::list(&stage_root)),
+                        Message::StageLibraryLoaded,
+                    ),
                 )
             }
             None => {
                 app.hub.library_notice = ui_text::text("hub.native.storeUnavailable").into();
-                Task::none()
+                app.stage.notice = ui_text::text("gallery.native.storeUnavailable").into();
+                (Task::none(), Task::none())
             }
         };
         let task = if let Some(home) = profile {
@@ -1493,7 +1516,7 @@ impl App {
         } else {
             Task::none()
         };
-        (app, Task::batch([library, task]))
+        (app, Task::batch([hub_library, stage_library, task]))
     }
     fn portraits(preview: &Preview) -> Vec<Option<image::Handle>> {
         preview
@@ -1700,14 +1723,12 @@ impl App {
             return Task::none();
         }
         let home = PathBuf::from(self.profile_input.trim());
-        if self
-            .hub
-            .store
-            .as_ref()
-            .is_some_and(|root| profile::hub_store_overlaps(root, &home))
+        if [self.hub.store.as_ref(), self.stage.store.as_ref()]
+            .into_iter()
+            .flatten()
+            .any(|root| profile::native_store_overlaps(root, &home))
         {
-            self.notice =
-                "Bitte wähle eine Profilkopie außerhalb des nativen Hub-Speichers.".into();
+            self.notice = "Bitte wähle eine Profilkopie außerhalb der nativen Bibliotheken.".into();
             return Task::none();
         }
         let returned_home = home.clone();
@@ -2329,7 +2350,8 @@ impl App {
             Message::StageLobbySource(source) => self.stage.lobby_source = source,
             Message::StageEdit(index) => self.open_scene_editor(index),
             Message::StageEditField(field) => {
-                if self.stage.editing
+                if !self.stage.file_busy
+                    && self.stage.editing
                     && stage_draft::Field::MULTILINE.contains(&field)
                     && let Some(draft) = &self.stage.draft
                 {
@@ -2338,7 +2360,8 @@ impl App {
                 }
             }
             Message::StageSet(field, value) => {
-                if self.stage.editing
+                if !self.stage.file_busy
+                    && self.stage.editing
                     && let Some(draft) = &mut self.stage.draft
                 {
                     draft.set(field, value);
@@ -2346,7 +2369,8 @@ impl App {
                 }
             }
             Message::StageText(action) => {
-                if self.stage.editing
+                if !self.stage.file_busy
+                    && self.stage.editing
                     && let Some(draft) = &mut self.stage.draft
                 {
                     let changed = action.is_edit();
@@ -2357,9 +2381,9 @@ impl App {
                     }
                 }
             }
-            Message::StageApply => self.save_scene_draft(),
+            Message::StageApply => return self.save_scene_draft(),
             Message::StageDiscard => {
-                if self.stage.editing {
+                if !self.stage.file_busy && self.stage.editing {
                     self.stage.draft = None;
                     self.stage.editing = false;
                     self.stage.edit_error.clear();
@@ -2375,20 +2399,7 @@ impl App {
                         ui_text::text("gallery.native.duplicateScene").into()
                     }
                     Ok(Some(scene)) => {
-                        let notice = ui_text::format(
-                            "gallery.native.sceneImported",
-                            &[("title", scene.title(ui_text::CONTENT_LANGUAGE))],
-                        );
-                        self.add_local_scene(scene);
-                        if self.page == Page::Stage
-                            && self.stage.lobby
-                            && !self.stage.editing
-                            && self.stage.selected.is_none()
-                        {
-                            self.stage.lobby_source = StageSource::Own;
-                            self.stage.lobby_query.clear();
-                        }
-                        notice
+                        return self.persist_scene(StageWrite::Import, scene);
                     }
                     Ok(None) => String::new(),
                     Err(error) => {
@@ -2396,6 +2407,8 @@ impl App {
                     }
                 };
             }
+            Message::StageLibraryLoaded(result) => self.finish_stage_load(result),
+            Message::StageStored(write, result) => self.finish_stage_write(write, result),
             Message::StageExport(index) => return self.export_scene_file(index),
             Message::StageExported(result) => {
                 self.stage.file_busy = false;
@@ -3083,6 +3096,9 @@ mod tests {
         use stage_draft::Field;
 
         let mut app = App::default();
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("stage");
+        app.stage.store = Some(root.clone());
         let _ = app.update(Message::Navigate(Page::Stage));
         let _ = app.update(Message::StageManage);
         let _ = app.update(Message::StageEdit(None));
@@ -3092,6 +3108,21 @@ mod tests {
         assert!(!app.stage.editing);
         let _ = app.update(Message::StageEdit(None));
         let _ = app.update(Message::StageApply);
+        assert!(app.stage.file_busy);
+        let _ = app.update(Message::StageStored(
+            StageWrite::Editor(None),
+            Err("Speichern fehlgeschlagen".into()),
+        ));
+        assert!(app.stage.editing);
+        assert!(!app.stage.file_busy);
+        assert_eq!(
+            app.stage.draft.as_ref().unwrap().get(Field::Title),
+            "Kampagne"
+        );
+        let _ = app.update(Message::StageApply);
+        let scene = app.stage.draft.as_ref().unwrap().apply("kampagne").unwrap();
+        stage_store::save(&root, &scene, None).unwrap();
+        let _ = app.update(Message::StageStored(StageWrite::Editor(None), Ok(scene)));
 
         let index = app.stage.scenes.len() - 1;
         let id = app.stage.scenes[index].id.clone();
@@ -3101,6 +3132,12 @@ mod tests {
         let _ = app.update(Message::StageEdit(Some(index)));
         let _ = app.update(Message::StageSet(Field::Title, "Kampagne II".into()));
         let _ = app.update(Message::StageApply);
+        let scene = app.stage.draft.as_ref().unwrap().apply(&id).unwrap();
+        stage_store::save(&root, &scene, Some(&app.stage.scenes[index].definition())).unwrap();
+        let _ = app.update(Message::StageStored(
+            StageWrite::Editor(Some(index)),
+            Ok(scene),
+        ));
         assert_eq!(app.stage.scenes[index].id, id);
         assert_eq!(app.stage.scenes[index].title("de"), "Kampagne II");
 
@@ -3110,6 +3147,12 @@ mod tests {
         let _ = app.update(Message::StageImported(Ok(Some(duplicate))));
         assert_eq!(app.stage.scenes.len(), index + 1);
         assert_eq!(app.stage.scenes[index].title("de"), "Kampagne II");
+
+        let mut reopened = App::default();
+        let _ = reopened.update(Message::StageLibraryLoaded(stage_store::list(&root)));
+        assert!(reopened.stage.own.contains(&index));
+        assert_eq!(reopened.stage.scenes[index].id, id);
+        assert_eq!(reopened.stage.scenes[index].title("de"), "Kampagne II");
     }
 
     #[test]

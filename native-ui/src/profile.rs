@@ -94,15 +94,33 @@ fn production_overlap(path: &Path) -> bool {
 }
 
 pub fn validate_hub_store(root: &Path) -> Result<(), String> {
+    validate_native_store(root)
+        .map_err(|_| "Der native Hub-Speicher überschneidet sich mit einem Tauri-Profil.".into())
+}
+
+pub fn validate_native_store(root: &Path) -> Result<(), String> {
     if production_overlap(root)
-        || otakusoul_paths::isolated_home().is_some_and(|home| hub_store_overlaps(root, &home))
+        || otakusoul_paths::isolated_home().is_some_and(|home| native_store_overlaps(root, &home))
     {
-        return Err("Der native Hub-Speicher überschneidet sich mit einem Tauri-Profil.".into());
+        return Err("Der native Speicher überschneidet sich mit einem Tauri-Profil.".into());
     }
     Ok(())
 }
 
-pub fn hub_store_overlaps(root: &Path, profile: &Path) -> bool {
+pub fn is_link(metadata: &fs::Metadata) -> bool {
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+        const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x0400;
+        metadata.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0
+    }
+    #[cfg(not(windows))]
+    {
+        metadata.file_type().is_symlink()
+    }
+}
+
+pub fn native_store_overlaps(root: &Path, profile: &Path) -> bool {
     paths_overlap(&normalized_location(root), &normalized_location(profile))
 }
 

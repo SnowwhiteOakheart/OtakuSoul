@@ -30,8 +30,9 @@
   `midnight` prüfen.
   `native-ui/src/ui_text.rs` liest für Startseite, Stage und Hub dieselben UI-Sprachdateien wie Tauri.
   `home_view.rs` und `stage_views.rs` folgen den React-Ansichten. `stage_preview.rs` projiziert
-  Szenen für die Galerie und die lesende Vorschau. `stage_lobby.rs` verwaltet eigene Szenen
-  in der Sitzung und die JSON-Dateidialoge. `stage_draft.rs` bearbeitet Szenendefinitionen.
+  Szenen für die Galerie und die lesende Vorschau. `stage_lobby.rs` enthält Lobby und Dateidialoge.
+  `stage_draft.rs` bearbeitet Szenendefinitionen. `stage_store.rs` speichert eigene Definitionen
+  atomar im separaten nativen Szenenkatalog.
 * **ONNX:** `modules/onnx_runtime.rs` verwaltet die von `AppState` gehaltene gemeinsame Umgebung für Kokoro, VAD und Porträts. Kokoros rc.15-Portierung liegt in `src-tauri/vendor/kokoro-en/` mit Herkunfts- und Patchdokumentation.
 * **PDF-Anhänge:** `vendor/pdf-extract` behält die bisherige Extraktion bei und verwendet lopdf 0.47 ohne ttf-parser. Herkunft und minimale Portierung stehen in `OTAKUSOUL-PATCH.md`; Kokoros altes Bincode-Format wird durch `cu-bincode` gelesen.
 * **Kein Python in der App:** Die Desktop-App ist 100 % Rust & TypeScript (Portierung von *Soul of Waifu* ist vollständig entkoppelt).
