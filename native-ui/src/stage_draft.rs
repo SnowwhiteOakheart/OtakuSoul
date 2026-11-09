@@ -16,10 +16,15 @@ pub enum Field {
     Party,
     Lorebooks,
     Folder,
+    GmTone,
+    NarratorStyle,
+    ActorDepth,
+    Dice,
+    DisableOffscreen,
 }
 
 impl Field {
-    const ALL: [Self; 10] = [
+    const ALL: [Self; 15] = [
         Self::Title,
         Self::Description,
         Self::Location,
@@ -30,6 +35,11 @@ impl Field {
         Self::Party,
         Self::Lorebooks,
         Self::Folder,
+        Self::GmTone,
+        Self::NarratorStyle,
+        Self::ActorDepth,
+        Self::Dice,
+        Self::DisableOffscreen,
     ];
 
     pub const MULTILINE: [Self; 5] = [
@@ -52,6 +62,11 @@ impl Field {
             Self::Party => "sceneNew.party",
             Self::Lorebooks => "sceneEdit.lorebooks",
             Self::Folder => "gallery.native.folder",
+            Self::GmTone => "sceneNew.gmTone",
+            Self::NarratorStyle => "sceneNew.narratorStyle",
+            Self::ActorDepth => "sceneEdit.actors",
+            Self::Dice => "sceneNew.dice",
+            Self::DisableOffscreen => "sceneEdit.disableOffscreen",
         }
     }
 
@@ -67,6 +82,21 @@ impl Field {
             Self::Party => "party",
             Self::Lorebooks => "lorebook",
             Self::Folder => "folder",
+            Self::GmTone => "gm_tone",
+            Self::NarratorStyle => "narrator_style",
+            Self::ActorDepth => "max_actor_depth",
+            Self::Dice => "dice_rolls_enabled",
+            Self::DisableOffscreen => "disable_offscreen",
+        }
+    }
+
+    fn default_text(self) -> &'static str {
+        match self {
+            Self::GmTone => "Epic Fantasy",
+            Self::ActorDepth => "3",
+            Self::Dice => "true",
+            Self::DisableOffscreen => "false",
+            _ => "",
         }
     }
 
@@ -86,7 +116,16 @@ impl Field {
                 .filter_map(Value::as_str)
                 .collect::<Vec<_>>()
                 .join("\n"),
-            _ => value.as_str().unwrap_or_default().to_owned(),
+            Self::ActorDepth => value
+                .as_u64()
+                .map_or_else(|| self.default_text().into(), |value| value.to_string()),
+            Self::Dice | Self::DisableOffscreen => value
+                .as_bool()
+                .map_or_else(|| self.default_text().into(), |value| value.to_string()),
+            _ => value
+                .as_str()
+                .unwrap_or_else(|| self.default_text())
+                .to_owned(),
         }
     }
 
@@ -114,7 +153,7 @@ impl Draft {
         Self {
             target: None,
             original: None,
-            values: Default::default(),
+            values: Field::ALL.map(|field| field.default_text().into()),
         }
     }
 
@@ -156,10 +195,27 @@ impl Draft {
                 if text == field.text(original) {
                     continue;
                 }
-            } else if text.trim().is_empty() {
+            } else if text.trim() == field.default_text() {
                 continue;
             }
             let value = match field {
+                Field::ActorDepth => {
+                    let actors = text
+                        .trim()
+                        .parse::<u32>()
+                        .ok()
+                        .filter(|count| (1..=6).contains(count))
+                        .ok_or_else(|| {
+                            crate::ui_text::text("gallery.native.actorsInvalid").to_owned()
+                        })?;
+                    Value::from(actors)
+                }
+                Field::Dice | Field::DisableOffscreen => {
+                    let enabled = text
+                        .parse::<bool>()
+                        .map_err(|_| "Ungültiger Schalterwert.")?;
+                    Value::from(enabled)
+                }
                 Field::Folder => {
                     let name = text.trim();
                     if !valid_folder_name(name) {
@@ -231,6 +287,40 @@ mod tests {
         assert_eq!(scene.party, ["beta", "alpha"]);
         assert_eq!(scene.lorebooks, ["myth", "legend"]);
         assert_eq!(scene.definition()["solo_mode"], false);
+    }
+
+    #[test]
+    fn stage_narration_options_keep_defaults_implicit_and_write_typed_values() {
+        let mut draft = Draft::new();
+        draft.set(Field::Title, "Der Wald".into());
+        let base = draft.apply("draft").unwrap().definition();
+        assert!(base.get("gm_tone").is_none());
+        assert!(base.get("max_actor_depth").is_none());
+        assert!(base.get("dice_rolls_enabled").is_none());
+        assert_eq!(draft.get(Field::GmTone), "Epic Fantasy");
+        assert_eq!(draft.get(Field::ActorDepth), "3");
+        assert_eq!(draft.get(Field::Dice), "true");
+        draft.set(Field::GmTone, "Dark Fantasy".into());
+        draft.set(Field::NarratorStyle, "Knapp und direkt".into());
+        draft.set(Field::Dice, "false".into());
+        draft.set(Field::DisableOffscreen, "true".into());
+        draft.set(Field::ActorDepth, "7".into());
+        assert!(draft.apply("draft").is_err());
+        draft.set(Field::ActorDepth, "5".into());
+        let scene = draft.apply("draft").unwrap();
+        let definition = scene.definition();
+        assert_eq!(definition["gm_tone"], "Dark Fantasy");
+        assert_eq!(definition["narrator_style"], "Knapp und direkt");
+        assert_eq!(definition["max_actor_depth"], 5);
+        assert_eq!(definition["dice_rolls_enabled"], false);
+        assert_eq!(definition["disable_offscreen"], true);
+        assert_eq!(
+            Draft::from_scene(Some(0), &scene)
+                .apply("draft")
+                .unwrap()
+                .definition(),
+            definition
+        );
     }
 
     #[test]

@@ -1,13 +1,16 @@
 //! Szenenverwaltung und Dateifluss nach Tauris Szenen-Lobby.
 use crate::icons::{Icon, icon};
 use crate::stage_draft::{Draft, Field};
+use crate::stage_store::{FolderChange, Library};
 use crate::ui_text::{CONTENT_LANGUAGE, format, text as label};
 use crate::views::{control, muted, scroll, shorten};
 use crate::{
     App, Message, Page, StageFolder, StageSource, StageWrite, appearance, background, file_export,
     profile, stage_preview, stage_store,
 };
-use iced::widget::{button, column, container, pick_list, row, text, text_editor, text_input};
+use iced::widget::{
+    button, checkbox, column, container, pick_list, row, text, text_editor, text_input,
+};
 use iced::{Alignment, Element, Fill, Task};
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -29,6 +32,47 @@ impl std::fmt::Display for Field {
     }
 }
 
+#[derive(Clone, PartialEq)]
+struct Tone {
+    value: String,
+    label: Option<&'static str>,
+}
+
+impl std::fmt::Display for Tone {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self.label {
+            Some(key) => label(key),
+            None => &self.value,
+        })
+    }
+}
+
+fn tone_options(value: &str) -> (Vec<Tone>, Tone) {
+    let mut options: Vec<_> = [
+        ("Epic Fantasy", "sceneNew.tone.epic"),
+        ("Dark Fantasy", "sceneNew.tone.dark"),
+        ("Sci-Fi Cyberpunk", "sceneNew.tone.scifi"),
+        ("Anime Comedy", "sceneNew.tone.comedy"),
+        ("Eldritch Mystery", "sceneNew.tone.eldritch"),
+        ("Isekai Adventure", "sceneNew.tone.isekai"),
+    ]
+    .into_iter()
+    .map(|(value, label)| Tone {
+        value: value.into(),
+        label: Some(label),
+    })
+    .collect();
+    if let Some(selected) = options.iter().find(|tone| tone.value == value).cloned() {
+        return (options, selected);
+    }
+    let selected = Tone {
+        value: value.into(),
+        label: None,
+    };
+    options.insert(0, selected.clone());
+    (options, selected)
+}
+
 impl App {
     pub(super) fn open_scene_editor(&mut self, target: Option<usize>) {
         if self.page != Page::Stage || self.stage.file_busy {
@@ -48,15 +92,9 @@ impl App {
                 if let StageFolder::Named(key) = &self.stage.lobby_folder
                     && let Some(name) = self
                         .stage
-                        .scenes
+                        .folders
                         .iter()
-                        .enumerate()
-                        .filter(|(index, _)| self.stage.own.contains(index))
-                        .filter_map(|(_, scene)| scene.folder())
-                        .find(|name| {
-                            &name.to_lowercase() == key
-                                && crate::stage_draft::valid_folder_name(name)
-                        })
+                        .find(|name| &name.to_lowercase() == key)
                 {
                     draft.set(Field::Folder, name.into());
                 }
@@ -70,6 +108,7 @@ impl App {
         self.stage.lobby = true;
         self.stage.selected = None;
         self.stage.editing = true;
+        self.stage.folder_form = None;
     }
 
     pub(super) fn save_scene_draft(&mut self) -> Task<Message> {
@@ -108,18 +147,19 @@ impl App {
         self.stage.edit_error.clear();
         Task::perform(
             background(move || {
-                stage_store::save(&root, &scene, previous.as_ref())?;
-                Ok(scene)
+                let folders = stage_store::save(&root, &scene, previous.as_ref())?;
+                Ok((scene, folders))
             }),
             move |result| Message::StageStored(write, result),
         )
     }
 
-    pub(super) fn finish_stage_load(&mut self, result: Result<Vec<stage_preview::Scene>, String>) {
+    pub(super) fn finish_stage_load(&mut self, result: Result<Library, String>) {
         self.stage.loading = false;
         match result {
-            Ok(scenes) => {
-                for scene in scenes {
+            Ok(library) => {
+                self.stage.folders = library.folders;
+                for scene in library.scenes {
                     if self
                         .stage
                         .scenes
@@ -127,6 +167,13 @@ impl App {
                         .any(|known| known.collection().is_some() && known.id == scene.id)
                     {
                         self.stage.notice = label("gallery.native.duplicateScene").into();
+                    } else if let Some(&index) = self
+                        .stage
+                        .own
+                        .iter()
+                        .find(|&&index| self.stage.scenes[index].id == scene.id)
+                    {
+                        self.stage.scenes[index] = scene;
                     } else {
                         self.add_local_scene(scene);
                     }
@@ -141,11 +188,11 @@ impl App {
     pub(super) fn finish_stage_write(
         &mut self,
         write: StageWrite,
-        result: Result<stage_preview::Scene, String>,
+        result: Result<(stage_preview::Scene, Vec<String>), String>,
     ) {
         self.stage.file_busy = false;
-        let scene = match result {
-            Ok(scene) => scene,
+        let (scene, folders) = match result {
+            Ok(saved) => saved,
             Err(error) => {
                 let error = format("gallery.native.storeError", &[("error", &error)]);
                 match write {
@@ -155,6 +202,7 @@ impl App {
                 return;
             }
         };
+        self.stage.folders = folders;
         let folder = StageFolder::for_scene(&scene);
         match write {
             StageWrite::Editor(target) => {
@@ -182,6 +230,49 @@ impl App {
                 self.stage.lobby_folder = folder;
             }
         }
+    }
+
+    pub(super) fn change_stage_folder(&mut self) -> Task<Message> {
+        if self.stage.file_busy || self.stage.loading || self.stage.draft.is_some() {
+            return Task::none();
+        }
+        let Some(change) = self.stage.folder_form.clone() else {
+            return Task::none();
+        };
+        let Some(root) = self.stage.store.clone() else {
+            self.stage.notice = label("gallery.native.storeUnavailable").into();
+            return Task::none();
+        };
+        self.stage.file_busy = true;
+        self.stage.notice.clear();
+        let request = change.clone();
+        Task::perform(
+            background(move || stage_store::change_folder(&root, &request)),
+            move |result| Message::StageFoldersStored(change, result),
+        )
+    }
+
+    pub(super) fn finish_folder_change(
+        &mut self,
+        change: FolderChange,
+        result: Result<Library, String>,
+    ) {
+        self.stage.file_busy = false;
+        let library = match result {
+            Ok(library) => library,
+            Err(error) => {
+                self.stage.notice = format("gallery.native.storeError", &[("error", &error)]);
+                return;
+            }
+        };
+        self.finish_stage_load(Ok(library));
+        self.stage.folder_form = None;
+        self.stage.lobby_source = StageSource::Own;
+        self.stage.lobby_query.clear();
+        self.stage.lobby_folder = match change {
+            FolderChange::Create(name) => StageFolder::Named(name.trim().to_lowercase()),
+            FolderChange::Delete(_) => StageFolder::Unfiled,
+        };
     }
 
     fn add_local_scene(&mut self, scene: stage_preview::Scene) {
@@ -346,8 +437,9 @@ impl App {
             filters.wrap(),
         ]
         .spacing(12);
-        if !self.stage.own.is_empty() {
-            content = content.push(self.scene_folder_filters());
+        content = content.push(self.scene_folder_filters(available));
+        if let Some(form) = &self.stage.folder_form {
+            content = content.push(self.scene_folder_form(form, available));
         }
         if !available {
             content = content.push(muted(label("common.loading"), 13, &theme));
@@ -430,8 +522,13 @@ impl App {
         scroll(content.padding(24)).width(Fill).height(Fill).into()
     }
 
-    fn scene_folder_filters(&self) -> Element<'_, Message> {
-        let mut named = BTreeMap::new();
+    fn scene_folder_filters(&self, available: bool) -> Element<'_, Message> {
+        let mut named: BTreeMap<_, _> = self
+            .stage
+            .folders
+            .iter()
+            .map(|name| (name.to_lowercase(), (name.as_str(), 0)))
+            .collect();
         let mut unfiled = 0;
         for (index, scene) in self.stage.scenes.iter().enumerate() {
             if !self.stage.own.contains(&index) {
@@ -455,7 +552,7 @@ impl App {
                         appearance::subtle_button
                     },
                 )
-                .on_press(Message::StageLobbyFolder(folder))
+                .on_press_maybe(available.then_some(Message::StageLobbyFolder(folder)))
         };
         let mut filters = row![
             text(label("lobby.folders")).size(13),
@@ -472,10 +569,80 @@ impl App {
         ]
         .spacing(7)
         .align_y(Alignment::Center);
+        let selected = match &self.stage.lobby_folder {
+            StageFolder::Named(key) => named.get(key).map(|(name, _)| *name),
+            _ => None,
+        };
         for (key, (name, count)) in named {
             filters = filters.push(filter(name, count, StageFolder::Named(key)));
         }
+        let can_manage = available && self.stage.draft.is_none();
+        filters =
+            filters.push(
+                button(label("lobby.newFolderTitle"))
+                    .style(appearance::subtle_button)
+                    .on_press_maybe(can_manage.then(|| {
+                        Message::StageFolderForm(Some(FolderChange::Create(String::new())))
+                    })),
+            );
+        if let Some(name) = selected {
+            filters = filters.push(
+                button(label("lobby.deleteFolder"))
+                    .style(appearance::subtle_button)
+                    .on_press_maybe(can_manage.then(|| {
+                        Message::StageFolderForm(Some(FolderChange::Delete(name.into())))
+                    })),
+            );
+        }
         filters.wrap().into()
+    }
+
+    fn scene_folder_form<'a>(
+        &'a self,
+        form: &'a FolderChange,
+        available: bool,
+    ) -> Element<'a, Message> {
+        let mut fields = column![].spacing(8);
+        let (action, valid) = match form {
+            FolderChange::Create(name) => {
+                fields = fields
+                    .push(text(label("lobby.newFolderTitle")).size(15))
+                    .push(
+                        text_input(label("lobby.folderPlaceholder"), name)
+                            .on_input(|name| {
+                                Message::StageFolderForm(Some(FolderChange::Create(name)))
+                            })
+                            .style(appearance::input)
+                            .padding(9),
+                    );
+                ("lobby.createFolder", !name.trim().is_empty())
+            }
+            FolderChange::Delete(name) => {
+                fields = fields
+                    .push(text(format("confirm.deleteFolderTitle", &[("name", name)])).size(15))
+                    .push(text(label("gallery.native.deleteFolderHint")).size(13));
+                ("lobby.deleteFolder", true)
+            }
+        };
+        fields = fields.push(
+            row![
+                button(label(action))
+                    .style(appearance::primary_button)
+                    .on_press_maybe(
+                        (available && valid && self.stage.draft.is_none())
+                            .then_some(Message::StageApplyFolder)
+                    ),
+                button(label("common.cancel"))
+                    .style(appearance::subtle_button)
+                    .on_press_maybe(available.then_some(Message::StageFolderForm(None))),
+            ]
+            .spacing(8),
+        );
+        container(fields)
+            .padding(12)
+            .width(Fill)
+            .style(appearance::card)
+            .into()
     }
 
     pub(super) fn scene_editor<'a>(&'a self, draft: &'a Draft) -> Element<'a, Message> {
@@ -492,6 +659,27 @@ impl App {
             .spacing(4)
             .width(Fill)
         };
+        let toggle = |field: Field| {
+            checkbox(draft.get(field) == "true")
+                .label(label(field.label_key()))
+                .on_toggle(move |enabled| Message::StageSet(field, enabled.to_string()))
+        };
+        let (tones, tone) = tone_options(draft.get(Field::GmTone));
+        let advanced = column![
+            text(label("sceneEdit.sectionAdvanced")).size(16),
+            muted(label(Field::GmTone.label_key()), 12, &theme),
+            pick_list(tones, Some(tone), |tone| Message::StageSet(
+                Field::GmTone,
+                tone.value
+            ))
+            .padding(8)
+            .style(appearance::select),
+            input(Field::NarratorStyle),
+            input(Field::ActorDepth),
+            toggle(Field::DisableOffscreen),
+            toggle(Field::Dice),
+        ]
+        .spacing(9);
         let mut content = column![
             control(Icon::Back, label("common.back"), Message::StageBack),
             text(label(if draft.target.is_some() {
@@ -528,6 +716,10 @@ impl App {
             .padding(16)
             .width(Fill)
             .style(appearance::card),
+            container(advanced)
+                .padding(16)
+                .width(Fill)
+                .style(appearance::card),
             row![
                 button(label("gallery.native.applyScene"))
                     .style(appearance::primary_button)

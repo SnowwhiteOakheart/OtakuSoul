@@ -782,8 +782,11 @@ geladenen Titelbilder der ersten Reihe. Die Aufnahme liegt lokal in
   und -Export.
 - [x] Dauerhafter Szenenspeicher. Gespeicherte und importierte Szenen werden beim Start geladen.
 - [x] Eigene Szenen im Editor einem Ordner zuordnen, verschieben und in der Lobby danach filtern.
-- [ ] Eigenständige Ordnerverwaltung für leere Ordner und Sammelaktionen, erweiterte Szenenfelder
-  und Story-Wizard.
+- [x] Ordner in der Lobby anlegen und mit Bestätigung entfernen. Beim Entfernen verschiebt der
+  Katalog die enthaltenen Szenen nach „Ohne Ordner“. Auch leere Ordner bleiben gespeichert.
+- [x] Erweiterte Einstellungen für Spielleiterton, Erzählstil, Akteure pro Runde, Würfelproben
+  und Erlebnisse zwischen den Sitzungen. Die Definition speichert Tauri-kompatible Werte.
+- [ ] Medien- und Regeloptionen im Szeneneditor, Story-Wizard.
 - [ ] Spielansicht mit echten Stage-Runden und Spielständen.
 - [ ] 5e-Spielbrett, Kampf und Erkundung über die vorhandene Stage-/Regel-Engine.
 
@@ -801,8 +804,12 @@ Parallele Schreibvorgänge werden serialisiert. Ein veralteter Entwurf kann kein
 Fassung überschreiben. Der Katalog entsteht erst beim Speichern oder Import. Offene Entwürfe
 liegen bis zum Speichern im Arbeitsspeicher. Manuelle Bedienproben sind für später gebündelt.
 Ordner folgen dem Tauri-Feld `folder`. Die Lobby gruppiert eigene Szenen unabhängig von der
-Groß- und Kleinschreibung. Ein Ordner erscheint ab seiner ersten gespeicherten Szene. JSON-Import
-und -Export transportieren die Zuordnung zusammen mit der Definition.
+Groß- und Kleinschreibung. JSON-Import und -Export transportieren die Zuordnung zusammen mit
+der Definition. Katalogversion 2 hält Ordner auch ohne Szenen fest. Version 1 wird beim Lesen
+aus den vorhandenen Szenen projiziert und beim nächsten Schreibvorgang atomar auf Version 2
+aktualisiert. Frühere native Builds unterstützen Version 2 nicht.
+Der Editor verwendet dieselben sechs Spielleiter-Tonfälle wie Tauri und zeigt importierte
+individuelle Tonfälle an. Vorhandene Werte und implizite Vorgaben bleiben bis zu einer Bearbeitung erhalten.
 Tauris Lobby und die gemeinsamen Editorfelder wurden per WebDriver im isolierten E2E-Profil
 geprüft. Für die native Variante bestanden 152 Tests einschließlich JSON-Rundlauf und der
 Windows-Build. Der Live-Hub-Test war bei diesem Lauf ausgenommen.

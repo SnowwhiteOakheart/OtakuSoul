@@ -182,6 +182,12 @@ enum Message {
     StageLobbySearch(String),
     StageLobbySource(StageSource),
     StageLobbyFolder(StageFolder),
+    StageFolderForm(Option<stage_store::FolderChange>),
+    StageApplyFolder,
+    StageFoldersStored(
+        stage_store::FolderChange,
+        Result<stage_store::Library, String>,
+    ),
     StageEdit(Option<usize>),
     StageEditField(stage_draft::Field),
     StageSet(stage_draft::Field, String),
@@ -190,8 +196,11 @@ enum Message {
     StageDiscard,
     StageImport,
     StageImported(Result<Option<stage_preview::Scene>, String>),
-    StageLibraryLoaded(Result<Vec<stage_preview::Scene>, String>),
-    StageStored(StageWrite, Result<stage_preview::Scene, String>),
+    StageLibraryLoaded(Result<stage_store::Library, String>),
+    StageStored(
+        StageWrite,
+        Result<(stage_preview::Scene, Vec<String>), String>,
+    ),
     StageExport(usize),
     StageExported(Result<bool, String>),
     HubScenePreview(String),
@@ -549,6 +558,8 @@ struct Stage {
     lobby_query: String,
     lobby_source: StageSource,
     lobby_folder: StageFolder,
+    folders: Vec<String>,
+    folder_form: Option<stage_store::FolderChange>,
     own: HashSet<usize>,
     draft: Option<stage_draft::Draft>,
     editing: bool,
@@ -613,6 +624,8 @@ impl Default for Stage {
             lobby_query: String::new(),
             lobby_source: StageSource::All,
             lobby_folder: StageFolder::All,
+            folders: Vec::new(),
+            folder_form: None,
             own: HashSet::new(),
             draft: None,
             editing: false,
@@ -2347,7 +2360,11 @@ impl App {
                 } else if self.stage.opening {
                     self.stage.opening = false;
                 } else if self.stage.selected.take().is_none() {
-                    self.stage.lobby = false;
+                    if self.stage.folder_form.is_some() && !self.stage.file_busy {
+                        self.stage.folder_form = None;
+                    } else {
+                        self.stage.lobby = false;
+                    }
                 }
             }
             Message::StageOpening => {
@@ -2370,11 +2387,24 @@ impl App {
                 self.stage.lobby_source = source;
                 if source != StageSource::Own {
                     self.stage.lobby_folder = StageFolder::All;
+                    if !self.stage.file_busy {
+                        self.stage.folder_form = None;
+                    }
                 }
             }
             Message::StageLobbyFolder(folder) => {
                 self.stage.lobby_source = StageSource::Own;
                 self.stage.lobby_folder = folder;
+                self.stage.folder_form = None;
+            }
+            Message::StageFolderForm(form) => {
+                if !self.stage.file_busy {
+                    self.stage.folder_form = form;
+                }
+            }
+            Message::StageApplyFolder => return self.change_stage_folder(),
+            Message::StageFoldersStored(change, result) => {
+                self.finish_folder_change(change, result)
             }
             Message::StageEdit(index) => self.open_scene_editor(index),
             Message::StageEditField(field) => {
@@ -3150,8 +3180,11 @@ mod tests {
         );
         let _ = app.update(Message::StageApply);
         let scene = app.stage.draft.as_ref().unwrap().apply("kampagne").unwrap();
-        stage_store::save(&root, &scene, None).unwrap();
-        let _ = app.update(Message::StageStored(StageWrite::Editor(None), Ok(scene)));
+        let folders = stage_store::save(&root, &scene, None).unwrap();
+        let _ = app.update(Message::StageStored(
+            StageWrite::Editor(None),
+            Ok((scene, folders)),
+        ));
 
         let index = app.stage.scenes.len() - 1;
         let id = app.stage.scenes[index].id.clone();
@@ -3167,10 +3200,11 @@ mod tests {
         let _ = app.update(Message::StageSet(Field::Folder, "Süd".into()));
         let _ = app.update(Message::StageApply);
         let scene = app.stage.draft.as_ref().unwrap().apply(&id).unwrap();
-        stage_store::save(&root, &scene, Some(&app.stage.scenes[index].definition())).unwrap();
+        let folders =
+            stage_store::save(&root, &scene, Some(&app.stage.scenes[index].definition())).unwrap();
         let _ = app.update(Message::StageStored(
             StageWrite::Editor(Some(index)),
-            Ok(scene),
+            Ok((scene, folders)),
         ));
         assert_eq!(app.stage.scenes[index].id, id);
         assert_eq!(app.stage.scenes[index].title("de"), "Kampagne II");
@@ -3189,6 +3223,15 @@ mod tests {
         assert_eq!(reopened.stage.scenes[index].id, id);
         assert_eq!(reopened.stage.scenes[index].title("de"), "Kampagne II");
         assert_eq!(reopened.stage.scenes[index].folder(), Some("Süd"));
+        assert_eq!(reopened.stage.folders, ["Nord", "Süd"]);
+        let change = stage_store::FolderChange::Delete("Süd".into());
+        let result = stage_store::change_folder(&root, &change);
+        let _ = reopened.update(Message::StageFoldersStored(change, result));
+        assert_eq!(reopened.stage.scenes.len(), index + 1);
+        assert_eq!(reopened.stage.scenes[index].id, id);
+        assert_eq!(reopened.stage.scenes[index].folder(), None);
+        assert_eq!(reopened.stage.lobby_folder, StageFolder::Unfiled);
+        assert_eq!(reopened.stage.folders, ["Nord"]);
     }
 
     #[test]
