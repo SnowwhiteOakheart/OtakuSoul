@@ -99,10 +99,34 @@ fn modify(
     root: &Path,
     edit: impl FnOnce(&mut Library) -> Result<(), String>,
 ) -> Result<Library, String> {
+    with_write_lock(root, "scenes.lock", |root| {
+        let mut library = read(root)?;
+        edit(&mut library)?;
+        if library.folders.len() > MAX_FOLDERS {
+            return Err(CAPACITY.into());
+        }
+        let definitions: Vec<_> = library.scenes.iter().map(Scene::definition).collect();
+        let bytes = serde_json::to_vec(&json!({
+            "version": VERSION, "scenes": definitions, "folders": library.folders
+        }))
+        .map_err(|_| INVALID)?;
+        if bytes.len() > MAX_BYTES {
+            return Err(CAPACITY.into());
+        }
+        file_export::write_bytes(&root.join(FILE_NAME), &bytes, None)?;
+        Ok(library)
+    })
+}
+
+pub(super) fn with_write_lock<T>(
+    root: &Path,
+    lock_name: &str,
+    write: impl FnOnce(&Path) -> Result<T, String>,
+) -> Result<T, String> {
     profile::validate_native_store(root)?;
     fs::create_dir_all(root).map_err(|_| ACCESS)?;
     let root = store_root(root)?.ok_or(ACCESS)?;
-    let lock_path = root.join("scenes.lock");
+    let lock_path = root.join(lock_name);
     regular_file(&lock_path)?;
     let lock = OpenOptions::new()
         .write(true)
@@ -111,21 +135,7 @@ fn modify(
         .open(lock_path)
         .map_err(|_| ACCESS)?;
     lock.lock().map_err(|_| ACCESS)?;
-    let mut library = read(&root)?;
-    edit(&mut library)?;
-    if library.folders.len() > MAX_FOLDERS {
-        return Err(CAPACITY.into());
-    }
-    let definitions: Vec<_> = library.scenes.iter().map(Scene::definition).collect();
-    let bytes = serde_json::to_vec(&json!({
-        "version": VERSION, "scenes": definitions, "folders": library.folders
-    }))
-    .map_err(|_| INVALID)?;
-    if bytes.len() > MAX_BYTES {
-        return Err(CAPACITY.into());
-    }
-    file_export::write_bytes(&root.join(FILE_NAME), &bytes, None)?;
-    Ok(library)
+    write(&root)
 }
 
 fn read(root: &Path) -> Result<Library, String> {
@@ -202,7 +212,7 @@ pub(super) fn store_root(root: &Path) -> Result<Option<PathBuf>, String> {
     }
 }
 
-fn regular_file(path: &Path) -> Result<bool, String> {
+pub(super) fn regular_file(path: &Path) -> Result<bool, String> {
     match fs::symlink_metadata(path) {
         Ok(metadata) if metadata.is_file() && !profile::is_link(&metadata) => Ok(true),
         Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(false),

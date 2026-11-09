@@ -28,6 +28,7 @@ mod stage_media;
 mod stage_play;
 mod stage_play_view;
 mod stage_preview;
+mod stage_progress;
 mod stage_rule_view;
 mod stage_rules;
 mod stage_store;
@@ -193,6 +194,9 @@ enum Message {
     StageSendTurn,
     StageCancelTurn,
     StageTurnFinished(u64, Result<String, String>),
+    StageProgressLoaded(Result<Vec<stage_progress::Saved>, String>),
+    StageRetryProgress,
+    StageProgressSaved(usize, Result<usize, String>),
     StageBrowseHub,
     StageManage,
     StageOpenWizard,
@@ -589,6 +593,9 @@ struct Stage {
     opening: bool,
     playing: bool,
     plays: HashMap<usize, stage_play::Play>,
+    saved_plays: Vec<stage_progress::Saved>,
+    progress_loading: bool,
+    progress_error: String,
     turn: Option<stage_play::Pending>,
     turn_id: u64,
     from_hub: HashMap<String, usize>,
@@ -667,6 +674,9 @@ impl Default for Stage {
             opening: false,
             playing: false,
             plays: HashMap::new(),
+            saved_plays: Vec::new(),
+            progress_loading: false,
+            progress_error: String::new(),
             turn: None,
             turn_id: 0,
             from_hub: HashMap::new(),
@@ -1582,8 +1592,10 @@ impl App {
                 let root = data.join("hub");
                 let stage_root = data.join("stage");
                 let media_root = stage_root.clone();
+                let progress_root = stage_root.clone();
                 app.stage.store = Some(stage_root.clone());
                 app.stage.loading = true;
+                app.stage.progress_loading = true;
                 app.hub.store = Some(root.clone());
                 app.hub.library_loading = true;
                 Task::batch([
@@ -1598,6 +1610,10 @@ impl App {
                     Task::perform(
                         background(move || stage_media::list(&media_root)),
                         Message::StageMediaLoaded,
+                    ),
+                    Task::perform(
+                        background(move || stage_progress::list(&progress_root)),
+                        Message::StageProgressLoaded,
                     ),
                 ])
             }
@@ -2494,6 +2510,15 @@ impl App {
             Message::StageSendTurn => return self.send_stage_turn(),
             Message::StageCancelTurn => self.stage.turn = None,
             Message::StageTurnFinished(id, result) => return self.finish_stage_turn(id, result),
+            Message::StageProgressLoaded(result) => self.restore_stage_progress(result),
+            Message::StageRetryProgress => {
+                if self.stage.playing
+                    && let Some(index) = self.stage.selected
+                {
+                    return self.save_stage_progress(index);
+                }
+            }
+            Message::StageProgressSaved(index, result) => self.finish_stage_progress(index, result),
             Message::StageBrowseHub => {
                 self.hub.kind = hub_catalog::Kind::Scenes;
                 return self.update(Message::Navigate(Page::Hub));
@@ -2667,8 +2692,14 @@ impl App {
                 self.stage.hub_loading = None;
                 match result {
                     Ok(scene) => {
-                        let index = self.stage.scenes.len();
-                        self.stage.scenes.push(scene);
+                        let index = if let Some(&index) = self.stage.from_hub.get(&id) {
+                            self.stage.scenes[index] = scene;
+                            index
+                        } else {
+                            let index = self.stage.scenes.len();
+                            self.stage.scenes.push(scene);
+                            index
+                        };
                         if self.page == Page::Hub
                             && self.hub.cover_generation == generation
                             && self
@@ -3331,6 +3362,66 @@ mod tests {
         let _ = app.update(Message::HubRefresh);
         assert_eq!(app.hub.loading.len(), Kind::ALL.len());
         assert_eq!(app.hub.catalog.len(), Kind::ALL.len());
+    }
+
+    #[test]
+    fn stage_progress_retries_without_a_model_and_restores_hub_scene_after_restart() {
+        let temp = tempfile::tempdir().unwrap();
+        let mut app = App::default();
+        app.stage.store = Some(temp.path().to_path_buf());
+        let scene = stage_preview::parse_hub(
+            serde_json::json!({"title":"Wald aus dem Hub", "opening_narration":"Die Bäume flüstern."}),
+            "gateway-forest", "Wald",
+        ).unwrap();
+        let index = app.stage.scenes.len();
+        app.stage.scenes.push(scene);
+        app.stage.from_hub.insert("gateway-forest".into(), index);
+        let _ = app.update(Message::Navigate(Page::Stage));
+        let _ = app.update(Message::StageSelect(index));
+        let _ = app.update(Message::StageStartPlay);
+        let _ = app.update(Message::StageTurnChoice("Ich höre zu.".into()));
+        let _ = app.update(Message::StageSendTurn);
+        let id = app.stage.turn.as_ref().unwrap().request.id;
+        let _ = app.update(Message::StageTurnFinished(id, Ok("Es wird still.".into())));
+        assert!(app.stage.plays[&index].saving);
+        let _ = app.update(Message::StageProgressSaved(
+            index,
+            Err("Schreibfehler".into()),
+        ));
+        assert_eq!(app.stage.plays[&index].rounds.len(), 1);
+        assert_eq!(app.stage.plays[&index].persisted, 0);
+        let _ = app.update(Message::StageRetryProgress);
+        assert!(app.stage.turn.is_none());
+        assert!(app.stage.plays[&index].saving);
+        let count = stage_progress::append(
+            temp.path(),
+            stage_progress::Saved {
+                key: stage_progress::Key {
+                    source: stage_progress::Source::Hub,
+                    id: "gateway-forest".into(),
+                },
+                hub_definition: Some(app.stage.scenes[index].definition()),
+                rounds: app.stage.plays[&index].rounds.clone(),
+            },
+            0,
+        )
+        .unwrap();
+        let _ = app.update(Message::StageProgressSaved(index, Ok(count)));
+        assert_eq!(app.stage.plays[&index].persisted, 1);
+
+        let mut reopened = App::default();
+        let _ = reopened.update(Message::StageProgressLoaded(stage_progress::list(
+            temp.path(),
+        )));
+        let index = reopened.stage.from_hub["gateway-forest"];
+        assert!(reopened.stage_has_progress(index));
+        let _ = reopened.update(Message::Navigate(Page::Stage));
+        let _ = reopened.update(Message::StageSelect(index));
+        let _ = reopened.update(Message::StageStartPlay);
+        let play = &reopened.stage.plays[&index];
+        assert_eq!(play.persisted, 1);
+        assert_eq!(play.rounds[0].reply, "Es wird still.");
+        assert_eq!(play.mode, stage_play::Mode::Act);
     }
 
     #[test]

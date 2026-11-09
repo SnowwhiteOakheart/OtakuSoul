@@ -362,7 +362,7 @@ impl App {
             let resumed = self
                 .stage
                 .selected
-                .is_some_and(|index| self.stage.plays.contains_key(&index));
+                .is_some_and(|index| self.stage_has_progress(index));
             body = body.push(
                 button(label(if resumed {
                     "gallery.continue"
@@ -370,7 +370,7 @@ impl App {
                     "gallery.start"
                 }))
                 .style(appearance::primary_button)
-                .on_press(Message::StageStartPlay),
+                .on_press_maybe((!self.stage.progress_loading).then_some(Message::StageStartPlay)),
             );
         }
         scroll(container(body.padding(24).max_width(760)).center_x(Fill))

@@ -5494,6 +5494,7 @@ dependencies = [
  "rfd 0.18.0",
  "rodio",
  "rusqlite",
+ "serde",
  "serde_json",
  "tauri-winres",
  "tempfile",

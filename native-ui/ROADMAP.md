@@ -806,8 +806,9 @@ geladenen Titelbilder der ersten Reihe. Die Aufnahme liegt lokal in
 - [ ] Musiktitel für Szenen in der nativen Stage erzeugen und wiedergeben.
 - [x] Erste native Spielansicht für Erzählrunden mit dem konfigurierten Chatmodell.
   Auftakt, Zugmodi, Einstiegsideen, Abbruch und Weiterführen innerhalb der Sitzung.
-- [ ] Stage-Spielstände dauerhaft speichern und Tauris Rundenlogik für Gefährten, NPCs,
-  Erinnerungen und Weltzustand anbinden.
+- [x] Beantwortete Stage-Züge dauerhaft speichern und nach einem Neustart fortsetzen.
+  Hub-Spielstände enthalten eine lokale Szenenkopie.
+- [ ] Tauris Rundenlogik für Gefährten, NPCs, Erinnerungen und Weltzustand anbinden.
 - [ ] 5e-Spielbrett, Kampf und Erkundung über die vorhandene Stage-/Regel-Engine.
 
 Gemeinsame UI-Schlüssel kommen aus den mitgelieferten Tauri-Sprachpaketen. `stage_preview.rs`
@@ -855,6 +856,11 @@ Runden. `stage_play_view.rs` nutzt den gemeinsamen HTTP-/SSE-Transport. Erst ein
 erfolgreiche Antwort übernimmt Zug und Erzählung in den Verlauf. Abbruch, Navigation und
 Fehler lassen den Eingabetext stehen. Die Vorschau für 5e-Szenen bleibt bis zur
 Anbindung der Regel-Engine zugänglich.
+`stage_progress.rs` speichert native Erzählverläufe separat in `stage/plays.json` mit
+stabilen Szenenkennungen pro Herkunft. Das Schreiben ist atomar. Veraltete Instanzen
+können einen inzwischen fortgesetzten Verlauf nicht überschreiben. Bei einem
+Schreibfehler bleiben die beantworteten Runden im Arbeitsspeicher und lassen sich
+erneut speichern. Unbeantwortete Eingaben bleiben Sitzungsentwürfe.
 Tauris Lobby und die gemeinsamen Editorfelder wurden per WebDriver im isolierten E2E-Profil
 geprüft. Für die native Variante bestanden 152 Tests einschließlich JSON-Rundlauf und der
 Windows-Build. Der Live-Hub-Test war bei diesem Lauf ausgenommen.

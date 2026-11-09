@@ -82,7 +82,8 @@ Definitionen atomar unter `native_data_dir()/stage/scenes.json` und lädt sie be
 Editor und JSON-Import übernehmen Änderungen nach erfolgreichem Speichern in die Lobby.
 Der Katalog der Version 2 speichert auch leere Ordner. Beim Entfernen eines Ordners setzt er
 die Zuordnung der enthaltenen Szenen im selben Schreibvorgang zurück.
-Stage-Runden, Spielstände und 5e-Engine sind weitere Etappen.
+Native Erzählrunden speichern beantwortete Züge separat in `stage/plays.json`.
+Tauris vollständige Rundenlogik und die 5e-Engine sind weitere Etappen.
 
 ### Allgemeine Arbeitsregeln
 

@@ -1,5 +1,6 @@
 use crate::stage_play::{Mode, Pending, Play, Round, player_name};
 use crate::stage_preview::{Genre, Scene};
+use crate::stage_progress::{self, Key, Saved, Source};
 use crate::ui_text::{CONTENT_LANGUAGE, text as label};
 use crate::views::{control, muted, scroll};
 use crate::{App, Message, Page, appearance, background, connection, icons::Icon};
@@ -10,7 +11,7 @@ const TURNS: &str = "stage-turns";
 
 impl App {
     pub(super) fn start_stage_play(&mut self) {
-        if self.page != Page::Stage || self.stage.editing {
+        if self.page != Page::Stage || self.stage.editing || self.stage.progress_loading {
             return;
         }
         let Some(index) = self.stage.selected else {
@@ -24,7 +25,23 @@ impl App {
         {
             return;
         }
-        self.stage.plays.entry(index).or_default();
+        if !self.stage.plays.contains_key(&index) {
+            let key = self.stage_progress_key(index);
+            let mut play = Play::default();
+            if let Some(saved) = self
+                .stage
+                .saved_plays
+                .iter()
+                .position(|save| save.key == key)
+            {
+                play.rounds = self.stage.saved_plays.swap_remove(saved).rounds;
+                play.persisted = play.rounds.len();
+                if let Some(round) = play.rounds.last() {
+                    play.mode = round.mode;
+                }
+            }
+            self.stage.plays.insert(index, play);
+        }
         self.stage.opening = false;
         self.stage.playing = true;
     }
@@ -55,7 +72,7 @@ impl App {
         };
         let draft = play.editor.text();
         let input = draft.trim();
-        if input.is_empty() || scene.genre == Genre::Adventure5e {
+        if input.is_empty() || play.saving || scene.genre == Genre::Adventure5e {
             return Task::none();
         }
         let request = play.request(scene, input);
@@ -99,7 +116,10 @@ impl App {
                     reply,
                 });
                 play.editor = text_editor::Content::new();
-                iced::widget::operation::snap_to_end(TURNS)
+                Task::batch([
+                    iced::widget::operation::snap_to_end(TURNS),
+                    self.save_stage_progress(turn.scene),
+                ])
             }
             Ok(_) => {
                 play.error = label("stage.native.emptyReply").into();
@@ -108,6 +128,93 @@ impl App {
             Err(error) => {
                 play.error = error;
                 Task::none()
+            }
+        }
+    }
+
+    fn stage_progress_key(&self, index: usize) -> Key {
+        let scene = &self.stage.scenes[index];
+        let source = if self.stage.own.contains(&index) {
+            Source::Own
+        } else if scene.collection().is_some() {
+            Source::Preset
+        } else {
+            Source::Hub
+        };
+        Key {
+            source,
+            id: scene.id.clone(),
+        }
+    }
+
+    pub(super) fn stage_has_progress(&self, index: usize) -> bool {
+        self.stage.plays.contains_key(&index)
+            || self
+                .stage
+                .saved_plays
+                .iter()
+                .any(|save| save.key == self.stage_progress_key(index))
+    }
+
+    pub(super) fn restore_stage_progress(&mut self, result: Result<Vec<Saved>, String>) {
+        self.stage.progress_loading = false;
+        let saved = match result {
+            Ok(saved) => saved,
+            Err(error) => {
+                self.stage.progress_error = error;
+                return;
+            }
+        };
+        for play in &saved {
+            if let Some(definition) = &play.hub_definition
+                && !self.stage.from_hub.contains_key(&play.key.id)
+                && let Ok(scene) = crate::stage_preview::parse(definition.clone())
+            {
+                self.stage
+                    .from_hub
+                    .insert(play.key.id.clone(), self.stage.scenes.len());
+                self.stage.scenes.push(scene);
+            }
+        }
+        self.stage.saved_plays = saved;
+    }
+
+    pub(super) fn save_stage_progress(&mut self, index: usize) -> Task<Message> {
+        let key = self.stage_progress_key(index);
+        let Some(play) = self.stage.plays.get_mut(&index) else {
+            return Task::none();
+        };
+        if play.saving || play.persisted >= play.rounds.len() {
+            return Task::none();
+        }
+        let Some(root) = self.stage.store.clone() else {
+            play.save_error = label("gallery.native.storeUnavailable").into();
+            return Task::none();
+        };
+        let pending = Saved {
+            hub_definition: (key.source == Source::Hub)
+                .then(|| self.stage.scenes[index].definition()),
+            key,
+            rounds: play.rounds[play.persisted..].to_vec(),
+        };
+        let expected = play.persisted;
+        play.saving = true;
+        play.save_error.clear();
+        Task::perform(
+            background(move || stage_progress::append(&root, pending, expected)),
+            move |result| Message::StageProgressSaved(index, result),
+        )
+    }
+
+    pub(super) fn finish_stage_progress(&mut self, index: usize, result: Result<usize, String>) {
+        if let Some(play) = self.stage.plays.get_mut(&index).filter(|play| play.saving) {
+            play.saving = false;
+            match result {
+                Ok(count) => {
+                    play.persisted = count;
+                    self.stage.progress_error.clear();
+                }
+                Err(error) => play.save_error = error,
             }
         }
     }
@@ -185,13 +292,40 @@ impl App {
                 button(label("stage.sendTurn"))
                     .style(appearance::primary_button)
                     .on_press_maybe(
-                        (!play.editor.text().trim().is_empty() && !self.profile_busy)
+                        (!play.editor.text().trim().is_empty()
+                            && !play.saving
+                            && !self.profile_busy)
                             .then_some(Message::StageSendTurn),
                     ),
             );
         }
         if !play.error.is_empty() {
             composer = composer.push(text(&play.error).size(13).color(theme.palette().danger));
+        }
+        if play.saving {
+            composer = composer.push(muted(label("stage.native.savingProgress"), 13, &theme));
+        } else if !play.save_error.is_empty() {
+            composer = composer.push(
+                row![
+                    text(crate::ui_text::format(
+                        "stage.native.progressError",
+                        &[("error", &play.save_error)]
+                    ))
+                    .color(theme.palette().danger)
+                    .size(13),
+                    button(label("stage.native.retryProgress"))
+                        .style(appearance::subtle_button)
+                        .on_press(Message::StageRetryProgress),
+                ]
+                .spacing(8)
+                .wrap(),
+            );
+        } else if !self.stage.progress_error.is_empty() {
+            composer = composer.push(
+                text(&self.stage.progress_error)
+                    .size(13)
+                    .color(theme.palette().danger),
+            );
         }
         column![
             control(Icon::Back, label("common.back"), Message::StageBack),

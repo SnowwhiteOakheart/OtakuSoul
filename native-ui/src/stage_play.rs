@@ -8,14 +8,17 @@ use crate::{
 };
 use iced::widget::text_editor;
 use otakusoul_prompt::AssembledPrompt;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 const CONTEXT_ROUNDS: usize = 12;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum Mode {
     #[default]
     Say,
+    #[serde(rename = "do")]
     Act,
     Think,
     Direct,
@@ -49,6 +52,7 @@ impl std::fmt::Display for Mode {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Round {
     pub mode: Mode,
     pub input: String,
@@ -67,6 +71,9 @@ pub struct Play {
     pub mode: Mode,
     pub editor: text_editor::Content,
     pub error: String,
+    pub persisted: usize,
+    pub saving: bool,
+    pub save_error: String,
 }
 
 impl Default for Play {
@@ -76,6 +83,9 @@ impl Default for Play {
             mode: Mode::default(),
             editor: text_editor::Content::new(),
             error: String::new(),
+            persisted: 0,
+            saving: false,
+            save_error: String::new(),
         }
     }
 }
