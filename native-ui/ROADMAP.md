@@ -804,7 +804,10 @@ geladenen Titelbilder der ersten Reihe. Die Aufnahme liegt lokal in
 - [x] Musikschritt des Story-Wizards mit Genre-Vorlagen, Stimmungen, bearbeitbaren Captions,
   optionalem Hintergrundgesang und Modellvorschlägen.
 - [ ] Musiktitel für Szenen in der nativen Stage erzeugen und wiedergeben.
-- [ ] Spielansicht mit echten Stage-Runden und Spielständen.
+- [x] Erste native Spielansicht für Erzählrunden mit dem konfigurierten Chatmodell.
+  Auftakt, Zugmodi, Einstiegsideen, Abbruch und Weiterführen innerhalb der Sitzung.
+- [ ] Stage-Spielstände dauerhaft speichern und Tauris Rundenlogik für Gefährten, NPCs,
+  Erinnerungen und Weltzustand anbinden.
 - [ ] 5e-Spielbrett, Kampf und Erkundung über die vorhandene Stage-/Regel-Engine.
 
 Gemeinsame UI-Schlüssel kommen aus den mitgelieferten Tauri-Sprachpaketen. `stage_preview.rs`
@@ -847,6 +850,11 @@ Tauri und Rust lesen dieselben Genre-Vorlagen aus `presets/story_music_defaults.
 Übergang in den erweiterten Editor als Set-Kennung erhalten. Modellvorschläge verwenden
 den eingestellten Chat-Endpunkt und werden bei manuellen Änderungen oder beim Verlassen
 des Schritts abgebrochen.
+`stage_play.rs` baut Erzählanfragen aus der Szenendefinition und bis zu zwölf letzten
+Runden. `stage_play_view.rs` nutzt den gemeinsamen HTTP-/SSE-Transport. Erst eine
+erfolgreiche Antwort übernimmt Zug und Erzählung in den Verlauf. Abbruch, Navigation und
+Fehler lassen den Eingabetext stehen. Die Vorschau für 5e-Szenen bleibt bis zur
+Anbindung der Regel-Engine zugänglich.
 Tauris Lobby und die gemeinsamen Editorfelder wurden per WebDriver im isolierten E2E-Profil
 geprüft. Für die native Variante bestanden 152 Tests einschließlich JSON-Rundlauf und der
 Windows-Build. Der Live-Hub-Test war bei diesem Lauf ausgenommen.

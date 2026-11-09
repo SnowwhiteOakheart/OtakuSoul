@@ -111,6 +111,7 @@ impl App {
         self.stage.lobby = true;
         self.stage.selected = None;
         self.stage.editing = true;
+        self.stage.playing = false;
         self.stage.folder_form = None;
     }
 

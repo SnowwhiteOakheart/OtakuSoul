@@ -25,6 +25,8 @@ mod stage_audio;
 mod stage_draft;
 mod stage_lobby;
 mod stage_media;
+mod stage_play;
+mod stage_play_view;
 mod stage_preview;
 mod stage_rule_view;
 mod stage_rules;
@@ -184,6 +186,13 @@ enum Message {
     StageSelect(usize),
     StageBack,
     StageOpening,
+    StageStartPlay,
+    StageTurnMode(stage_play::Mode),
+    StageTurnEdit(text_editor::Action),
+    StageTurnChoice(String),
+    StageSendTurn,
+    StageCancelTurn,
+    StageTurnFinished(u64, Result<String, String>),
     StageBrowseHub,
     StageManage,
     StageOpenWizard,
@@ -578,6 +587,10 @@ struct Stage {
     filter: StageFilter,
     selected: Option<usize>,
     opening: bool,
+    playing: bool,
+    plays: HashMap<usize, stage_play::Play>,
+    turn: Option<stage_play::Pending>,
+    turn_id: u64,
     from_hub: HashMap<String, usize>,
     hub_loading: Option<String>,
     hub_notice: String,
@@ -652,6 +665,10 @@ impl Default for Stage {
             filter: StageFilter::All,
             selected: None,
             opening: false,
+            playing: false,
+            plays: HashMap::new(),
+            turn: None,
+            turn_id: 0,
             from_hub: HashMap::new(),
             hub_loading: None,
             hub_notice: String::new(),
@@ -1329,6 +1346,7 @@ impl App {
         self.stage.filter = StageFilter::All;
         self.stage.selected = Some(index);
         self.stage.opening = false;
+        self.stage.playing = false;
         self.stage.lobby = false;
         self.stage.editing = false;
         self.page = Page::Stage;
@@ -1848,6 +1866,13 @@ impl App {
     }
     fn update(&mut self, message: Message) -> Task<Message> {
         let task = self.update_message(message);
+        if self.stage.turn.as_ref().is_some_and(|turn| {
+            self.page != Page::Stage
+                || !self.stage.playing
+                || self.stage.selected != Some(turn.scene)
+        }) {
+            self.stage.turn = None;
+        }
         if self.stage.wizard_music_request.is_some()
             && (self.page != Page::Stage
                 || self.stage.selected.is_some()
@@ -2416,6 +2441,7 @@ impl App {
                 self.stage.filter = filter;
                 self.stage.selected = None;
                 self.stage.opening = false;
+                self.stage.playing = false;
                 self.stage.lobby = false;
                 self.stage.editing = false;
             }
@@ -2423,10 +2449,13 @@ impl App {
                 if !self.stage.editing && self.stage.scenes.get(index).is_some() {
                     self.stage.selected = Some(index);
                     self.stage.opening = false;
+                    self.stage.playing = false;
                 }
             }
             Message::StageBack => {
-                if self.stage.editing {
+                if self.stage.playing {
+                    self.stage.playing = false;
+                } else if self.stage.editing {
                     self.stage.editing = false;
                 } else if self.stage.opening {
                     self.stage.opening = false;
@@ -2443,6 +2472,28 @@ impl App {
                     self.stage.opening = true;
                 }
             }
+            Message::StageStartPlay => self.start_stage_play(),
+            Message::StageTurnMode(mode) => {
+                if let Some(play) = self.editable_stage_play() {
+                    play.mode = mode;
+                }
+            }
+            Message::StageTurnEdit(action) => {
+                if let Some(play) = self.editable_stage_play() {
+                    play.editor.perform(action);
+                    play.error.clear();
+                }
+            }
+            Message::StageTurnChoice(choice) => {
+                if let Some(play) = self.editable_stage_play() {
+                    play.editor = text_editor::Content::with_text(&choice);
+                    play.mode = stage_play::Mode::Act;
+                    play.error.clear();
+                }
+            }
+            Message::StageSendTurn => return self.send_stage_turn(),
+            Message::StageCancelTurn => self.stage.turn = None,
+            Message::StageTurnFinished(id, result) => return self.finish_stage_turn(id, result),
             Message::StageBrowseHub => {
                 self.hub.kind = hub_catalog::Kind::Scenes;
                 return self.update(Message::Navigate(Page::Hub));
@@ -2451,6 +2502,7 @@ impl App {
                 self.stage.lobby = true;
                 self.stage.selected = None;
                 self.stage.opening = false;
+                self.stage.playing = false;
                 self.stage.editing = false;
             }
             Message::StageOpenWizard => self.open_story_wizard(),
@@ -2835,6 +2887,7 @@ impl App {
                 if page == Page::Stage {
                     self.stage.selected = None;
                     self.stage.opening = false;
+                    self.stage.playing = false;
                     self.stage.lobby = false;
                     self.stage.editing = false;
                 }
@@ -3278,6 +3331,51 @@ mod tests {
         let _ = app.update(Message::HubRefresh);
         assert_eq!(app.hub.loading.len(), Kind::ALL.len());
         assert_eq!(app.hub.catalog.len(), Kind::ALL.len());
+    }
+
+    #[test]
+    fn stage_play_preserves_drafts_on_error_and_ignores_cancelled_rounds() {
+        let mut app = App::default();
+        let _ = app.update(Message::Navigate(Page::Stage));
+        let _ = app.update(Message::StageSelect(0));
+        let _ = app.update(Message::StageStartPlay);
+        assert!(app.stage.playing);
+        let _ = app.update(Message::StageSendTurn);
+        assert!(app.stage.turn.is_none());
+
+        let _ = app.update(Message::StageTurnChoice("Tor öffnen".into()));
+        let _ = app.update(Message::StageSendTurn);
+        let id = app.stage.turn.as_ref().unwrap().request.id;
+        let _ = app.update(Message::StageTurnFinished(id, Err("Netzfehler".into())));
+        assert_eq!(app.stage.plays[&0].editor.text().trim(), "Tor öffnen");
+        assert!(app.stage.plays[&0].rounds.is_empty());
+
+        let _ = app.update(Message::StageSendTurn);
+        let cancelled = app.stage.turn.as_ref().unwrap().request.id;
+        let _ = app.update(Message::StageBack);
+        assert!(app.stage.turn.is_none());
+        assert_eq!(app.stage.selected, Some(0));
+        let _ = app.update(Message::StageTurnFinished(cancelled, Ok("Zu spät".into())));
+        assert!(app.stage.plays[&0].rounds.is_empty());
+
+        let _ = app.update(Message::StageStartPlay);
+        let _ = app.update(Message::StageSendTurn);
+        let id = app.stage.turn.as_ref().unwrap().request.id;
+        let _ = app.update(Message::StageTurnFinished(id, Ok("Das Tor knarrt.".into())));
+        assert_eq!(app.stage.plays[&0].rounds[0].input, "Tor öffnen");
+        assert_eq!(app.stage.plays[&0].rounds[0].reply, "Das Tor knarrt.");
+        assert!(app.stage.plays[&0].editor.text().trim().is_empty());
+
+        let index = app
+            .stage
+            .scenes
+            .iter()
+            .position(|scene| scene.genre == stage_preview::Genre::Adventure5e)
+            .unwrap();
+        let _ = app.update(Message::StageSelect(index));
+        let _ = app.update(Message::StageStartPlay);
+        assert!(!app.stage.playing);
+        assert!(!app.stage.plays.contains_key(&index));
     }
 
     #[test]

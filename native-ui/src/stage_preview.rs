@@ -117,7 +117,7 @@ impl Scene {
         translation.get(field).and_then(nonempty)
     }
 
-    fn text(&self, field: &str, language: &str) -> &str {
+    pub(super) fn text(&self, field: &str, language: &str) -> &str {
         self.localized(field, language)
             .or_else(|| self.raw.get(field).and_then(nonempty))
             .unwrap_or_default()

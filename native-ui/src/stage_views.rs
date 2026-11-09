@@ -21,6 +21,14 @@ impl App {
             .selected
             .and_then(|index| self.stage.scenes.get(index))
         {
+            if self.stage.playing
+                && let Some(play) = self
+                    .stage
+                    .selected
+                    .and_then(|index| self.stage.plays.get(&index))
+            {
+                return self.stage_play_view(scene, play);
+            }
             return self.scene_preview(scene);
         }
         if let Some(wizard) = &self.stage.wizard {
@@ -347,6 +355,23 @@ impl App {
                 label("gallery.native.readOpening"),
                 Message::StageOpening,
             ));
+        }
+        if scene.genre == Genre::Adventure5e {
+            body = body.push(muted(label("stage.native.fiveEPending"), 13, &self.theme()));
+        } else {
+            let resumed = self
+                .stage
+                .selected
+                .is_some_and(|index| self.stage.plays.contains_key(&index));
+            body = body.push(
+                button(label(if resumed {
+                    "gallery.continue"
+                } else {
+                    "gallery.start"
+                }))
+                .style(appearance::primary_button)
+                .on_press(Message::StageStartPlay),
+            );
         }
         scroll(container(body.padding(24).max_width(760)).center_x(Fill))
             .width(Fill)

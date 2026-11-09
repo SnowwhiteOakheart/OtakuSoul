@@ -19,6 +19,7 @@ impl App {
             self.stage.selected = None;
             self.stage.opening = false;
             self.stage.editing = false;
+            self.stage.playing = false;
             self.stage.edit_error.clear();
         }
     }
