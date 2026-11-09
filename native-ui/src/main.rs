@@ -3489,6 +3489,7 @@ mod tests {
         assert_eq!(reopened.llm.local, app.llm.local);
         assert!(reopened.llm.server.is_none());
         assert!(!reopened.llm.ready());
+        assert!(reopened.active_llm_label().ends_with("model.gguf"));
         let _ = reopened.update(Message::LlmBackend(Backend::OpenRouter));
         assert_eq!(reopened.connection.model, "router/model");
         assert!(reopened.connection.key.0.is_empty());

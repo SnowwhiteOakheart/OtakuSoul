@@ -14,16 +14,18 @@ impl App {
             return label("llm.native.profilesLoading").into();
         }
         let backend = self.llm.backend;
-        if backend == Backend::Local && !self.llm.ready() {
-            return label(if self.llm.stopping {
+        let status = if backend == Backend::Local && !self.llm.ready() {
+            label(if self.llm.stopping {
                 "llm.native.stopping"
             } else if self.llm.server.is_some() {
                 "header.serverStarting"
             } else {
                 "header.serverStopped"
             })
-            .into();
-        }
+            .to_owned()
+        } else {
+            backend.to_string()
+        };
         let name = if self.connection.model.trim().is_empty() && backend == Backend::Local {
             self.llm
                 .local
@@ -36,9 +38,9 @@ impl App {
             self.connection.model.trim()
         };
         if name.is_empty() {
-            backend.to_string()
+            status
         } else {
-            format!("{backend} · {}", shorten(name, 28))
+            format!("{status} · {}", shorten(name, 28))
         }
     }
 
