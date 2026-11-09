@@ -51,7 +51,7 @@ pub fn save_lorebook(mut lorebook: crate::modules::lorebook::Lorebook) -> Result
             .to_string();
     }
 
-    lorebook.save_to_file(&target_path)?;
+    crate::modules::lorebook::save_to_file(&lorebook, &target_path)?;
     Ok(target_path.to_string_lossy().to_string())
 }
 
@@ -69,7 +69,7 @@ pub fn import_lorebook_file(
     source_path: String,
 ) -> Result<crate::modules::lorebook::Lorebook, String> {
     let p = std::path::Path::new(&source_path);
-    let mut book = crate::modules::lorebook::Lorebook::load_from_file(p)?;
+    let mut book = crate::modules::lorebook::load_from_file(p)?;
     crate::modules::nsfw::ensure_visible(&book.extensions)?;
     let paths = crate::modules::paths::resolve_app_paths();
 
@@ -80,7 +80,7 @@ pub fn import_lorebook_file(
     let target = std::path::PathBuf::from(&paths.lorebooks_dir).join(format!("{}.json", slug));
     book.file_path = Some(target.to_string_lossy().to_string());
     book.id = slug.to_string();
-    let _ = book.save_to_file(&target);
+    let _ = crate::modules::lorebook::save_to_file(&book, &target);
     Ok(book)
 }
 
@@ -89,7 +89,7 @@ pub fn export_lorebook_file(
     lorebook: crate::modules::lorebook::Lorebook,
     target_path: String,
 ) -> Result<(), String> {
-    lorebook.save_to_file(std::path::Path::new(&target_path))
+    crate::modules::lorebook::save_to_file(&lorebook, std::path::Path::new(&target_path))
 }
 
 #[tauri::command(async)]

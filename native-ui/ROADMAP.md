@@ -1,6 +1,6 @@
 # Native Rust-Oberfläche – Arbeitsplan
 
-Stand: 08.11.2026. Experiment auf `codex/native-rust-gui`, ausdrücklich vom Nutzer beauftragt.
+Stand: 09.11.2026. Experiment auf `codex/native-rust-gui`, ausdrücklich vom Nutzer beauftragt.
 Dieses Dokument ist der Einstieg für spätere Arbeit am Prototyp. Allgemeine Regeln: `../AI.md`.
 
 ## Ziel und Zusammenarbeit
@@ -254,7 +254,8 @@ Nächster enger Arbeitsschritt für **echte Charakterchats**:
 
 1. Auf den gemeinsamen Prompt-Eingaben aufbauen; Request-/Event-Typen ohne Tauri herauslösen und
    die noch fehlenden Rust-/TypeScript-Verantwortlichkeiten abbilden. Der Renderer nimmt bereits
-   Projektionen von Karte, Lore, Gedächtnis und Zustandswerten entgegen; deren Auswahl fehlt nativ.
+   Projektionen von Karte, Lore, Gedächtnis und Zustandswerten entgegen. Lore wird bereits für die
+   lokale Vorschau ausgewählt. Für echte Chats fehlt der gemeinsame Vorbereitungspfad.
 2. Insbesondere `src/store/helpers.ts` und `src/store/slices/chatSlice.ts` prüfen: Auswahl von Lore,
    Persona, Vorlage und Verlauf nicht durch eine kurze zweite System-Prompt-Funktion ersetzen.
 3. Gemeinsamen Prompt-/Inferenz-Service mit typisierten Ereignissen herstellen; Tauri bleibt Adapter.
@@ -279,10 +280,10 @@ System-Prompt und Nachspann sind schreibgeschützt, auswählbar und separat kopi
 bleiben nur im RAM. Begrüßungsmakros werden pro Testchat und Persona zwischengespeichert, damit Zeit-
 und Zufallswerte beim Schreiben oder Chatwechsel nicht ungewollt neu ausgewürfelt werden.
 
-Wichtig für die nächste Arbeit: gemeinsames **Rendern vorbereiteter Eingaben** ist umgesetzt; die
-Auswahl von Lore, Gedächtnis, Persona-Daten und Verlauf in `src/store/helpers.ts`/`chatSlice.ts` noch
-nicht. Die Vorschau behauptet keine vollständige Übereinstimmung mit einem echten Tauri-Chatkontext.
-Keine Profiländerung, kein Modellaufruf und keine Netzwerkübertragung durch diese Ansicht.
+Das gemeinsame **Rendern vorbereiteter Eingaben** ist umgesetzt. Die Lore-Auswahl für die Vorschau
+steht im Abschnitt zur gemeinsamen Lorebook-Auswertung. Für echte Chats liegen die Vorbereitung
+und die Auswahl von Gedächtnis, Persona-Daten und Verlauf weiterhin in
+`src/store/helpers.ts` und `src/store/slices/chatSlice.ts`. Die Vorschau arbeitet lokal im RAM.
 
 Vor der Extraktion wurden zwei deterministische Referenz-Prompts mit dem bisherigen Tauri-Renderer
 gesichert (`crates/otakusoul-prompt/tests/fixtures/rich-de.txt`, `rich-en.txt`). Die Backendtests
@@ -318,6 +319,7 @@ Kein vollständiger E2E-Lauf, kein echtes Modell und kein Cloud-Anbieter aufgeru
 - [x] Lorebook-Bindungen im Charaktereditor und lesender Katalog mit Eintragssuche.
 - [x] Lorebook-Basiseditor mit Eintragsverwaltung und atomarem JSON-Export.
 - [x] Erweiterte Lorebook-Regelmetadaten mit Eingabevalidierung.
+- [x] Gemeinsamer Lorebook-Parser und Regelauswertung in der nativen Prompt-Vorschau.
 - [ ] Weitere Editorbereiche: Auflösung fremder relativer Bildverweise; weitere Gesamt-GUI-Bereiche gemäß Folgeetappen.
 - [x] Expliziter JSON-/PNG-Dateiimport/-export über native Öffnen-/Speichern-Dialoge.
 - [ ] Dauerhafte Integration von Kartenänderungen in ein eigenes isoliertes Schreibprofil.
@@ -569,7 +571,7 @@ Wahrscheinlichkeit/Spannung (0–100), Groß-/Kleinschreibung und ganze Wörter.
 Trigger-/Einfügewerte erscheinen separat und werden nicht beim Anzeigen ersetzt. Verkettungen
 `chain_requires`/`chain_activates` lassen sich über die Feldliste zeilenweise bearbeiten; Schnellknöpfe
 öffnen diese Felder. Buchweit sind `scan_depth` (u32 einschließlich 0) und `is_global` editierbar.
-Alle Werte sind weiterhin Dateimetadaten; native Chat-Kontextauswertung ist ausdrücklich noch offen.
+Der Editor verwaltet die Werte als Dateimetadaten. Die Vorschau wertet die übernommenen Werte aus.
 
 Zahleneingaben haben eigene Puffer/Fehlerzustände. Ungültige Werte verändern den Entwurf nicht,
 bleiben aber sichtbar und sperren Übernehmen, Entwurfsexport sowie Eintragswechsel/Anlegen/Entfernen.
@@ -582,9 +584,8 @@ Legacy-Metadaten: `n_depth` beim Suchbereich lesen und beim Ändern synchronisie
 Prioritätsänderung erhalten/synchronisieren; String-`position` bei Einfügeart mitlesen und beim Ändern
 abgleichen. Leere Voraussetzungen berücksichtigen ein nichtnegatives `depends_on`; ausdrückliches
 Bearbeiten der Voraussetzungsliste entfernt diesen Legacywert, damit er später nicht wieder greift.
-Das sind Editorprojektionen und Aliasbereinigung, keine Kopie von Tauris Legacyupgrade/Evaluationsengine.
-Bestehende nicht bearbeitete Rohwerte bleiben erhalten. Vollständige Importnormalisierung gehört
-weiterhin in die geplante gemeinsame Lorebook-Crate.
+Das sind Editorprojektionen und Aliasbereinigung. Bestehende unbearbeitete Rohwerte bleiben erhalten.
+Der gemeinsame Parser übernimmt die Importnormalisierung beim Auswerten.
 
 Prüfstand: 111 Native-Tests erfolgreich (acht neue Regel-/Eingabeschutztests gegenüber dem Basiseditor).
 Der Dateiroundtrip prüft nun ebenfalls Suchbereich, Globalmarkierung, Priorität, Wahrscheinlichkeit,
@@ -610,6 +611,25 @@ Windows-Testbuild am 08.11.2026 erfolgreich: `cargo build -p otakusoul-native --
 Lorebook-Editor/-Regeln und Chatsuche). Die alte Vorschau lief nicht mehr; kein Schließen erforderlich.
 Die neue EXE wurde nicht automatisch gestartet. Dieser neue Build ersetzt die zuvor offenen EXE-Builds;
 deren Sicht-/Bedienprüfungen bleiben weiter gesammelt für einen ausdrücklich freigegebenen Durchlauf.
+
+### Gemeinsame Lorebook-Auswertung in der Prompt-Vorschau
+
+`crates/otakusoul-lore` enthält Parser, Lokalisierung und Regelauswertung. Tauri verwaltet weiterhin
+seine eigenen Datei- und Profilzugriffe. Der Editor bewahrt das Roh-JSON für den Export.
+`npm run types:gen` berücksichtigt die neue Crate.
+
+„Lore prüfen“ wertet ausdrücklich geladene globale Bücher und geladene Bücher mit passender
+Kartenbindung aus. Die Vorschau verwendet Deutsch, Spannung 0 und die letzten fünf angezeigten
+Nachrichten einschließlich der lokalen Begrüßung, sofern sie noch in diesem Ausschnitt liegt.
+Hintergrund und Anweisungen werden in die gemeinsame Prompt-Struktur übernommen. Die Vorschau
+zeigt die Zahl der Bücher und Treffer. Ein Wechsel des Chatkontexts verwirft das Ergebnis.
+Eine erneute Prüfung würfelt Wahrscheinlichkeitsregeln neu. Die Vorschau arbeitet lokal im RAM.
+Als Nächstes folgen Chat-Vorbereitung mit Persona, Gedächtnis und Verlauf sowie echte Inferenz.
+
+Prüfstand am 09.11.2026: 117 Native-, 10 Lore- und 11 Prompt-Tests bestanden. In Tauri bestanden
+zwei Lorebook-Tests und der Referenztest für System-Prompt und Nachspann. Clippy, die gezielte
+Rust-Formatprüfung und der TypeScript-Check bestanden. Windows-Debugbuild unter
+`target/debug/otakusoul-native.exe`.
 
 - [ ] Einstellungen/Onboarding, Charakter-/Lorebook-Editoren, Gedächtnis, Hub und Im-/Export.
 - [ ] Stage und 5e einschließlich Battlemap; Fachlogik wiederverwenden.

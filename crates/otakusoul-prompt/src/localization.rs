@@ -2,7 +2,8 @@
 use crate::Character;
 use serde_json::Value;
 
-fn translation<'a>(i18n: Option<&'a Value>, language: &str) -> Option<&'a Value> {
+/// Eigene Sprachfassung oder englischer Fallback für lokalisierte Inhaltsdaten.
+pub fn i18n_translation<'a>(i18n: Option<&'a Value>, language: &str) -> Option<&'a Value> {
     let i18n = i18n?;
     let translations = i18n.get("translations")?;
     if let Some(own) = translations.get(language) {
@@ -18,8 +19,8 @@ fn translation<'a>(i18n: Option<&'a Value>, language: &str) -> Option<&'a Value>
 /// Lokalisiert nur die vom Renderer gebrauchten Felder. Leere Texte und unbekannte Felder
 /// verändern die Projektion nicht. Die Originalkarte für den Nachspann bleibt beim Aufrufer.
 pub fn localized_character(original: &Character, language: &str) -> Character {
-    let Some(translation) =
-        translation(original.extensions.get("otakusoul_i18n"), language).and_then(Value::as_object)
+    let Some(translation) = i18n_translation(original.extensions.get("otakusoul_i18n"), language)
+        .and_then(Value::as_object)
     else {
         return original.clone();
     };

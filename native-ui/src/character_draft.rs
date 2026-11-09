@@ -344,7 +344,7 @@ impl Draft {
 }
 
 /// Dieselbe Reihenfolge wie `load_character_profile`: Legacy-Auswahl vor weiteren Bindungen.
-fn lorebook_bindings(character: &Character) -> Vec<String> {
+pub(crate) fn lorebook_bindings(character: &Character) -> Vec<String> {
     let Some(extensions) = character
         .card
         .as_ref()

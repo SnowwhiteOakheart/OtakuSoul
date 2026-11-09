@@ -248,6 +248,11 @@ enum Message {
     TemplateChanged(prompt_preview::Template),
     ReplyLengthChanged(prompt_preview::ReplyLength),
     RefreshPrompt,
+    EvaluatePromptLore,
+    PromptLoreEvaluated {
+        id: u64,
+        result: Result<prompt_preview::LoreReport, String>,
+    },
     CopyPrompt(bool),
     PromptAction(bool, text_editor::Action),
     EndpointChanged(String),
@@ -301,6 +306,9 @@ struct App {
     connection_status: String,
     prompt_settings: prompt_preview::Settings,
     prompt: Result<otakusoul_prompt::AssembledPrompt, String>,
+    prompt_lore: Option<Result<prompt_preview::LoreReport, String>>,
+    prompt_lore_id: u64,
+    prompt_lore_pending: bool,
     prompt_system: text_editor::Content,
     prompt_post: text_editor::Content,
     library_search: String,
@@ -363,7 +371,7 @@ impl Default for App {
             greeting_text.clone(),
         ));
         let greeting = message_content::Content::new(&greeting_text);
-        let prompt = prompt_preview::build(preview.character(), &prompt_settings, &seed);
+        let prompt = prompt_preview::build(preview.character(), &prompt_settings, &seed, None);
         let prompt_system = text_editor::Content::with_text(
             prompt
                 .as_ref()
@@ -404,6 +412,9 @@ impl Default for App {
             connection_status: "Noch kein Verbindungstest ausgeführt.".into(),
             prompt_settings,
             prompt,
+            prompt_lore: None,
+            prompt_lore_id: 0,
+            prompt_lore_pending: false,
             prompt_system,
             prompt_post,
             library_search: String::new(),
@@ -537,6 +548,7 @@ impl App {
                 };
                 self.lorebook_selected = Some(index);
                 self.lore_draft = None;
+                self.invalidate_prompt_lore();
                 self.lore_error.clear();
                 self.lore_entry_search.clear();
                 self.page = Page::LorebookDetails;
@@ -939,6 +951,7 @@ impl App {
         appearance::theme(self.dark)
     }
     fn sync_editor(&mut self) {
+        self.invalidate_prompt_lore();
         self.editor = text_editor::Content::with_text(&self.preview.current().draft);
         self.rendered = self
             .preview
@@ -951,6 +964,13 @@ impl App {
     }
 
     fn refresh_prompt(&mut self) {
+        let previous_greeting = self
+            .preview
+            .current()
+            .greeting
+            .as_ref()
+            .map(|(_, text)| text.clone())
+            .unwrap_or_default();
         let seed = self
             .preview
             .current()
@@ -999,8 +1019,18 @@ impl App {
             current.greeting = Some((persona, text.clone()));
             text
         };
+        if previous_greeting != greeting_text {
+            self.invalidate_prompt_lore();
+        }
         self.greeting = message_content::Content::new(&greeting_text);
-        self.prompt = prompt_preview::build(self.preview.character(), &self.prompt_settings, &seed);
+        self.prompt = prompt_preview::build(
+            self.preview.character(),
+            &self.prompt_settings,
+            &seed,
+            self.prompt_lore
+                .as_ref()
+                .and_then(|result| result.as_ref().ok()),
+        );
         self.prompt_system = text_editor::Content::with_text(
             self.prompt
                 .as_ref()
@@ -1014,6 +1044,29 @@ impl App {
                 .and_then(|prompt| prompt.post_history.as_deref())
                 .unwrap_or_default(),
         );
+    }
+    fn invalidate_prompt_lore(&mut self) {
+        self.prompt_lore_id += 1;
+        self.prompt_lore = None;
+        self.prompt_lore_pending = false;
+    }
+
+    fn evaluate_prompt_lore(&mut self) -> Task<Message> {
+        if self.prompt_lore_pending || !self.preview.current().loaded {
+            return Task::none();
+        }
+        self.prompt_lore_pending = true;
+        self.prompt_lore_id += 1;
+        let id = self.prompt_lore_id;
+        let books = prompt_preview::candidate_books(self.preview.character(), &self.lorebooks)
+            .into_iter()
+            .map(|book| book.raw.clone())
+            .collect();
+        let context = prompt_preview::recent_lore_context(self.preview.current());
+        Task::perform(
+            background(move || Ok(prompt_preview::evaluate_lore(books, &context))),
+            move |result| Message::PromptLoreEvaluated { id, result },
+        )
     }
     fn load(&mut self, create: bool) -> Task<Message> {
         if self.card_busy {
@@ -1315,6 +1368,10 @@ impl App {
                         } else {
                             self.lorebook_selected = Some(self.lorebooks.len());
                             self.lorebooks.push(book);
+                            self.invalidate_prompt_lore();
+                            if self.page == Page::Prompt {
+                                self.refresh_prompt();
+                            }
                             "Lorebook lesend in den Arbeitsspeicher geladen. Keine automatische Bindung oder Promptaktivierung.".into()
                         }
                     }
@@ -1796,6 +1853,14 @@ impl App {
                 self.refresh_prompt();
             }
             Message::RefreshPrompt => self.refresh_prompt(),
+            Message::EvaluatePromptLore => return self.evaluate_prompt_lore(),
+            Message::PromptLoreEvaluated { id, result } => {
+                if self.prompt_lore_pending && id == self.prompt_lore_id {
+                    self.prompt_lore_pending = false;
+                    self.prompt_lore = Some(result);
+                    self.refresh_prompt();
+                }
+            }
             Message::CopyPrompt(post) => {
                 if let Ok(prompt) = &self.prompt {
                     return iced::clipboard::write(if post {
@@ -2036,6 +2101,26 @@ mod tests {
 #[cfg(test)]
 mod character_editor_tests {
     use super::*;
+
+    #[test]
+    fn lore_evaluation_for_a_previous_chat_is_discarded() {
+        let mut app = App::default();
+        let _ = app.update(Message::EvaluatePromptLore);
+        let previous_id = app.prompt_lore_id;
+        assert!(app.prompt_lore_pending);
+        let _ = app.update(Message::SelectCharacter(1));
+        let _ = app.update(Message::EvaluatePromptLore);
+        let _ = app.update(Message::PromptLoreEvaluated {
+            id: previous_id,
+            result: Ok(prompt_preview::LoreReport {
+                books: 1,
+                passive: vec![],
+                active: vec![],
+            }),
+        });
+        assert!(app.prompt_lore_pending);
+        assert!(app.prompt_lore.is_none());
+    }
     #[test]
     fn resetting_search_preserves_messages_draft_and_nonchat_views() {
         let mut app = App::default();

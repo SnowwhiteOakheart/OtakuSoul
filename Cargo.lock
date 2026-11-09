@@ -5296,6 +5296,7 @@ dependencies = [
  "libc",
  "ndarray",
  "ort",
+ "otakusoul-lore",
  "otakusoul-macros",
  "otakusoul-paths",
  "otakusoul-prompt",
@@ -5340,6 +5341,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "otakusoul-lore"
+version = "0.1.0"
+dependencies = [
+ "otakusoul-prompt",
+ "parking_lot 0.13.0",
+ "rand 0.10.3",
+ "regex",
+ "serde",
+ "serde_json",
+ "ts-rs",
+]
+
+[[package]]
 name = "otakusoul-macros"
 version = "0.1.0"
 dependencies = [
@@ -5357,6 +5371,7 @@ dependencies = [
  "directories",
  "iced",
  "image",
+ "otakusoul-lore",
  "otakusoul-macros",
  "otakusoul-paths",
  "otakusoul-prompt",

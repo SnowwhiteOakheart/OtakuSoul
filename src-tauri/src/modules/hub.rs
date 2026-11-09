@@ -11,7 +11,7 @@ use crate::modules::characters::{
     store_imported_card,
 };
 use crate::modules::hub_installed;
-use crate::modules::lorebook::Lorebook;
+use crate::modules::lorebook::{self, Lorebook};
 use crate::modules::paths::resolve_app_paths;
 use crate::modules::stage::{
     SceneDefinition, SceneState, create_custom_scene, find_scene_path, load_scene_by_id,
@@ -1063,7 +1063,7 @@ pub async fn import_lorebook_from_gateway(
         .await
         .map_err(|e| crate::err!("backend.hub.lorebookRead", error = e))?;
 
-    let mut lorebook = Lorebook::import_from_json_string(&content, Some(fallback_name))?;
+    let mut lorebook = lorebook::import_from_json_string(&content, Some(fallback_name))?;
     if from_nsfw_source(download_url) {
         crate::modules::nsfw::mark(&mut lorebook.extensions);
     }
@@ -1108,7 +1108,7 @@ fn install_lorebook(
             ));
         }
         // The user's version stays as its own lorebook next to the update.
-        let mut own = Lorebook::load_from_file(&target_path)?;
+        let mut own = lorebook::load_from_file(&target_path)?;
         let mut suffix = 1;
         let (copy_id, copy_path) = loop {
             let candidate = format!(
@@ -1129,11 +1129,11 @@ fn install_lorebook(
             .t("{name} (own version)")
             .replace("{name}", &own.name);
         own.id = copy_id;
-        own.save_to_file(&copy_path)?;
+        lorebook::save_to_file(&own, &copy_path)?;
     }
 
     lorebook.id = id;
-    lorebook.save_to_file(&target_path)?;
+    lorebook::save_to_file(&lorebook, &target_path)?;
     hub_installed::record(
         "lorebook",
         hub_id,

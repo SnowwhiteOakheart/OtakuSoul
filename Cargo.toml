@@ -1,5 +1,5 @@
 [workspace]
-members = ["src-tauri", "native-ui", "crates/otakusoul-paths", "crates/otakusoul-stream", "crates/otakusoul-macros", "crates/otakusoul-prompt"]
+members = ["src-tauri", "native-ui", "crates/otakusoul-paths", "crates/otakusoul-stream", "crates/otakusoul-macros", "crates/otakusoul-prompt", "crates/otakusoul-lore"]
 default-members = ["src-tauri"]
 resolver = "2"
 

@@ -9,14 +9,14 @@
 * **Architektur:** Tauri 2 (Rust-Backend) + React 19 / TypeScript / Vite / Tailwind 4 / Zustand.
 * **Native-GUI-Experiment:** Branch `codex/native-rust-gui`, Paket `native-ui/`, Arbeitsplan `native-ui/ROADMAP.md`.
   Gemeinsame Crates: `otakusoul-paths` (Profilpfade), `otakusoul-stream` (SSE-/Think-Decoder ohne GUI).
-  `otakusoul-macros` und `otakusoul-prompt`: gemeinsamer Renderer für Tauri und native Prompt-Vorschau;
-  Lore-/Gedächtnis-/Verlaufsauswahl noch im bisherigen Ablauf, noch kein nativer Charakterchat.
+  `otakusoul-macros` und `otakusoul-prompt`: gemeinsamer Renderer für Tauri und native Prompt-Vorschau.
+  `otakusoul-lore`: gemeinsamer Lorebook-Parser und Regelauswertung. Nativer Charakterchat noch offen.
   Charakterbibliothek: Suche, RAM-Kartenentwurf, Neu/Duplizieren, JSON kopieren und expliziter JSON-/PNG-Dateiexport/-import.
   Native Dateidialoge über `rfd`; keine Schreibzugriffe auf das produktive oder geladene Profil.
   Karteneditor mit Begrüßungs-/JSON-Reitern; Variantenwahl nur im leeren lokalen Chat, danach Snapshot.
   Bibliothek: adaptives Porträtraster, Tagfilter plus Suche; vor Desktopsteuerung Nutzerzustimmung abwarten.
   Ausdrucksbilder: 15 Editorplätze, WebP/PNG und Hauptporträtübernahme; portable Presetbilder im Dateiexport.
-  Lorebooks: RAM-Katalog, Eintragssuche/-editor, atomarer JSON-Export und Kartenbindungen; noch keine native Kontextauswertung.
+  Lorebooks: RAM-Katalog, Eintragssuche/-editor, atomarer JSON-Export, Kartenbindungen und manuelle Prompt-Auswertung.
   Regelreiter mit Zahlenvalidierung und Legacy-Alias-Erhalt; ungültige Eingaben bleiben korrigierbar.
   Native Verbindungsdiagnose vorhanden, echter Charakterchat noch offen; Übersetzungen zuletzt.
 * **ONNX:** `modules/onnx_runtime.rs` verwaltet die von `AppState` gehaltene gemeinsame Umgebung für Kokoro, VAD und Porträts. Kokoros rc.15-Portierung liegt in `src-tauri/vendor/kokoro-en/` mit Herkunfts- und Patchdokumentation.

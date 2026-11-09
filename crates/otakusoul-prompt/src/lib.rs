@@ -3,7 +3,7 @@
 mod models;
 pub use models::*;
 mod localization;
-pub use localization::localized_character;
+pub use localization::{i18n_translation, localized_character};
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;

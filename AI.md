@@ -18,8 +18,8 @@ Für diesen Prototyp auf dem Experiment-Branch committen/pushen, nicht auf `main
 Nutzerwunsch: Vor jeder Übernahme der Windows-Bedienung ausdrücklich fragen und die Antwort abwarten,
 damit keine parallelen Maus-/Tastatureingaben entstehen. Auch GUI-Testinstanzen nicht ungefragt
 neu starten oder schließen. Codearbeit und Tests ohne Desktopsteuerung laufen unabhängig weiter.
-Aktueller Nutzerwunsch: vorerst ohne Sichtprüfung weiterarbeiten; offene Windows-/Sichtprüfungen
-für einen späteren gemeinsamen Durchlauf sammeln. Keine erneute Desktopübernahme ohne Freigabe.
+Aktueller Nutzerwunsch: offene Windows-GUI-Tests am Ende nachholen und den Zeitpunkt der
+Desktopübernahme vorher abstimmen.
 Nutzerentscheidung 08.11.2026: Zuerst vollständige, funktionierende GUI-Elemente; Übersetzungen danach
 integrieren, sobald der Oberflächenstand dafür geeignet ist. Layout und Gestaltung der nativen
 GUI möglichst identisch zum vorhandenen Tauri-Frontend halten; aktuelle React-/CSS-Quellen als Referenz.
@@ -27,7 +27,8 @@ Gemeinsamer Antwortdecoder: `crates/otakusoul-stream` (Tauri-Inferenz und native
 Die native Diagnose sendet nur einen festen Testprompt; echte Charakter-Prompt-/Chatlogik ist noch offen.
 Gemeinsame Makros und Prompt-Renderer: `crates/otakusoul-macros` und `crates/otakusoul-prompt`.
 Tauri bleibt Adapter; native Prompt-Vorschau mit Persona, Vorlage, Autorennotiz und Antwortlänge.
-Die Auswahl von Lore/Gedächtnis/Verlauf in TypeScript ist noch nicht in einen gemeinsamen Service portiert.
+Die native Prompt-Vorschau wertet geladene globale und an die Karte gebundene Lorebooks über
+`crates/otakusoul-lore` aus. Der gemeinsame Chat-Service für Gedächtnis, Verlauf und Sendepfad ist offen.
 Charakterbibliothek im adaptiven Porträt-Kartenraster mit kombinierter Textsuche und exaktem Tagfilter.
 Karteneditor im RAM und expliziter JSON-/PNG-Dateiimport/-export über native Dialoge (`rfd`);
 PNG bewahrt das Porträt. Profilkopien und Archivnachrichten bleiben
@@ -42,7 +43,8 @@ Lorebooks: ausdrücklich geladener RAM-Katalog, Eintragssuche, eigener Eintragse
 Quelldateien bleiben unverändert; expliziter JSON-Export sichert Lorebook-Entwürfe atomar über file_export.rs.
 Lorebook-Regeln: Aktivierung/Einfügeart, Priorität/Wahrscheinlichkeit/Spannung, Wort-/Großschreibung,
 Verkettungen, Suchbereich/global. Ungültige Zahleneingaben sperren Übernehmen/Entwurfsexport/Eintragswechsel.
-Original-JSON/eingebettete Bücher bleiben erhalten; noch keine native Lore-Evaluation/Promptaktivierung.
+Original-JSON und eingebettete Bücher bleiben erhalten. „Lore prüfen“ verwendet die letzten fünf
+angezeigten Nachrichten und Spannung 0. Wahrscheinlichkeitsregeln werden bei einer neuen Prüfung ausgewertet.
 Chatsuche: Strg+F im Chat, Trefferzahl einschließlich lokaler Begrüßung, Leerzustand/Zurücksetzen;
 untersucht nur geladene Nachrichten (kein Nachladen alter Archive).
 

@@ -1098,7 +1098,7 @@ impl App {
             row![text("Lorebooks").size(26).width(Fill),
                 control(Icon::Plus,"Neu",Message::NewLorebook),
                 control(Icon::Attachment,"JSON laden",Message::ImportLorebook)].align_y(Alignment::Center),
-            muted("Katalog und Bearbeitung im Arbeitsspeicher. Dateien bleiben bis zum ausdrücklichen Export unverändert. Bindungen wählst Du im Charaktereditor; native Promptauswahl folgt später.",13,&self.theme()),
+            muted("Katalog im Arbeitsspeicher. Im Charaktereditor bindest Du Bücher an eine Figur. In der Prompt-Vorschau prüfst Du globale und gebundene Bücher.",13,&self.theme()),
             muted(&self.notice,12,&self.theme()),
         ].spacing(16);
         if self.character_draft.is_some() {
@@ -1253,7 +1253,7 @@ impl App {
                 text_input("5",&self.lore_scan_depth).padding(10).style(appearance::input).on_input(Message::LoreScanDepth)].spacing(5).width(Fill),
                 iced::widget::checkbox(draft.is_global()).label("Global (Dateieinstellung)").on_toggle(Message::LoreGlobal)
             ].spacing(16).align_y(Alignment::Center),
-            muted("Diese Einstellungen werden gespeichert; die native Chat-Kontextauswahl folgt später.",12,&self.theme())
+            muted("Die Prompt-Vorschau prüft Regeln anhand der letzten fünf angezeigten Nachrichten bei einem Spannungswert von null.",12,&self.theme())
         ].spacing(16);
         if self.lore_selected_entry < draft.count() {
             let index = self.lore_selected_entry;
@@ -1608,7 +1608,7 @@ impl App {
         let selector: Element<'_, Message> = match self.editor_tab {
             EditorTab::Lorebooks => muted(
                 format!(
-                    "{} Bindungen · nur Kartenmetadaten, noch keine native Promptaktivierung",
+                    "{} Bindungen · geladene Bücher lassen sich in der Prompt-Vorschau prüfen",
                     draft.bound_lorebooks().len()
                 ),
                 12,
@@ -1857,7 +1857,7 @@ impl App {
             ].spacing(14).align_y(Alignment::End),
             text_input("Regieanweisung (optional)",&self.prompt_settings.author_note).style(appearance::input)
                 .on_input(Message::AuthorNoteChanged).padding(10),
-            muted("Charakterkarte und diese Vorgaben werden mit demselben Prompt-Renderer wie in Tauri verarbeitet. Automatische Lore- und Gedächtnisauswahl folgen noch. Es wird nichts an einen Server gesendet.",12,&self.theme()),
+            muted("Lokale Vorschau der Charakterkarte und des Prompts. „Lore prüfen“ wertet geladene globale und gebundene Bücher anhand der letzten fünf angezeigten Nachrichten aus.",12,&self.theme()),
         ].spacing(12)).padding(16).width(Fill).style(appearance::card);
         let mut content = column![
             row![
@@ -1871,6 +1871,35 @@ impl App {
             inputs
         ]
         .spacing(14);
+        let lore_status = if self.prompt_lore_pending {
+            "Lore wird geprüft …".into()
+        } else {
+            match &self.prompt_lore {
+                Some(Ok(report)) => format!(
+                    "{} Bücher geprüft · {} Hintergrundtexte · {} Anweisungen",
+                    report.books,
+                    report.passive.len(),
+                    report.active.len()
+                ),
+                Some(Err(error)) => format!("Loreprüfung fehlgeschlagen: {error}"),
+                None if !self.preview.current().loaded => "Der Verlauf wird noch geladen.".into(),
+                None => "Lore für diesen Verlauf noch ungeprüft.".into(),
+            }
+        };
+        content = content.push(
+            row![
+                button("Lore prüfen")
+                    .padding([6, 10])
+                    .style(appearance::subtle_button)
+                    .on_press_maybe(
+                        (self.preview.current().loaded && !self.prompt_lore_pending)
+                            .then_some(Message::EvaluatePromptLore)
+                    ),
+                muted(lore_status, 12, &self.theme()).width(Fill)
+            ]
+            .spacing(10)
+            .align_y(Alignment::Center),
+        );
         match &self.prompt {
             Ok(prompt) => {
                 content = content.push(
