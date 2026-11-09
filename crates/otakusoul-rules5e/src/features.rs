@@ -2,7 +2,7 @@
 //! count them in `Stats5e::resources_used`; short and long rests give them back.
 
 use super::*;
-use crate::modules::stage::Combatant;
+use crate::Combatant;
 
 /// Highest level the starter rules support.
 pub const MAX_LEVEL: u32 = 3;

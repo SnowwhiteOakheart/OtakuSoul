@@ -3,11 +3,11 @@
 //! healing, conditions with concentration, Sleep, buffs, stabilizing and teleporting.
 
 use super::*;
-use crate::modules::stage::Combatant;
+use crate::Combatant;
 use rand::{Rng, RngExt};
 use std::sync::LazyLock;
 
-const SPELLS_JSON: &str = include_str!("../../../../../presets/srd5/spells.json");
+const SPELLS_JSON: &str = include_str!("../../../presets/srd5/spells.json");
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, TS)]
 #[serde(rename_all = "lowercase")]

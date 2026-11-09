@@ -1,5 +1,5 @@
 use super::*;
-use crate::modules::stage::{Combatant, EncounterState};
+use crate::{Combatant, EncounterState};
 use rand::{SeedableRng, rngs::StdRng};
 
 fn combatant(id: &str, role: &str, stats: (Stats5e, i32)) -> Combatant {

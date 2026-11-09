@@ -4186,6 +4186,7 @@ dependencies = [
  "libc",
  "ndarray",
  "ort",
+ "otakusoul-rules5e",
  "parking_lot 0.13.0",
  "pdf-extract",
  "png",
@@ -4223,6 +4224,16 @@ dependencies = [
  "xcap",
  "zbus",
  "zip",
+]
+
+[[package]]
+name = "otakusoul-rules5e"
+version = "0.1.0"
+dependencies = [
+ "rand 0.10.3",
+ "serde",
+ "serde_json",
+ "ts-rs",
 ]
 
 [[package]]

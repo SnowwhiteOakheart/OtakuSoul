@@ -4,7 +4,7 @@
 //! other languages are mapped onto them.
 
 use super::*;
-use crate::modules::stage::{CombatCondition, Combatant};
+use crate::{CombatCondition, Combatant};
 
 pub const BLINDED: &str = "blinded";
 pub const CHARMED: &str = "charmed";

@@ -26,7 +26,7 @@ mod npc;
 mod offscreen;
 mod party;
 mod plan;
-pub mod rules5e;
+pub use otakusoul_rules5e as rules5e;
 mod scenes;
 #[cfg(test)]
 mod tests;

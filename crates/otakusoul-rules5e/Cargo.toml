@@ -1,0 +1,13 @@
+[package]
+name = "otakusoul-rules5e"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+license = "GPL-3.0-only"
+description = "5e-kompatible Regeln (SRD 5.1) für OtakuSoul-Geschichten – gemeinsam für Desktop und Android"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rand = "0.10"
+ts-rs = { version = "12", features = ["serde-json-impl", "no-serde-warnings"] }

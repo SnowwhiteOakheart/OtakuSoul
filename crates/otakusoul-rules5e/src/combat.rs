@@ -3,7 +3,7 @@
 //! [`CombatEvent`]; the events are the log, the UI animation and the narration input.
 
 use super::*;
-use crate::modules::stage::{CombatCondition, Combatant, EncounterState};
+use crate::{CombatCondition, Combatant, EncounterState};
 use rand::{Rng, RngExt};
 
 /// Condition name of a combatant who took the Dodge action (until its next turn).

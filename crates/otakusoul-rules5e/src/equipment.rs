@@ -6,7 +6,7 @@
 use super::*;
 use std::sync::LazyLock;
 
-const EQUIPMENT_JSON: &str = include_str!("../../../../../presets/srd5/equipment.json");
+const EQUIPMENT_JSON: &str = include_str!("../../../presets/srd5/equipment.json");
 /// Weapons a hero carries ready at most.
 pub const MAX_WEAPONS: usize = 3;
 

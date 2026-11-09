@@ -3,7 +3,7 @@
 //! which target and which attack.
 
 use super::*;
-use crate::modules::stage::Combatant;
+use crate::Combatant;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TurnDecision {

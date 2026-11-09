@@ -3,7 +3,7 @@
 //! best square, then attack).
 
 use super::*;
-use crate::modules::stage::Combatant;
+use crate::Combatant;
 use rand::Rng;
 
 /// Squares of the others as allies (passable) and enemies (blocking) of `actor`.
