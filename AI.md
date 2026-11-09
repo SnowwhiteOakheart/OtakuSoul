@@ -14,7 +14,7 @@ Arbeitsplan und Übergabekontext: [`native-ui/ROADMAP.md`](native-ui/ROADMAP.md)
 Separater Start: `cargo run -p otakusoul-native`. Kein Desktop-Pet; kein automatischer produktiver Profilzugriff.
 Profilkopien nur ausdrücklich und schreibgeschützt laden; synthetisches Beispiel über Einstellungen oder
 `--create-demo-profile <Ordner>`. Gemeinsame Basis-Pfadauflösung: `crates/otakusoul-paths`.
-Für diesen Prototyp auf dem Experiment-Branch committen/pushen, nicht auf `main`.
+Für diesen Prototyp auf dem Experiment-Branch committen und jeden geprüften Commit direkt pushen.
 Nutzerwunsch: Vor jeder Übernahme der Windows-Bedienung ausdrücklich fragen und die Antwort abwarten,
 damit keine parallelen Maus-/Tastatureingaben entstehen. Auch GUI-Testinstanzen nicht ungefragt
 neu starten oder schließen. Codearbeit und Tests ohne Desktopsteuerung laufen unabhängig weiter.
@@ -55,9 +55,12 @@ angezeigten Nachrichten und Spannung 0. Wahrscheinlichkeitsregeln werden bei ein
 Chatsuche: Strg+F im Chat, Trefferzahl einschließlich lokaler Begrüßung, Leerzustand/Zurücksetzen;
 untersucht nur geladene Nachrichten (kein Nachladen alter Archive).
 Nativer Hub: `native-ui/src/hub_catalog.rs` lädt die öffentlichen Welten-, Charakter-, Szenario-
-und Lorebook-Listen beim Aufruf des jeweiligen Reiters. Karten und Bücher werden über die bestehenden
-Leser in den Arbeitsspeicher übernommen. Feste HTTPS-Quelle und Größenlimits; markierte 18+-Inhalte
-werden ausgefiltert. Szenarien dienen der Vorschau. Profilinstallation und Aktualisierungen sind offen.
+und Lorebook-Listen beim Aufruf des jeweiligen Reiters. Explizite Karten- und Lorebook-Importe
+speichern die validierten Originaldownloads atomar in der eigenen nativen Hub-Bibliothek
+(`native-ui/src/hub_store.rs`, Pfad über `otakusoul_paths::native_data_dir`). Beim Start wird nur gelesen.
+Profilkopien bleiben getrennt. Editoränderungen sind Entwürfe bis zum expliziten Export.
+Feste HTTPS-Quelle und Größenlimits; markierte 18+-Inhalte werden ausgefiltert. Szenarien dienen der
+Vorschau. Aktualisierungen und Konfliktbehandlung sind offen.
 Weltansichten verknüpfen die Originalreferenzen mit den passenden Katalogeinträgen. Das Weltenraster
 lädt Titelbilder beim Scrollen in der Nähe des sichtbaren Bereichs. Die Weltansicht nutzt denselben
 begrenzten Bildcache und priorisiert ihr Titelbild. Der Hub liest die mitgelieferten Tauri-Sprachpakete über
@@ -71,6 +74,8 @@ begrenzten Bildcache und priorisiert ihr Titelbild. Der Hub liest die mitgeliefe
   oder konkretem Regressionsverdacht ausführen. UI-Verhalten gezielt per E2E prüfen und relevante Screenshots
   in `e2e/screenshots/` ansehen. Bereits bestandene Prüfungen nur bei relevanten Änderungen erneut starten.
 - Thematische Commits direkt auf `main`, `feat(bereich): …` auf Deutsch, danach sofort `git push`. Kein GitHub-CI.
+  Da kein GitHub-CI läuft, dient die lokale WSL-Umgebung (`wsl -u sebas bash -l -c '...'`, Repo unter `~/Development/OtakuSoul`, VHDX auf D:)
+  als Verifikation für Linux-Builds, Linux-spezifische Crates (`pipewire`, `webkit2gtk`) und Headless-E2E-Tests vor Commits/Releases.
   Der Nutzer erlaubt Commit und Push für die beauftragte Projektarbeit dauerhaft; keine erneute Rückfrage nötig.
 - Der Nutzer arbeitet parallel im Repo: fremde uncommittete Änderungen nie mitcommitten.
 - `roadmap.md` (offene Punkte) im selben Commit abhaken, Erledigtes nach `roadmap_abgeschlossen.md` verschieben (nur lokal, in `.gitignore`, nie committen); `README.md`/`AI.md` bei neuen Modulen/Features anpassen.
@@ -95,6 +100,17 @@ begrenzten Bildcache und priorisiert ihr Titelbild. Der Hub liest die mitgeliefe
 | Langchat-Messung (1000 Nachrichten) | `npm run e2e:perf` |
 | README-Screenshots (nach `e2e:build`, nicht Teil von `e2e`) | `xvfb-run -a node e2e/readme-screenshots.mjs de\|en\|ru` → `docs/assets/screenshots/<lang>/` |
 | GPU-Tests mit echten Modellen (lädt GBs, nur auf Wunsch; GPU muss frei sein) | `cargo test --test gpu_e2e -- --ignored --nocapture` in `src-tauri/` (`llm` = Chat-Modelle aus `assets/models` mit empfohlenem Kontext) |
+
+### Linux-Build & Tests via WSL (Windows-Host)
+
+Auf dem Entwicklungsrechner ist eine voll konfigurierte WSL-Umgebung (Ubuntu auf `D:\WSL\Ubuntu\ext4.vhdx`, Standard-Benutzer `sebas` mit passwortlosem `sudo`) eingerichtet. Da kein GitHub-CI läuft, können Agents und Entwickler Linux-Parität, Clippy, native Rust-Tests und headless E2E-Screenshots direkt lokal prüfen:
+
+* **Projektpfad in WSL:** `/home/sebas/Development/OtakuSoul` (im nativen ext4-Dateisystem für maximale Build-Geschwindigkeit).
+* **Änderungen vom Windows-Repo syncen:** `wsl -u sebas bash -l -c "cd ~/Development/OtakuSoul && git pull /mnt/c/Users/Sebas/Development/OtakuSoul <branch>"` (oder bei uncommitteten Arbeitsständen: `cp /mnt/c/Users/Sebas/Development/OtakuSoul/<datei> ~/Development/OtakuSoul/<datei>`).
+* **Linux-Checks (Oxlint, TypeCheck, Clippy):** `wsl -u sebas bash -l -c "cd ~/Development/OtakuSoul && npm run check"`
+* **Linux Rust-Tests:** `wsl -u sebas bash -l -c "cd ~/Development/OtakuSoul && cargo test --manifest-path src-tauri/Cargo.toml"`
+* **Headless Screenshots / GUI (Xvfb):** `wsl -u sebas bash -l -c "cd ~/Development/OtakuSoul && xvfb-run -a node e2e/readme-screenshots.mjs de|en|ru"`
+* **Installierte Toolchains & Bibliotheken:** Node.js 22, Rust (inkl. Clippy & Rustfmt), WebKit2GTK (`libwebkit2gtk-4.1-dev`), Pipewire/SPA (`libpipewire-0.3-dev`, `libspa-0.2-dev`), Clang/LLVM (`libclang-dev`, `LIBCLANG_PATH=/usr/lib/llvm-21/lib`), CMake, Ninja, Xvfb.
 
 ## Karte
 

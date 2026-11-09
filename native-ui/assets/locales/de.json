@@ -2,7 +2,12 @@
   "hub.native.intro": "Kuratierte Welten, Charaktere, Szenarien und Lorebooks für OtakuSoul.",
   "hub.native.results": "{{visible}} von {{total}} Einträgen",
   "hub.native.revision": "Revision {{revision}}",
-  "hub.native.alreadyLoaded": "Das Lorebook ist in der aktuellen Sitzung bereits vorhanden.",
-  "hub.native.imported": "In der Sitzung",
+  "hub.native.alreadyLoaded": "Die Hub-Datei ist gespeichert. Das bereits geladene Lorebook bleibt in der Ansicht erhalten.",
+  "hub.native.imported": "In der Bibliothek",
+  "hub.native.storeTitle": "Native Hub-Bibliothek",
+  "hub.native.storeInfo": "Hub-Importe bleiben in der nativen Bibliothek gespeichert. Änderungen im Editor kannst Du separat exportieren.",
+  "hub.native.storeLoading": "Native Hub-Bibliothek wird geladen …",
+  "hub.native.storeUnavailable": "Der Speicherort für die native Hub-Bibliothek ist nicht verfügbar.",
+  "hub.native.storePartial": "Nicht lesbare Hub-Dateien ({{count}}).",
   "hub.native.stagePreview": "Szenario-Vorschau"
 }

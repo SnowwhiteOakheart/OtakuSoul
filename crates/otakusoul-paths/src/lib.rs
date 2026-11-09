@@ -30,6 +30,12 @@ pub fn isolated_home() -> Option<PathBuf> {
     isolated_home_from(std::env::var_os("OTAKUSOUL_HOME"))
 }
 
+/// Eigene lokale Daten des nativen Prototyps, getrennt von Tauri und OTAKUSOUL_HOME.
+pub fn native_data_dir() -> Option<PathBuf> {
+    ProjectDirs::from("com", "snowwhite", "otakusoul-native-preview")
+        .map(|dirs| dirs.data_local_dir().to_path_buf())
+}
+
 fn isolated_home_from(value: Option<OsString>) -> Option<PathBuf> {
     value.filter(|value| !value.is_empty()).map(PathBuf::from)
 }

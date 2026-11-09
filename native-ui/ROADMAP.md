@@ -664,13 +664,14 @@ wurden nach dem Durchlauf textlich korrigiert.
 ### Öffentlicher Hub im nativen Fenster
 
 - [x] Hub-Seite mit Kartenraster, Suchfeld und Reitern für Welten, Charaktere, Szenarien und Lorebooks.
-- [x] Charakterkarten mit Porträt und Lorebooks im Arbeitsspeicher übernehmen. Bearbeiten und
-  explizit exportieren über die vorhandenen Bibliotheken.
+- [x] Charakterkarten mit Porträt und Lorebooks über die vorhandenen Bibliotheken übernehmen,
+  bearbeiten und explizit exportieren.
 - [x] Welt-Detailansicht mit Titelbild und Mitgliedern als verknüpfte Katalogeinträge.
 - [x] Titelbilder im Weltenraster und Wiederverwendung in der Detailansicht.
 - [ ] Vorschaubilder für Figuren über ein separates kleines Katalog-Asset. Die Registry enthält
   derzeit nur Links zur vollständigen Charakterkarte.
-- [ ] Dauerhafte Installation im isolierten Profil, Versionsabgleich und Konfliktbehandlung.
+- [x] Dauerhafte Installation von Figuren und Lorebooks in einer eigenen nativen Hub-Bibliothek.
+- [ ] Versionsabgleich, Aktualisierungen und Konfliktbehandlung für bearbeitete Inhalte.
 - [ ] Szenarien an die native Stage anbinden. Avatare und Chub AI separat integrieren.
 
 `src/hub_catalog.rs` lädt den angewählten Reiter im Hintergrund von der festen öffentlichen
@@ -707,6 +708,24 @@ Prüfstand für das Weltenraster: 134 native Tests bestanden, darunter Cache-Tes
 Priorisierung, erneuten Abruf und Verdrängung. Der separate Live-Test lädt ein öffentliches
 Titelbild und prüft, dass Raster und Detailansicht dasselbe Ergebnis verwenden. Die Sichtprüfung
 des Scrollverhaltens steht aus.
+
+#### Separate native Hub-Bibliothek
+
+Der Pfad kommt aus `otakusoul_paths::native_data_dir()` unter der App-Kennung
+`otakusoul-native-preview`. Einstellungen zeigen den Pfad an. Die App liest
+`hub/native-hub.sqlite3` beim Start im Hintergrund. Der erste ausdrücklich gewählte Hub-Import
+legt die Datenbank an. Originaldownload, Registry-ID, Art und Revision werden gemeinsam gespeichert.
+Die Datenbank verhindert doppeltes Anlegen und hält bei gleichzeitigem Import die bereits
+gespeicherte Fassung. Tauri-Produktionspfade, `OTAKUSOUL_HOME` und geladene Profilkopien sind
+als Hub-Speicher ausgeschlossen. Nach dem Laden einer Profilkopie bleiben Hub-Importe verfügbar.
+Die Native-App lädt beim Neustart die gespeicherten Originale. Änderungen im Editor werden wie
+bisher explizit exportiert. Lokale Testchats bleiben flüchtig.
+Die Bibliothek begrenzt sich im Prototyp auf 1.024 Einträge und 256 MiB Originaldaten.
+
+Prüfstand 09.11.2026: 139 Native- und ein Pfadtest bestanden. Der Hub-Live-Test installierte
+eine öffentliche Charakterkarte und ein Lorebook in einer temporären SQLite-Bibliothek und
+stellte beide beim erneuten Laden in einer frischen App-Instanz wieder her. Clippy und der
+Windows-Build bestanden. Der Neustart im Windows-Fenster ist noch offen.
 
 - [ ] Einstellungen/Onboarding, weitere Charakter-/Lorebook-Editoren, Gedächtnis und Im-/Export.
 - [ ] Stage und 5e einschließlich Battlemap; Fachlogik wiederverwenden.

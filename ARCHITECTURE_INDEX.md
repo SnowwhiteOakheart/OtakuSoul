@@ -20,8 +20,9 @@
   Regelreiter mit Zahlenvalidierung und Legacy-Alias-Erhalt; ungültige Eingaben bleiben korrigierbar.
   Modellchat im RAM: expliziter Versand, Provider-Payload in `native-ui/src/chat_request.rs`,
   Abschluss und Abbruch per Generierungs-ID. Laufende Textanzeige und Persistenz offen. Übersetzungen zuletzt.
-  Nativer Hub in `native-ui/src/hub_catalog.rs`: vier öffentliche Listen, Suche und RAM-Import
-  für Charaktere und Lorebooks. Szenarien werden im Katalog angezeigt.
+  Nativer Hub in `native-ui/src/hub_catalog.rs`: vier öffentliche Listen und Suche.
+  `native-ui/src/hub_store.rs` speichert importierte Charaktere und Lorebooks in einer separaten
+  nativen SQLite-Bibliothek. Szenarien werden im Katalog angezeigt.
   Weltdetails lösen Mitglieder per Originalschlüssel auf. Raster und Detailansicht teilen
   den begrenzten Titelbild-Cache in `native-ui/src/hub_cover.rs`.
   `native-ui/src/ui_text.rs` liest für den Hub dieselben UI-Sprachdateien wie Tauri.
@@ -30,6 +31,7 @@
 * **Kein Python in der App:** Die Desktop-App ist 100 % Rust & TypeScript (Portierung von *Soul of Waifu* ist vollständig entkoppelt).
 * **Benutzer-Anrede & Sprache:** Nutzer immer mit **„Du“** ansprechen. Antworten, Commits und Dokumentation auf Deutsch.
 * **Pfade:** Niemals feste Systempfade hardcoden – ausschließlich `paths::base_dirs()` nutzen (`ProjectDirs` bzw. `$OTAKUSOUL_HOME/config|data`). Betriebssystemspezifischen Code immer mit `#[cfg]` absichern.
+* **Linux & WSL-Testumgebung:** Eine voll ausgestattete WSL-Umgebung (Ubuntu auf `D:\WSL\Ubuntu\ext4.vhdx`, User `sebas`, Repo in `~/Development/OtakuSoul`) steht bereit. Da kein GitHub-CI läuft, Linux-Parität bei Bedarf via `wsl -u sebas bash -l -c "cd ~/Development/OtakuSoul && npm run check"` verifizieren.
 * **Git & Commits:** Thematische Commits direkt auf `main` (`feat(bereich): …` auf Deutsch), danach sofort `git push`. Keine fremden, uncommitteten Änderungen mitcommitten.
 * **Roadmap-Pflege:** Erledigte Punkte in `roadmap.md` abhaken und nach `roadmap_abgeschlossen.md` verschieben (nur lokal, gitignored).
 * **Dokumentation:** Ausführliche Arbeitsregeln und tiefgehende technische Details stehen in [`AI.md`](AI.md). Der spezialisierte Leitfaden zur Erstellung und Riggung von 3D-Anime-Avataren, Hair-Card-Generierung und VRM-Export liegt in [`VRM_PIPELINE.md`](VRM_PIPELINE.md).
@@ -50,6 +52,8 @@
 | **Screenshots erstellen** | `xvfb-run -a node e2e/readme-screenshots.mjs de\|en\|ru` | Erstellt UI-Screenshots unter `docs/assets/screenshots/<lang>/` |
 | **README-Animation** | `node e2e/readme-demo.mjs de\|en\|ru` | GIF-Rundgang nach `docs/assets/demo/<lang>.gif` (braucht `ffmpeg`; Linux mit `xvfb-run -a`, Windows mit `tauri-driver` + passendem `msedgedriver` im PATH) |
 | **Story-Musik ohne App** | `python tools/story_music.py plan\|generate\|ship SZENE.json …` | Plan, ACE-Step-Erzeugung und MP3-Auslieferung nach `otakusoul-data`; siehe `docs/stage_music.md` |
+| **Linux-Checks (via WSL)** | `wsl -u sebas bash -l -c "cd ~/Development/OtakuSoul && npm run check"` | Führt Oxlint, TypeCheck und Clippy nativ unter Linux aus (VHDX auf D:\) |
+| **Linux-Tests (via WSL)** | `wsl -u sebas bash -l -c "cd ~/Development/OtakuSoul && cargo test --manifest-path src-tauri/Cargo.toml"` | Führt alle 840+ Linux-Rust-Tests aus (Pipewire, WebKit, X11) |
 | **GPU-Tests (Real)** | `cargo test --test gpu_e2e -- --ignored --nocapture` in `src-tauri/` | Nur auf Wunsch, lädt reale Modelle aus `assets/models` |
 
 ---

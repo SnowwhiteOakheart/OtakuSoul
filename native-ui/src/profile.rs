@@ -93,6 +93,19 @@ fn production_overlap(path: &Path) -> bool {
     })
 }
 
+pub fn validate_hub_store(root: &Path) -> Result<(), String> {
+    if production_overlap(root)
+        || otakusoul_paths::isolated_home().is_some_and(|home| hub_store_overlaps(root, &home))
+    {
+        return Err("Der native Hub-Speicher überschneidet sich mit einem Tauri-Profil.".into());
+    }
+    Ok(())
+}
+
+pub fn hub_store_overlaps(root: &Path, profile: &Path) -> bool {
+    paths_overlap(&normalized_location(root), &normalized_location(profile))
+}
+
 fn profile_root(home: &Path) -> Result<PathBuf, String> {
     let root = canonical(home)?;
     if !root.is_dir() || production_overlap(&root) {

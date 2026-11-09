@@ -10,6 +10,7 @@ mod expressions;
 mod file_export;
 mod hub_catalog;
 mod hub_cover;
+mod hub_store;
 mod icons;
 mod library;
 mod lore_catalog;
@@ -172,6 +173,7 @@ enum Message {
     HubCloseWorld,
     HubCoverVisible(u64, String, url::Url, bool),
     HubCoverLoaded(url::Url, Option<image::Handle>),
+    HubLibraryLoaded(Result<HubLibrary, String>),
     HubImport(hub_catalog::Kind, String),
     HubImported(Result<HubContent, String>),
     ImportLorebook,
@@ -307,20 +309,77 @@ enum HubContent {
 }
 
 impl HubContent {
-    fn download(kind: hub_catalog::Kind, entry: &hub_catalog::Entry) -> Result<Self, String> {
-        let bytes = hub_catalog::download(entry)?;
+    fn parse(
+        kind: hub_catalog::Kind,
+        title: &str,
+        filename: &str,
+        bytes: Vec<u8>,
+    ) -> Result<Self, String> {
         match kind {
             hub_catalog::Kind::Characters => profile::import_hub_card(bytes).map(Self::Character),
             hub_catalog::Kind::Lorebooks => {
                 let raw = serde_json::from_slice(&bytes)
                     .map_err(|_| "Die Hub-Datei enthält kein gültiges Lorebook-JSON.")?;
                 profile::check_public_hub_content(&raw)?;
-                let file = entry.download_filename().unwrap_or(&entry.id);
-                lore_catalog::Book::from_json(raw, format!("Hub/{file}"), entry.original_title())
+                lore_catalog::Book::from_json(raw, format!("Hub/{filename}"), title)
                     .map(Self::Lorebook)
             }
             _ => Err("Dieser Inhalt kann noch nicht übernommen werden.".into()),
         }
+    }
+}
+
+fn install_hub_content(
+    root: &std::path::Path,
+    protected_home: Option<&std::path::Path>,
+    kind: hub_catalog::Kind,
+    entry: &hub_catalog::Entry,
+) -> Result<HubContent, String> {
+    if protected_home.is_some_and(|home| profile::hub_store_overlaps(root, home)) {
+        return Err(
+            "Der native Hub-Speicher überschneidet sich mit der geladenen Profilkopie.".into(),
+        );
+    }
+    profile::validate_hub_store(root)?;
+    let item = hub_store::Item {
+        kind,
+        id: entry.id.clone(),
+        revision: entry.revision,
+        title: entry.original_title().into(),
+        filename: entry
+            .download_filename()
+            .ok_or("Die Hub-Datei fehlt.")?
+            .into(),
+        bytes: hub_catalog::download(entry)?,
+    };
+    let content = HubContent::parse(kind, &item.title, &item.filename, item.bytes.clone())?;
+    match hub_store::install(root, &item)? {
+        hub_store::Install::Added => Ok(content),
+        hub_store::Install::Existing(stored) => {
+            HubContent::parse(stored.kind, &stored.title, &stored.filename, stored.bytes)
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+struct HubLibrary {
+    entries: Vec<((hub_catalog::Kind, String), HubContent)>,
+    unreadable: usize,
+}
+
+impl HubLibrary {
+    fn read(root: &std::path::Path) -> Result<Self, String> {
+        let mut library = Self {
+            entries: Vec::new(),
+            unreadable: 0,
+        };
+        for item in hub_store::list(root)? {
+            match HubContent::parse(item.kind, &item.title, &item.filename, item.bytes) {
+                Ok(content) => library.entries.push(((item.kind, item.id), content)),
+                Err(_) => library.unreadable += 1,
+            }
+        }
+        Ok(library)
     }
 }
 
@@ -338,6 +397,10 @@ struct Hub {
     covers: hub_cover::Gallery,
     cover_generation: u64,
     visible_covers: HashMap<String, url::Url>,
+    store: Option<PathBuf>,
+    library_loading: bool,
+    library_notice: String,
+    installed_character_ids: HashSet<String>,
     importing: Option<(hub_catalog::Kind, String)>,
     imported: HashSet<(hub_catalog::Kind, String)>,
     notice: String,
@@ -355,6 +418,10 @@ impl Default for Hub {
             covers: hub_cover::Gallery::default(),
             cover_generation: 0,
             visible_covers: HashMap::new(),
+            store: None,
+            library_loading: false,
+            library_notice: String::new(),
+            installed_character_ids: HashSet::new(),
             importing: None,
             imported: HashSet::new(),
             notice: String::new(),
@@ -838,20 +905,19 @@ impl App {
         }
     }
 
-    fn add_imported_character(&mut self, character: profile::ProfileCharacter) {
+    fn add_imported_character(&mut self, character: profile::ProfileCharacter) -> String {
         let id = self.fresh_character_id();
         self.portraits
             .push(character.portrait.clone().map(image::Handle::from_bytes));
         self.preview.add_character(model::Character {
-            id,
+            id: id.clone(),
             name: character.name,
             description: character.description,
             first_message: character.first_message,
             card: Some(character.card),
             portrait: character.portrait,
         });
-        self.library_search.clear();
-        self.library_tag = None;
+        id
     }
 
     fn existing_lorebook(&self, book: &lore_catalog::Book) -> Option<usize> {
@@ -865,6 +931,38 @@ impl App {
         self.invalidate_prompt_lore();
         if self.page == Page::Prompt {
             self.refresh_prompt();
+        }
+    }
+
+    fn register_hub_content(
+        &mut self,
+        key: (hub_catalog::Kind, String),
+        content: HubContent,
+    ) -> String {
+        if !self.hub.imported.insert(key) {
+            return String::new();
+        }
+        match content {
+            HubContent::Character(character) => {
+                let name = character.name.clone();
+                let id = self.add_imported_character(character);
+                self.hub.installed_character_ids.insert(id);
+                ui_text::format("hub.importedChar", &[("name", &name)])
+            }
+            HubContent::Lorebook(book) => {
+                if self.existing_lorebook(&book).is_some() {
+                    return ui_text::text("hub.native.alreadyLoaded").into();
+                }
+                let notice = ui_text::format(
+                    "hub.importedLorebook",
+                    &[
+                        ("name", &book.name),
+                        ("count", &book.entries.len().to_string()),
+                    ],
+                );
+                self.add_lorebook(book);
+                notice
+            }
         }
     }
 
@@ -937,12 +1035,17 @@ impl App {
         if self.page != Page::Hub
             || !visible
             || self.profile_busy
+            || self.hub.library_loading
             || self.hub.loading.contains(&kind)
             || self.hub.importing.is_some()
             || self.hub.imported.contains(&key)
         {
             return Task::none();
         }
+        let Some(root) = self.hub.store.clone() else {
+            return Task::none();
+        };
+        let protected_home = self.profile_home.clone();
         let Some(entry) = self
             .hub
             .catalog
@@ -959,7 +1062,7 @@ impl App {
         self.hub.notice = ui_text::text("hub.importing").into();
         self.hub.importing = Some(key);
         Task::perform(
-            background(move || HubContent::download(kind, &entry)),
+            background(move || install_hub_content(&root, protected_home.as_deref(), kind, &entry)),
             Message::HubImported,
         )
     }
@@ -1155,13 +1258,28 @@ impl App {
     }
     fn new(profile: Option<PathBuf>) -> (Self, Task<Message>) {
         let mut app = Self::default();
+        let library = match otakusoul_paths::native_data_dir() {
+            Some(data) => {
+                let root = data.join("hub");
+                app.hub.store = Some(root.clone());
+                app.hub.library_loading = true;
+                Task::perform(
+                    background(move || HubLibrary::read(&root)),
+                    Message::HubLibraryLoaded,
+                )
+            }
+            None => {
+                app.hub.library_notice = ui_text::text("hub.native.storeUnavailable").into();
+                Task::none()
+            }
+        };
         let task = if let Some(home) = profile {
             app.profile_input = home.to_string_lossy().into_owned();
             app.load(false)
         } else {
             Task::none()
         };
-        (app, task)
+        (app, Task::batch([library, task]))
     }
     fn portraits(preview: &Preview) -> Vec<Option<image::Handle>> {
         preview
@@ -1368,6 +1486,16 @@ impl App {
             return Task::none();
         }
         let home = PathBuf::from(self.profile_input.trim());
+        if self
+            .hub
+            .store
+            .as_ref()
+            .is_some_and(|root| profile::hub_store_overlaps(root, &home))
+        {
+            self.notice =
+                "Bitte wähle eine Profilkopie außerhalb des nativen Hub-Speichers.".into();
+            return Task::none();
+        }
         let returned_home = home.clone();
         self.profile_busy = true;
         self.notice = "Profilkopie wird geladen …".into();
@@ -1885,6 +2013,8 @@ impl App {
                 self.notice = match result {
                     Ok(Some(character)) => {
                         self.add_imported_character(character);
+                        self.library_search.clear();
+                        self.library_tag = None;
                         self.page = Page::Characters;
                         "Charakter importiert. Er bleibt bis zum Export im Arbeitsspeicher.".into()
                     }
@@ -2009,34 +2139,32 @@ impl App {
                 self.hub.covers.complete(address, cover);
                 return self.load_hub_covers();
             }
+            Message::HubLibraryLoaded(result) => {
+                self.hub.library_loading = false;
+                self.hub.library_notice = match result {
+                    Ok(library) => {
+                        for (key, content) in library.entries {
+                            self.register_hub_content(key, content);
+                        }
+                        if library.unreadable == 0 {
+                            String::new()
+                        } else {
+                            ui_text::format(
+                                "hub.native.storePartial",
+                                &[("count", &library.unreadable.to_string())],
+                            )
+                        }
+                    }
+                    Err(error) => ui_text::format("hub.loadError", &[("error", &error)]),
+                };
+            }
             Message::HubImport(kind, id) => return self.import_hub(kind, id),
             Message::HubImported(result) => {
                 let Some(key) = self.hub.importing.take() else {
                     return Task::none();
                 };
                 self.hub.notice = match result {
-                    Ok(HubContent::Character(character)) => {
-                        let name = character.name.clone();
-                        self.add_imported_character(character);
-                        self.hub.imported.insert(key);
-                        ui_text::format("hub.importedChar", &[("name", &name)])
-                    }
-                    Ok(HubContent::Lorebook(book)) => {
-                        self.hub.imported.insert(key);
-                        if self.existing_lorebook(&book).is_some() {
-                            ui_text::text("hub.native.alreadyLoaded").into()
-                        } else {
-                            let notice = ui_text::format(
-                                "hub.importedLorebook",
-                                &[
-                                    ("name", &book.name),
-                                    ("count", &book.entries.len().to_string()),
-                                ],
-                            );
-                            self.add_lorebook(book);
-                            notice
-                        }
-                    }
+                    Ok(content) => self.register_hub_content(key, content),
                     Err(error) => ui_text::format("hub.importFailed", &[("error", &error)]),
                 };
             }
@@ -2368,10 +2496,28 @@ impl App {
                             profile.sessions.len()
                         );
                         self.warnings = profile.warnings.clone();
+                        let installed = std::mem::take(&mut self.preview.characters)
+                            .into_iter()
+                            .filter(|character| {
+                                self.hub.installed_character_ids.contains(&character.id)
+                            });
                         self.preview = Preview::from_profile(profile);
-                        self.hub
-                            .imported
-                            .retain(|(kind, _)| *kind != hub_catalog::Kind::Characters);
+                        let installed = installed.collect::<Vec<_>>();
+                        self.hub.installed_character_ids.clear();
+                        for mut character in installed {
+                            if self
+                                .preview
+                                .characters
+                                .iter()
+                                .any(|existing| existing.id == character.id)
+                            {
+                                character.id = self.fresh_character_id();
+                            }
+                            self.hub
+                                .installed_character_ids
+                                .insert(character.id.clone());
+                            self.preview.add_character(character);
+                        }
                         self.search.clear();
                         self.show_search = false;
                         self.library_search.clear();
@@ -2428,15 +2574,17 @@ mod tests {
     #[ignore = "benötigt Zugriff auf den öffentlichen OtakuSoul-Katalog"]
     fn public_hub_registries_and_imports_work_live() {
         use hub_catalog::Kind;
+        let directory = tempfile::tempdir().unwrap();
         let mut app = App {
             page: Page::Hub,
             ..App::default()
         };
+        app.hub.store = Some(directory.path().to_path_buf());
         for kind in Kind::ALL {
             let entries = hub_catalog::load(kind).unwrap();
             assert!(!entries.is_empty(), "{kind:?}");
             if let Some(entry) = entries.iter().find(|entry| entry.can_import()) {
-                match HubContent::download(kind, entry).unwrap() {
+                match install_hub_content(directory.path(), None, kind, entry).unwrap() {
                     HubContent::Character(character) => {
                         assert!(!character.name.is_empty());
                         assert!(character.portrait.is_some());
@@ -2493,6 +2641,58 @@ mod tests {
         assert_eq!(app.hub.importing, Some((member.kind, member.id)));
         let _ = app.update(Message::HubCloseWorld);
         assert!(app.hub.covers.get(&address).is_some());
+        let restored = HubLibrary::read(directory.path()).unwrap();
+        assert_eq!(restored.unreadable, 0);
+        assert_eq!(restored.entries.len(), 2);
+        let mut reopened = App::default();
+        let _ = reopened.update(Message::HubLibraryLoaded(Ok(restored)));
+        assert_eq!(reopened.hub.imported.len(), 2);
+        assert_eq!(reopened.preview.characters.len(), 5);
+        assert_eq!(reopened.lorebooks.len(), 1);
+    }
+
+    #[test]
+    fn imported_hub_characters_survive_loading_a_profile_copy_with_a_colliding_id() {
+        use hub_catalog::Kind;
+        let mut app = App::default();
+        let character = |id: &str, name: &str| profile::ProfileCharacter {
+            id: id.into(),
+            name: name.into(),
+            description: String::new(),
+            first_message: String::new(),
+            card: serde_json::json!({"name":name}),
+            portrait: None,
+        };
+        let key = (Kind::Characters, "Hub-Figur".into());
+        let _ = app.update(Message::HubLibraryLoaded(Ok(HubLibrary {
+            entries: vec![(
+                key.clone(),
+                HubContent::Character(character("registry", "Hub-Figur")),
+            )],
+            unreadable: 0,
+        })));
+        let hub_id = app
+            .hub
+            .installed_character_ids
+            .iter()
+            .next()
+            .unwrap()
+            .clone();
+        let _ = app.update(Message::ProfileLoaded(
+            "isolierte-kopie".into(),
+            Ok(Profile {
+                characters: vec![character(&hub_id, "Figur aus Profilkopie")],
+                sessions: Vec::new(),
+                warnings: Vec::new(),
+            }),
+        ));
+        assert_eq!(app.preview.characters.len(), 2);
+        assert_eq!(app.preview.characters[0].id, hub_id);
+        let stored = &app.preview.characters[1];
+        assert_eq!(stored.name, "Hub-Figur");
+        assert_ne!(stored.id, hub_id);
+        assert!(app.hub.installed_character_ids.contains(&stored.id));
+        assert!(app.hub.imported.contains(&key));
     }
 
     #[test]

@@ -1170,6 +1170,9 @@ impl App {
         if !hub.notice.is_empty() {
             list = list.push(text(&hub.notice).size(14));
         }
+        if !self.hub_library_notice().is_empty() {
+            list = list.push(text(self.hub_library_notice()).size(14));
+        }
         if let Some(entries) = hub.catalog.get(&kind) {
             let query = hub.query.trim().to_lowercase();
             let visible: Vec<_> = entries
@@ -1283,11 +1286,21 @@ impl App {
             .on_press_maybe(
                 (self.hub.importing.is_none()
                     && !self.profile_busy
+                    && !self.hub.library_loading
+                    && self.hub.store.is_some()
                     && !self.hub.loading.contains(&kind)
                     && !imported)
                     .then_some(Message::HubImport(kind, key.1)),
             )
             .into()
+    }
+
+    fn hub_library_notice(&self) -> &str {
+        if self.hub.library_loading {
+            ui_text::text("hub.native.storeLoading")
+        } else {
+            &self.hub.library_notice
+        }
     }
 
     fn hub_banner<'a>(&'a self, entry: &HubEntry, height: f32) -> Element<'a, Message> {
@@ -1329,6 +1342,9 @@ impl App {
         .spacing(12);
         if !self.hub.notice.is_empty() {
             content = content.push(text(&self.hub.notice).size(14));
+        }
+        if !self.hub_library_notice().is_empty() {
+            content = content.push(text(self.hub_library_notice()).size(14));
         }
         for kind in HubKind::WORLD_CONTENTS {
             let members: Vec<_> = world
@@ -2304,6 +2320,7 @@ impl App {
         let mut settings=column![text("Einstellungen").size(28),muted("Oberfläche und Profilkopien",14,&self.theme()),
             container(column![text("Erscheinungsbild").size(19),control(if self.dark {Icon::Sun} else {Icon::Moon},if self.dark {"Helles Design verwenden"} else {"Dunkles Design verwenden"},Message::ToggleTheme)].spacing(12)).padding(20).width(Fill).style(appearance::card),
             self.connection_settings(),
+            self.hub_library_settings(),
             container(column![text("Profilkopie laden").size(19),text("Wähle eine ruhende Kopie mit data/characters und optional data/otakusoul.db. Verläufe werden ausschließlich gelesen.").size(14),
                 text_input("Pfad zur Profilkopie",&self.profile_input).style(appearance::input).on_input_maybe((!self.profile_busy).then_some(Message::ProfilePathChanged)).padding(12),
                 row![button("Profilkopie laden").padding(10).style(appearance::primary_button).on_press_maybe((!self.profile_busy).then_some(Message::LoadProfile)),
@@ -2318,6 +2335,25 @@ impl App {
         scroll(settings.padding(26).max_width(1000))
             .height(Fill)
             .width(Fill)
+            .into()
+    }
+
+    fn hub_library_settings(&self) -> Element<'_, Message> {
+        let mut content = column![
+            text(ui_text::text("hub.native.storeTitle")).size(19),
+            text(ui_text::text("hub.native.storeInfo")).size(14),
+        ]
+        .spacing(10);
+        if let Some(root) = &self.hub.store {
+            content = content.push(muted(root.display().to_string(), 12, &self.theme()));
+        }
+        if !self.hub_library_notice().is_empty() {
+            content = content.push(text(self.hub_library_notice()).size(13));
+        }
+        container(content)
+            .padding(20)
+            .width(Fill)
+            .style(appearance::card)
             .into()
     }
 
