@@ -8,7 +8,7 @@
 
 Бесплатное приложение с открытым кодом для Windows, Linux и macOS. Запускай ИИ локально или подключи облачного провайдера.
 
-**[Скачать для Windows, Linux или macOS](https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest)** · [Посмотреть демо](#demo) · [Первые шаги](#quick-start)
+**[Скачать последнюю версию](https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest)** · [Посмотреть демо](#demo) · [Первые шаги](#quick-start)
 
 <a name="demo"></a>
 
@@ -47,7 +47,7 @@
 | 🪟 **Windows 10 / 11** | `OtakuSoul_*_x64-setup.exe` | Двойной щелчок и следовать установщику. |
 | 🐧 **Linux** | `OtakuSoul_*_amd64.AppImage` | Сделать исполняемым (`chmod +x`) и запустить. |
 | 🐧 **Debian / Ubuntu** | `OtakuSoul_*_amd64.deb` | `sudo apt install ./OtakuSoul_*_amd64.deb` |
-| 🍏 **macOS** (Apple Silicon) | `OtakuSoul_*_aarch64.dmg` | Перетащить OtakuSoul в *Программы*. Приложение не нотариально заверено: при первом запуске правый щелчок → *Открыть* (или `xattr -dr com.apple.quarantine /Applications/OtakuSoul.app`). |
+| 🍏 **macOS** (Apple Silicon) | [v0.7.5 DMG](https://github.com/SnowwhiteOakheart/OtakuSoul/releases/download/v0.7.5/OtakuSoul_0.7.5_aarch64.dmg) | Перетащить OtakuSoul в *Программы*. Приложение не нотариально заверено: при первом запуске правый щелчок → *Открыть* (или `xattr -dr com.apple.quarantine /Applications/OtakuSoul.app`). |
 
 OtakuSoul обновляется сам: когда выходит новая версия, в заголовке появляется кнопка.
 

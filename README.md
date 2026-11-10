@@ -8,7 +8,7 @@
 
 Free and open source for Windows, Linux and macOS. Run AI locally or connect a cloud provider.
 
-**[Download for Windows, Linux or macOS](https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest)** · [See it in action](#demo) · [First steps](#quick-start)
+**[Download the latest release](https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest)** · [See it in action](#demo) · [First steps](#quick-start)
 
 <a name="demo"></a>
 
@@ -47,7 +47,7 @@ Get the latest version from the **[Releases page](https://github.com/SnowwhiteOa
 | 🪟 **Windows 10 / 11** | `OtakuSoul_*_x64-setup.exe` | Double-click and follow the installer. |
 | 🐧 **Linux** | `OtakuSoul_*_amd64.AppImage` | Make it executable (`chmod +x`) and start it. |
 | 🐧 **Debian / Ubuntu** | `OtakuSoul_*_amd64.deb` | `sudo apt install ./OtakuSoul_*_amd64.deb` |
-| 🍏 **macOS** (Apple Silicon) | `OtakuSoul_*_aarch64.dmg` | Drag OtakuSoul into *Applications*. The app is not notarised: on first start right-click → *Open* (or run `xattr -dr com.apple.quarantine /Applications/OtakuSoul.app`). |
+| 🍏 **macOS** (Apple Silicon) | [v0.7.5 DMG](https://github.com/SnowwhiteOakheart/OtakuSoul/releases/download/v0.7.5/OtakuSoul_0.7.5_aarch64.dmg) | Drag OtakuSoul into *Applications*. The app is not notarised: on first start right-click → *Open* (or run `xattr -dr com.apple.quarantine /Applications/OtakuSoul.app`). |
 
 OtakuSoul updates itself: when a new version is out, a button appears in the title bar.
 
