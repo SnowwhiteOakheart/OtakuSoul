@@ -81,12 +81,15 @@ const BattleMapTiles = React.memo<{ map: BattleMap; diorama: boolean }>(({ map, 
         if (!isRevealed(map, x, y)) {
           return <rect key={index} x={x * TILE} y={y * TILE} width={TILE} height={TILE} fill="transparent" data-fog="" />;
         }
+          if (diorama && cell.kind === 'wall') {
+            return <rect key={index} x={x * TILE} y={y * TILE} width={TILE} height={TILE} fill="#342d38" />;
+          }
         return (
           <g key={index} transform={`translate(${x * TILE} ${y * TILE})`}>
             <image href={groundTile(map, cell.ground, x, y)} width={TILE} height={TILE} />
             {/* Walls darker and the 5-ft grid on open ground, so rooms read at a glance. */}
             {cell.kind === 'wall' ? (
-              <rect width={TILE} height={TILE} fill="#020617" opacity={diorama ? .42 : .22} />
+                <rect width={TILE} height={TILE} fill="#020617" opacity={.22} />
             ) : (
               <rect width={TILE} height={TILE} fill="none" stroke="#020617" strokeOpacity={0.35} strokeWidth={1} />
             )}

@@ -15,6 +15,10 @@ Die beiden Wagenhälften stammen aus einer zusammenhängenden 128 × 64-Zeichnun
 Objekte besitzen transparente Hintergründe. Alle zwölf Zustandssymbole verwenden ausschließlich
 `currentColor` und Konturen mit Strichstärke 2.
 
+Im Diorama verbindet `StageDioramaWalls` aufgedeckte Wandkacheln zu schmalen Mauerzügen mit
+versetzten Steinlagen und Abdecksteinen. Niedrige Mauern im Vordergrund halten den Blick
+auf die Spielfläche frei.
+
 ## Prüfung
 
 - Vorhandene Vitest-Prüfung: `npm test -- src/test/stageAssets.test.ts`.
