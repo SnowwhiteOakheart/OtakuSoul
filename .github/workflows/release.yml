@@ -163,6 +163,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           # Baked into the app at compile time (VRoid Hub sign-in); never in the repository.
           VROID_CLIENT_SECRET: ${{ secrets.VROID_CLIENT_SECRET }}
+          MACOSX_DEPLOYMENT_TARGET: '13.0'
         with:
           tagName: v__VERSION__
           releaseName: 'OtakuSoul v__VERSION__'
