@@ -51,6 +51,8 @@ Get the latest version from the **[Releases page](https://github.com/SnowwhiteOa
 
 OtakuSoul updates itself: when a new version is out, a button appears in the title bar.
 
+[Changelog](CHANGELOG.md)
+
 ---
 
 <a name="quick-start"></a>
@@ -125,7 +127,7 @@ The story gallery shows ready-made adventures with genre, playing time and diffi
 </p>
 
 * **Included:** Shiori Amane, Sota Minase, Lirwen, Faelion and the four heroes of the 5e adventure. *Good to start with* marks the recommended ones.
-* **More in the Hub:** over 65 characters, almost 60 scenes and stories, 27 lorebooks and free 3D, Live2D and Inochi2D **avatars**, e.g. worlds from *Frieren*, *Re:Zero*, *Sword Art Online* or *No Game No Life* – in German, English and Russian – with update notices when a new version is available. **Collections** bundle the characters, lorebooks and scenes of a story onto one card with cover art and *“Install everything”*. An optional 18+ section needs a one-time age confirmation and stays hidden otherwise.
+* **More in the Hub.** Browse characters, stories and lorebooks in **Worlds**, or find 3D, Live2D and Inochi2D models in **Avatars**. **Collections** group related characters, lorebooks and scenes on one card with cover art and *“Install everything”*. The Hub indicates available updates. The optional 18+ section requires a one-time age confirmation.
 * **Create your own:** a guided assistant turns a rough idea into a complete character; SillyTavern cards (PNG/JSON) can be imported and exported.
 
 ### 🎲 5e adventures – tactics with real rules

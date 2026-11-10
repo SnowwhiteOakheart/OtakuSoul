@@ -51,6 +51,8 @@ Die neueste Version gibt es auf der **[Release-Seite](https://github.com/Snowwhi
 
 OtakuSoul aktualisiert sich selbst: Gibt es eine neue Version, erscheint ein Knopf in der Kopfzeile.
 
+[Änderungen pro Version](CHANGELOG.md)
+
 ---
 
 <a name="quick-start"></a>
@@ -125,7 +127,7 @@ Die Story-Galerie zeigt fertige Abenteuer mit Genre, Spieldauer und Schwierigkei
 </p>
 
 * **Mitgeliefert:** Shiori Amane, Sota Minase, Lirwen, Faelion und die vier Helden des 5e-Abenteuers. *Gut für den Einstieg* markiert die empfohlenen.
-* **Mehr im Hub:** über 65 Figuren, fast 60 Szenen und Geschichten, 27 Lorebooks sowie freie 3D-, Live2D- und Inochi2D-**Avatare**, z. B. Welten aus *Frieren*, *Re:Zero*, *Sword Art Online* oder *No Game No Life* – auf Deutsch, Englisch und Russisch – mit Hinweis, wenn eine neue Fassung bereitsteht. **Sammlungen** fassen Figuren, Lorebooks und Szenen einer Geschichte auf einer Karte mit Titelbild und *„Alles installieren“* zusammen. Ein optionaler 18+-Bereich braucht eine einmalige Altersbestätigung und bleibt sonst verborgen.
+* **Mehr im Hub.** Unter **Welten** findest Du Charaktere, Geschichten und Lorebooks. 3D-, Live2D- und Inochi2D-Modelle findest Du unter **Avatare**. **Sammlungen** bündeln zusammengehörige Charaktere, Lorebooks und Szenen auf einer Karte mit Titelbild und *„Alles installieren“*. Der Hub zeigt verfügbare Aktualisierungen an. Der optionale 18+-Bereich braucht eine einmalige Altersbestätigung.
 * **Selbst erschaffen:** Ein geführter Assistent macht aus einer groben Idee einen vollständigen Charakter; SillyTavern-Karten (PNG/JSON) lassen sich importieren und exportieren.
 
 ### 🎲 5e-Abenteuer – Taktik mit echten Regeln
