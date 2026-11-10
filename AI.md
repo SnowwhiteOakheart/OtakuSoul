@@ -612,9 +612,12 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   (`walk` mit Gelegenheitsangriffen, `attack_plans`/`monster_board_plan`/`hero_board_plan`, `actions_in_place`).
   `SceneRules.map_id` → `SceneState.map` beim Kampfstart, Platzierung über Zonen `party`/`spawn`; Zugbudget in
   `EncounterState.turn` (Aktionen `move:x:y`, `dash`, `disengage`, `end_turn`; ohne Karte wie Schritt 1).
-  `get_stage_combat_options` liefert erreichbare Felder und Angriffe in Reichweite (`stageSlice.stageCombatOptions`).
-  UI: Reiter „Spielbrett“ (`StageBoardView`, öffnet sich bei Kampf mit Karte), `StageBattleMap.tsx` (Kacheln/Tokens aus
-  `public/stage/`, Wände abgedunkelt, Raster; Tokens: Monster per SRD-ID, klassische Helden per Name, sonst Porträt).
+  `get_stage_combat_options` liefert erreichbare Felder mit Kosten und Laufweg sowie Angriffe in Reichweite (`stageSlice.stageCombatOptions`).
+  UI: Reiter „Spielbrett“ (`StageBoardView`, öffnet sich bei Kampf mit Karte) mit Initiative über dem Brett und
+  Aktionen darunter. `StageBattleMap` verwendet dieselben SVG-Klickflächen für Draufsicht und `StageDiorama`.
+  Die Kamera passt den aufgedeckten Bereich ein, lässt sich verschieben, zoomen und auf den aktiven Charakter zentrieren.
+  Die Ansichtsvorliebe bleibt lokal gespeichert. Kacheln und Tokens liegen in `public/stage/`. Monster-Tokens werden
+  per SRD-ID, klassische Helden per Name und übrige Charaktere per Porträt zugeordnet.
   Grafiken nach den Vorgaben in `docs/stage_assets.md`, Regeln geprüft von `stageAssets.test.ts`. E2E `stage-board.mjs` wartet auf `data-busy`.
   Magie (Schritt 3): Zauber in `presets/srd5/spells.json`, `rules5e/spells.rs` (`check_cast` → `cast_spell`, Flächen
   `area_squares` – gespiegelt in `utils/spellArea.ts`, Konzentration, wiederholte Rettungswürfe), Zustände mit Wirkung in

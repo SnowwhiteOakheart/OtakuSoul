@@ -115,9 +115,13 @@ try {
     s.combat.current_turn_index = s.combat.combatants.indexOf(player);
     s.combat.turn = freshTurn;
   });
+  await browser.$('[data-board-mode="spell"]').click();
   await browser.$('[data-testid="spellbook"]').waitForDisplayed({ timeout: 10_000, timeoutMsg: 'kein Zauberbuch' });
   assert.ok(await jsClick('[data-spell="burning_hands"] button[aria-pressed]'), 'Brennende Hände fehlt');
   await browser.$('[data-testid="spell-aim"]').waitForExist({ timeout: 5_000 });
+  await browser.$('[data-board-view="diorama"]').click();
+  assert.equal(await browser.$('[data-testid="battle-map"]').getAttribute('data-projection'), 'diorama');
+  assert.equal(await browser.$('[data-spell="burning_hands"] button[aria-pressed]').getAttribute('aria-pressed'), 'true');
   await browser.$('rect[data-cast-at="3:4"]').moveTo();
   const lit = await browser.execute(() => [...document.querySelectorAll('rect[data-area]')].map((r) => r.getAttribute('data-area')));
   assert.ok(lit.includes('2:4') && lit.includes('3:4') && !lit.includes('1:4'), `Vorschau falsch: ${lit}`);
@@ -138,6 +142,7 @@ try {
     assert.equal(save.total, save.roll.natural + save.bonus);
     assert.equal(save.success, save.total >= save.dc);
   }
+  await browser.$('summary=Kampfverlauf').click();
   const log = await browser.$('[aria-label="Kampfverlauf"]').getText().catch(() => '');
   console.log(log.split('\n').slice(-4).join('\n'));
   await shot('71-zauber-gewirkt');

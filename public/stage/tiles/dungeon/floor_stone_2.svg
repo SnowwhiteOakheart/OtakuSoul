@@ -1,27 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="64" height="64" viewBox="0 0 64 64">
-
-<rect x="0" y="0" width="64" height="64" rx="0" fill="#1e222b" stroke="none" stroke-width="1"/>
-<path d="M3 1 H61 L63 4 V29 L60 31 H2 L1 28 V3Z" fill="#3b4252" stroke="#0f172a" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" />
-<path d="M3 2 H60 L58 4 H4 V27 L2 29 V4Z" fill="#4c566a" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
-<path d="M61 5 V29 H5 L7 27 H59 V8Z" fill="#2b2f3a" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
-<path d="M7 10 l6 -2 5 2 M53 22 l-4 2 -4 -1" fill="none" stroke="#4c566a" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round" />
-<circle cx="10" cy="22" r="0.8" fill="#2b2f3a" stroke="none" stroke-width="1"/>
-<circle cx="56" cy="9" r="0.7" fill="#5e6779" stroke="none" stroke-width="1"/>
-<path d="M3 33 H29 L31 36 V61 L28 63 H2 L1 60 V35Z" fill="#3b4252" stroke="#0f172a" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" />
-<path d="M3 34 H28 L26 36 H4 V59 L2 61 V36Z" fill="#4c566a" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
-<path d="M29 37 V61 H5 L7 59 H27 V40Z" fill="#2b2f3a" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
-<path d="M7 42 l6 -2 5 2 M21 54 l-4 2 -4 -1" fill="none" stroke="#4c566a" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round" />
-<circle cx="10" cy="54" r="0.8" fill="#2b2f3a" stroke="none" stroke-width="1"/>
-<circle cx="24" cy="41" r="0.7" fill="#5e6779" stroke="none" stroke-width="1"/>
-<path d="M35 33 H61 L63 36 V61 L60 63 H34 L33 60 V35Z" fill="#3b4252" stroke="#0f172a" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" />
-<path d="M35 34 H60 L58 36 H36 V59 L34 61 V36Z" fill="#4c566a" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
-<path d="M61 37 V61 H37 L39 59 H59 V40Z" fill="#2b2f3a" stroke="#0f172a" stroke-width="0" stroke-linejoin="round" stroke-linecap="round" />
-<path d="M39 42 l6 -2 5 2 M53 54 l-4 2 -4 -1" fill="none" stroke="#4c566a" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round" />
-<circle cx="42" cy="54" r="0.8" fill="#2b2f3a" stroke="none" stroke-width="1"/>
-<circle cx="56" cy="41" r="0.7" fill="#5e6779" stroke="none" stroke-width="1"/>
-<path d="M19 12 L23 18 L21 23 L26 30 M23 18 L31 17" fill="none" stroke="#1e222b" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round" />
-<rect x="0" y="0" width="1" height="64" rx="0" fill="#1e222b" stroke="none" stroke-width="1"/>
-<rect x="63" y="0" width="1" height="64" rx="0" fill="#1e222b" stroke="none" stroke-width="1"/>
-<rect x="0" y="0" width="64" height="1" rx="0" fill="#1e222b" stroke="none" stroke-width="1"/>
-<rect x="0" y="63" width="64" height="1" rx="0" fill="#1e222b" stroke="none" stroke-width="1"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="floor_stone_2_base" x2="1" y2="1">
+      <stop stop-color="#61596a"/>
+      <stop offset="1" stop-color="#47414e"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" fill="url(#floor_stone_2_base)"/>
+  <path d="M2 4h2m8 1h1M7 12h2m5 6h3M2 20h1M25 17h3m7 4h2M45 8h2m8 9h3M56 27h1M8 39h2m8 12h3M30 42h2m14 2h3M54 56h4m-23 4h2" stroke="#c7b9c4" opacity=".2" stroke-linecap="round"/>
+  <path d="M0 37 L18 35 30 37 50 35 64 36 M40 0 L39 15 42 24 40 36 M24 36 L26 50 22 64" transform="translate(0 1.2)" fill="none" stroke="#7b7180" stroke-width="1"/>
+  <path d="M0 37 L18 35 30 37 50 35 64 36 M40 0 L39 15 42 24 40 36 M24 36 L26 50 22 64" fill="none" stroke="#38323f" stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="M7 16l9 3 5-2 M50 0l-3 8 5 4 M15 47l-3 6 5 7 M50 49l4-5 7 2" fill="none" stroke="#37313d" stroke-width=".9" opacity=".7"/>
+  <path d="M3 3h7m34 2h4M4 41h4m24 0h10m7-18h4m-22 30h3" fill="none" stroke="#ad9eaa" stroke-width=".8" stroke-linecap="round" opacity=".35"/>
+  <path d="M0 .5H64 M.5 0V64" fill="none" stroke="#786d7c" opacity=".45"/>
+  <path d="M0 63.5H64 M63.5 0V64" fill="none" stroke="#322d3a"/>
 </svg>

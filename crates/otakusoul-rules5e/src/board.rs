@@ -325,6 +325,9 @@ pub struct ReachSquare {
     pub x: i32,
     pub y: i32,
     pub feet: u32,
+    /// Route to this square, excluding the starting position.
+    #[serde(default)]
+    pub path: Vec<GridPos>,
 }
 
 /// What the player may do right now (for the UI): squares to move to and actions.

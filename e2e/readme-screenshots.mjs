@@ -187,7 +187,7 @@ await session({ onboarding_completed: false, active_character_id: 'shiori_amane'
 });
 
 // 3. A 5e fight on the battle map of the crypt.
-await session({}, async ({ browser, mock, shot, click, invoke }) => {
+await session({}, async ({ browser, mock, shot, invoke }) => {
   await browser.$('nav').waitForExist({ timeout: 20_000 });
   await invoke('save_persona', { persona: { id: 'default_user', name: TEXT.persona, description: '', avatar_data_url: null } });
   await browser.refresh();
@@ -218,7 +218,6 @@ await session({}, async ({ browser, mock, shot, click, invoke }) => {
   await browser.$('[data-testid="combat-5e"]').waitForExist({ timeout: 60_000 });
   await browser.waitUntil(() => browser.execute(() => !document.querySelector('[data-testid="combat-5e"][data-busy="true"]')), { timeout: 60_000 });
   await browser.$(`button=${t('stage.stopTurn')}`).waitForExist({ reverse: true, timeout: 60_000 }).catch(() => {});
-  await click(await browser.$(`button*=${t('stageGuide.understood')}`));
   await shot('stage-5e-board');
 });
 

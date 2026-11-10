@@ -38,7 +38,7 @@ export const Explore5ePanel: React.FC = () => {
       aria-label={t('explore.title')}
       data-testid="explore-5e"
       data-busy={isProcessingStageTurn}
-      className="mx-4 my-2 rounded-2xl border border-sky-500/30 bg-slate-900/90 p-3 space-y-3 text-xs shadow-xl"
+      className="space-y-2 rounded-xl border border-slate-700 bg-slate-900/90 p-3 text-xs"
     >
       <header className="flex items-center gap-2 text-sm font-bold text-slate-100">
         <Compass className="w-4 h-4 text-sky-400" />
@@ -124,11 +124,12 @@ export const Explore5ePanel: React.FC = () => {
         </div>
       )}
       {log.length > 0 && (
-        <div aria-label={t('explore.log')} aria-live="polite" className="max-h-40 overflow-y-auto rounded-lg bg-app/60 p-2 font-mono text-[11px] leading-relaxed text-slate-300">
-          {log.map((line, index) => (
-            <p key={`${index}-${line}`}>{line}</p>
-          ))}
-        </div>
+        <details className="text-slate-400">
+          <summary className="cursor-pointer py-1">{t('explore.log')}</summary>
+          <div aria-label={t('explore.log')} aria-live="polite" className="max-h-28 overflow-y-auto rounded-lg bg-app/60 p-2 font-mono text-[11px] leading-relaxed text-slate-300">
+            {log.map((line, index) => <p key={`${index}-${line}`}>{line}</p>)}
+          </div>
+        </details>
       )}
     </section>
   );

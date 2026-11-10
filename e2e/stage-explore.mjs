@@ -57,9 +57,13 @@ try {
   assert.ok(await exists('rect[data-fog]'), 'kein Nebel');
   assert.ok(!(await exists('[data-explore="12:2"]')), 'die Grabhalle ist schon zu sehen');
   await shot('72-erkundung-start');
+  await browser.$('[data-board-view="diorama"]').click();
+  assert.ok(await exists('rect[data-fog]'), 'Nebel fehlt im Diorama');
+  assert.ok(!(await exists('[data-explore="12:2"]')), 'Diorama zeigt die verdeckte Grabhalle');
+  await shot('72-erkundung-diorama');
 
   // 2) A click on the closed door walks there and opens it; the hall comes into view.
-  assert.ok(await jsClick('[data-use="8:2"]'), 'Tür nicht anklickbar');
+  await browser.$('[data-use="8:2"]').click();
   await waitIdle();
   let now = await invoke('get_stage_state');
   assert.equal(cell(now, 8, 2).object, 'door_open');

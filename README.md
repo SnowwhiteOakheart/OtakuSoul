@@ -136,6 +136,8 @@ The story gallery shows ready-made adventures with genre, playing time and diffi
 
 A rules engine based on the SRD 5.1 decides every roll, hit and enemy move – the AI only narrates. Battle map with movement, reach and line of sight; spells with area preview, conditions, death saves, rests; exploration with fog of war, doors, traps and loot; level-ups to level 3. A short guide explains everything during the first fight.
 
+Switch between top-down and 2.5D diorama views, zoom in, or center the active character. The initiative order, action bar and movement preview guide your turn.
+
 ### 🧠 Memory, voice and more
 
 * **Characters remember you:** after a conversation the memory is updated – beliefs, mood, your relationship, topics and a diary in the first person. For every reply the character recalls the memories that fit the conversation; outdated ones are replaced instead of stored twice (and can be restored). **Plans and promises** (“I'll call you tomorrow”) are kept with a due date and come up again when they are due. *Tidy up memory* merges overlapping entries after you confirm. Every memory shows where it came from and can be corrected, pinned or forgotten. The **relationship atlas** draws the memory as a map: which experiences shaped which beliefs, next to diary and plans on a time axis.

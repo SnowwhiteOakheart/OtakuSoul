@@ -822,6 +822,7 @@ pub fn combat_options(combat: &EncounterState, map: Option<&BattleMap>) -> Comba
                     x: pos.x,
                     y: pos.y,
                     feet,
+                    path: reach.path(pos),
                 })
                 .collect();
             (squares, actions_in_place(map, actor, combatants))

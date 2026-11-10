@@ -69,6 +69,7 @@ try {
   let playerMoves = 0;
   let rounds = 0;
   let shotTaken = false;
+  let targetChecked = false;
   while ((await invoke('get_stage_state')).combat.is_active && rounds < 40) {
     rounds += 1;
     await waitIdle();
@@ -82,10 +83,37 @@ try {
     }
     if (!shotTaken) {
       await shot('68-spielbrett');
+      const initialView = await board.getAttribute('viewBox');
+      await browser.$('button[aria-label="Vergrößern"]').click();
+      assert.notEqual(await board.getAttribute('viewBox'), initialView);
+      await browser.$('button[aria-label="Aufgedeckten Bereich einpassen"]').click();
+      assert.equal(await board.getAttribute('viewBox'), initialView);
+      await browser.$('[data-board-view="diorama"]').click();
+      assert.equal(await board.getAttribute('data-projection'), 'diorama');
+      const previewedMove = await browser.execute(() => {
+        const square = document.querySelector('rect[data-move]');
+        square?.focus();
+        return !!square;
+      });
+      if (previewedMove) {
+        await browser.$('[data-board-path]').waitForExist({ timeout: 5_000 });
+        assert.match(await browser.$('[data-board-preview]').getText(), /Laufweg.*ft/);
+      }
+      await shot('68-spielbrett-diorama');
       shotTaken = true;
     }
     // Attack an enemy in reach by clicking its token; otherwise walk towards the closest one.
     if (await browser.$('g[data-token][role="button"]').isExisting()) {
+      if (!targetChecked) {
+        await browser.$('[data-board-mode="attack"]').click();
+        await jsClick('g[data-token][role="button"]');
+        const selected = await browser.$('g[data-token][aria-pressed="true"]').getAttribute('data-token');
+        await browser.$('[data-board-view="top"]').click();
+        assert.equal(await browser.$('g[data-token][aria-pressed="true"]').getAttribute('data-token'), selected);
+        await browser.$('[data-board-view="diorama"]').click();
+        await browser.$('[data-board-mode="move"]').click();
+        targetChecked = true;
+      }
       await jsClick('g[data-token][role="button"]');
       await waitIdle();
     } else {
