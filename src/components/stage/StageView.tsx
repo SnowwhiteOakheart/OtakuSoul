@@ -386,7 +386,7 @@ export const StageView: React.FC = () => {
       )}
 
       {/* 1. Universal Top Header Bar */}
-      <div className="bg-slate-900/90 border-b border-slate-800 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shadow-md z-10 backdrop-blur-md">
+      <div className="relative z-30 bg-slate-900/90 border-b border-slate-800 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shadow-md backdrop-blur-md">
         {/* Left: Active Scene & Location Info */}
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-xl bg-accent-500/10 border border-accent-500/20 text-accent-400">

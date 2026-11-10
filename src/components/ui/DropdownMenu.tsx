@@ -110,7 +110,7 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
           onKeyDown={handleMenuKeyDown}
           onClick={(event) => event.stopPropagation()}
           aria-label={heading ?? triggerLabel}
-          className={`absolute ${placement === 'top' ? 'bottom-full mb-1.5' : 'top-full mt-1.5'} z-40 min-w-56 rounded-xl border border-slate-700 bg-slate-900 p-1 shadow-2xl ${
+          className={`absolute ${placement === 'top' ? 'bottom-full mb-1.5' : 'top-full mt-1.5'} z-50 min-w-56 rounded-xl border border-slate-700 bg-slate-900 p-1 shadow-2xl ${
             align === 'right' ? 'right-0' : 'left-0'
           } ${menuClassName}`}
         >
