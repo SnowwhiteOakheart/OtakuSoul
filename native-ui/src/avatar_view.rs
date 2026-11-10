@@ -27,6 +27,23 @@ pub struct Loaded {
     controls: Controls,
 }
 
+impl Loaded {
+    fn open(kind: Kind, path: PathBuf) -> Result<Self, String> {
+        let (renderer, frame) = Avatar::load(kind, &path)?;
+        let controls = renderer
+            .lock()
+            .map_err(|error| error.to_string())?
+            .controls();
+        Ok(Self {
+            kind,
+            path,
+            renderer,
+            frame,
+            controls,
+        })
+    }
+}
+
 impl fmt::Debug for Loaded {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter
@@ -79,21 +96,7 @@ impl State {
                             return Ok(None);
                         };
                         let path = file.path().to_owned();
-                        crate::background(move || {
-                            let (renderer, frame) = Avatar::load(kind, &path)?;
-                            let controls = renderer
-                                .lock()
-                                .map_err(|error| error.to_string())?
-                                .controls();
-                            Ok(Some(Loaded {
-                                kind,
-                                path,
-                                renderer,
-                                frame,
-                                controls,
-                            }))
-                        })
-                        .await
+                        crate::background(move || Loaded::open(kind, path).map(Some)).await
                     },
                     Action::Loaded,
                 );
@@ -274,5 +277,73 @@ impl State {
             body = body.push(text(label("avatars.native.empty")));
         }
         scrollable(body.padding(24)).width(Fill).height(Fill).into()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use iced::advanced::{
+        layout::{Layout, Limits},
+        mouse, renderer,
+        renderer::Headless,
+        widget::Tree,
+    };
+    use iced::{Color, Rectangle, Size};
+
+    #[test]
+    #[ignore = "benötigt einen WGPU-Grafikadapter"]
+    fn displays_loaded_avatars_with_iced_wgpu() {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        let mut renderer = runtime
+            .block_on(iced::Renderer::new(
+                crate::ui_font(),
+                16.into(),
+                Some("wgpu"),
+            ))
+            .expect("Iced-WGPU-Renderer");
+        let mut app = crate::App {
+            page: crate::Page::Avatars,
+            ..Default::default()
+        };
+        let mut tree = Tree::new(app.view());
+        let bounds = Size::new(1440.0, 900.0);
+        let mut snapshot = |app: &crate::App| {
+            let mut view = app.view();
+            tree.diff(&view);
+            renderer::Renderer::reset(&mut renderer, Rectangle::with_size(bounds));
+            let node =
+                view.as_widget_mut()
+                    .layout(&mut tree, &renderer, &Limits::new(Size::ZERO, bounds));
+            view.as_widget().draw(
+                &tree,
+                &mut renderer,
+                &app.theme(),
+                &renderer::Style::default(),
+                Layout::new(&node),
+                mouse::Cursor::Unavailable,
+                &Rectangle::with_size(bounds),
+            );
+            renderer.screenshot(Size::new(1440, 900), 1.0, Color::BLACK)
+        };
+        let mut previous = snapshot(&app);
+        let assets = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../assets");
+        for (kind, file) in [
+            (Kind::Vrm, "vrm/Seed-san.vrm"),
+            (Kind::Live2d, "live2d/Hiyori/hiyori_free_t08.model3.json"),
+        ] {
+            let result = runtime.block_on(crate::background({
+                let path = assets.join(file);
+                move || Loaded::open(kind, path).map(Some)
+            }));
+            assert!(result.is_ok(), "{file}: {result:?}");
+            let _ = app.update(crate::Message::Avatar(Action::Loaded(result)));
+            let frame = snapshot(&app);
+            assert!(frame != previous, "{file}: Iced-Vorschau ist unverändert");
+            previous = frame;
+        }
     }
 }

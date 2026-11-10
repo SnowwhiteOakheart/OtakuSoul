@@ -102,7 +102,15 @@ impl Avatar {
             .enable_all()
             .build()
             .map_err(|error| error.to_string())?;
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::new_without_display_handle());
+        let mut descriptor = wgpu::InstanceDescriptor::new_without_display_handle();
+        if cfg!(target_os = "windows") {
+            // Iced may already have created a D3D12 device. Enabling the D3D12
+            // debug layer afterwards invalidates that device.
+            descriptor.flags.remove(
+                wgpu::InstanceFlags::VALIDATION | wgpu::InstanceFlags::GPU_BASED_VALIDATION,
+            );
+        }
+        let instance = wgpu::Instance::new(descriptor);
         let adapter = runtime
             .block_on(instance.request_adapter(&wgpu::RequestAdapterOptions::default()))
             .map_err(|error| format!("Kein Grafikadapter für die native Avataransicht: {error}"))?;

@@ -941,7 +941,20 @@ cargo test -p otakusoul-native --locked renders_bundled_avatars_without_a_window
 
 Seed-san und Anime Girl (VRM 1.0), Hiyori und Haru (Live2D) bestanden die
 Prüfung auf sichtbare Frames und Pixeländerungen bei Drehung, Animation und Mundöffnung.
-Für VRM 0.x und die Bedienung im Fenster steht die praktische Prüfung noch aus.
+Für VRM 0.x steht die praktische Prüfung noch aus.
+
+Unter Windows darf die später erstellte WGPU-Instanz für Avatare die D3D12-Debugschicht
+nicht nachträglich aktivieren. Das würde Iced beim Anzeigen des ersten Frames das
+D3D12-Gerät entziehen. Der Regressionstest erstellt zuerst den Iced-Renderer und
+lädt anschließend beide Formate über den Avatar-Ladepfad.
+Die Windows-Bedienprobe mit Direct3D 12 hat Seed-san und Haru nacheinander über
+den Dateidialog geladen und beide Modelle im selben Fenster angezeigt.
+
+```powershell
+$env:WGPU_BACKEND = 'dx12'
+cargo test -p otakusoul-native --locked displays_loaded_avatars_with_iced_wgpu -- --ignored
+Remove-Item Env:WGPU_BACKEND
+```
 
 ## Abschluss – Übersetzungen (ausdrücklich zuletzt)
 
