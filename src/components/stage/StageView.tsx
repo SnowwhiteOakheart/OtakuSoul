@@ -100,17 +100,11 @@ export const StageView: React.FC = () => {
     setView('gallery');
   };
 
-  const [activeTab, setActiveTab] = useState<'adventure' | 'board' | 'tactics' | 'campaign'>('adventure');
-  // The board tab exists in 5e scenes with a map; a fight on a map opens it.
+  const [selectedTab, setActiveTab] = useState<'adventure' | 'board' | 'tactics' | 'campaign'>('adventure');
   const hasBoard = stageState?.definition.rules?.ruleset === '5e' && (!!stageState.map || !!stageState.definition.rules.map_id);
-  const boardFightKey = hasBoard && stageState?.combat.is_active ? `${stageState.definition.id}:${stageState.map?.id}` : '';
-  const [shownBoardFight, setShownBoardFight] = useState('');
-  if (boardFightKey && boardFightKey !== shownBoardFight) {
-    setShownBoardFight(boardFightKey);
-    setActiveTab('board');
-  } else if (!boardFightKey && shownBoardFight) {
-    setShownBoardFight('');
-  }
+  const activeTab = selectedTab === 'board' && !hasBoard ? 'adventure' : selectedTab;
+  const boardFocused = activeTab === 'board';
+  const splitAdventure = hasBoard && !boardFocused;
   const [showLobbyModal, setShowLobbyModal] = useState(false);
   const [lobbyRules, setLobbyRules] = useState<LobbyRules>('all');
 
@@ -433,12 +427,12 @@ export const StageView: React.FC = () => {
         </div>
 
         {/* Center: Tabs Switcher (Adventure vs Tactics) */}
-        <div role="tablist" aria-label={t('stage.views')} className="flex items-center gap-1 p-1 rounded-xl bg-app/80 border border-slate-800 text-xs">
+        <div role="tablist" aria-label={t('stage.views')} className="flex flex-wrap items-center gap-1 p-1 rounded-xl bg-app/80 border border-slate-800 text-xs">
           <button
             role="tab"
             aria-selected={activeTab === 'adventure'}
             onClick={() => setActiveTab('adventure')}
-            title={t('stage.tabAdventureHint')}
+            title={t(hasBoard ? 'board.withChat' : 'stage.tabAdventureHint')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
               activeTab === 'adventure'
                 ? 'bg-accent-600 text-white shadow-md'
@@ -454,6 +448,7 @@ export const StageView: React.FC = () => {
               role="tab"
               aria-selected={activeTab === 'board'}
               onClick={() => setActiveTab('board')}
+              title={t('board.onlyMap')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition whitespace-nowrap outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
                 activeTab === 'board'
                   ? 'bg-accent-600 text-white shadow-md'
@@ -674,25 +669,32 @@ export const StageView: React.FC = () => {
       </div>
 
       {/* 2. Main Body: Switchable Tab Views */}
-      {activeTab === 'adventure' ? (
-        <div className="flex-1 flex flex-col h-full overflow-hidden">
-          {/* Party Header Bar with HP & Stress */}
+      {activeTab === 'adventure' || boardFocused ? (
+        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
           <PartyHeader />
+          <div className="@container flex min-h-0 flex-1 flex-col">
+            <div className={`flex min-h-0 flex-1 flex-col ${splitAdventure
+              ? 'overflow-y-auto @min-[800px]:grid @min-[800px]:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] @min-[800px]:grid-rows-[minmax(0,1fr)] @min-[800px]:overflow-hidden'
+              : 'overflow-hidden'}`}>
+              {/* Keep chat and map mounted when focusing the board so drafts and targeting survive. */}
+              <div
+                data-testid="stage-adventure-chat"
+                className={boardFocused ? 'hidden' : `flex min-w-0 flex-1 flex-col overflow-hidden ${splitAdventure
+                  ? 'min-h-[23rem] shrink-0 border-b border-slate-800 @min-[800px]:min-h-0 @min-[800px]:border-b-0 @min-[800px]:border-r'
+                  : 'min-h-0'}`}
+              >
+                <div className="relative flex min-h-0 flex-1 flex-col">
+                  <StageChatLog visible={!boardFocused} />
+                  <StageSpeakerBubble />
+                </div>
 
-          {/* Interactive Chat Log; the speaker's current sentence floats over its end while the voice reads */}
-          <div className="relative flex-1 flex flex-col min-h-0">
-            <StageChatLog />
-            <StageSpeakerBubble />
+                {!hasBoard && <Combat5ePanel />}
+                <TurnControlBar compact={splitAdventure} />
+              </div>
+              {hasBoard && <StageBoardView focused={boardFocused} onToggleFocus={() => setActiveTab(boardFocused ? 'adventure' : 'board')} />}
+            </div>
           </div>
-
-          {/* 5e fight: order, actions and log (engine-driven) */}
-          <Combat5ePanel />
-
-          {/* Turn Control Bar (Mode switcher, choice pills, inputs) */}
-          <TurnControlBar />
         </div>
-      ) : activeTab === 'board' && hasBoard ? (
-        <StageBoardView />
       ) : activeTab === 'tactics' ? (
         /* Tactical Overview: Clocks, Dice & Encounters */
         <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6">

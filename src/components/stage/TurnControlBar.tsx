@@ -20,7 +20,7 @@ import { useTranslation, type TranslationKey } from '../../i18n';
 import { usePersistentFlag } from '../../hooks/usePersistentFlag';
 import { StageGuide } from './StageGuide';
 
-export const TurnControlBar: React.FC = () => {
+export const TurnControlBar: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
   const { t } = useTranslation();
   const {
     stageState,
@@ -102,57 +102,67 @@ export const TurnControlBar: React.FC = () => {
   };
 
   const activeMode = modeButtons.find((button) => button.mode === stageTurnMode);
+  const showGuide = guideOpen || (!compact && !guideSeen);
+  const choicePills = choices.length > 0 && (
+    <div className={`flex flex-wrap items-center gap-2 pt-0.5 pb-1 ${compact ? 'max-h-28 overflow-y-auto' : ''}`}>
+      {!compact && (
+        <span className="text-xs font-bold text-slate-400 flex items-center gap-1 uppercase tracking-wider">
+          <Sparkles className="w-3 h-3 text-accent-400" />
+          {t('stage.suggestions')}
+        </span>
+      )}
+      {choices.map((choice, idx) => {
+        const isCombat = choice.action_type === 'do';
+        const isWhisper = choice.action_type === 'whisper';
+
+        return (
+          <button
+            key={idx}
+            onClick={() => handleChoiceClick(choice)}
+            disabled={isProcessingStageTurn}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-all ${
+              isCombat
+                ? 'bg-amber-950/40 border-amber-600/50 hover:bg-amber-900/60 text-amber-200'
+                : isWhisper
+                ? 'bg-emerald-950/40 border-emerald-600/50 hover:bg-emerald-900/60 text-emerald-200'
+                : 'bg-accent-950/40 border-accent-600/50 hover:bg-accent-900/60 text-accent-200'
+            } disabled:opacity-50`}
+          >
+            <span>{choice.text}</span>
+            {choice.badge && (
+              <span className="text-[11px] px-1.5 py-0.2 rounded bg-slate-900 border border-slate-700 font-mono font-bold text-amber-300">
+                {choice.badge}
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
 
   return (
     <div className="bg-slate-900/95 border-t border-slate-800 p-3 sm:p-4 backdrop-blur-md space-y-3">
-      {(!guideSeen || guideOpen) && (
-        <StageGuide
-          onClose={() => {
-            setGuideSeen(true);
-            setGuideOpen(false);
-          }}
-        />
-      )}
-      {/* 1. Tagged Choices Pills */}
-      {choices.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 pt-0.5 pb-1">
-          <span className="text-xs font-bold text-slate-400 flex items-center gap-1 uppercase tracking-wider">
-            <Sparkles className="w-3 h-3 text-accent-400" />
-            {t('stage.suggestions')}
-          </span>
-          {choices.map((choice, idx) => {
-            const isCombat = choice.action_type === 'do';
-            const isWhisper = choice.action_type === 'whisper';
-
-            return (
-              <button
-                key={idx}
-                onClick={() => handleChoiceClick(choice)}
-                disabled={isProcessingStageTurn}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-all ${
-                  isCombat
-                    ? 'bg-amber-950/40 border-amber-600/50 hover:bg-amber-900/60 text-amber-200'
-                    : isWhisper
-                    ? 'bg-emerald-950/40 border-emerald-600/50 hover:bg-emerald-900/60 text-emerald-200'
-                    : 'bg-accent-950/40 border-accent-600/50 hover:bg-accent-900/60 text-accent-200'
-                } disabled:opacity-50`}
-              >
-                <span>{choice.text}</span>
-                {choice.badge && (
-                  <span className="text-[11px] px-1.5 py-0.2 rounded bg-slate-900 border border-slate-700 font-mono font-bold text-amber-300">
-                    {choice.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+      {showGuide && (
+        <div className={compact ? 'max-h-[25vh] overflow-y-auto' : undefined}>
+          <StageGuide
+            onClose={() => {
+              setGuideSeen(true);
+              setGuideOpen(false);
+            }}
+          />
         </div>
       )}
+      {compact && choicePills ? (
+        <details className="text-xs text-slate-300">
+          <summary className="cursor-pointer font-semibold">{t('stage.suggestions')}</summary>
+          {choicePills}
+        </details>
+      ) : choicePills}
 
       {/* 2. Mode Selector & Next Actor dropdown */}
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
         {/* Modes */}
-        <div role="group" aria-label={t('stage.modeLabel')} className="flex items-center gap-1 p-1 rounded-xl bg-app/80 border border-slate-800">
+        <div role="group" aria-label={t('stage.modeLabel')} className="flex flex-wrap items-center gap-1 p-1 rounded-xl bg-app/80 border border-slate-800">
           {modeButtons.map(({ mode, label, icon: Icon, color, desc }) => {
             const isActive = stageTurnMode === mode;
             return (
@@ -177,7 +187,7 @@ export const TurnControlBar: React.FC = () => {
             onClick={() => setGuideOpen(!guideOpen)}
             aria-label={t('stageGuide.open')}
             title={t('stageGuide.open')}
-            aria-expanded={guideOpen || !guideSeen}
+            aria-expanded={showGuide}
             className="p-1 rounded-lg text-slate-400 hover:text-accent-200 hover:bg-slate-900"
           >
             <CircleHelp className="w-4 h-4" />
@@ -253,7 +263,7 @@ export const TurnControlBar: React.FC = () => {
           placeholder={t(placeholders[stageTurnMode] ?? 'stage.placeholderSay')}
           aria-label={t('stage.inputLabel')}
           disabled={isProcessingStageTurn}
-          className="flex-1 bg-app/90 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-accent-500 resize-none shadow-inner"
+          className="min-w-0 flex-1 bg-app/90 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-accent-500 resize-none shadow-inner"
         />
 
         <button
@@ -265,7 +275,7 @@ export const TurnControlBar: React.FC = () => {
           className="h-10 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition disabled:opacity-40"
         >
           <FastForward className="w-4 h-4" />
-          <span className="hidden lg:inline text-xs">{t('stage.continuePlot')}</span>
+          {!compact && <span className="hidden lg:inline text-xs">{t('stage.continuePlot')}</span>}
         </button>
         <button
           type="button"
@@ -280,7 +290,7 @@ export const TurnControlBar: React.FC = () => {
           }`}
         >
           <Repeat className={`w-4 h-4 ${stageAutoPlay ? 'animate-pulse' : ''}`} />
-          <span className="hidden lg:inline text-xs">{t('stage.autoPlay')}</span>
+          {!compact && <span className="hidden lg:inline text-xs">{t('stage.autoPlay')}</span>}
         </button>
         <button
           type="submit"

@@ -136,7 +136,7 @@ Die Story-Galerie zeigt fertige Abenteuer mit Genre, Spieldauer und Schwierigkei
 
 Eine Regel-Engine nach SRD 5.1 entscheidet jeden Wurf, Treffer und Gegnerzug – die KI erzählt nur. Spielbrett mit Bewegung, Reichweite und Sichtlinie; Zauber mit Flächenvorschau, Zustände, Todesrettungswürfe, Rasten; Erkundung mit Nebel des Krieges, Türen, Fallen und Beute; Stufenaufstieg bis Stufe 3. Eine kurze Anleitung erklärt beim ersten Kampf alles Nötige.
 
-Auf dem Spielbrett kannst Du zwischen Draufsicht und 2.5D-Diorama wechseln, zoomen und den aktiven Charakter zentrieren. Initiative, Aktionsleiste und Laufwegvorschau begleiten Deinen Zug.
+In 5e-Abenteuern mit Karte hast Du Chat, Gruppe und Spielbrett gemeinsam im Blick. Über „Nur Karte“ und „Mit Chat“ wechselst Du die Ansicht. Das Spielbrett bietet Draufsicht und 2.5D-Diorama, Zoom, Initiative, eine Aktionsleiste und Laufwegvorschau.
 
 ### 🧠 Gedächtnis, Stimme und mehr
 

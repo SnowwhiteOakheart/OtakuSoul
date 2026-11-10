@@ -136,7 +136,7 @@ The story gallery shows ready-made adventures with genre, playing time and diffi
 
 A rules engine based on the SRD 5.1 decides every roll, hit and enemy move – the AI only narrates. Battle map with movement, reach and line of sight; spells with area preview, conditions, death saves, rests; exploration with fog of war, doors, traps and loot; level-ups to level 3. A short guide explains everything during the first fight.
 
-Switch between top-down and 2.5D diorama views, zoom in, or center the active character. The initiative order, action bar and movement preview guide your turn.
+In 5e adventures with a map, the story chat, party and board share one view. Use “Map only” and “With chat” to switch layouts. The board offers top-down and 2.5D diorama views, zoom, initiative order, an action bar and movement previews.
 
 ### 🧠 Memory, voice and more
 

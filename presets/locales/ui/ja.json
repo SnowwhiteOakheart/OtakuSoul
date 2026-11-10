@@ -1790,6 +1790,8 @@
   "stage.combatTitle": "タクティカルバトル",
   "stage.round": "ラウンド {{round}}",
   "board.tab": "ボード",
+  "board.withChat": "チャットと表示",
+  "board.onlyMap": "マップのみ",
   "board.view": "マップ表示",
   "board.topDown": "真上から",
   "board.diorama": "ジオラマ",

@@ -1789,6 +1789,8 @@
   "stage.combatTitle": "Tactical combat",
   "stage.round": "Round {{round}}",
   "board.tab": "Board",
+  "board.withChat": "With chat",
+  "board.onlyMap": "Map only",
   "board.view": "Map view",
   "board.topDown": "Top-down",
   "board.diorama": "Diorama",

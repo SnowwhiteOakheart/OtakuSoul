@@ -32,7 +32,7 @@ import { errorMessage } from '../../utils/errors';
 const gmName = (name: string | undefined) =>
   !name || name === 'Game Master' ? translate('stage.gameMaster') : name;
 
-export const StageChatLog: React.FC = () => {
+export const StageChatLog: React.FC<{ visible?: boolean }> = ({ visible = true }) => {
   const { t } = useTranslation();
   const {
     stageState,
@@ -50,7 +50,7 @@ export const StageChatLog: React.FC = () => {
     'regenerateStageTurn', 'stageLive', 'applyStageStream', 'stopStageTurn', 'availableCharacters', 'translateText',
   );
 
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const logRef = useRef<HTMLDivElement>(null);
   // Companions' pictures come from the library (the scene stores them only for NPCs).
   const avatarOf = (url: string | null | undefined, name: string, role?: string) =>
     url || (role === 'companion' ? findCharacterByName(availableCharacters, name)?.avatar_data_url : null) || null;
@@ -81,8 +81,9 @@ export const StageChatLog: React.FC = () => {
 
   const liveLength = stageLive.reduce((sum, m) => sum + m.text.length, 0);
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: liveLength > 0 ? 'auto' : 'smooth' });
-  }, [stageState?.chat_log?.length, isProcessingStageTurn, liveLength]);
+    const log = logRef.current;
+    if (visible && log) log.scrollTop = log.scrollHeight;
+  }, [stageState?.chat_log?.length, isProcessingStageTurn, liveLength, visible]);
   // While text streams, the "GM is thinking" note only shows between speakers.
   const waiting = isProcessingStageTurn && stageLive.every((m) => m.done);
   const messages = stageState?.chat_log || [];
@@ -438,7 +439,7 @@ export const StageChatLog: React.FC = () => {
   if (!stageState) return null;
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 relative z-10">
+    <div ref={logRef} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 relative z-10">
       {renderedHistory}
 
       {/* Live text of the running turn */}
@@ -495,7 +496,6 @@ export const StageChatLog: React.FC = () => {
         </div>
       )}
 
-      <div ref={bottomRef} />
     </div>
   );
 };

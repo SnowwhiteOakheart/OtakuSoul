@@ -164,6 +164,7 @@ try {
   assert.ok(act2.exploration.some((e) => e.type === 'level_up' && e.level === 2));
   const thorin = act2.combat.combatants.find((c) => c.name === 'Thorin Eisenbart');
   assert.equal(thorin.max_hp, 20);
+  await browser.$('[data-testid="explore-5e"] summary').click();
   assert.match(await browser.$('[data-testid="explore-5e"]').getText(), /Stufe 2/);
   console.log(`Abenteuer: Akt 1 mit ${ended.combat.events.filter((e) => e.type === 'attack').length} Angriffen geschafft, Akt 2 begonnen.`);
 } finally {

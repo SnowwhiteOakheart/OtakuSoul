@@ -1,5 +1,5 @@
-// 5e fights on the battle map (step 2 of the 5e plan): the board tab opens with the fight,
-// the player moves by clicking a green square, attacks by clicking an enemy token in reach and
+// 5e fights on the battle map: a fight appears beside the chat and the board can take focus.
+// The player moves by clicking a green square, attacks by clicking an enemy token in reach and
 // ends the turn; enemies and companions move on their own. Nobody ever stands on a wall or on
 // another fighter's square, and hit points only change through engine damage.
 import assert from 'node:assert/strict';
@@ -61,7 +61,38 @@ try {
   const board = await browser.$('[data-testid="battle-map"]');
   await board.waitForDisplayed({ timeout: 30_000, timeoutMsg: 'Spielbrett erscheint nicht' });
   mock.stats.stageEncounter = null;
+  assert.equal(await browser.$('button[role="tab"][aria-selected="true"]').getText(), 'Abenteuer');
+  assert.ok(await input.isDisplayed(), 'Chat verschwindet beim Kampfstart');
+  assert.ok(await browser.execute(() => {
+    const chat = document.querySelector('[data-testid="stage-adventure-chat"]').getBoundingClientRect();
+    const map = document.querySelector('[data-testid="battle-map"]').getBoundingClientRect();
+    return chat.right <= map.left && chat.bottom > map.top;
+  }), 'Chat und Brett stehen im breiten Fenster nicht nebeneinander');
+  await waitIdle();
+  await input.waitForEnabled({ timeout: 15_000 });
+  await input.setValue('Entwurf im Abenteuerchat');
+  const initialView = await board.getAttribute('viewBox');
+  await browser.$('button[aria-label="Vergrößern"]').click();
+  const zoomedView = await board.getAttribute('viewBox');
+  assert.notEqual(zoomedView, initialView);
+  await browser.$('[data-board-focus-toggle]').click();
   assert.equal(await browser.$('button[role="tab"][aria-selected="true"]').getText(), 'Spielbrett');
+  assert.ok(!(await input.isDisplayed()), 'Chat bleibt in der Kartenfokusansicht sichtbar');
+  assert.ok(await board.isDisplayed(), 'Karte verschwindet in der Fokusansicht');
+  await browser.$('[data-board-focus-toggle]').click();
+  assert.equal(await browser.$('button[role="tab"][aria-selected="true"]').getText(), 'Abenteuer');
+  assert.equal(await input.getValue(), 'Entwurf im Abenteuerchat');
+  assert.equal(await board.getAttribute('viewBox'), zoomedView);
+  await browser.$('button[aria-label="Aufgedeckten Bereich einpassen"]').click();
+  assert.equal(await board.getAttribute('viewBox'), initialView);
+  await input.clearValue();
+  await browser.setWindowSize(960, 760);
+  await browser.waitUntil(() => browser.execute(() => {
+    const chat = document.querySelector('[data-testid="stage-adventure-chat"]').getBoundingClientRect();
+    const map = document.querySelector('[data-testid="battle-map"]').getBoundingClientRect();
+    return map.top >= chat.bottom;
+  }), { timeout: 5_000, timeoutMsg: 'Chat und Brett stapeln sich im schmalen Fenster nicht' });
+  await browser.setWindowSize(1400, 900);
   const started = await invoke('get_stage_state');
   assert.equal(started.map.id, 'crypt_hall');
   assertBoardSane(started);
@@ -83,11 +114,6 @@ try {
     }
     if (!shotTaken) {
       await shot('68-spielbrett');
-      const initialView = await board.getAttribute('viewBox');
-      await browser.$('button[aria-label="Vergrößern"]').click();
-      assert.notEqual(await board.getAttribute('viewBox'), initialView);
-      await browser.$('button[aria-label="Aufgedeckten Bereich einpassen"]').click();
-      assert.equal(await board.getAttribute('viewBox'), initialView);
       await browser.$('[data-board-view="diorama"]').click();
       assert.equal(await board.getAttribute('data-projection'), 'diorama');
       const previewedMove = await browser.execute(() => {
@@ -103,7 +129,7 @@ try {
       shotTaken = true;
     }
     // Attack an enemy in reach by clicking its token; otherwise walk towards the closest one.
-    if (await browser.$('g[data-token][role="button"]').isExisting()) {
+    if ((await browser.$$('g[data-token][role="button"]')).length > 0) {
       if (!targetChecked) {
         await browser.$('[data-board-mode="attack"]').click();
         await jsClick('g[data-token][role="button"]');
@@ -128,7 +154,7 @@ try {
         await jsClick(`rect[data-move="${target}"]`);
         await waitIdle();
         playerMoves += 1;
-        if (await browser.$('g[data-token][role="button"]').isExisting()) {
+        if ((await browser.$$('g[data-token][role="button"]')).length > 0) {
           await jsClick('g[data-token][role="button"]');
           await waitIdle();
         }

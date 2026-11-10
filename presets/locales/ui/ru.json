@@ -1789,6 +1789,8 @@
   "stage.combatTitle": "Тактический бой",
   "stage.round": "Раунд {{round}}",
   "board.tab": "Поле боя",
+  "board.withChat": "С чатом",
+  "board.onlyMap": "Только карта",
   "board.view": "Вид карты",
   "board.topDown": "Вид сверху",
   "board.diorama": "Диорама",

@@ -613,8 +613,11 @@ ru „персонаж/история/сцена“. Fachbegriffe nur im Experte
   `SceneRules.map_id` → `SceneState.map` beim Kampfstart, Platzierung über Zonen `party`/`spawn`; Zugbudget in
   `EncounterState.turn` (Aktionen `move:x:y`, `dash`, `disengage`, `end_turn`; ohne Karte wie Schritt 1).
   `get_stage_combat_options` liefert erreichbare Felder mit Kosten und Laufweg sowie Angriffe in Reichweite (`stageSlice.stageCombatOptions`).
-  UI: Reiter „Spielbrett“ (`StageBoardView`, öffnet sich bei Kampf mit Karte) mit Initiative über dem Brett und
-  Aktionen darunter. `StageBattleMap` verwendet dieselben SVG-Klickflächen für Draufsicht und `StageDiorama`.
+  UI: In 5e-Szenen mit Karte zeigt „Abenteuer“ den Chat neben `StageBoardView` mit Initiative über dem Brett und
+  Aktionen darunter. Schmale Fenster stapeln beide Bereiche. „Nur Karte“ und „Mit Chat“ wechseln zwischen den
+  Ansichten und behalten Entwurf, Karte und Zielauswahl. Das Öffnen der Kartenfokusansicht oder der Knopf
+  „Erkundung starten“ initialisiert eine Karte, wenn sie noch nicht bereitsteht. `StageBattleMap` verwendet
+  dieselben SVG-Klickflächen für Draufsicht und `StageDiorama`.
   Die Kamera passt den aufgedeckten Bereich ein, lässt sich verschieben, zoomen und auf den aktiven Charakter zentrieren.
   Die Ansichtsvorliebe bleibt lokal gespeichert. Kacheln und Tokens liegen in `public/stage/`. Monster-Tokens werden
   per SRD-ID, klassische Helden per Name und übrige Charaktere per Porträt zugeordnet.

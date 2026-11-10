@@ -1,6 +1,6 @@
 import { findCharacterByName } from '../../utils/characterName';
 import React, { useId, useMemo, useState } from 'react';
-import { Box, Crosshair, Map, Maximize2, Minus, Plus } from 'lucide-react';
+import { Box, Crosshair, Map, Maximize2, Minus, PanelLeftClose, PanelLeftOpen, Plus } from 'lucide-react';
 import { useStoreFields } from '../../store/useAppStore';
 import { useTranslation, type TranslationKey } from '../../i18n';
 import { localizedName, tierLabel } from '../../utils/combatEvents';
@@ -66,6 +66,8 @@ interface Props {
   onAction: (action: string) => void;
   /** Outside fights: clicks walk the party and use doors and chests. */
   exploring?: boolean;
+  focused: boolean;
+  onToggleFocus: () => void;
   selectedTarget?: string | null;
   onTarget?: (id: string) => void;
 }
@@ -109,7 +111,7 @@ BattleMapTiles.displayName = 'BattleMapTiles';
  * current combatant may move to (click to move) and enemies in reach (click to attack).
  */
 export const StageBattleMap: React.FC<Props> = ({
-  map, combatants, currentIndex, options, disabled, onAction, exploring = false, selectedTarget, onTarget,
+  map, combatants, currentIndex, options, disabled, onAction, exploring = false, focused, onToggleFocus, selectedTarget, onTarget,
 }) => {
   const { t } = useTranslation();
   const { availableCharacters, stageAimedSpell, appLanguage } = useStoreFields('availableCharacters', 'stageAimedSpell', 'appLanguage');
@@ -199,6 +201,15 @@ export const StageBattleMap: React.FC<Props> = ({
               <Crosshair aria-hidden="true" size={15} />
             </button>
           </div>
+          <button
+            type="button"
+            data-board-focus-toggle
+            onClick={onToggleFocus}
+            className={`${control} border border-slate-700 bg-slate-900`}
+          >
+            {focused ? <PanelLeftOpen aria-hidden="true" size={15} /> : <PanelLeftClose aria-hidden="true" size={15} />}
+            {t(focused ? 'board.withChat' : 'board.onlyMap')}
+          </button>
         </div>
       </div>
       <div className="relative min-h-60 flex-1 overflow-hidden rounded-xl border border-slate-700 bg-[radial-gradient(ellipse_at_center,#302936,#14121b_75%)]">
