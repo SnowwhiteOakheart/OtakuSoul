@@ -895,12 +895,53 @@ Auftakt von Kepler-9 und der Einstieg aus dem Hub in „Redaktionsschluss“. De
 sich an den React-Quellen. Der vollständige Funktionsvergleich folgt mit den weiteren Stage-Teilen.
 
 - [ ] Einstellungen/Onboarding, weitere Charakter-/Lorebook-Editoren, Gedächtnis und Im-/Export.
-- [ ] Native Audioausgabe/-aufnahme separat planen, danach Avatarintegration separat bewerten.
+- [ ] Native Audioausgabe und -aufnahme über die bestehenden Audiopfade hinaus ausbauen.
 - [ ] Windows: DPI (100/150/200 %), mehrere Monitore, Tastatur, Screenreader, Zwischenablage, Dateidialoge.
 - [ ] Linux: reale X11-/Wayland-Tests, GNOME/KDE, Portale und Grafiktreiber.
 - [ ] macOS: echter Mac, Apple Silicon, Berechtigungen, Retina und Menüintegration; Intel separat entscheiden.
 - [ ] Installer, Updatepfad, Signierung/Notarisierung und Datenkompatibilität vor einer Veröffentlichung.
 - [ ] Tauri erst nach Funktionsvergleich und Abnahme ablösen.
+
+## Native Avatare – Entscheidung über den Wechsel
+
+Die Avataransicht läuft ohne WebView im Iced-Reiter **Avatare**. Sie öffnet lokale
+`.vrm`- und `.model3.json`-Dateien über die nativen Dateidialoge. Geeignete Testmodelle
+liegen in `assets/vrm` und `assets/live2d`. Das Öffnen ist eine Vorschau für diese
+Sitzung. Die App kopiert keine Modelle in das Profil.
+
+- [x] VRM 0.x und 1.0 erkennen, eingebettete Geometrie und Texturen darstellen und die
+  Kamera drehen oder zoomen. Verfügbare Morphziele für Blinzeln und Mundöffnung verwenden.
+- [x] Live2D-Cubism-3+-Modelle samt Texturen und Masken rendern. Verfügbare Kopf- und
+  Mundparameter sowie die erste lokale Idle-Bewegung als Schleife anbieten.
+- [ ] Mit eigenen Modellen im Windows-Fenster mit Tauri vergleichen. Bildrate, RAM und
+  Verhalten auf integrierter GPU und bei geänderter DPI messen.
+- [ ] VRM-Rendering vervollständigen. Dazu gehören MToon-Materialien, Skelettanimation,
+  Avatarphysik, Blicksteuerung und weitere Ausdrücke.
+- [ ] Live2D-Bewegungsauswahl, Ausdrücke, Physik und Kompatibilität mit weiteren Modellen
+  prüfen. Ältere `.model.json`-Pakete sind ein eigener Kompatibilitätsschritt.
+- [ ] Dauerhafte Avatarbibliothek mit Import, Standardmodell und Charakterzuordnung
+  anlegen. Denselben Renderer in Chat und Stage einbetten und Animation, Emotionen und
+  Lippenbewegung an die vorhandenen Chat- und TTS-Ereignisse anbinden.
+- [ ] Den nativen Renderingpfad auf Linux und macOS mit denselben Referenzmodellen prüfen.
+
+`avatar_native.rs` rendert mit WGPU 30 auf ein Offscreen-Ziel. Iced verwendet WGPU 27
+und erhält pro Frame ein RGBA-Bild mit 512 × 512 Pixeln. Laden und Rendern laufen auf
+Hintergrundthreads. Die Vorschau hält höchstens einen Frameauftrag gleichzeitig offen.
+Die Wiedergabe fordert bis zu 24 Frames pro Sekunde an und pausiert beim Verlassen des
+Reiters. Für Produktionsbetrieb einen gemeinsamen GPU-Pfad prüfen, um den Rücktransfer
+jedes Frames zu vermeiden. `avatar_vrm.rs` verwendet glTF-Basisfarben, eine einfache
+Beleuchtung und zwei Morphsteuerungen. `avatar_live2d.rs` verwendet Mocari für Cubism-
+Geometrie, Masken und Bewegungsdaten. Die Vorschau-Texte liegen im nativen Sprachpaket.
+
+Headless-Prüfung unter Windows mit den Modellordnern aus dem Repo
+
+```powershell
+cargo test -p otakusoul-native --locked renders_bundled_avatars_without_a_window -- --ignored --nocapture
+```
+
+Seed-san und Anime Girl (VRM 1.0), Hiyori und Haru (Live2D) bestanden die
+Prüfung auf sichtbare Frames und Pixeländerungen bei Drehung, Animation und Mundöffnung.
+Für VRM 0.x und die Bedienung im Fenster steht die praktische Prüfung noch aus.
 
 ## Abschluss – Übersetzungen (ausdrücklich zuletzt)
 

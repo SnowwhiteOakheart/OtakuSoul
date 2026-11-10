@@ -7,7 +7,7 @@ license = "GPL-3.0-only"
 description = "Experimentelle native Rust-Oberfläche für OtakuSoul"
 
 [dependencies]
-iced = { version = "0.14.0", features = ["image-without-codecs", "markdown", "svg", "lazy"] }
+iced = { version = "0.14.0", features = ["image-without-codecs", "markdown", "svg", "lazy", "tokio"] }
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp"] }
 base64 = "0.23"
 png = "0.18"
@@ -26,6 +26,11 @@ tokio = { version = "1", features = ["rt", "time", "net", "sync", "macros"] }
 rfd = "0.18"
 rand = "0.9"
 rodio = { version = "0.23", default-features = false, features = ["playback", "wav", "mp3", "vorbis"] }
+mocari = { version = "0.4", features = ["wgpu"] }
+wgpu = "30"
+gltf = { version = "1.4", default-features = false, features = ["utils", "extensions"] }
+glam = "0.25"
+bytemuck = { version = "1", features = ["derive"] }
 
 tempfile = "3"
 

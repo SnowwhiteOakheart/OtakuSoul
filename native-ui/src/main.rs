@@ -1,6 +1,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod appearance;
+mod avatar_native;
+mod avatar_view;
 mod card_files;
 mod character_draft;
 mod chat_request;
@@ -150,6 +152,7 @@ enum Page {
     LorebookEditor,
     Hub,
     Stage,
+    Avatars,
     Planned(&'static str),
 }
 
@@ -184,6 +187,7 @@ impl std::fmt::Display for GreetingChoice {
 #[derive(Debug, Clone)]
 enum Message {
     Navigate(Page),
+    Avatar(avatar_view::Action),
     SelectCharacter(usize),
     LibrarySearch(String),
     LibraryTag(Option<String>),
@@ -734,6 +738,7 @@ impl Default for Stage {
 struct App {
     preview: Preview,
     page: Page,
+    avatar: avatar_view::State,
     dark: bool,
     portraits: Vec<Option<image::Handle>>,
     editor: text_editor::Content,
@@ -846,6 +851,7 @@ impl Default for App {
         Self {
             preview,
             page: Page::Chat,
+            avatar: avatar_view::State::default(),
             dark: true,
             portraits,
             editor: text_editor::Content::new(),
@@ -1589,7 +1595,7 @@ impl App {
     }
 
     fn subscription(&self) -> iced::Subscription<Message> {
-        iced::event::listen_with(|event, status, _| {
+        let keyboard = iced::event::listen_with(|event, status, _| {
             if status == iced::event::Status::Ignored
                 && let iced::Event::Keyboard(iced::keyboard::Event::KeyPressed {
                     key,
@@ -1609,7 +1615,12 @@ impl App {
             } else {
                 None
             }
-        })
+        });
+        if self.page == Page::Avatars {
+            iced::Subscription::batch([keyboard, self.avatar.subscription().map(Message::Avatar)])
+        } else {
+            keyboard
+        }
     }
     fn new(profile: Option<PathBuf>) -> (Self, Task<Message>) {
         let mut app = Self::default();
@@ -1955,6 +1966,7 @@ impl App {
 
     fn update_message(&mut self, message: Message) -> Task<Message> {
         match message {
+            Message::Avatar(action) => return self.avatar.update(action).map(Message::Avatar),
             Message::LoreShowRules(value) => self.lore_show_rules = value,
             Message::LoreNumber(number, value) => {
                 let index = number as usize;
@@ -2949,6 +2961,9 @@ impl App {
             }
             Message::SaveCharacter => self.save_character(),
             Message::Navigate(page) => {
+                if page != Page::Avatars {
+                    self.avatar.stop_playback();
+                }
                 self.hub.world = None;
                 self.hub.reset_cover_requests();
                 if page != Page::Chat {

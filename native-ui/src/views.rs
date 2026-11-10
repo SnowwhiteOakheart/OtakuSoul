@@ -169,6 +169,7 @@ impl App {
             Page::LorebookEditor => self.lorebook_editor(),
             Page::Hub => self.hub_view(),
             Page::Stage => self.stage_view(),
+            Page::Avatars => self.avatar.view().map(Message::Avatar),
             Page::Planned(label) => self.planned(label),
         };
         column![self.header(), row![self.navigation(), content].height(Fill)]
@@ -247,7 +248,7 @@ impl App {
                 "BIBLIOTHEK",
                 &[
                     (Page::Characters, Icon::Characters, "Charaktere"),
-                    (Page::Planned("Avatare"), Icon::Avatars, "Avatare"),
+                    (Page::Avatars, Icon::Avatars, "Avatare"),
                     (Page::Lorebooks, Icon::Lorebooks, "Lorebooks"),
                     (Page::Hub, Icon::Hub, "Hub"),
                 ],
