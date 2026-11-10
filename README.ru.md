@@ -2,6 +2,12 @@
 
 [English](README.md) · [Deutsch](README.de.md) · **Русский**
 
+[![GitHub Release](https://img.shields.io/github/v/release/SnowwhiteOakheart/OtakuSoul?color=blue&logo=github)](https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/SnowwhiteOakheart/OtakuSoul/total?color=success&logo=github)](https://github.com/SnowwhiteOakheart/OtakuSoul/releases)
+[![Open Issues](https://img.shields.io/github/issues/SnowwhiteOakheart/OtakuSoul?color=orange&logo=github)](https://github.com/SnowwhiteOakheart/OtakuSoul/issues)
+[![Closed Issues](https://img.shields.io/github/issues-closed/SnowwhiteOakheart/OtakuSoul?color=purple&logo=github)](https://github.com/SnowwhiteOakheart/OtakuSoul/issues?q=is%3Aissue+is%3Aclosed)
+[![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
+
 **Играй в ролевые игры с несколькими ИИ-персонажами.** Участвуй в интерактивных историях с ИИ-ведущим или попробуй тактическое приключение по правилам 5e. У каждого персонажа свой голос и свои воспоминания о ваших приключениях.
 
 **Пиши персонажам или говори с ними.** Слушай их ответы благодаря синтезу речи (TTS) и создавай изображения для своих сцен с помощью ИИ.

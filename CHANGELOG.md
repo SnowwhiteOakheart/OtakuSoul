@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.7.7]
+
+### Neu
+
+- Lautstärkeregler-Popover direkt im Chat und im Abenteuerdialog (Stage) zum Regeln und Stummschalten von Musik, Stimmen (TTS) und Soundeffekten.
+- Standard-Lautstärke der Musikwiedergabe auf 60 % angehoben.
+
+### Behoben
+
+- Schichtungsreihenfolge (Z-Index) korrigiert: Das Menü „Mehr“ in der Stage-Leiste liegt nicht mehr hinter Chatverlauf und Gruppenanzeige.
+
+[Release Notes auf Deutsch, Englisch und Russisch](packaging/release-notes/v0.7.7.md)
+
 ## [0.7.6]
 
 ### Neu
@@ -21,4 +34,5 @@
 
 [Archiv der Release Notes](packaging/release-notes/) · [Alle GitHub-Releases](https://github.com/SnowwhiteOakheart/OtakuSoul/releases)
 
+[0.7.7]: https://github.com/SnowwhiteOakheart/OtakuSoul/compare/v0.7.6...v0.7.7
 [0.7.6]: https://github.com/SnowwhiteOakheart/OtakuSoul/compare/v0.7.5...v0.7.6

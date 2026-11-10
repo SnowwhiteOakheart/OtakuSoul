@@ -2,6 +2,12 @@
 
 **English** · [Deutsch](README.de.md) · [Русский](README.ru.md)
 
+[![GitHub Release](https://img.shields.io/github/v/release/SnowwhiteOakheart/OtakuSoul?color=blue&logo=github)](https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/SnowwhiteOakheart/OtakuSoul/total?color=success&logo=github)](https://github.com/SnowwhiteOakheart/OtakuSoul/releases)
+[![Open Issues](https://img.shields.io/github/issues/SnowwhiteOakheart/OtakuSoul?color=orange&logo=github)](https://github.com/SnowwhiteOakheart/OtakuSoul/issues)
+[![Closed Issues](https://img.shields.io/github/issues-closed/SnowwhiteOakheart/OtakuSoul?color=purple&logo=github)](https://github.com/SnowwhiteOakheart/OtakuSoul/issues?q=is%3Aissue+is%3Aclosed)
+[![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
+
 **Roleplay with a cast of AI characters.** Play interactive stories with an AI game master or try a tactical 5e adventure. Each companion has their own voice and remembers what you've shared.
 
 **Type or speak to your characters.** Hear their replies with text-to-speech (TTS) and bring scenes to life with AI-generated images.

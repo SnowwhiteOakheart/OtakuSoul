@@ -2,6 +2,12 @@
 
 [English](README.md) · **Deutsch** · [Русский](README.ru.md)
 
+[![GitHub Release](https://img.shields.io/github/v/release/SnowwhiteOakheart/OtakuSoul?color=blue&logo=github)](https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/SnowwhiteOakheart/OtakuSoul/total?color=success&logo=github)](https://github.com/SnowwhiteOakheart/OtakuSoul/releases)
+[![Open Issues](https://img.shields.io/github/issues/SnowwhiteOakheart/OtakuSoul?color=orange&logo=github)](https://github.com/SnowwhiteOakheart/OtakuSoul/issues)
+[![Closed Issues](https://img.shields.io/github/issues-closed/SnowwhiteOakheart/OtakuSoul?color=purple&logo=github)](https://github.com/SnowwhiteOakheart/OtakuSoul/issues?q=is%3Aissue+is%3Aclosed)
+[![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
+
 **Erlebe Rollenspiele mit mehreren KI-Charakteren.** Spiele interaktive Geschichten mit KI-Spielleitung oder starte ein taktisches 5e-Abenteuer. Jede Figur hat ihre eigene Stimme und erinnert sich an eure gemeinsamen Erlebnisse.
 
 **Schreib deinen Figuren oder sprich mit ihnen.** Höre ihre Antworten per Sprachausgabe (TTS) und lass passende Bilder zu deinen Szenen generieren.
