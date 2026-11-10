@@ -4,19 +4,19 @@ Dieses Dokument dient als zentrale Wissensbasis und verbindlicher Leitfaden für
 
 ---
 
-## 🗺️ 1. Werkzeuge & Lokale AI-Suite (`C:\Users\Sebas\AI`)
+## 🗺️ 1. Werkzeuge & Lokale AI-Suite (`D:\AI`)
 
 Für die Asset-Erstellung steht eine lokal installierte Suite modernster Open-Source-Tools zur Verfügung (getestet und optimiert für NVIDIA RTX 5090 / CUDA 12.8):
 
 | Werkzeug | Pfad | Hauptaufgabe |
 |---|---|---|
-| **HairDeck** | `C:\Users\Sebas\AI\HairDeck` | Stilisierte 3D-Anime-Hair-Cards direkt aus 2D-Bildern inklusive Bone-Chains (Spring Bones) und VRM-Export |
-| **Motion2MixamoRig** | `C:\Users\Sebas\AI\Motion2MixamoRig` | Übertragung von menschlichen Bewegungen aus Smartphone-/Webcam-Videos auf Mixamo/VRM-Rigs |
-| **image-to-3dlab (AssetFurnace)** | `C:\Users\Sebas\AI\image-to-3dlab` | Lokale Bild-zu-3D-Pipeline (TRELLIS.2, Hunyuan3D, SF3D) für Basiskörper, Kleidung und Requisiten |
-| **Charakuru** | `C:\Users\Sebas\AI\Charakuru` | 2D-zu-VRM Avatar-Workflow & Blendshape-Generierung für Coding-Agenten |
-| **UltraTex (ComfyUI)** | C:\Users\Sebas\AI\ComfyUI | Gestochen scharfe 2K-Multi-View-PBR-Texturierung untexturierter Meshes aus einem Referenzbild |
-| **PixelArtistry Workflows** | C:\Users\Sebas\AI\PixelArtistry-UltraTex / -Watertight-Meshes | ComfyUI-Workflows für Watertight-Meshes, Retopologie und UltraTex (6 & 10 Views) |
-| **PartLLM** | `C:\Users\Sebas\AI\PartLLM` | Semantische 3D-Part-Segmentierung (Zerlegung monolithischer 3D-Meshes) |
+| **HairDeck** | `D:\AI\HairDeck` | Stilisierte 3D-Anime-Hair-Cards direkt aus 2D-Bildern inklusive Bone-Chains (Spring Bones) und VRM-Export |
+| **Motion2MixamoRig** | `D:\AI\Motion2MixamoRig` | Übertragung von menschlichen Bewegungen aus Smartphone-/Webcam-Videos auf Mixamo/VRM-Rigs |
+| **image-to-3dlab (AssetFurnace)** | `D:\AI\image-to-3dlab` | Lokale Bild-zu-3D-Pipeline (TRELLIS.2, Hunyuan3D, SF3D) für Basiskörper, Kleidung und Requisiten |
+| **Charakuru** | `D:\AI\Charakuru` | 2D-zu-VRM Avatar-Workflow & Blendshape-Generierung für Coding-Agenten |
+| **UltraTex (ComfyUI)** | D:\AI\ComfyUI | Gestochen scharfe 2K-Multi-View-PBR-Texturierung untexturierter Meshes aus einem Referenzbild |
+| **PixelArtistry Workflows** | D:\AI\PixelArtistry-UltraTex / -Watertight-Meshes | ComfyUI-Workflows für Watertight-Meshes, Retopologie und UltraTex (6 & 10 Views) |
+| **PartLLM** | `D:\AI\PartLLM` | Semantische 3D-Part-Segmentierung (Zerlegung monolithischer 3D-Meshes) |
 
 ---
 
@@ -51,7 +51,7 @@ Generatoren wie TRELLIS, Tripo oder SF3D erzeugen Haare als massiven Klumpen ode
 1. **Isoliertes Bild verwenden:** Frontalansicht des Kopfes (`nagatoro_front_crop.png`) freistellen.
 2. **Generierung:**
    ```powershell
-   cd C:\Users\Sebas\AI\HairDeck
+   cd D:\AI\HairDeck
    .\.venv\Scripts\python.exe scripts\image_to_hair.py "PFAD_ZUM_BILD.png" --out "results/output" --n 2
    ```
 3. **Hair Cards:** HairDeck erzeugt ca. 35–45 saubere, unzusammenhängende Ribbon-Cards, die wie bei handmodellierten Anime-Frisuren über der Kappe liegen.
