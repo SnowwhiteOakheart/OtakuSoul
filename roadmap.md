@@ -44,6 +44,7 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 | D4 | E2E-Test fürs Pet-Fenster, Speicher des Pet-Webviews | ★ | M | – |
 | D5 | Wackelige E2E-Tests beobachten | ★ | – | – |
 | D6 | Nicht mehr gepflegte Linux-Abhängigkeiten ersetzen: GTK-Makros (`proc-macro-error`), D-Bus-Eltern gemeinsam auf zbus 6; glib-Speicherfehler berücksichtigen | ★★ | M | Linux-Prüfplatz, abgestimmte Tauri-/Plugin-/Schlüsselbund-Updates; Details `docs/ungepflegte-abhaengigkeiten-2026-11-07.md` |
+| D7 | [Rust-Kern aus dem nativen GUI-Prototyp übernehmen](#d7-rust-kern-aus-dem-nativen-gui-prototyp-übernehmen) | ★★ | Gestuft | Windows-E2E, gezielte Plattformprüfungen |
 | **E** | **Geparkt – wartet auf andere oder nur bei Bedarf** | | | |
 | E1 | `tauri-specta` (wartet auf stabile 2.0) | – | L | – |
 | E2 | TADA 3B Deutsch (wartet auf CrispASR) | – | S | – |
@@ -208,6 +209,48 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
   übergeben statt erneut zu lesen.
 - [ ] **D5 · Wackelige E2E-Tests beobachten:** `chat-sidebar-errors` (einmal Entwurfsvergleich) und `stage-5e` (einmal
   veraltetes Element `button[aria-label*="gegen"]`, 16.10.2026). Bei erneutem Auftreten Ursache suchen.
+
+### D7. Rust-Kern aus dem nativen GUI-Prototyp übernehmen
+
+Stand 10.11.2026. Tauri bleibt die produktive Oberfläche. Der Stand `codex/native-rust-gui` bei
+`4b89c8b` dient als Referenz für wiederverwendbare Rust-Logik und Regressionstests. Ziel sind
+kleine, einzeln rücknehmbare Änderungen auf `main`. Das bestehende Crate `otakusoul-rules5e`
+ist das Vorbild für die Trennung zwischen Fachlogik und App-Anbindung.
+
+- [ ] **D7.1 · Profilpfade.** `otakusoul-paths` aus `4748a6d` auf die gemeinsame
+  Pfadauflösung begrenzen und über `src-tauri/src/modules/paths.rs` einbinden. Die produktive
+  App-Kennung, die Standardordner und die Isolation über `OTAKUSOUL_HOME` bleiben kompatibel.
+  **Abnahme:** Einwegprofil mit gesetztem Override starten und Pfadwahl ohne Override separat prüfen.
+- [ ] **D7.2 · Streaming.** `otakusoul-stream` aus `c46de2b` samt späteren Decoder-Korrekturen
+  aus `53de0c2` prüfen. OpenAI-kompatible und Anthropic-SSE-Deltas, getrennte Gedanken und
+  UTF-8-Stückgrenzen gemeinsam dekodieren. `providers.rs` und `inference.rs` behalten
+  Anfrage, Abbruch, Zeitlimits und App-Ereignisse als Adapter.
+  **Abnahme:** Decoder-Tests für geteilte Zeichen und Think-Tags, Endmarker und Restdaten.
+  Danach Chat mit Mock-LLM auf Teilantwort, Abbruch und Providerfehler prüfen
+  (`e2e/partial-reply.mjs`, `e2e/chat-sessions-abort.mjs`, `e2e/chat-generation-errors.mjs`).
+- [ ] **D7.3 · Makros und Prompt-Aufbau.** `otakusoul-macros` und `otakusoul-prompt` aus
+  `d1eedaa` in getrennten Schritten einführen. Zuerst das Verhalten auf `main` in
+  Referenzfällen festhalten. Zeit, Zufall und Sprachauflösung für die Vergleiche kontrollieren.
+  Karten, Gedächtnis, Kontextbudget, Dateizugriff und Generierungsablauf bleiben über die
+  bestehenden Adapter angebunden.
+  **Abnahme:** Systemprompt und Anweisung nach dem Verlauf für DE und EN vergleichen.
+  Einzel- und Gruppenchat, OOC, Makro-Zufall und Sprach-Fallback prüfen. Typen neu erzeugen
+  und bestehende Frontend-Aufrufer per TypeScript- und Command-Check prüfen.
+- [ ] **D7.4 · Lorebooks.** Parser und Regelauswertung aus `otakusoul-lore` (`b9d70c3`)
+  in den Tauri-Adapter übernehmen. Der App-Code behält Katalog, Persistenz und Anbindung
+  an den Chat-Zustand. Bei Importen die bestehende Behandlung älterer Felder und
+  Inhaltsübersetzungen absichern.
+  **Abnahme:** Alte und aktuelle Lorebooks einlesen und auswerten. Schlüsselwort- und
+  Regex-Regeln, Ketten, Scan-Tiefe, Injektionsreihenfolge sowie globale und an Figuren
+  gebundene Einträge vergleichen. Prompt-Treffer anschließend im Tauri-Chat prüfen
+  (`e2e/chat-prompt-hits.mjs`).
+
+Die Änderungen werden gegen den jeweiligen Stand von `main` umgesetzt. Pro Schritt folgt
+ein eigener Commit nach den betroffenen Rust- und E2E-Prüfungen, zuerst unter Windows.
+Bei Pfad- oder Dateiverhalten folgt zusätzlich eine Prüfung auf den betroffenen Plattformen.
+Der bestehende 5e-Kern und sein Android-Vertrag bleiben der Bezugspunkt für Stage. Für
+Avatar-Importe dienen die Testmodelle und die im Prototyp erprobten Pfad-, Datei- und
+Texturgrenzen bei konkreten Befunden als Referenz für die vorhandenen Tauri-Importer.
 
 ## E. Geparkt – wartet auf andere oder nur bei Bedarf
 
