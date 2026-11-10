@@ -102,4 +102,15 @@ describe('speech playback', () => {
     // Not queued behind the stopped clip.
     expect(started[1]).toBeLessThan(1);
   });
+
+  it('adjusts volume and notifies subscribers', () => {
+    const callback = vi.fn();
+    const unsubscribe = audioPlayer.onVolume(callback);
+    audioPlayer.setVolume(0.75);
+    expect(audioPlayer.getVolume()).toBe(0.75);
+    expect(callback).toHaveBeenCalledWith(0.75);
+    unsubscribe();
+    audioPlayer.setVolume(1.0);
+    expect(callback).toHaveBeenCalledTimes(1);
+  });
 });

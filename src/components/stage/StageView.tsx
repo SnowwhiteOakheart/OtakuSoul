@@ -14,6 +14,7 @@ import { SceneCreateModal } from './SceneCreateModal';
 import { StoryGallery } from './StoryGallery';
 import { StoryWizard } from './StoryWizard';
 import { DropdownMenu } from '../ui/DropdownMenu';
+import { VolumePopover } from '../ui/VolumePopover';
 import { useStageAmbient } from './useStageAmbient';
 import { useStageMusic } from './useStageMusic';
 import { StageMusicModal } from './StageMusicModal';
@@ -24,8 +25,6 @@ import { StageCampaignPanel } from './StageCampaignPanel';
 import { soundFx } from '../../services/soundFx';
 import {
   Compass,
-  Volume2,
-  VolumeX,
   Flame,
   Plus,
   Edit3,
@@ -169,17 +168,16 @@ export const StageView: React.FC = () => {
 
   // Audio Ambiance state: the scene's sound file if it has one, else the synthesized campfire.
   const [isAmbianceActive, setIsAmbianceActive] = useState(false);
-  const [isMuted, setIsMuted] = useState(soundFx.getIsMuted());
   const [ambientWanted, setAmbientWanted] = useState(true);
   const [showNarratorVoice, setShowNarratorVoice] = useState(false);
   const sceneAmbient = stageState?.definition.disable_ambient ? null : stageState?.current_ambient;
-  const ambientOn = sceneAmbient ? ambientWanted && !isMuted : isAmbianceActive;
-  useStageAmbient(sceneAmbient, ambientWanted && !isMuted);
-  // Mood music: the fight and the game master's pick choose it, the global mute silences it.
+  const ambientOn = sceneAmbient ? ambientWanted : isAmbianceActive;
+  useStageAmbient(sceneAmbient, ambientWanted);
+  // Mood music: the fight and the game master's pick choose it.
   const [musicWanted, setMusicWanted] = usePersistentFlag('otakusoul.stageMusic', true);
   const [showMusic, setShowMusic] = useState(false);
-  const music = useStageMusic(stageState, musicWanted && !isMuted);
-  const musicOn = musicWanted && !isMuted && music.mood !== null;
+  const music = useStageMusic(stageState, musicWanted);
+  const musicOn = musicWanted && music.mood !== null;
   /* oxlint-disable react/set-state-in-effect -- the synthesized campfire is an external audio source. */
   useEffect(() => {
     // A scene sound replaces the synthesized campfire.
@@ -245,14 +243,7 @@ export const StageView: React.FC = () => {
     setIsAmbianceActive(active);
   };
 
-  const handleToggleMute = () => {
-    const nextMute = !isMuted;
-    soundFx.setMuted(nextMute);
-    setIsMuted(nextMute);
-    if (nextMute) {
-      setIsAmbianceActive(false);
-    }
-  };
+
 
   const handleCreateClock = (e: React.FormEvent) => {
     e.preventDefault();
@@ -653,18 +644,11 @@ export const StageView: React.FC = () => {
             <span className="hidden md:inline">{t('stage.readAloud')}</span>
           </button>
 
-          <button
-            onClick={handleToggleMute}
-            className={`p-2 rounded-xl border transition ${
-              isMuted
-                ? 'bg-rose-950/40 text-rose-400 border-rose-500/40'
-                : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:text-white'
-            }`}
-            title={isMuted ? t('stage.unmute') : t('stage.mute')}
-            aria-label={isMuted ? t('stage.unmute') : t('stage.mute')}
-          >
-            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-          </button>
+          <VolumePopover
+            showSoundFx
+            labelClassName="hidden md:inline"
+            triggerClassName="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition bg-slate-800/80 text-slate-300 border-slate-700 hover:text-white"
+          />
         </div>
       </div>
 

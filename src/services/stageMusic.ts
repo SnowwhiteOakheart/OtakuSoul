@@ -83,7 +83,7 @@ const MOOD_FADE_MS = 3000;
 const TRACK_FADE_MS = 1500;
 
 const VOLUME_KEY = 'otakusoul.stageMusicVolume';
-const DEFAULT_VOLUME = 0.4;
+const DEFAULT_VOLUME = 0.6;
 
 export function loadMusicVolume(): number {
   try {
@@ -117,8 +117,16 @@ export class StageMusicPlayer {
   private tracks: StageMusicTrack[] = [];
   private volume = loadMusicVolume();
   private fader = new AudioFader();
+  private readonly onVolumeCallbacks = new Set<(volume: number) => void>();
 
   constructor(private readonly createAudio: (src: string) => HTMLAudioElement = (src) => new Audio(src)) {}
+
+  onVolume(callback: (volume: number) => void) {
+    this.onVolumeCallbacks.add(callback);
+    return () => {
+      this.onVolumeCallbacks.delete(callback);
+    };
+  }
 
   /** The mood playing now (null while silent). */
   get mood(): MusicMood | null {
@@ -147,6 +155,7 @@ export class StageMusicPlayer {
     saveMusicVolume(this.volume);
     if (this.current && !this.fader.isFading(this.current.audio)) this.current.audio.volume = this.volume;
     else if (this.current) this.fader.fadeTo(this.current.audio, this.volume, TRACK_FADE_MS);
+    this.onVolumeCallbacks.forEach((cb) => cb(this.volume));
   }
 
   getVolume() {

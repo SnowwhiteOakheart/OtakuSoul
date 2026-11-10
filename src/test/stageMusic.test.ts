@@ -94,7 +94,7 @@ describe('StageMusicPlayer', () => {
     expect(created).toHaveLength(1);
     expect(created[0]!.volume).toBe(0);
     vi.advanceTimersByTime(3100);
-    expect(created[0]!.volume).toBeCloseTo(0.4);
+    expect(created[0]!.volume).toBeCloseTo(0.6);
 
     player.play('calm', tracks);
     expect(created).toHaveLength(1);
@@ -103,7 +103,7 @@ describe('StageMusicPlayer', () => {
     expect(created[1]!.src).toBe('asset:///music/combat/b.ogg');
     vi.advanceTimersByTime(3100);
     expect(created[0]!.paused).toBe(true);
-    expect(created[1]!.volume).toBeCloseTo(0.4);
+    expect(created[1]!.volume).toBeCloseTo(0.6);
     expect(player.mood).toBe('combat');
 
     // At the end of a track the mood goes on with the next one.

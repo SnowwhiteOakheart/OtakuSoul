@@ -36,6 +36,7 @@ import {
   Camera,
 } from 'lucide-react';
 import { DropdownMenu } from '../ui/DropdownMenu';
+import { VolumePopover } from '../ui/VolumePopover';
 import { usePersistentFlag } from '../../hooks/usePersistentFlag';
 import { useAmbientSound } from '../../hooks/useAmbientSound';
 import { audioPlayer, gainFromVoiceVolume } from '../../services/audioPlayer';
@@ -503,6 +504,7 @@ export const ChatView: React.FC = () => {
               <span className="hidden xl:inline">{t('chat.autoTts')}</span>
             </button>
           )}
+          <VolumePopover triggerClassName={TOOLBAR_TOGGLE} labelClassName="hidden xl:inline" />
           <button
             onClick={() => setShowAvatar(!showAvatar)}
             aria-pressed={showAvatar}

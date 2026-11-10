@@ -30,6 +30,10 @@ class SoundFxSynthesizer {
     this.volume = Math.max(0, Math.min(1, vol));
   }
 
+  public getVolume(): number {
+    return this.volume;
+  }
+
   public getIsMuted(): boolean {
     return this.isMuted;
   }

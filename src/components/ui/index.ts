@@ -7,3 +7,4 @@ export { Slider } from './Slider';
 export { Tabs, type TabItem } from './Tabs';
 export { Toggle } from './Toggle';
 export { Tooltip } from './Tooltip';
+export { VolumePopover } from './VolumePopover';

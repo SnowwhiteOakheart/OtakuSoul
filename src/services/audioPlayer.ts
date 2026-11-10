@@ -31,6 +31,28 @@ export function gainFromVoiceVolume(volume: string): number {
   return Math.min(2, Math.max(0, 1 + percent / 100));
 }
 
+const TTS_VOLUME_KEY = 'otakusoul.ttsVolume';
+const DEFAULT_TTS_VOLUME = 1.0;
+
+export function loadTtsVolume(): number {
+  try {
+    const stored = Number(localStorage.getItem(TTS_VOLUME_KEY));
+    return localStorage.getItem(TTS_VOLUME_KEY) !== null && Number.isFinite(stored)
+      ? Math.min(1, Math.max(0, stored))
+      : DEFAULT_TTS_VOLUME;
+  } catch {
+    return DEFAULT_TTS_VOLUME;
+  }
+}
+
+export function saveTtsVolume(volume: number) {
+  try {
+    localStorage.setItem(TTS_VOLUME_KEY, String(volume));
+  } catch {
+    // Only a convenience: default volume applies next time.
+  }
+}
+
 /**
  * Plays speech clips one after another without the gaps of loading each clip only when the one
  * before has ended: the next clips are decoded while one plays, trimmed of the silence their
@@ -57,9 +79,45 @@ export class AudioPlaybackManager {
   private generation = 0;
   /** Extra volume factor for each clip (the desktop pet's voice is quieter at night). */
   private gainAdjust: () => number = () => 1;
+  private ttsVolume = loadTtsVolume();
+  private readonly activeGainNodes = new Set<{ node: GainNode; baseGain: number }>();
+  private readonly onVolumeCallbacks = new Set<(vol: number) => void>();
 
   setGainAdjust(adjust: () => number) {
     this.gainAdjust = adjust;
+    const effective = this.ttsVolume * this.gainAdjust();
+    for (const item of this.activeGainNodes) {
+      try {
+        item.node.gain.value = item.baseGain * effective;
+      } catch {
+        // ignored
+      }
+    }
+  }
+
+  public getVolume(): number {
+    return this.ttsVolume;
+  }
+
+  public setVolume(volume: number) {
+    this.ttsVolume = Math.min(1, Math.max(0, volume));
+    saveTtsVolume(this.ttsVolume);
+    const effective = this.ttsVolume * this.gainAdjust();
+    for (const item of this.activeGainNodes) {
+      try {
+        item.node.gain.value = item.baseGain * effective;
+      } catch {
+        // ignored
+      }
+    }
+    this.onVolumeCallbacks.forEach((cb) => cb(this.ttsVolume));
+  }
+
+  public onVolume(callback: (vol: number) => void) {
+    this.onVolumeCallbacks.add(callback);
+    return () => {
+      this.onVolumeCallbacks.delete(callback);
+    };
   }
   private state: AudioPlaybackState = 'idle';
 
@@ -171,7 +229,9 @@ export class AudioPlaybackManager {
     const source = context.createBufferSource();
     source.buffer = buffer;
     const volume = context.createGain();
-    volume.gain.value = gain * this.gainAdjust();
+    volume.gain.value = gain * this.ttsVolume * this.gainAdjust();
+    const gainEntry = { node: volume, baseGain: gain };
+    this.activeGainNodes.add(gainEntry);
     source.connect(volume);
     volume.connect(context.destination);
     if (this.analyser) source.connect(this.analyser);
@@ -184,6 +244,7 @@ export class AudioPlaybackManager {
     const generation = this.generation;
     source.onended = () => {
       this.sources.delete(source);
+      this.activeGainNodes.delete(gainEntry);
       volume.disconnect();
       if (generation !== this.generation) return;
       if (this.sources.size === 0 && this.pending.length === 0 && !this.preparing) {
@@ -256,6 +317,7 @@ export class AudioPlaybackManager {
       }
     }
     this.sources.clear();
+    this.activeGainNodes.clear();
     this.nextStart = 0;
 
     if (this.animationFrameId !== null) {
