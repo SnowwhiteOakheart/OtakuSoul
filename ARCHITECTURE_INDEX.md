@@ -30,6 +30,7 @@
 | **Übersetzungen prüfen** | `npm run i18n:check [-- datei.json]` | Fehlende/unbekannte Schlüssel, Platzhalter gegen `de.json` |
 | **Typen synchronisieren / prüfen** | `npm run types:gen` / `npm run types:check` | Generiert TS-Typen aus Rust via `ts-rs` bzw. prüft ohne EOL-Rauschen auf Drift |
 | **E2E-Rauchtest (Mock-LLM)** | `npm run e2e` (`npm run e2e:run` ohne Build) | Baut nach `target/e2e`, nutzt tauri-driver + Mock-LLM; gezielt & kompakt: `npm run e2e:filter -- [--build\|--list\|--keep-going\|--json\|--verbose] <muster>` |
+| **Linux-Tests via WSL2** | `wsl -e bash -lc 'cd ~/Development/OtakuSoul && git pull --ff-only && xvfb-run -a npm run e2e:filter -- …'` | Eigenständiger Linux-Klon (`origin` = `/mnt/c/…`) mit `WebKitWebDriver`, `tauri-driver`, `cargo-audit`, `xvfb-run`; Details in `docs/ai/app-ui-i18n.md` |
 | **Perf-Messung** | `npm run e2e:perf` | Langchat-Stresstest (1.000 Nachrichten) |
 | **Screenshots erstellen** | `xvfb-run -a node e2e/readme-screenshots.mjs de\|en\|ru` | Erstellt UI-Screenshots unter `docs/assets/screenshots/<lang>/` |
 | **README-Animation** | `node e2e/readme-demo.mjs de\|en\|ru` | GIF-Rundgang nach `docs/assets/demo/<lang>.gif` (braucht `ffmpeg`; Linux mit `xvfb-run -a`, Windows mit `tauri-driver` + passendem `msedgedriver` im PATH) |

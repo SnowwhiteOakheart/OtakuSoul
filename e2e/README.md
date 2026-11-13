@@ -13,7 +13,7 @@ Die Suite verwendet WebdriverIO 10 mit strengen Selektoren: `$` muss genau ein E
 ## Voraussetzungen (Linux)
 
 - `tauri-driver`: `cargo install tauri-driver --locked`
-- `WebKitWebDriver`: Arch `webkitgtk-6.0`, Debian/Ubuntu `webkit2gtk-driver`, Fedora `webkitgtk6.0` (unter Windows funktioniert `msedgedriver`; für macOS gibt es keinen WebDriver für WKWebView).
+- `WebKitWebDriver`: Arch `webkitgtk-6.0`, Debian/Ubuntu `webkit2gtk-driver` (Ubuntu 26.04+: `webkitgtk-webdriver`), Fedora `webkitgtk6.0` (unter Windows funktioniert `msedgedriver`; für macOS gibt es keinen WebDriver für WKWebView).
 - Display / X11: Bei headless-Umgebungen oder gesperrter Desktop-Sitzung per `xvfb-run npm run e2e` ausführen, da WebKit-Bildaufnahmen und Animationsabfragen sonst hängen können.
 - `sqlite3` CLI für die Fehler- und Rollback-Tests (temporäre Trigger ausschließlich im Wegwerfprofil).
 
