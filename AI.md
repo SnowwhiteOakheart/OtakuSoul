@@ -32,9 +32,10 @@ Nutzer mit „Du“ ansprechen. Antworten, Commits und Doku auf Deutsch.
 |---|---|
 | Entwickeln | `npm run tauri dev` (Linux: `npm run tauri:linux`) |
 | Alle Checks | `npm run check` |
+| Schneller Pre-Check | `npm run check:fast` |
 | Doku-Links prüfen | `npm run docs:check` |
 | TS-Typen aus Rust (ts-rs → `src/types/generated/`, mit einchecken) | `npm run types:gen` |
-| E2E-Rauchtest (baut nach `target/e2e`, tauri-driver + Mock-LLM) | `npm run e2e` (`e2e:run` ohne Build) |
+| E2E-Rauchtest (baut nach `target/e2e`, tauri-driver + Mock-LLM) | `npm run e2e` (`e2e:run` ohne Build, `npm run e2e:filter -- <muster>` gezielt) |
 | Langchat-Messung (1000 Nachrichten) | `npm run e2e:perf` |
 | README-Screenshots (nach `e2e:build`, nicht Teil von `e2e`) | `xvfb-run -a node e2e/readme-screenshots.mjs de\|en\|ru` → `docs/assets/screenshots/<lang>/` |
 | GPU-Tests mit echten Modellen (lädt GBs, nur auf Wunsch; GPU muss frei sein) | `cargo test --test gpu_e2e -- --ignored --nocapture` in `src-tauri/` (`llm` = Chat-Modelle aus `assets/models` mit empfohlenem Kontext) |
@@ -52,7 +53,7 @@ Backend `src-tauri/src/`: `lib.rs` (Plugins, Command-Registrierung), `state.rs` 
 | Dateianhänge | `attachments.rs`; PDF-Extraktion über die dokumentierte Kompatibilitätskopie `vendor/pdf-extract` mit lopdf 0.47 ohne Font-Einbettung/ttf-parser. Bei passendem Upstream-Release wieder auf die Registry wechseln. |
 | Features | `memory_pipeline.rs` (Router/Archivist/Diary), `stage/` (Game-Master; 5e-Regel-Engine im Crate `crates/otakusoul-rules5e`, als `stage::rules5e` re-exportiert, SRD-Daten in `presets/srd5/`), `companion.rs` + `companion_tools.rs` + `mcp_client.rs`, `voice.rs`/`kokoro.rs` (TTS/STT), `image_generator.rs`, `models_hub.rs`, `hub.rs`, `web_server.rs`, `discord.rs`, `updater.rs`, `logger.rs` |
 
-Frontend `src/`: `services/api.ts` (ein Wrapper je Command), `store/slices/*.ts` (Zustand, Zugriff per
+Frontend `src/`: `services/api.ts` (Barrel über Domänenmodule `services/api/*.ts`, ein Wrapper je Command), `store/slices/*.ts` (Zustand, Zugriff per
 `useStoreFields('a','b')`), `store/helpers.ts` (`resolvePromptWithLore`, `llmTarget`), `components/<bereich>/`,
 `presets/locales/ui/*.json` (Oberflächentexte, siehe [app-ui-i18n.md](docs/ai/app-ui-i18n.md)), `types/index.ts` (+ `generated/`), `utils/errors.ts`.
 Expertenmodus `AppSettings.expert_mode` (`expertMode`): blendet Server-Tuning, Sampler-Regler, „Als Vorlage speichern“,

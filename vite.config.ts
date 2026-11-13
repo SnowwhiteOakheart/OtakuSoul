@@ -17,6 +17,7 @@ export default defineConfig(({ mode }) => ({
   ],
   test: {
     // Component tests opt into jsdom with `// @vitest-environment jsdom`; the rest stays on fast node.
+    include: ['src/**/*.test.{ts,tsx}'],
     setupFiles: ['src/test/setup.ts'],
   },
   build: {

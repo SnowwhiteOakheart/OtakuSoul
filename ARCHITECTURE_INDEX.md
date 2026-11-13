@@ -24,10 +24,11 @@
 |---|---|---|
 | **App starten (Dev)** | `npm run tauri dev` (Linux: `npm run tauri:linux`) | Startet Vite-Frontend + Rust-Backend |
 | **Alle Prüfungen** | `npm run check` | Führt Oxlint, TypeScript TypeCheck, Vitest, Rustfmt, Clippy und Cargo Test aus |
+| **Schneller Pre-Check** | `npm run check:fast` | Nur `docs:check`, Oxlint, `tsc --noEmit` und `cargo check --message-format=short` |
 | **Doku-Links prüfen** | `npm run docs:check` | Prüft Verweise in `AI.md` & `ARCHITECTURE_INDEX.md` auf `docs/ai/*.md` |
 | **Übersetzungen prüfen** | `npm run i18n:check [-- datei.json]` | Fehlende/unbekannte Schlüssel, Platzhalter gegen `de.json` |
 | **Typen synchronisieren** | `npm run types:gen` | Generiert TS-Typen aus Rust via `ts-rs` nach `src/types/generated/` |
-| **E2E-Rauchtest (Mock-LLM)** | `npm run e2e` (`npm run e2e:run` ohne Build) | Baut nach `target/e2e`, nutzt tauri-driver + Mock-LLM |
+| **E2E-Rauchtest (Mock-LLM)** | `npm run e2e` (`npm run e2e:run` ohne Build) | Baut nach `target/e2e`, nutzt tauri-driver + Mock-LLM; gezielt: `npm run e2e:filter -- [--build\|--list] <muster>` |
 | **Perf-Messung** | `npm run e2e:perf` | Langchat-Stresstest (1.000 Nachrichten) |
 | **Screenshots erstellen** | `xvfb-run -a node e2e/readme-screenshots.mjs de\|en\|ru` | Erstellt UI-Screenshots unter `docs/assets/screenshots/<lang>/` |
 | **README-Animation** | `node e2e/readme-demo.mjs de\|en\|ru` | GIF-Rundgang nach `docs/assets/demo/<lang>.gif` (braucht `ffmpeg`; Linux mit `xvfb-run -a`, Windows mit `tauri-driver` + passendem `msedgedriver` im PATH) |
@@ -55,7 +56,7 @@
 | **Hub, NSFW & Synchronisation** | `hub.rs`, `hub_installed.rs`, `models_hub.rs`, `updater.rs`, `nsfw.rs`, `web_server.rs`, `discord.rs` | Online-Abgleich mit `otakusoul-data` (und NSFW-Hub `otakusoul-data-nsfw`), Revisionsprüfung von Inhalten, FSK18/NSFW-Tagging & Filterung, Web-Server, Discord Rich Presence. |
 
 ### 2. React-Frontend (`src/`)
-* **API-Brücke:** `services/api.ts` (Typsichere Wrapper um alle Tauri `invoke`-Befehle).
+* **API-Brücke:** `services/api.ts` (Re-Export über Domänenmodule `services/api/*.ts` mit typsicheren Wrappern um alle Tauri `invoke`-Befehle).
 * **Zustandsverwaltung (Zustand):** `store/slices/*.ts` (Z. B. `chatSlice.ts`, `stageSlice.ts`, `characterSlice.ts`, `settingsSlice.ts`, `avatarSlice.ts`, `memorySlice.ts`). Zugriff per `useStoreFields('fieldA', 'fieldB')`.
 * **Prompt & Lore Hilfsfunktionen:** `store/helpers.ts` (`resolvePromptWithLore`, `llmTarget`).
 * **Internationalisierung & 3-Ebenen-Sprachauflösung:**
