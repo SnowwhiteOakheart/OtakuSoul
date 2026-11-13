@@ -19,6 +19,7 @@
     "tauri": "tauri",
     "tauri:linux": "GDK_BACKEND=x11 WEBKIT_DISABLE_DMABUF_RENDERER=1 tauri dev",
     "check": "npm run check:rust && npm run check:web",
+    "check:agent": "node tools/check_agent.mjs",
     "check:fast": "node tools/docs_check.mjs && oxlint && tsc --noEmit && cargo check --manifest-path src-tauri/Cargo.toml --message-format=short",
     "types:gen": "cargo test --manifest-path src-tauri/Cargo.toml --lib export_bindings && cargo test -p otakusoul-rules5e --lib export_bindings",
     "lint": "oxlint",

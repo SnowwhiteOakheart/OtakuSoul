@@ -31,8 +31,8 @@ Nutzer mit „Du“ ansprechen. Antworten, Commits und Doku auf Deutsch.
 | Zweck | Befehl |
 |---|---|
 | Entwickeln | `npm run tauri dev` (Linux: `npm run tauri:linux`) |
-| Alle Checks | `npm run check` |
-| Schneller Pre-Check | `npm run check:fast` |
+| **Alle Checks** | `npm run check` (`npm run check:agent [-- --fast\|--web\|--rust\|--json]`) |
+| **Schneller Pre-Check** | `npm run check:fast` |
 | Doku-Links prüfen | `npm run docs:check` |
 | TS-Typen aus Rust (ts-rs → `src/types/generated/`, mit einchecken) | `npm run types:gen` |
 | E2E-Rauchtest (baut nach `target/e2e`, tauri-driver + Mock-LLM) | `npm run e2e` (`e2e:run` ohne Build, `npm run e2e:filter -- <muster>` gezielt) |

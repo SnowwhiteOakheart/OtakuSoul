@@ -24,11 +24,12 @@
 |---|---|---|
 | **App starten (Dev)** | `npm run tauri dev` (Linux: `npm run tauri:linux`) | Startet Vite-Frontend + Rust-Backend |
 | **Alle Prüfungen** | `npm run check` | Führt Oxlint, TypeScript TypeCheck, Vitest, Rustfmt, Clippy und Cargo Test aus |
+| **Agenten-Check (kompakt)** | `npm run check:agent [-- --fast\|--web\|--rust\|--json\|--keep-going]` | Kompakte Einzeiler je Schritt; gibt bei Fehlern nur Diagnose statt Voll-Log aus |
 | **Schneller Pre-Check** | `npm run check:fast` | Nur `docs:check`, Oxlint, `tsc --noEmit` und `cargo check --message-format=short` |
 | **Doku-Links prüfen** | `npm run docs:check` | Prüft Verweise in `AI.md` & `ARCHITECTURE_INDEX.md` auf `docs/ai/*.md` |
 | **Übersetzungen prüfen** | `npm run i18n:check [-- datei.json]` | Fehlende/unbekannte Schlüssel, Platzhalter gegen `de.json` |
 | **Typen synchronisieren** | `npm run types:gen` | Generiert TS-Typen aus Rust via `ts-rs` nach `src/types/generated/` |
-| **E2E-Rauchtest (Mock-LLM)** | `npm run e2e` (`npm run e2e:run` ohne Build) | Baut nach `target/e2e`, nutzt tauri-driver + Mock-LLM; gezielt: `npm run e2e:filter -- [--build\|--list] <muster>` |
+| **E2E-Rauchtest (Mock-LLM)** | `npm run e2e` (`npm run e2e:run` ohne Build) | Baut nach `target/e2e`, nutzt tauri-driver + Mock-LLM; gezielt & kompakt: `npm run e2e:filter -- [--build\|--list\|--keep-going\|--json\|--verbose] <muster>` |
 | **Perf-Messung** | `npm run e2e:perf` | Langchat-Stresstest (1.000 Nachrichten) |
 | **Screenshots erstellen** | `xvfb-run -a node e2e/readme-screenshots.mjs de\|en\|ru` | Erstellt UI-Screenshots unter `docs/assets/screenshots/<lang>/` |
 | **README-Animation** | `node e2e/readme-demo.mjs de\|en\|ru` | GIF-Rundgang nach `docs/assets/demo/<lang>.gif` (braucht `ffmpeg`; Linux mit `xvfb-run -a`, Windows mit `tauri-driver` + passendem `msedgedriver` im PATH) |

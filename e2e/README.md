@@ -4,6 +4,8 @@
 
 `npm run e2e:run` überspringt den Build-Schritt und führt die Tests direkt gegen das bestehende Test-Binary aus.
 
+`npm run e2e:filter -- [--build|--list|--keep-going|--json|--verbose] <muster>` führt gezielt passende Skripte aus `e2e:run` aus (standardmäßig kompakt: 1 Statuszeile je bestandenem Test, Fehlerdiagnose nur bei Fehlschlag; `harness.mjs` puffert `tauri-driver`-Logs, sofern nicht `OTAKUSOUL_E2E_VERBOSE=1` gesetzt ist).
+
 Die Suite verwendet WebdriverIO 10 mit strengen Selektoren: `$` muss genau ein Element finden; für eine bewusst gewählte erste Karte `$$` verwenden. Asynchrone Seitenskripte über `execute(async () => …)` ausführen und Navigation über `browser.refresh()` abwarten. Ein sichtbares Eingabefeld garantiert noch keine angelegte Chat-Sitzung; dafür auf den entsprechenden Zustand warten. Die unterstützten Node-Versionen stehen in `package.json` unter `engines`.
 
 `close-to-tray.mjs` prüft native X11-Fensterereignisse und wird außerhalb von Linux ausdrücklich übersprungen; dadurch ist das native Schließen unter Windows/macOS nicht mitgeprüft.

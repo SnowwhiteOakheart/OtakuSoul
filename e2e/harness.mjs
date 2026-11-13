@@ -69,8 +69,26 @@ export async function launch(settings = {}, { hubFiles, homeFiles = {} } = {}) {
   }
   mkdirSync(screenshotDir, { recursive: true });
 
+  const verboseDriver = process.env.OTAKUSOUL_E2E_VERBOSE === '1';
+  const driverLogs = [];
+  const pushDriverChunk = (chunk) => {
+    for (const line of String(chunk).split(/\r?\n/)) {
+      const trimmed = line.trimEnd();
+      if (!trimmed) continue;
+      driverLogs.push(trimmed);
+      if (driverLogs.length > 60) driverLogs.shift();
+    }
+  };
+  let driverDumped = false;
+  const dumpDriverLogs = (reason) => {
+    if (verboseDriver || driverDumped || driverLogs.length === 0) return;
+    driverDumped = true;
+    console.error(`--- tauri-driver (${reason}) ---\n${driverLogs.join('\n')}\n---`);
+  };
+
+  let closing = false;
   const driver = spawn('tauri-driver', [], {
-    stdio: ['ignore', 'inherit', 'inherit'],
+    stdio: verboseDriver ? ['ignore', 'inherit', 'inherit'] : ['ignore', 'pipe', 'pipe'],
     env: {
       ...process.env,
       OTAKUSOUL_HOME: home,
@@ -79,6 +97,11 @@ export async function launch(settings = {}, { hubFiles, homeFiles = {} } = {}) {
       GDK_BACKEND: process.env.GDK_BACKEND ?? 'x11',
       WEBKIT_DISABLE_DMABUF_RENDERER: '1',
     },
+  });
+  driver.stdout?.on('data', pushDriverChunk);
+  driver.stderr?.on('data', pushDriverChunk);
+  driver.once('exit', (code, signal) => {
+    if (!closing && code !== 0) dumpDriverLogs(`Exit ${code ?? signal ?? 'unbekannt'}`);
   });
   try {
     await waitForPort(4444);
@@ -97,6 +120,7 @@ export async function launch(settings = {}, { hubFiles, homeFiles = {} } = {}) {
     }
     await browser.execute(() => localStorage.setItem('otakusoul.e2eRun', '1'));
     const close = async () => {
+      closing = true;
       await browser.deleteSession().catch(() => {});
       driver.kill();
       await mock.close();
@@ -104,7 +128,9 @@ export async function launch(settings = {}, { hubFiles, homeFiles = {} } = {}) {
     };
     return { browser, mock, home, close };
   } catch (e) {
+    closing = true;
     driver.kill();
+    dumpDriverLogs('Startfehler');
     await mock.close();
     removeHome(home);
     throw e;
