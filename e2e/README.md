@@ -62,11 +62,11 @@ Die Suite umfasst über 90 spezialisierte Testmodule:
    - `companion-safety.mjs`, `pet-inochi2d.mjs`: HITL-Bestätigungsbanner bei sensiblen Aktionen und Desktop-Pet-Oberfläche mit Klick-Durchlass.
 
 7. **Oberfläche, Zugänglichkeit & Hub:**
-   - `onboarding.mjs`, `home.mjs`, `character-library.mjs`, `character-traits.mjs`, `character-import.mjs`, `startup-character.mjs`, `settings-palette.mjs`, `settings-reset.mjs`, `settings-hints.mjs`, `close-to-tray.mjs`, `background-tasks.mjs`, `ui-layout.mjs`, `hub-updates.mjs`, `hub-collections.mjs`, `hub-nsfw.mjs`, `adult-content-hiding.mjs`, `languages.mjs`, `help.mjs`, `a11y-sweep.mjs`, `contrast.mjs`, `keyboard.mjs`, `beginner-journey.mjs`.
+   - `onboarding.mjs`, `home.mjs`, `character-library.mjs`, `character-traits.mjs`, `character-import.mjs`, `startup-character.mjs`, `settings-palette.mjs`, `settings-reset.mjs`, `settings-hints.mjs`, `close-to-tray.mjs`, `background-tasks.mjs`, `ui-layout.mjs`, `hub-updates.mjs`, `hub-collections.mjs`, `hub-nsfw.mjs`, `adult-content-hiding.mjs`, `languages.mjs`, `help.mjs`, `a11y-sweep.mjs`, `dialogs-and-boxes.mjs`, `contrast.mjs`, `keyboard.mjs`, `beginner-journey.mjs`.
 
 ## Weitere E2E-Werkzeuge
 
-- **PDF-Anhänge:** `node e2e/pdf-attachments.mjs` prüft den echten Import, gespeicherten Text und Fehlerfälle. Eigene synthetische Fixtures unter `e2e/fixtures/pdf/`; Bestandteil der regulären Suite (jetzt 101 Szenarien).
+- **PDF-Anhänge:** `node e2e/pdf-attachments.mjs` prüft den echten Import, gespeicherten Text und Fehlerfälle. Eigene synthetische Fixtures unter `e2e/fixtures/pdf/`; Bestandteil der regulären Suite (jetzt 102 Szenarien).
 - **Alte Kokoro-Sammelstimmen:** Für `onnx-local.mjs` optional `OTAKUSOUL_KOKORO_TEST_LEGACY_VOICES` auf eine vorhandene Bincode-2-Stimmdatei setzen; zusätzlich wird damit echte Synthese über den gepflegten Decoder geprüft.
 - **Echte ONNX-Inferenz in der gebauten App:** `node e2e/onnx-local.mjs`. Benötigt `OTAKUSOUL_KOKORO_TEST_MODEL` (ONNX-Datei), `OTAKUSOUL_KOKORO_TEST_VOICES` (Stimmenordner mit `af_heart` und `am_michael`) und `OTAKUSOUL_TEST_SILERO` (Silero-ONNX-Datei). Prüft Kokoro-Audio einschließlich Dekodierung im Webview und wiederholte VAD-Sessions im selben Prozess auf CPU; keine Downloads und keine Wiedergabe. Wegen der lokalen Modelle bewusst außerhalb der regulären Mock-Suite.
 - **Langchat-Messung (1000 Nachrichten):** `npm run e2e:perf`

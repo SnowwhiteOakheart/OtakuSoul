@@ -4,6 +4,7 @@
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { launch, screenshotDir } from './harness.mjs';
+import { collectDialogProblems } from './layout-checks.mjs';
 
 const { browser, close } = await launch({ stage_last_scene: '' });
 const jsClick = (element) => browser.execute((el) => el.click(), element);
@@ -43,9 +44,12 @@ const audit = () =>
   });
 
 const findings = [];
-const check = async (where) => {
+const check = async (where, { hasDialog = false } = {}) => {
   await browser.pause(400);
   for (const problem of await audit()) findings.push(`${where}: ${problem}`);
+  if (hasDialog) {
+    for (const problem of await collectDialogProblems(browser, where)) findings.push(problem);
+  }
 };
 
 try {
@@ -70,7 +74,7 @@ try {
   // Beginner dialogs in the small window.
   await jsClick(await browser.$('button[aria-label="Hilfe & Glossar"]'));
   await browser.$('[data-help]').waitForDisplayed({ timeout: 5000 });
-  await check('Hilfe');
+  await check('Hilfe', { hasDialog: true });
   await browser.keys('Escape');
   await jsClick(await browser.$('button=Stage'));
   await browser.$('[data-story-gallery]').waitForExist({ timeout: 10_000 });
@@ -78,7 +82,7 @@ try {
   await browser.$('[data-story="story_frozen_bells"]').waitForExist({ timeout: 5000 });
   await jsClick(await browser.$('[data-story="story_frozen_bells"]').$('button*=Ansehen'));
   await browser.$('[data-story-preview]').waitForDisplayed({ timeout: 5000 });
-  await check('Story-Vorschau');
+  await check('Story-Vorschau', { hasDialog: true });
   await browser.keys('Escape');
   // Keyboard: Enter opens a story preview, Escape closes it and focus returns to the card.
   const look = await browser.$('[data-story="story_hanami_live"]').$('button*=Ansehen');
@@ -92,7 +96,7 @@ try {
 
   await jsClick(await browser.$('[data-story-gallery] header').$('button*=Eigene Geschichte'));
   await browser.$('[data-story-wizard]').waitForDisplayed({ timeout: 5000 });
-  await check('Story-Assistent');
+  await check('Story-Assistent', { hasDialog: true });
   await browser.saveScreenshot(path.join(screenshotDir, '91-kleines-fenster-assistent.png'));
   await browser.keys('Escape');
 
