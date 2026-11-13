@@ -6,7 +6,9 @@ use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::{Child, Command};
 use tokio::sync::Mutex;
 
-use super::catalog::{PresetVoice, Role, TtsModel, catalog_model, is_installed, models_dir, voices_dir};
+use super::catalog::{
+    PresetVoice, Role, TtsModel, catalog_model, is_installed, models_dir, voices_dir,
+};
 use super::cloning::{ClonedVoice, clone_voice_name, list_cloned_voices};
 use super::downloads::ensure_allowed;
 use super::models::{VoicePrompt, design_description, load_settings};

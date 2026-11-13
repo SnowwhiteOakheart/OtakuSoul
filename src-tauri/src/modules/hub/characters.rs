@@ -5,8 +5,7 @@ use super::chub::import_chub_character;
 use super::http::get_http_client;
 use super::models::{CharacterImportResult, GatewayCharacterEntry};
 use super::pins::{
-    ensure_source_allowed, entry_revision, from_nsfw_source, hub_url, is_nsfw,
-    nsfw_registry_items,
+    ensure_source_allowed, entry_revision, from_nsfw_source, hub_url, is_nsfw, nsfw_registry_items,
 };
 
 pub async fn fetch_soul_gateway_registry() -> Result<Vec<GatewayCharacterEntry>, String> {
@@ -48,7 +47,10 @@ pub async fn fetch_soul_gateway_registry() -> Result<Vec<GatewayCharacterEntry>,
     Ok(results)
 }
 
-pub(super) fn character_entry(c: &serde_json::Value, from_nsfw: bool) -> Option<GatewayCharacterEntry> {
+pub(super) fn character_entry(
+    c: &serde_json::Value,
+    from_nsfw: bool,
+) -> Option<GatewayCharacterEntry> {
     let (revision, updated) = entry_revision(c);
     Some(GatewayCharacterEntry {
         name: c.get("name")?.as_str()?.to_string(),
@@ -123,7 +125,6 @@ pub async fn import_soul_gateway_character(
 // 2. Chub AI (Characters Gateway)
 // =========================================================================
 
-
 pub async fn import_character_from_url(
     url: &str,
     overwrite: bool,
@@ -175,4 +176,3 @@ pub async fn import_character_from_url(
 // =========================================================================
 // 3. Welt-Lorebooks (World Lorebooks)
 // =========================================================================
-

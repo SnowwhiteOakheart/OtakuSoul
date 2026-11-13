@@ -140,9 +140,7 @@ fn test_clean_text_for_tts_dialogue_only_typographic_quotes() {
         let result = clean_text_for_tts(input, &TtsFilterMode::DialogueOnly, "");
         assert!(!result.contains('*'), "{input} -> {result}");
         assert!(
-            !result.contains("lächelt")
-                && !result.contains("smiles")
-                && !result.contains("微笑む"),
+            !result.contains("lächelt") && !result.contains("smiles") && !result.contains("微笑む"),
             "{input} -> {result}"
         );
     }

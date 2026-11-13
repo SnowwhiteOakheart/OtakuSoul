@@ -476,7 +476,10 @@ pub fn delete_character(char_id: &str) -> Result<(), String> {
     Ok(())
 }
 
-pub(super) fn hide_character_in_settings(settings: &mut crate::modules::settings::AppSettings, char_id: &str) {
+pub(super) fn hide_character_in_settings(
+    settings: &mut crate::modules::settings::AppSettings,
+    char_id: &str,
+) {
     let norm_target = crate::modules::paths::normalize_identifier(char_id);
     if !settings
         .hidden_character_ids

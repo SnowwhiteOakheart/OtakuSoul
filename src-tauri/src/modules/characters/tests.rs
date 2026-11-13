@@ -2,7 +2,6 @@ use super::*;
 use std::fs;
 use std::path::Path;
 
-
 #[test]
 fn scene_names_find_cards_with_a_bracketed_full_name() {
     let profile = |name: &str| {
@@ -93,9 +92,7 @@ fn model_links_must_be_https_pages_of_a_known_kind() {
     );
     assert!(super::invalid_model_links(&serde_json::json!({})).is_empty());
     assert_eq!(
-        super::invalid_model_links(
-            &serde_json::json!({"otakusoul_model_links": "https://x.y"})
-        ),
+        super::invalid_model_links(&serde_json::json!({"otakusoul_model_links": "https://x.y"})),
         ["otakusoul_model_links"]
     );
 }
@@ -112,8 +109,7 @@ fn exported_cards_carry_no_local_picture_paths() {
             }}
         }
     })).unwrap();
-    let target =
-        std::env::temp_dir().join(format!("otakusoul-export-{}.json", std::process::id()));
+    let target = std::env::temp_dir().join(format!("otakusoul-export-{}.json", std::process::id()));
     let profile = CharacterProfile {
         id: "export".into(),
         card,
@@ -156,10 +152,9 @@ fn portrait_paths_survive_moving_a_card_to_the_user_folder() {
     assert_eq!(card.data.extensions["expressions"]["happy"], expected);
     // Resolving again after a save must retain the original directory.
     resolve_profile_expression_paths(&mut card, &root.join("user/card.png"));
-    let (restored, _) = parse_character_png(
-        &inject_character_metadata_png(&get_placeholder_png(), &card).unwrap(),
-    )
-    .unwrap();
+    let (restored, _) =
+        parse_character_png(&inject_character_metadata_png(&get_placeholder_png(), &card).unwrap())
+            .unwrap();
     assert_eq!(restored.data.extensions["expressions"]["happy"], expected);
     assert_eq!(
         restored.data.extensions["expressions"]["sad"],

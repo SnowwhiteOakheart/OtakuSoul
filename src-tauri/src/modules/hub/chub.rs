@@ -6,9 +6,7 @@ use crate::modules::characters::{
 };
 
 use super::http::{convert_image_bytes_to_png, get_http_client, get_placeholder_png};
-use super::models::{
-    CharacterImportResult, ChubCharacterDetail, ChubSearchItem, ChubSearchResult,
-};
+use super::models::{CharacterImportResult, ChubCharacterDetail, ChubSearchItem, ChubSearchResult};
 
 pub async fn search_chub_characters(
     query: &str,
@@ -380,4 +378,3 @@ pub async fn import_chub_character(
     );
     store_imported_card(card, Some(avatar_data_url), overwrite)
 }
-

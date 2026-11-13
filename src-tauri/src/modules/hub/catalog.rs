@@ -56,7 +56,10 @@ pub async fn fetch_lorebooks_gateway_registry() -> Result<Vec<GatewayLorebookEnt
     Ok(results)
 }
 
-pub(super) fn lorebook_entry(b: &serde_json::Value, from_nsfw: bool) -> Option<GatewayLorebookEntry> {
+pub(super) fn lorebook_entry(
+    b: &serde_json::Value,
+    from_nsfw: bool,
+) -> Option<GatewayLorebookEntry> {
     let (revision, updated) = entry_revision(b);
     Some(GatewayLorebookEntry {
         name: b.get("name")?.as_str()?.to_string(),
@@ -233,7 +236,10 @@ pub async fn fetch_collections_gateway_registry() -> Result<Vec<GatewayCollectio
     Ok(results)
 }
 
-pub(super) fn collection_entry(c: &serde_json::Value, from_nsfw: bool) -> Option<GatewayCollectionEntry> {
+pub(super) fn collection_entry(
+    c: &serde_json::Value,
+    from_nsfw: bool,
+) -> Option<GatewayCollectionEntry> {
     let text = |key: &str| {
         c.get(key)
             .and_then(|v| v.as_str())

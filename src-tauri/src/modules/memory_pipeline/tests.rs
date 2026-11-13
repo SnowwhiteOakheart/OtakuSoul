@@ -191,7 +191,8 @@ fn test_extract_json_object_variations() {
     let plain = r#"{"no_significant_change": true}"#;
     assert_eq!(extract_json_object(plain).unwrap(), plain);
 
-    let with_markdown = "Here is the response:\n```json\n{\"no_significant_change\": false}\n```\nHope it helps!";
+    let with_markdown =
+        "Here is the response:\n```json\n{\"no_significant_change\": false}\n```\nHope it helps!";
     assert_eq!(
         extract_json_object(with_markdown).unwrap(),
         "{\"no_significant_change\": false}"

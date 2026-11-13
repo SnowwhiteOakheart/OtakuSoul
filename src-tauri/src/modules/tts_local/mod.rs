@@ -18,8 +18,12 @@ mod models;
 mod tests;
 
 pub use catalog::speaks_sound_tags;
-pub use cloning::{REFERENCE_RATE, ClonedVoice, create_cloned_voice, delete_cloned_voice, list_cloned_voices};
-pub use downloads::{TtsModelProgress, cancel_download, delete_model, download_model, download_model_with};
+pub use cloning::{
+    ClonedVoice, REFERENCE_RATE, create_cloned_voice, delete_cloned_voice, list_cloned_voices,
+};
+pub use downloads::{
+    TtsModelProgress, cancel_download, delete_model, download_model, download_model_with,
+};
 pub use engine::{LocalTtsEngine, engine, synthesize_data_url};
 pub use models::{
     DesignedVoice, TtsLocalSettings, TtsModelInfo, TtsVoiceInfo, VoicePrompt, list_models,

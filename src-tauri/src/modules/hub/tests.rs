@@ -81,7 +81,8 @@ fn hub_scenes_keep_translations_and_story_data() {
 
 #[test]
 fn whole_scene_states_and_missing_titles_are_accepted() {
-    let file = serde_json::json!({ "definition": { "title": "", "description": "x" }, "chat_log": [] });
+    let file =
+        serde_json::json!({ "definition": { "title": "", "description": "x" }, "chat_log": [] });
     let def = scene_definition_from_hub(file, "Aus dem Hub").unwrap();
     assert_eq!(def.title, "Aus dem Hub");
     assert!(def.solo_mode, "no party = the game master plays everyone");
@@ -103,8 +104,7 @@ fn registry_entries_carry_their_adult_marking() {
         scene_entry(&scene, false).unwrap().starting_location,
         "Startgebiet"
     );
-    let book =
-        serde_json::json!({"name": "B", "author": "a", "download_url": "u", "nsfw": true});
+    let book = serde_json::json!({"name": "B", "author": "a", "download_url": "u", "nsfw": true});
     assert!(lorebook_entry(&book, false).unwrap().nsfw);
     // Incomplete entries are skipped.
     assert!(character_entry(&serde_json::json!({"name": "X"}), false).is_none());
