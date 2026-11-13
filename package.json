@@ -20,8 +20,9 @@
     "check": "npm run check:rust && npm run check:web",
     "types:gen": "cargo test --manifest-path src-tauri/Cargo.toml --lib export_bindings && cargo test -p otakusoul-rules5e --lib export_bindings",
     "lint": "oxlint",
+    "docs:check": "node tools/docs_check.mjs",
     "i18n:check": "node tools/i18n_check.mjs",
-    "check:web": "oxlint && tsc --noEmit && vitest run",
+    "check:web": "node tools/docs_check.mjs && oxlint && tsc --noEmit && vitest run",
     "check:rust": "cargo fmt --manifest-path src-tauri/Cargo.toml --check && cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings && cargo test --manifest-path src-tauri/Cargo.toml"
   },
   "dependencies": {

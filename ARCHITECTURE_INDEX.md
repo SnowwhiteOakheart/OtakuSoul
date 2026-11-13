@@ -1,6 +1,6 @@
 # 📑 OtakuSoul Architektur- & Modul-Index (Tokensparende Schnellreferenz)
 
-> **Zweck für AI-Agenten:** Dieses Dokument dient als tokensparende Schnellreferenz für die gesamte OtakuSoul-Applikation (`OtakuSoul`). Anstatt die vollständige 61 KB große `AI.md` (~15.000 Tokens) bei jeder Aufgabe einzulesen, bietet dieser Index eine strukturierte Übersicht: Kernregeln, Entwicklerbefehle, Modul-Landkarte und einen gezielten Themen-Navigator zu den Stolperfallen in `AI.md`.
+> **Zweck für AI-Agenten:** Dieses Dokument dient als tokensparende Schnellreferenz für die gesamte OtakuSoul-Applikation (`OtakuSoul`). Die ausführlichen technischen Stolperfallen liegen modular in [`docs/ai/`](docs/ai/), während [`AI.md`](AI.md) nur noch die kompakten Kernregeln, Befehle und eine Modul-Übersicht enthält – so lädt ein Agent gezielt nur das jeweils betroffene Subsystem.
 
 ---
 
@@ -23,10 +23,11 @@
 | Zweck | Befehl | Bemerkung |
 |---|---|---|
 | **App starten (Dev)** | `npm run tauri dev` (Linux: `npm run tauri:linux`) | Startet Vite-Frontend + Rust-Backend |
-| **Alle Prüfungen** | `npm run check` | Führt Oxlint, TypeScript TypeCheck und Cargo Clippy aus |
+| **Alle Prüfungen** | `npm run check` | Führt Oxlint, TypeScript TypeCheck, Vitest, Rustfmt, Clippy und Cargo Test aus |
+| **Doku-Links prüfen** | `npm run docs:check` | Prüft Verweise in `AI.md` & `ARCHITECTURE_INDEX.md` auf `docs/ai/*.md` |
 | **Übersetzungen prüfen** | `npm run i18n:check [-- datei.json]` | Fehlende/unbekannte Schlüssel, Platzhalter gegen `de.json` |
 | **Typen synchronisieren** | `npm run types:gen` | Generiert TS-Typen aus Rust via `ts-rs` nach `src/types/generated/` |
-| **E2E-Tests (Mock-LLM)** | `npm run e2e` (`npm run e2e:run` ohne Build) | Baut nach `target/e2e`, nutzt tauri-driver + Mock-LLM |
+| **E2E-Rauchtest (Mock-LLM)** | `npm run e2e` (`npm run e2e:run` ohne Build) | Baut nach `target/e2e`, nutzt tauri-driver + Mock-LLM |
 | **Perf-Messung** | `npm run e2e:perf` | Langchat-Stresstest (1.000 Nachrichten) |
 | **Screenshots erstellen** | `xvfb-run -a node e2e/readme-screenshots.mjs de\|en\|ru` | Erstellt UI-Screenshots unter `docs/assets/screenshots/<lang>/` |
 | **README-Animation** | `node e2e/readme-demo.mjs de\|en\|ru` | GIF-Rundgang nach `docs/assets/demo/<lang>.gif` (braucht `ffmpeg`; Linux mit `xvfb-run -a`, Windows mit `tauri-driver` + passendem `msedgedriver` im PATH) |
@@ -55,7 +56,7 @@
 
 ### 2. React-Frontend (`src/`)
 * **API-Brücke:** `services/api.ts` (Typsichere Wrapper um alle Tauri `invoke`-Befehle).
-* **Zustandsverwaltung (Zustand):** `store/slices/*.ts` (z. B. `chatSlice.ts`, `stageSlice.ts`, `characterSlice.ts`, `settingsSlice.ts`, `avatarSlice.ts`, `memorySlice.ts`). Zugriff per `useStoreFields('fieldA', 'fieldB')`.
+* **Zustandsverwaltung (Zustand):** `store/slices/*.ts` (Z. B. `chatSlice.ts`, `stageSlice.ts`, `characterSlice.ts`, `settingsSlice.ts`, `avatarSlice.ts`, `memorySlice.ts`). Zugriff per `useStoreFields('fieldA', 'fieldB')`.
 * **Prompt & Lore Hilfsfunktionen:** `store/helpers.ts` (`resolvePromptWithLore`, `llmTarget`).
 * **Internationalisierung & 3-Ebenen-Sprachauflösung:**
   * **Ebene 1 (Mitgelieferte Presets):** `presets/locales/ui/{de,en,ru,ja}.json` (fest im App-Bundle integriert, Deutsch dient als TypeScript-Typquelle `TranslationKey`).
@@ -69,32 +70,27 @@
 |---|---|---|
 | **Chat** | `chat/` (`ChatView.tsx`, `MessageList.tsx`, `ChatComposer.tsx`, `ChatSidebar.tsx`, `PromptHitsView.tsx`) | Haupt-Chatansicht, virtualisierte Nachrichtenliste, Eingabefeld, Modell-Auswahl, Swipes. |
 | **Stage (Rollenspiel)** | `stage/` (`StageView.tsx`, `Combat5ePanel.tsx`, `StageBattleMap.tsx`, `Explore5ePanel.tsx`, `StoryGallery.tsx`) | Rollenspiel-Interface, interaktives Spielbrett (Battlemap), 5e-Kampfpanel, Erkundungs-HUD. |
-| **Avatare & 3D** | `avatars/` (`AvatarCanvas.tsx`, `VrmViewer.tsx`, `GltfViewer.tsx`, `MmdViewer.tsx`, `AvatarManagerView.tsx`) | 3D-Bühne (`avatarStage.ts`), VRM, GLB/glTF, MMD (PMX/VMD), Gesten, Gesichts-Morphs & Knochen. |
+| **Avatare & 3D** | `avatar/` (`AvatarCanvas.tsx`, `VrmViewer.tsx`, `GltfViewer.tsx`, `MmdViewer.tsx`) & `avatars/` (`AvatarManagerView.tsx`) | 3D-Bühne (`avatar/avatarStage.ts`), VRM, GLB/glTF, MMD (PMX/VMD), Gesten, Gesichts-Morphs & Knochen. |
 | **Inochi2D-Laufzeit** | `services/inochi2d/` (`inp.ts`, `puppet.ts`, `renderer.ts`, `controls.ts`), `avatar/Inochi2dViewer.tsx` | Eigene WebGL2-Laufzeit für Inochi2D-Puppen: Masken, Composites, Mesh-Gruppen, Physik, Lippen/Blick/Emotionen über Parameternamen. |
 | **Charaktere** | `characters/` (`CharacterPreviewModal.tsx`, `CharacterVoiceModal.tsx`, `Character5eSheet.tsx`) | Charakterkarten-Vorschau, Stimmzuweisung, 5e-Charakterbogen. |
 | **Einstellungen & Hub** | `settings/` (`sections/*`), `hub/` (`HubView.tsx`), `onboarding/` (`OnboardingParts.tsx`) | Expertenmodus, Server- & Provider-Tuning, Hub-Katalog, Ersteinrichtungs-Assistent. |
 
 ---
 
-## 🧭 Themen-Navigator: Stolperfallen & Details in `AI.md`
+## 🧭 Themen-Navigator: Modulare Subsystem-Dokus (`docs/ai/`)
 
-Wenn Du an einem bestimmten Subsystem arbeitest, lies gezielt die angegebenen Zeilen in [`AI.md`](AI.md), anstatt die gesamte Datei zu laden:
+Wenn Du an einem bestimmten Subsystem arbeitest, lies gezielt die zugehörige Datei unter [`docs/ai/`](docs/ai/) statt unnötigen Gesamtkontext zu laden:
 
-| Thema / Subsystem | Relevante Quellcode-Dateien | H3-Abschnitt in `AI.md` | Wichtigste Aspekte |
+| Thema / Subsystem | Relevante Quellcode-Dateien | Detail-Dokument | Wichtigste Aspekte |
 |---|---|---|---|
-| **Sprachdateien & Dynamisches i18n** | `src-tauri/src/modules/ui_locales.rs`<br>`src-tauri/src/modules/content_lang.rs`<br>`presets/locales/ui/*.json`<br>`src/i18n/`<br>`src/components/settings/sections/GeneralSettings.tsx` | `## Richtlinien für Code und Oberfläche` (Zeilen 167–188) | 3-Ebenen-Auflösung (Presets → Hub-Cache → User-Verzeichnis), `__meta`-Header & Versionierung, Fallback-Kette (`fallback → en → de`), Trennung UI- vs. Spieltexte (`content_lang`), `_template.json`, Import/Papierkorb, `npm run i18n:check`. |
-| **Chat-Pipeline & Prompt** | `src-tauri/src/modules/inference.rs`<br>`src/store/slices/chatSlice.ts` | `### 3. Chat-Pipeline, Streaming, Abbrüche & Verlauf` | Streaming-Lifecycle, `generationId`, Abbrüche via `with_abort`, Kontextfenster-Einpassung, Swipes, Entwürfe. |
-| **Stage, GM & Story-Galerie** | `src-tauri/src/modules/stage/`<br>`src/components/stage/` | `### 4. Stage (Rollenspiel), GM-Director, NPCs & Story-Galerie` | Separater `stage-stream`, Sprecherreihenfolge (`director.rs`), NPC-Gedächtnis, dynamische Hintergründe, Story-Galerie. |
-| **D&D 5e Regelsystem** | `crates/otakusoul-rules5e/` (gemeinsam mit Android)<br>`src/components/stage/Combat5e*.tsx` | `### 5. D&D 5e-Regelsystem (Kampf, Spielbrett, Magie, Erkundung)` | Engine entscheidet Regeln deterministisch (`CombatEvent`), LLM erzählt nur; Spielbrett-Wegfindung, Zauber, Nebel. Ablauf im Crate (Android nutzt ihn über festen Commit), Golden-Test `stage/golden5e_tests.rs`. |
-| **Inochi2D-Puppen** | `src/services/inochi2d/`<br>`src-tauri/src/modules/inochi2d.rs` | `### 6. 3D-Avatare (VRM, GLB, MMD), Gesten & 2D-Porträts` | Vormultiplizierte Texturen, `Mask`-Knoten, Mesh-Gruppen, Parameter-Erkennung am Namen, Prüfung per Headless-Chromium. |
-| **3D-Avatare (VRM, glTF, MMD)** | `src/components/avatars/`<br>`src/services/avatarStage.ts` | `### 6. 3D-Avatare (VRM, GLB, MMD), Gesten & 2D-Porträts` | Knochen-Retargeting (`gltfRig.ts`), Morphs vs. Knochen im Gesicht, MMD-Physik-Reihenfolge, Gesten & Formanten-Lipsync. |
-| **Lokale Server & GPU/VRAM** | `src-tauri/src/modules/llama_manager.rs`<br>`src-tauri/src/modules/runtimes.rs` | `### 2. Hardware, GPU-Auswahl & Lokale Modell-Server` | VRAM-Vorabprüfung, iGPU-Filterung (`primary_gpu`), Linux-CUDA ohne UMD vs. Vulkan, Starter-Modell-Katalog. |
-| **Lokale TTS & Stimmklonen** | `src-tauri/src/modules/tts_local.rs`<br>`src/services/voiceEffects.ts` | `### 7. Audio, Lokale TTS, Stimmklonen & Effekte` | CrispASR / F5 / Chatterbox-Klonen (24-kHz-WAV), Pitch-Effekte via WebAudio WSOLA, Stimm-Audioschnitt (`CloneTrimmer`). |
-| **Gedächtnis & SQLite (Memory)** | `src-tauri/src/modules/memory/`<br>`src/store/slices/memorySlice.ts` | `### 8. Kognitives Gedächtnis, SQLite & Reflexion` | Transaktionen für Snapshots/Importe, gegenseitige Sperrung bei Reflexionen, Entwürfe im Drawer, Herkunft episodischer Fakten. |
-| **Hub-Synchronisation & Updates** | `src-tauri/src/modules/hub.rs`<br>`src/components/hub/` | `### 9. Hub-Synchronisation, Registries & Daten-Pakete` | Versionsprüfung via `revision`, Übersetzungsschlüssel, automatische Asset-Downloads (`backgrounds`), Konfliktbehandlung, Sammlungen je Geschichte (`collections_registry.json`). |
-| **NSFW, FSK18 & Content-Filter** | `src-tauri/src/modules/nsfw.rs`<br>`src-tauri/src/modules/hub.rs`<br>`src/store/slices/settingsSlice.ts`<br>`src/components/settings/sections/NsfwSettings.tsx` | `### 9. Hub-Synchronisation, Registries & Daten-Pakete` | Altersfreigabe (`nsfw_enabled` + `adult_confirmed`), Multi-Hub (`otakusoul-data-nsfw`), Tagging per `extensions.otakusoul_nsfw`, Ausblenden ohne Datenverlust, 4 Romance-Zusatzemotionen. |
-| **Fenster, Tray & Lifecycles** | `src-tauri/src/lib.rs`<br>`src/hooks/useCloseToTray.ts` | `### 1. App-Lifecycle, Fenster, IPC & E2E-Harness` | `close_to_tray`, `PR_SET_PDEATHSIG` für Server-Kindprozesse, `target/e2e` gegen Überschreiben durch `cargo test`. |
-| **Begleiter & Sicherheit** | `src-tauri/src/modules/companion.rs`<br>`src/components/companion/` | `### 10. Begleiter (Companion) & Befehlspalette` | `execute_code`-Sicherheitsflag, HITL-Bestätigungsbanner für Tools/Dateizugriffe, Befehlspalette-Verknüpfung. |
+| **Sprachdateien, UI-Regeln & Lifecycle** | `src-tauri/src/modules/ui_locales.rs`<br>`src-tauri/src/modules/content_lang.rs`<br>`src-tauri/src/lib.rs`<br>`presets/locales/ui/*.json`<br>`src/i18n/` | [`docs/ai/app-ui-i18n.md`](docs/ai/app-ui-i18n.md) | 3-Ebenen-i18n, `ContentLang::t`, Store-Fehler, WCAG-Kontrast, `ModalOverlay`, `close_to_tray`, `target/e2e`, `commandCheck` & `wireCheck`, `read_file_binary`. |
+| **Chat-Pipeline, Prompt & Proaktivität** | `src-tauri/src/modules/inference.rs`<br>`src-tauri/src/modules/group_chat.rs`<br>`src/store/slices/chatSlice.ts` | [`docs/ai/chat-pipeline.md`](docs/ai/chat-pipeline.md) | Streaming-Lifecycle, `generationId`, Gruppen-Chats, JSONL, Regex/ST-Presets, Makros, `stable_cut`, Abbrüche (`with_abort`), Proaktivität/Träume/Off-Screen. |
+| **Lokale Server, GPU/VRAM, Audio & TTS** | `src-tauri/src/modules/llama_manager.rs`<br>`src-tauri/src/modules/runtimes.rs`<br>`src-tauri/src/modules/tts_local.rs`<br>`src-tauri/src/modules/voice.rs` | [`docs/ai/hardware-models-audio.md`](docs/ai/hardware-models-audio.md) | VRAM-Planer, KV-Cache (`q8_0`), `acestep.cpp`, LoRAs, `mmproj`, Downloads (`segmented_download`), Onboarding, ONNX/Kokoro, Edge-TTS, Stimmklonen, Barge-In, Silero VAD. |
+| **Stage, GM, D&D 5e, Replay & Webtoon** | `src-tauri/src/modules/stage/`<br>`crates/otakusoul-rules5e/`<br>`src/components/stage/` | [`docs/ai/stage-and-5e.md`](docs/ai/stage-and-5e.md) | `stage-stream`, Musik, `director.rs`, NPCs, Story-Galerie, deterministische 5e-Engine (UniFFI-Vertrag für Android), Spielbrett, Zauber, Erkundung, HTML/EPUB-Replay, Webtoon. |
+| **3D-Avatare, Inochi2D & 2D-Porträts** | `src/components/avatar/`<br>`src/components/avatars/`<br>`src/components/avatar/avatarStage.ts`<br>`src/services/inochi2d/`<br>`src-tauri/src/modules/inochi2d.rs` | [`docs/ai/avatars-and-inochi2d.md`](docs/ai/avatars-and-inochi2d.md) | VRM, glTF-Eigenanimationen & `clipFit`, MMD, Avatar-Manager & Cache, VRoid Hub, `MorphingPortrait` (keine CSS-Endlosanimationen), Inochi2D-WebGL2, Avatar-Berührung. |
+| **Gedächtnis, SQLite & Device-Sync** | `src-tauri/src/modules/memory/`<br>`src-tauri/src/modules/memory_pipeline.rs`<br>`src-tauri/src/modules/device_sync.rs`<br>`src/store/slices/memorySlice.ts` | [`docs/ai/memory-sqlite.md`](docs/ai/memory-sqlite.md) | Transaktionen & `*_on`-Helfer, FTS5 (`recall.rs`), Migrationen v4–v11, `superseded_at`, Vorhaben, Cleanup, Atlas, Tagebuch, Zweige (`@branch-`), `lenient`-Router-JSON. |
+| **Hub, NSFW & Beiträge** | `src-tauri/src/modules/hub.rs`<br>`src-tauri/src/modules/nsfw.rs`<br>`src-tauri/src/modules/contribution.rs`<br>`src/components/hub/` | [`docs/ai/hub-nsfw-import.md`](docs/ai/hub-nsfw-import.md) | `pin_latest_commits`, 18+/NSFW-Ausblendung, `[emotion: NAME]` & Cues, Hub-Updates, Sammlungen & Virtualizer-Performance, Charakter-Importe, Beitrag (B4). |
+| **Companion, Desktop-Pet & Overlay** | `src-tauri/src/modules/companion.rs`<br>`src-tauri/src/modules/desktop_windows.rs`<br>`src-tauri/src/modules/web_server.rs`<br>`src/components/companion/DesktopPet.tsx` | [`docs/ai/companion-pet-overlay.md`](docs/ai/companion-pet-overlay.md) | `execute_code`, Befehlspalette, Companion-HITL, Desktop-Pet (Sitz-/Gehposen, Fenster-Scan, XWayland/KWin-Bridge), OBS-Streaming-Overlay (`/overlay`). |
 
 ---
 
@@ -111,4 +107,3 @@ Einige Inhalte in `OtakuSoul` sind gebündelte Standard-Kopien (Bundles) aus dem
 | `presets/characters/*` | – (nur in der App: Einsteigerfiguren Shiori Amane, Sota Minase, Lirwen, Faelion) | Frühere Presets liegen nur noch im Hub: Ayu Ikue und Cosmos (`presets/sakura-succubus-3/`), Emilia (`presets/re-zero/`), jeweils über `soul_registry.json` / `cards_gateway/` |
 | `presets/stories/scenes/*` | `stages_gateway/*.json` | Werden im Hub über `stages_registry.json` bezogen |
 | NSFW-Karten, Stages & Lorebooks | `otakusoul-data-nsfw` (`cards_gateway/`, `stages_gateway/`) | Werden nur bei aktiver 18+-Freigabe über `hub::nsfw_registry_items` eingebunden |
-
