@@ -2922,6 +2922,7 @@
   "int.tabBackup": "Profil-Backup",
   "int.webTitle": "Lokaler Axum Web-Server",
   "int.webIntro": "Chatte vom Smartphone, Tablet oder Laptop im selben WLAN ohne App-Installation",
+  "int.webHowItWorks": "Das Handy schreibt in den Chat, der hier gerade offen ist – dieselbe Figur, dasselbe Gedächtnis; die Stimme spricht am Computer. Läuft der Server beim Beenden, startet er beim nächsten App-Start wieder.",
   "int.stopServer": "Server stoppen",
   "int.startServer": "Server starten",
   "int.webWarning": "Der Server ist für alle Geräte im Netzwerk erreichbar und nutzt unverschlüsseltes HTTP. Nur in vertrauenswürdigen Netzwerken (Heim-WLAN) verwenden und die Verbindungs-Adresse nicht weitergeben – sie enthält den Zugangs-Token.",

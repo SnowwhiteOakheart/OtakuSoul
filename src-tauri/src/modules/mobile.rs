@@ -72,7 +72,8 @@ fn short(text: &str) -> String {
 /// Eine bereinigte Nachricht für die Seiten oder `None`, wenn sie nicht zu uns gehört.
 ///
 /// - `state`: Name, Stimmung, `thinking`, Porträt (nur `data:image/…`, leer = entfernen)
-/// - `history`: `{messages: [{role: user|assistant, text}]}`, die letzten Nachrichten des offenen Chats
+/// - `history`: `{messages: [{role: user|assistant, text, name?}]}`, die letzten Nachrichten des
+///   offenen Chats (`name` nur bei Gästen im Gruppen-Chat)
 /// - `notice`: `{code}`, ein Hinweis an das Handy (`busy`, `failed`, `noChat`)
 fn sanitize(message: &Value) -> Option<Value> {
     match message.get("type")?.as_str()? {
@@ -112,7 +113,12 @@ fn sanitize(message: &Value) -> Option<Value> {
                         return None;
                     }
                     let text = m.get("text")?.as_str()?;
-                    Some(serde_json::json!({ "role": role, "text": short(text) }))
+                    let mut out = serde_json::json!({ "role": role, "text": short(text) });
+                    // Speaker of a guest's reply in a group chat.
+                    if let Some(name) = m.get("name").and_then(Value::as_str) {
+                        out["name"] = Value::String(name.chars().take(80).collect());
+                    }
+                    Some(out)
                 })
                 .collect();
             Some(serde_json::json!({ "type": "history", "messages": messages }))
@@ -239,7 +245,10 @@ mod tests {
     #[test]
     fn history_keeps_only_user_and_assistant_and_the_last_messages() {
         let hub = fresh();
-        let mut list = vec![json!({ "role": "system", "text": "geheim" })];
+        let mut list = vec![
+            json!({ "role": "system", "text": "geheim" }),
+            json!({ "role": "assistant", "text": "Gast", "name": 7 }),
+        ];
         for i in 0..100 {
             let role = if i % 2 == 0 { "user" } else { "assistant" };
             list.push(json!({ "role": role, "text": format!("n{i}") }));
@@ -250,6 +259,9 @@ mod tests {
         assert_eq!(messages.len(), MAX_MESSAGES);
         assert_eq!(messages.last().unwrap()["text"], "n99");
         assert!(messages.iter().all(|m| m["role"] != "system"));
+        hub.push(&json!({ "type": "history", "messages": [{ "role": "assistant", "text": "Hi", "name": "Lirwen" }] }));
+        let snap: Value = serde_json::from_str(&hub.snapshot()[0]).unwrap();
+        assert_eq!(snap["messages"][0]["name"], "Lirwen");
     }
 
     #[tokio::test]

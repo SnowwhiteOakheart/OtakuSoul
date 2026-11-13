@@ -53,9 +53,23 @@ try {
   const desktop = await browser.execute(() => document.body.innerText);
   assert.ok(desktop.includes('Hallo vom Handy'), 'Nachricht fehlt am Desktop');
 
-  socket.close();
+  // The card's picture comes as a small data URL (in the app it is an asset URL the phone cannot load).
+  await browser.waitUntil(() => messages.some((m) => m.type === 'state' && m.portrait?.startsWith('data:image/')), {
+    timeout: 15_000,
+    timeoutMsg: 'Porträt kam nicht als data:image an',
+  });
+  const portrait = messages.findLast((m) => m.type === 'state' && m.portrait)?.portrait ?? '';
+  assert.ok(portrait.length < 200_000, `Porträt zu groß: ${portrait.length} Zeichen`);
+
+  // A new token ends the open connection; the old one no longer works.
+  let closed = false;
+  socket.onclose = () => { closed = true; };
+  await invoke('regenerate_web_server_token');
+  await browser.waitUntil(() => closed, { timeout: 10_000, timeoutMsg: 'Verbindung blieb nach neuem Token offen' });
+  assert.equal((await post('noch da?')).status, 401, 'Altes Token gilt noch');
+
   await invoke('stop_web_server');
-  console.log('Mobiler Web-Client: Auth, Chat vom Handy, Antwort und Verlauf über WebSocket.');
+  console.log('Mobiler Web-Client: Auth, Chat vom Handy, Antwort, Verlauf, Porträt und Token-Wechsel.');
 } finally {
   await close();
 }

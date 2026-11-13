@@ -4,11 +4,12 @@ import { useAppStore } from '../store/useAppStore';
 import { api } from '../services/api';
 import { APP_DEFAULT_COMPANION_NAME } from '../constants/branding';
 import { withoutEmotionTag } from '../utils/replyTags';
+import { followPortrait } from './portraitFeed';
 
 /** Event of the backend: a message typed in the phone's web client (`{ text }`). */
 const MOBILE_MESSAGE_EVENT = 'mobile-message';
-/** History updates are bundled; a reply that streams in does not send one per token. */
-const HISTORY_DEBOUNCE_MS = 200;
+/** The phone shows the picture small; more would only cost bandwidth. */
+const PORTRAIT_PX = 192;
 
 type StoreState = ReturnType<typeof useAppStore.getState>;
 
@@ -20,10 +21,14 @@ function phoneText(content: string): string {
     .trim();
 }
 
+/** The open chat for the phone; in a group chat a guest's replies carry the guest's name. */
 function historyOf(s: StoreState) {
   return s.storedMessages
     .filter((m) => m.role === 'user' || m.role === 'assistant')
-    .map((m) => ({ role: m.role, text: phoneText(m.content) }))
+    .map((m) => {
+      const guest = m.role === 'assistant' && m.speaker_id ? s.availableCharacters.find((c) => c.id === m.speaker_id) : undefined;
+      return { role: m.role, text: phoneText(m.content), ...(guest ? { name: guest.card.data.name } : {}) };
+    })
     .filter((m) => m.text);
 }
 
@@ -36,9 +41,8 @@ function historyOf(s: StoreState) {
 export function useMobileBridge(enabled = true) {
   useEffect(() => {
     if (!enabled) return undefined;
-    let sentPortrait: string | null = null;
     let lastState = '';
-    let historyTimer: ReturnType<typeof setTimeout> | undefined;
+    let historyQueued = false;
 
     const push = (message: Record<string, unknown>) => {
       void api.mobilePush(message).catch(() => {});
@@ -46,28 +50,27 @@ export function useMobileBridge(enabled = true) {
 
     const sendState = () => {
       const s = useAppStore.getState();
-      const state: Record<string, unknown> = {
+      const state = {
         type: 'state',
         characterName: s.activeCharacter?.card.data.name || APP_DEFAULT_COMPANION_NAME,
         emotion: s.currentEmotion.emotion,
         thinking: s.isGenerating,
       };
-      const portrait = s.activeCharacter?.avatar_data_url ?? '';
-      const key = JSON.stringify(state) + (portrait === sentPortrait ? '' : '+portrait');
+      const key = JSON.stringify(state);
       if (key === lastState) return;
       lastState = key;
-      if (portrait !== sentPortrait) {
-        state.portrait = portrait;
-        sentPortrait = portrait;
-      }
       push(state);
     };
 
+    // Changes of one store update are bundled into one push. A microtask rather than a timer:
+    // the main window often sits hidden in the tray, where the webview throttles timers.
     const sendHistory = () => {
-      clearTimeout(historyTimer);
-      historyTimer = setTimeout(() => {
+      if (historyQueued) return;
+      historyQueued = true;
+      queueMicrotask(() => {
+        historyQueued = false;
         push({ type: 'history', messages: historyOf(useAppStore.getState()) });
-      }, HISTORY_DEBOUNCE_MS);
+      });
     };
 
     const stopStore = useAppStore.subscribe((s, prev) => {
@@ -76,6 +79,7 @@ export function useMobileBridge(enabled = true) {
       }
       if (s.storedMessages !== prev.storedMessages || s.activeChatId !== prev.activeChatId) sendHistory();
     });
+    const stopPortrait = followPortrait(PORTRAIT_PX, (portrait) => push({ type: 'state', portrait }));
 
     const stopInbox = listen<{ text?: string }>(MOBILE_MESSAGE_EVENT, (event) => {
       const text = event.payload?.text?.trim();
@@ -95,8 +99,8 @@ export function useMobileBridge(enabled = true) {
     sendState();
     sendHistory();
     return () => {
-      clearTimeout(historyTimer);
       stopStore();
+      stopPortrait();
       void stopInbox.then((stop) => stop());
     };
   }, [enabled]);

@@ -6,7 +6,10 @@ import { api } from '../services/api';
 import { APP_DEFAULT_COMPANION_NAME } from '../constants/branding';
 import { bubbleText } from '../components/companion/petBehavior';
 import { watchNewReplies } from './replyWatcher';
+import { followPortrait } from './portraitFeed';
 
+/** The overlay's picture is at most this large (px); the page scales it to its own size. */
+const PORTRAIT_PX = 512;
 /** Voice levels to the overlay at most this often. */
 const AUDIO_FRAME_MS = 50;
 
@@ -21,8 +24,6 @@ export function useOverlayBridge(enabled = true) {
     if (!enabled) return undefined;
     /** Open overlay pages (the backend's answer to the last push). */
     let pages = 0;
-    /** The portrait the backend has (a data URL, often MBs): it goes along only when it changed. */
-    let sentPortrait: string | null = null;
     let lastState = '';
 
     const push = (message: Record<string, unknown>) => {
@@ -43,14 +44,9 @@ export function useOverlayBridge(enabled = true) {
         expression: s.currentEmotion.vrm_expression,
         thinking: s.isGenerating,
       };
-      const portrait = s.activeCharacter?.avatar_data_url ?? '';
-      const key = JSON.stringify(state) + (portrait === sentPortrait ? '' : '+portrait');
+      const key = JSON.stringify(state);
       if (key === lastState) return;
       lastState = key;
-      if (portrait !== sentPortrait) {
-        state.portrait = portrait;
-        sentPortrait = portrait;
-      }
       push(state);
     };
 
@@ -59,6 +55,8 @@ export function useOverlayBridge(enabled = true) {
         sendState();
       }
     });
+    // The picture goes along only when it changed (a data URL; the page cannot load asset URLs).
+    const stopPortrait = followPortrait(PORTRAIT_PX, (portrait) => push({ type: 'state', portrait }));
     const stopReplies = watchNewReplies((text) => push({ type: 'say', text }));
 
     let lastFrameAt = 0;
@@ -83,6 +81,7 @@ export function useOverlayBridge(enabled = true) {
     sendState();
     return () => {
       stopStore();
+      stopPortrait();
       stopReplies();
       stopFrames();
       stopSentences();

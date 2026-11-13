@@ -165,7 +165,7 @@ export const WebClientTab: React.FC = () => {
                   ) : (
                     <Copy className="w-3.5 h-3.5" />
                   )}
-                  <span>{copiedUrl ? 'Kopiert!' : 'Kopieren'}</span>
+                  <span>{copiedUrl ? t('common.copied') : t('common.copy')}</span>
                 </button>
                 <a
                   href={webServerStatus.connection_url}
@@ -177,6 +177,7 @@ export const WebClientTab: React.FC = () => {
                   <ExternalLink className="w-4 h-4" />
                 </a>
               </div>
+              <p className="text-xs text-slate-400">{t('int.webHowItWorks')}</p>
             </div>
           )}
 

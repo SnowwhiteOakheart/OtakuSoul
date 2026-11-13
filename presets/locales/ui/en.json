@@ -2922,6 +2922,7 @@
   "int.tabBackup": "Profile backup",
   "int.webTitle": "Local web server",
   "int.webIntro": "Chat from your phone, tablet or laptop on the same Wi-Fi without installing an app",
+  "int.webHowItWorks": "The phone writes into the chat that is open here – same character, same memory; the voice speaks on the computer. If the server is running when you quit, it starts again with the app.",
   "int.stopServer": "Stop server",
   "int.startServer": "Start server",
   "int.webWarning": "The server is reachable by every device on the network and uses unencrypted HTTP. Only use it on trusted networks (home Wi-Fi) and don't share the connection address – it contains the access token.",

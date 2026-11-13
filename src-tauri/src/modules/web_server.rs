@@ -144,7 +144,9 @@ impl WebServerManager {
         Ok(())
     }
 
-    pub async fn save_config(&self, config: WebServerConfig) -> Result<(), String> {
+    pub async fn save_config(&self, mut config: WebServerConfig) -> Result<(), String> {
+        // Whether the server runs is tracked by start/stop; a form opened earlier must not reset it.
+        config.enabled = self.config.read().await.enabled;
         Self::save_config_internal(&config)?;
         *self.active_token.write().await = config.auth_token.clone();
         *self.config.write().await = config;
@@ -362,10 +364,13 @@ async fn handle_overlay_ws(
     if !check_auth(&headers, &params, &ctx.auth_token.read().await) {
         return (StatusCode::UNAUTHORIZED, "Invalid token for WebSocket").into_response();
     }
-    ws.on_upgrade(handle_overlay_socket)
+    let token = Arc::clone(&ctx.auth_token);
+    ws.on_upgrade(move |socket| handle_overlay_socket(socket, token))
 }
 
-async fn handle_overlay_socket(mut socket: WebSocket) {
+async fn handle_overlay_socket(mut socket: WebSocket, token: Arc<RwLock<String>>) {
+    let granted = token.read().await.clone();
+    let mut recheck = token_recheck();
     let hub = crate::modules::overlay::hub();
     let (mut feed, _guard) = hub.subscribe();
     if let Some(state) = hub.snapshot()
@@ -375,6 +380,13 @@ async fn handle_overlay_socket(mut socket: WebSocket) {
     }
     loop {
         tokio::select! {
+            // A new token in the app ends connections opened with the old one.
+            _ = recheck.tick() => {
+                if *token.read().await != granted {
+                    let _ = socket.send(WsMessage::Close(None)).await;
+                    break;
+                }
+            }
             message = feed.recv() => match message {
                 Ok(text) => {
                     if socket.send(WsMessage::Text(text.into())).await.is_err() {
@@ -452,11 +464,21 @@ async fn handle_ws(
     if !check_auth(&headers, &params, &ctx.auth_token.read().await) {
         return (StatusCode::UNAUTHORIZED, "Invalid token for WebSocket").into_response();
     }
-    ws.on_upgrade(handle_ws_socket)
+    let token = Arc::clone(&ctx.auth_token);
+    ws.on_upgrade(move |socket| handle_ws_socket(socket, token))
+}
+
+/// How often an open WebSocket checks that its token is still the current one.
+fn token_recheck() -> tokio::time::Interval {
+    let mut interval = tokio::time::interval(std::time::Duration::from_secs(3));
+    interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+    interval
 }
 
 /// The phone's page: state and history first, then everything the main window reports.
-async fn handle_ws_socket(mut socket: WebSocket) {
+async fn handle_ws_socket(mut socket: WebSocket, token: Arc<RwLock<String>>) {
+    let granted = token.read().await.clone();
+    let mut recheck = token_recheck();
     let hub = crate::modules::mobile::hub();
     // Subscribe before the snapshot so nothing falls between the two.
     let (mut feed, _guard) = hub.subscribe();
@@ -467,6 +489,13 @@ async fn handle_ws_socket(mut socket: WebSocket) {
     }
     loop {
         tokio::select! {
+            // A new token in the app ends connections opened with the old one.
+            _ = recheck.tick() => {
+                if *token.read().await != granted {
+                    let _ = socket.send(WsMessage::Close(None)).await;
+                    break;
+                }
+            }
             message = feed.recv() => match message {
                 Ok(text) => {
                     if socket.send(WsMessage::Text(text.into())).await.is_err() {

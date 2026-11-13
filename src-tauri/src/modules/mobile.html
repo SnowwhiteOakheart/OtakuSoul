@@ -25,6 +25,7 @@
     .msg.assistant { align-self: flex-start; background: #0f172a; border: 1px solid #1e293b; color: #e2e8f0; border-bottom-left-radius: 5px; }
     .msg.user { align-self: flex-end; background: #0891b2; color: #fff; border-bottom-right-radius: 5px; }
     .msg.pending { opacity: .6; }
+    .msg .name { display: block; margin-bottom: 2px; font-size: 12px; font-weight: 700; color: #f0abfc; }
     .note { align-self: center; max-width: 92%; padding: 6px 12px; border-radius: 12px; background: #3f1d2b; color: #fda4af; font-size: 13px; text-align: center; }
     .empty { margin: auto; max-width: 280px; text-align: center; color: #64748b; font-size: 14px; line-height: 1.5; }
     .typing { align-self: flex-start; display: flex; gap: 5px; padding: 12px 14px; border-radius: 16px; background: #0f172a; border: 1px solid #1e293b; }
@@ -146,10 +147,16 @@
       $('statusText').textContent = denied ? tr('denied') : !connected ? tr('offline') : desktopReady ? tr('online') : tr('waiting');
     }
 
-    function bubble(role, text, extra) {
+    function bubble(role, text, extra, name) {
       const el = document.createElement('div');
       el.className = 'msg ' + role + (extra ? ' ' + extra : '');
-      el.textContent = text;
+      if (name) {
+        const label = document.createElement('span');
+        label.className = 'name';
+        label.textContent = name;
+        el.append(label);
+      }
+      el.append(text);
       return el;
     }
 
@@ -162,7 +169,7 @@
         empty.textContent = tr('empty');
         feed.append(empty);
       }
-      messages.forEach((m) => feed.append(bubble(m.role, m.text)));
+      messages.forEach((m) => feed.append(bubble(m.role, m.text, '', m.name)));
       pending.forEach((t) => feed.append(bubble('user', t, 'pending')));
       if (thinking) {
         const dots = document.createElement('div');
@@ -208,6 +215,9 @@
         render();
         feed.scrollTop = feed.scrollHeight;
       } else if (msg.type === 'notice') {
+        // The desktop did not take the message: give it back instead of losing it.
+        restore(pending.join('
+'));
         pending = [];
         showNotice(tr(msg.code));
       }
@@ -238,6 +248,12 @@
       };
     }
 
+    function restore(text) {
+      if (!text || input.value.trim()) return;
+      input.value = text;
+      autosize();
+    }
+
     async function send() {
       const text = input.value.trim();
       if (!text || sendBtn.disabled) return;
@@ -254,10 +270,12 @@
         });
         if (!res.ok) {
           pending = pending.filter((t) => t !== text);
+          if (res.status !== 413) restore(text);
           showNotice(res.status === 413 ? tr('tooLong') : res.status === 401 ? tr('denied') : tr('failed'));
         }
       } catch (_) {
         pending = pending.filter((t) => t !== text);
+        restore(text);
         showNotice(tr('connectionError'));
       }
     }
