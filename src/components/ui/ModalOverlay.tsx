@@ -51,6 +51,8 @@ export const ModalOverlay: React.FC<ModalOverlayProps> = ({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (dialogStack[dialogStack.length - 1] !== dialog) return;
       if (event.key === 'Escape' && onCloseRef.current) {
+        // Let an open dropdown menu handle Escape first instead of closing its enclosing modal.
+        if ((event.target as Element | null)?.closest?.('[role="menu"]')) return;
         event.preventDefault();
         event.stopPropagation();
         onCloseRef.current();

@@ -216,8 +216,16 @@ const SkillsModal: React.FC<{
   };
 
   return (
-    <ModalOverlay title={`Fertigkeiten - ${combatant.name}`} onClose={onClose}>
-      <div className="p-4 flex flex-col gap-3 w-[400px]">
+    <ModalOverlay
+      title={`Fertigkeiten - ${combatant.name}`}
+      aria-labelledby="skills-modal-title"
+      onClose={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+    >
+      <div className="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-950 p-5 shadow-2xl flex flex-col gap-3">
+        <h3 id="skills-modal-title" className="text-base font-bold text-slate-100">
+          Fertigkeiten – {combatant.name}
+        </h3>
         <p className="text-sm text-slate-400">
           Trage hier Fertigkeiten und Modifikatoren ein (z.B. "Wahrnehmung: 3"). Eine pro Zeile.
         </p>

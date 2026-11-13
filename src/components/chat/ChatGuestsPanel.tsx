@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { UserPlus, Users, X } from 'lucide-react';
 import { useStoreFields } from '../../store/useAppStore';
 import { useTranslation } from '../../i18n';
@@ -93,7 +94,8 @@ const GuestPicker = ({ exclude, onPick, onClose }: { exclude: string[]; onPick: 
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [availableCharacters, exclude, query, replyLanguage]);
 
-  return (
+  // Portal out of ChatSidebar (z-45) so the global header (z-50) never overlaps the picker.
+  return createPortal(
     <ModalOverlay onClose={onClose} aria-labelledby="guest-picker-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm p-4">
       <div className="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-4 shadow-xl space-y-3" data-guest-picker>
         <h2 id="guest-picker-title" className="text-sm font-semibold text-slate-100">{t('group.pickTitle')}</h2>
@@ -126,6 +128,7 @@ const GuestPicker = ({ exclude, onPick, onClose }: { exclude: string[]; onPick: 
           </button>
         </div>
       </div>
-    </ModalOverlay>
+    </ModalOverlay>,
+    document.body
   );
 };

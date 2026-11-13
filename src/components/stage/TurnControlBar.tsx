@@ -102,7 +102,7 @@ export const TurnControlBar: React.FC<{ compact?: boolean }> = ({ compact = fals
   };
 
   const activeMode = modeButtons.find((button) => button.mode === stageTurnMode);
-  const showGuide = guideOpen || (!compact && !guideSeen);
+  const showGuide = guideOpen || (!compact && !guideSeen && !stageState.combat.is_active);
   const choicePills = choices.length > 0 && (
     <div className={`flex flex-wrap items-center gap-2 pt-0.5 pb-1 ${compact ? 'max-h-28 overflow-y-auto' : ''}`}>
       {!compact && (

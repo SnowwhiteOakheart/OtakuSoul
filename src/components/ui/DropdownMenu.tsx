@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useRef, useState } from 'react';
+import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { Check, type LucideIcon } from 'lucide-react';
 
 export interface DropdownMenuItem {
@@ -42,9 +42,90 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const itemsRef = useRef(items);
   const menuId = useId();
+
+  useLayoutEffect(() => {
+    const menu = menuRef.current;
+    if (!open || !menu) return;
+    menu.style.left = '';
+    menu.style.right = '';
+    menu.style.top = '';
+    menu.style.bottom = '';
+    menu.style.marginTop = '';
+    menu.style.marginBottom = '';
+
+    // Clip against the viewport and any overflow-clipping ancestor so wrapped toolbars don't hide menus.
+    let minLeft = 4;
+    let maxRight = window.innerWidth - 4;
+    let minTop = 4;
+    let maxBottom = window.innerHeight - 4;
+    for (let ancestor = menu.parentElement; ancestor && ancestor !== document.body; ancestor = ancestor.parentElement) {
+      const style = window.getComputedStyle(ancestor);
+      const clipsX = ['hidden', 'clip', 'auto', 'scroll'].includes(style.overflowX);
+      const clipsY = ['hidden', 'clip', 'auto', 'scroll'].includes(style.overflowY);
+      if (!clipsX && !clipsY) continue;
+      const aRect = ancestor.getBoundingClientRect();
+      if (clipsX) {
+        minLeft = Math.max(minLeft, aRect.left + 4);
+        maxRight = Math.min(maxRight, aRect.right - 4);
+      }
+      if (clipsY) {
+        minTop = Math.max(minTop, aRect.top + 4);
+        maxBottom = Math.min(maxBottom, aRect.bottom - 4);
+      }
+    }
+
+    let rect = menu.getBoundingClientRect();
+    const overflowsX = (r: DOMRect) => Math.max(0, minLeft - r.left) + Math.max(0, r.right - maxRight);
+    if (overflowsX(rect) > 0) {
+      if (align === 'right') {
+        menu.style.right = 'auto';
+        menu.style.left = '0';
+      } else {
+        menu.style.left = 'auto';
+        menu.style.right = '0';
+      }
+      const flipped = menu.getBoundingClientRect();
+      if (overflowsX(flipped) > overflowsX(rect)) {
+        menu.style.left = '';
+        menu.style.right = '';
+      } else {
+        rect = flipped;
+      }
+      if (overflowsX(rect) > 0 && rootRef.current) {
+        const parentRect = rootRef.current.getBoundingClientRect();
+        const clampedLeft = Math.max(minLeft, Math.min(rect.left, maxRight - rect.width));
+        menu.style.right = 'auto';
+        menu.style.left = `${clampedLeft - parentRect.left}px`;
+      }
+    }
+
+    rect = menu.getBoundingClientRect();
+    const overflowsY = (r: DOMRect) => Math.max(0, minTop - r.top) + Math.max(0, r.bottom - maxBottom);
+    if (overflowsY(rect) > 0) {
+      if (placement === 'bottom') {
+        menu.style.top = 'auto';
+        menu.style.bottom = '100%';
+        menu.style.marginTop = '0';
+        menu.style.marginBottom = '0.375rem';
+      } else {
+        menu.style.bottom = 'auto';
+        menu.style.top = '100%';
+        menu.style.marginBottom = '0';
+        menu.style.marginTop = '0.375rem';
+      }
+      const flipped = menu.getBoundingClientRect();
+      if (overflowsY(flipped) >= overflowsY(rect)) {
+        menu.style.top = '';
+        menu.style.bottom = '';
+        menu.style.marginTop = '';
+        menu.style.marginBottom = '';
+      }
+    }
+  }, [open, align, placement]);
 
   useEffect(() => {
     itemsRef.current = items;
@@ -104,6 +185,7 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
       </button>
       {open && (
         <div
+          ref={menuRef}
           id={menuId}
           role="menu"
           tabIndex={-1}

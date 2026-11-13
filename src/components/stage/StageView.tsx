@@ -667,7 +667,7 @@ export const StageView: React.FC = () => {
                   ? 'min-h-[23rem] shrink-0 border-b border-slate-800 @min-[800px]:min-h-0 @min-[800px]:border-b-0 @min-[800px]:border-r'
                   : 'min-h-0'}`}
               >
-                <div className="relative flex min-h-0 flex-1 flex-col">
+                <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
                   <StageChatLog visible={!boardFocused} />
                   <StageSpeakerBubble />
                 </div>

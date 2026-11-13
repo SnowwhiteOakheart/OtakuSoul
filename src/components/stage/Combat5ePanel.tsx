@@ -130,7 +130,11 @@ export const Combat5ePanel: React.FC<{ boardControls?: BoardControls }> = ({ boa
       aria-label={t('fight.title')}
       data-testid="combat-5e"
       data-busy={isProcessingStageTurn}
-      className={`space-y-2 rounded-xl border bg-slate-900/90 p-3 text-xs ${boardControls ? 'border-slate-700' : 'mx-4 my-2 border-rose-500/30 shadow-xl'}`}
+      className={`space-y-2 rounded-xl border bg-slate-900/90 p-3 text-xs ${
+        boardControls
+          ? 'border-slate-700'
+          : 'mx-4 my-2 min-h-0 max-h-[min(22rem,38vh)] shrink-0 overflow-y-auto border-rose-500/30 shadow-xl'
+      }`}
     >
       <header className="flex flex-wrap items-center gap-2 text-sm font-bold text-slate-100">
         <Swords className="w-4 h-4 text-rose-400" />

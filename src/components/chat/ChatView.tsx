@@ -608,7 +608,7 @@ export const ChatView: React.FC = () => {
       <AdaptiveHud compact={compact} />
 
       {/* Main Split Layout: avatar beside the chat, left by default or right on request */}
-      <div ref={splitRef} className={`flex-1 flex overflow-hidden ${avatarRight ? 'flex-row-reverse' : ''}`}>
+      <div ref={splitRef} className={`relative z-10 flex-1 flex overflow-hidden ${avatarRight ? 'flex-row-reverse' : ''}`}>
         {showAvatar && activeCharacter && (
           <div
             data-avatar-panel

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { listen } from '@tauri-apps/api/event';
 import { Download, Loader2, MessageCircle, Play, Trash2, Wand2, X } from 'lucide-react';
 import { api } from '../../services/api';
@@ -118,7 +119,8 @@ export function TalkingPortraitDialog({ characterId, name, src, onClose }: { cha
   const height = placement.chin - placement.top;
   const width = Math.min(1, height * aspect * 0.85);
 
-  return (
+  // Portal to body so parent split/toolbar stacking contexts never leave the global header on top.
+  return createPortal(
     <ModalOverlay onClose={onClose} className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-700 bg-slate-900 p-5 space-y-4" data-talking-portrait-dialog>
         <div className="flex items-start justify-between gap-3">
@@ -224,6 +226,7 @@ export function TalkingPortraitDialog({ characterId, name, src, onClose }: { cha
           </div>
         </div>
       </div>
-    </ModalOverlay>
+    </ModalOverlay>,
+    document.body
   );
 }
