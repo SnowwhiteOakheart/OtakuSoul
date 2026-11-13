@@ -91,7 +91,7 @@ export const AdaptiveHud = ({ compact = false }: { compact?: boolean }) => {
 
   return (
     <div
-      className={`border-b border-slate-800/80 bg-slate-900/60 backdrop-blur px-4 flex items-center justify-between gap-4 z-40 ${compact ? 'py-1.5' : 'py-2.5'}`}
+      className={`border-b border-slate-800/80 bg-slate-900/60 backdrop-blur px-4 flex items-center justify-between gap-4 z-20 ${compact ? 'py-1.5' : 'py-2.5'}`}
     >
       {/* Left: Character Info & Quick Switcher */}
       <div className="flex shrink-0 items-center gap-3 relative">

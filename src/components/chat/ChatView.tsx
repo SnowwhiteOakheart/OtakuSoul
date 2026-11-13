@@ -420,8 +420,8 @@ export const ChatView: React.FC = () => {
 
       {/* Top Chat Bar: Backend Switcher, Session Info & Actions. z-30: its menus open over the
           character bar below, the slide-out sidebar (z-45) still covers it. */}
-      {/* Above the HUD (z-40) so the toolbar's dropdown menus open over it. */}
-      <div className="relative z-50 h-11 border-b border-slate-800/80 bg-slate-900/40 px-4 flex items-center justify-between">
+      {/* Above the HUD (z-20) so the toolbar's dropdown menus open over it, yet below modals. */}
+      <div className="relative z-30 h-11 border-b border-slate-800/80 bg-slate-900/40 px-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           {/* Chat Sessions Sidebar Toggle */}
           <button
