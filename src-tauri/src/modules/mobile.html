@@ -9,23 +9,35 @@
     * { box-sizing: border-box; }
     html, body { margin: 0; height: 100%; }
     body { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; background: #050811; color: #f1f5f9; font-family: system-ui, -apple-system, sans-serif; }
-    header { display: flex; align-items: center; gap: 12px; padding: 10px 14px; padding-top: max(10px, env(safe-area-inset-top)); background: rgba(15, 23, 42, .92); border-bottom: 1px solid rgba(56, 189, 248, .2); }
+    button { font: inherit; cursor: pointer; }
+    header { display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 14px; padding-top: max(10px, env(safe-area-inset-top)); background: rgba(15, 23, 42, .92); border-bottom: 1px solid rgba(56, 189, 248, .2); }
     .avatar { position: relative; flex: none; width: 44px; height: 44px; border-radius: 14px; background: linear-gradient(135deg, #06b6d4, #d946ef); padding: 2px; }
     .avatar > div { width: 100%; height: 100%; border-radius: 12px; background: #0f172a center / cover no-repeat; display: flex; align-items: center; justify-content: center; font-size: 20px; }
     .dot { position: absolute; right: -3px; bottom: -3px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #050811; background: #64748b; }
     .dot.on { background: #34d399; }
     .dot.off { background: #f43f5e; }
-    .who { min-width: 0; }
+    .who { flex: 1; min-width: 0; }
     #charName { margin: 0; font-size: 15px; font-weight: 700; color: #67e8f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .sub { margin-top: 3px; display: flex; align-items: center; gap: 6px; font-size: 12px; color: #94a3b8; }
-    #emotionBadge { padding: 1px 8px; border-radius: 12px; color: #67e8f9; background: #083344; border: 1px solid rgba(34, 211, 238, .3); font-family: ui-monospace, monospace; }
+    .sub { margin-top: 3px; display: flex; align-items: center; gap: 6px; font-size: 12px; color: #94a3b8; min-width: 0; }
+    .sub span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #emotionBadge { flex: none; padding: 1px 8px; border-radius: 12px; color: #67e8f9; background: #083344; border: 1px solid rgba(34, 211, 238, .3); font-family: ui-monospace, monospace; }
     #emotionBadge:empty { display: none; }
+    .icon { flex: none; width: 42px; height: 42px; border: 1px solid #334155; border-radius: 14px; background: #1e293b; color: #e2e8f0; font-size: 19px; display: flex; align-items: center; justify-content: center; }
     #feed { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 14px; overscroll-behavior: contain; }
-    .msg { max-width: 86%; padding: 10px 13px; border-radius: 16px; font-size: 15px; line-height: 1.45; overflow-wrap: anywhere; white-space: pre-wrap; }
-    .msg.assistant { align-self: flex-start; background: #0f172a; border: 1px solid #1e293b; color: #e2e8f0; border-bottom-left-radius: 5px; }
-    .msg.user { align-self: flex-end; background: #0891b2; color: #fff; border-bottom-right-radius: 5px; }
-    .msg.pending { opacity: .6; }
-    .msg .name { display: block; margin-bottom: 2px; font-size: 12px; font-weight: 700; color: #f0abfc; }
+    .row { display: flex; flex-direction: column; gap: 4px; max-width: 86%; }
+    .row.user { align-self: flex-end; align-items: flex-end; }
+    .row.assistant { align-self: flex-start; align-items: flex-start; }
+    .msg { padding: 10px 13px; border-radius: 16px; font-size: 15px; line-height: 1.45; overflow-wrap: anywhere; white-space: pre-wrap; }
+    .assistant .msg { background: #0f172a; border: 1px solid #1e293b; color: #e2e8f0; border-bottom-left-radius: 5px; }
+    .user .msg { background: #0891b2; color: #fff; border-bottom-right-radius: 5px; }
+    .pending { opacity: .6; }
+    .name { display: block; margin-bottom: 2px; font-size: 12px; font-weight: 700; color: #f0abfc; }
+    .pics { display: flex; flex-wrap: wrap; gap: 6px; }
+    .pics img { display: block; max-width: min(260px, 70vw); max-height: 320px; border-radius: 12px; border: 1px solid #1e293b; background: #0f172a; }
+    .pics .ph { width: 160px; height: 120px; border-radius: 12px; background: #0f172a; border: 1px dashed #334155; }
+    .tools { display: flex; align-items: center; gap: 4px; font-size: 13px; color: #94a3b8; }
+    .tools button { min-width: 34px; height: 30px; padding: 0 8px; border: 1px solid #1e293b; border-radius: 10px; background: #0b1222; color: #cbd5e1; }
+    .tools button:disabled { opacity: .35; }
     .note { align-self: center; max-width: 92%; padding: 6px 12px; border-radius: 12px; background: #3f1d2b; color: #fda4af; font-size: 13px; text-align: center; }
     .empty { margin: auto; max-width: 280px; text-align: center; color: #64748b; font-size: 14px; line-height: 1.5; }
     .typing { align-self: flex-start; display: flex; gap: 5px; padding: 12px 14px; border-radius: 16px; background: #0f172a; border: 1px solid #1e293b; }
@@ -34,12 +46,30 @@
     .typing i:nth-child(3) { animation-delay: .4s; }
     @keyframes blink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
     @media (prefers-reduced-motion: reduce) { .typing i { animation: none; opacity: .7; } }
+    .bar { display: flex; align-items: center; gap: 8px; padding: 6px 14px; font-size: 13px; color: #a5f3fc; background: #082f49; border-top: 1px solid rgba(56, 189, 248, .25); }
+    .bar[hidden] { display: none; }
+    .bar img { width: 40px; height: 40px; object-fit: cover; border-radius: 8px; }
+    .bar span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bar button { border: 0; background: none; color: #e2e8f0; font-size: 18px; padding: 4px 8px; }
     form { display: flex; align-items: flex-end; gap: 8px; padding: 10px 12px; padding-bottom: max(10px, env(safe-area-inset-bottom)); background: rgba(15, 23, 42, .92); border-top: 1px solid rgba(56, 189, 248, .2); }
     textarea { flex: 1; min-width: 0; max-height: 120px; resize: none; padding: 11px 14px; border: 1px solid #334155; border-radius: 18px; background: #0f172a; color: #f1f5f9; font: inherit; font-size: 16px; line-height: 1.35; }
     textarea:focus { outline: 2px solid #22d3ee; outline-offset: -1px; }
-    button { flex: none; width: 46px; height: 46px; border: 0; border-radius: 50%; background: linear-gradient(135deg, #06b6d4, #2563eb); color: #fff; font-size: 20px; cursor: pointer; }
-    button:disabled { opacity: .45; cursor: default; }
+    #send { flex: none; width: 46px; height: 46px; border: 0; border-radius: 50%; background: linear-gradient(135deg, #06b6d4, #2563eb); color: #fff; font-size: 20px; }
+    #send.stop { background: #e11d48; }
+    #send:disabled { opacity: .45; cursor: default; }
     button:active:not(:disabled) { transform: scale(.94); }
+    #attach { width: 46px; height: 46px; border-radius: 50%; }
+    #picker { display: none; }
+    /* Menu: characters and chats */
+    #sheet { position: fixed; inset: 0; z-index: 10; display: none; background: rgba(2, 6, 23, .7); }
+    #sheet.open { display: block; }
+    #sheet > div { position: absolute; left: 0; right: 0; bottom: 0; max-height: 80dvh; overflow-y: auto; padding: 16px 14px; padding-bottom: max(16px, env(safe-area-inset-bottom)); background: #0b1222; border-top: 1px solid rgba(56, 189, 248, .3); border-radius: 20px 20px 0 0; }
+    #sheet h2 { margin: 14px 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: #94a3b8; }
+    #sheet h2:first-of-type { margin-top: 0; }
+    .list { display: flex; flex-direction: column; gap: 6px; }
+    .list button { text-align: left; padding: 11px 13px; border: 1px solid #1e293b; border-radius: 12px; background: #0f172a; color: #e2e8f0; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .list button.active { border-color: #22d3ee; color: #67e8f9; }
+    .list button.add { color: #a5f3fc; border-style: dashed; }
   </style>
 </head>
 <body>
@@ -49,12 +79,25 @@
       <h1 id="charName">OtakuSoul</h1>
       <div class="sub"><span id="emotionBadge"></span><span id="statusText"></span></div>
     </div>
+    <button type="button" class="icon" id="menuBtn">☰</button>
   </header>
   <main id="feed" aria-live="polite"></main>
+  <div class="bar" id="editBar" hidden><span id="editText"></span><button type="button" id="editCancel">✕</button></div>
+  <div class="bar" id="imageBar" hidden><img id="imagePreview" alt=""><span id="imageText"></span><button type="button" id="imageCancel">✕</button></div>
   <form id="form">
+    <button type="button" class="icon" id="attach">🖼</button>
+    <input type="file" id="picker" accept="image/*">
     <textarea id="input" rows="1" enterkeyhint="send" autocomplete="off"></textarea>
     <button type="submit" id="send">➤</button>
   </form>
+  <div id="sheet" role="dialog" aria-modal="true">
+    <div>
+      <h2 id="chatsTitle"></h2>
+      <div class="list" id="chatList"></div>
+      <h2 id="charsTitle"></h2>
+      <div class="list" id="charList"></div>
+    </div>
+  </div>
 
   <script>
     // The page follows the phone's browser language; the app itself is not asked.
@@ -62,6 +105,9 @@
       de: {
         placeholder: 'Schreibe eine Nachricht …',
         send: 'Senden',
+        stop: 'Antwort stoppen',
+        attach: 'Bild anhängen',
+        menu: 'Chats und Figuren',
         empty: 'Hier erscheint euer Gespräch. Schreib etwas, die Antwort kommt von deinem Desktop.',
         connecting: 'Verbinde …',
         online: 'Verbunden',
@@ -69,14 +115,29 @@
         waiting: 'Warte auf die Desktop-App …',
         denied: 'Kein Zugriff. Scanne den QR-Code in der Desktop-App erneut.',
         busy: 'Die Figur antwortet noch. Versuch es gleich noch einmal.',
-        failed: 'Die Nachricht konnte nicht gesendet werden.',
-        noChat: 'Am Desktop ist kein Chat geöffnet.',
+        failed: 'Das hat nicht geklappt.',
+        noChat: 'Am Desktop ist keine Figur geöffnet.',
+        notFound: 'Das gibt es am Desktop nicht mehr.',
         connectionError: 'Keine Verbindung zum Desktop-Server.',
-        tooLong: 'Die Nachricht ist zu lang.',
+        tooLong: 'Die Nachricht oder das Bild ist zu groß.',
+        badImage: 'Dieses Bild kann nicht gesendet werden.',
+        imageReady: 'Bild wird mitgeschickt',
+        editing: 'Nachricht bearbeiten',
+        edit: 'Bearbeiten',
+        regenerate: 'Neue Antwort',
+        prev: 'Vorherige Variante',
+        next: 'Nächste Variante',
+        chats: 'Chats',
+        characters: 'Figuren',
+        newChat: '+ Neuer Chat',
+        close: 'Schließen',
       },
       en: {
         placeholder: 'Write a message …',
         send: 'Send',
+        stop: 'Stop reply',
+        attach: 'Attach picture',
+        menu: 'Chats and characters',
         empty: 'Your conversation shows up here. Write something; the answer comes from your desktop.',
         connecting: 'Connecting …',
         online: 'Connected',
@@ -84,14 +145,29 @@
         waiting: 'Waiting for the desktop app …',
         denied: 'No access. Scan the QR code in the desktop app again.',
         busy: 'The character is still replying. Try again in a moment.',
-        failed: 'The message could not be sent.',
-        noChat: 'No chat is open on the desktop.',
+        failed: 'That did not work.',
+        noChat: 'No character is open on the desktop.',
+        notFound: 'That no longer exists on the desktop.',
         connectionError: 'No connection to the desktop server.',
-        tooLong: 'The message is too long.',
+        tooLong: 'The message or picture is too large.',
+        badImage: 'This picture cannot be sent.',
+        imageReady: 'Picture will be sent along',
+        editing: 'Editing message',
+        edit: 'Edit',
+        regenerate: 'New reply',
+        prev: 'Previous variant',
+        next: 'Next variant',
+        chats: 'Chats',
+        characters: 'Characters',
+        newChat: '+ New chat',
+        close: 'Close',
       },
       ru: {
         placeholder: 'Напиши сообщение …',
         send: 'Отправить',
+        stop: 'Остановить ответ',
+        attach: 'Прикрепить картинку',
+        menu: 'Чаты и персонажи',
         empty: 'Здесь появится ваш разговор. Напиши что-нибудь, ответ придёт с компьютера.',
         connecting: 'Подключение …',
         online: 'На связи',
@@ -99,10 +175,22 @@
         waiting: 'Жду приложение на компьютере …',
         denied: 'Нет доступа. Ещё раз отсканируй QR-код в приложении.',
         busy: 'Персонаж ещё отвечает. Попробуй через секунду.',
-        failed: 'Не удалось отправить сообщение.',
-        noChat: 'На компьютере не открыт чат.',
+        failed: 'Не получилось.',
+        noChat: 'На компьютере не открыт персонаж.',
+        notFound: 'На компьютере этого больше нет.',
         connectionError: 'Нет связи с сервером на компьютере.',
-        tooLong: 'Сообщение слишком длинное.',
+        tooLong: 'Сообщение или картинка слишком большие.',
+        badImage: 'Эту картинку нельзя отправить.',
+        imageReady: 'Картинка будет отправлена',
+        editing: 'Редактирование сообщения',
+        edit: 'Изменить',
+        regenerate: 'Новый ответ',
+        prev: 'Предыдущий вариант',
+        next: 'Следующий вариант',
+        chats: 'Чаты',
+        characters: 'Персонажи',
+        newChat: '+ Новый чат',
+        close: 'Закрыть',
       },
     };
     const lang = (navigator.languages || [navigator.language || 'en'])
@@ -115,10 +203,17 @@
     const feed = $('feed');
     const input = $('input');
     const sendBtn = $('send');
+    const label = (el, key) => { el.title = tr(key); el.setAttribute('aria-label', tr(key)); };
     input.placeholder = tr('placeholder');
     input.setAttribute('aria-label', tr('placeholder'));
-    sendBtn.title = tr('send');
-    sendBtn.setAttribute('aria-label', tr('send'));
+    label(sendBtn, 'send');
+    label($('attach'), 'attach');
+    label($('menuBtn'), 'menu');
+    label($('editCancel'), 'close');
+    label($('imageCancel'), 'close');
+    $('chatsTitle').textContent = tr('chats');
+    $('charsTitle').textContent = tr('characters');
+    $('imageText').textContent = tr('imageReady');
 
     // The token comes in the address fragment (never sent to the server) and is then kept per tab.
     const hash = new URLSearchParams(window.location.hash.slice(1));
@@ -131,47 +226,117 @@
         token = sessionStorage.getItem('otaku_token') || '';
       }
     } catch (_) { /* storage blocked: the token stays in memory */ }
+    const auth = () => ({ 'X-Otaku-Token': token });
 
     let messages = [];
     let pending = [];
+    let stream = '';
     let thinking = false;
     let connected = false;
     let denied = false;
     let desktopReady = false;
     let notice = '';
     let noticeTimer = 0;
+    let catalog = { characters: [], chats: [], characterId: null, chatId: null };
+    /** Message being edited ({id, text}) or null. */
+    let editing = null;
+    /** Picture to send along (data URL) or ''. */
+    let image = '';
 
     function setStatus() {
-      const dot = $('dot');
-      dot.className = 'dot' + (denied || !connected ? ' off' : desktopReady ? ' on' : '');
+      $('dot').className = 'dot' + (denied || !connected ? ' off' : desktopReady ? ' on' : '');
       $('statusText').textContent = denied ? tr('denied') : !connected ? tr('offline') : desktopReady ? tr('online') : tr('waiting');
+      sendBtn.classList.toggle('stop', thinking);
+      label(sendBtn, thinking ? 'stop' : 'send');
+      sendBtn.textContent = thinking ? '■' : '➤';
     }
 
-    function bubble(role, text, extra, name) {
-      const el = document.createElement('div');
-      el.className = 'msg ' + role + (extra ? ' ' + extra : '');
-      if (name) {
-        const label = document.createElement('span');
-        label.className = 'name';
-        label.textContent = name;
-        el.append(label);
+    // Pictures of the chat: loaded with the token in a header, kept as blob URLs.
+    const pictures = new Map();
+    function picture(file) {
+      const img = document.createElement('img');
+      img.alt = '';
+      img.className = 'ph';
+      const known = pictures.get(file);
+      const show = (url) => { img.src = url; img.className = ''; };
+      if (typeof known === 'string') show(known);
+      else {
+        const load = known || fetch('/api/attachment?file=' + encodeURIComponent(file), { headers: auth() })
+          .then((res) => (res.ok ? res.blob() : Promise.reject(res.status)))
+          .then((blob) => { const url = URL.createObjectURL(blob); pictures.set(file, url); return url; })
+          .catch(() => { pictures.delete(file); return ''; });
+        pictures.set(file, load);
+        load.then((url) => { if (url) show(url); });
       }
-      el.append(text);
+      return img;
+    }
+
+    function tool(text, key, onClick, disabled) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = text;
+      label(b, key);
+      b.disabled = !!disabled;
+      b.addEventListener('click', onClick);
+      return b;
+    }
+
+    function row(m, opts) {
+      const el = document.createElement('div');
+      el.className = 'row ' + m.role + (opts.pending ? ' pending' : '');
+      if (m.images && m.images.length) {
+        const pics = document.createElement('div');
+        pics.className = 'pics';
+        m.images.forEach((p) => pics.append(picture(p.file)));
+        el.append(pics);
+      }
+      if (m.text) {
+        const bubble = document.createElement('div');
+        bubble.className = 'msg';
+        if (m.name) {
+          const n = document.createElement('span');
+          n.className = 'name';
+          n.textContent = m.name;
+          bubble.append(n);
+        }
+        bubble.append(m.text);
+        el.append(bubble);
+      }
+      if (opts.tools && m.id) {
+        const tools = document.createElement('div');
+        tools.className = 'tools';
+        if (m.role === 'assistant') {
+          if (m.swipes > 1) {
+            tools.append(tool('‹', 'prev', () => command({ action: 'swipe', id: m.id, index: m.swipe - 1 }), thinking || m.swipe <= 0));
+            const count = document.createElement('span');
+            count.textContent = (m.swipe + 1) + '/' + m.swipes;
+            tools.append(count);
+            tools.append(tool('›', 'next', () => command({ action: 'swipe', id: m.id, index: m.swipe + 1 }), thinking || m.swipe >= m.swipes - 1));
+          }
+          tools.append(tool('↻', 'regenerate', () => command({ action: 'regenerate', id: m.id }), thinking));
+        }
+        if (m.text) tools.append(tool('✎', 'edit', () => startEdit(m), thinking));
+        el.append(tools);
+      }
       return el;
     }
 
     function render() {
       const nearBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 80;
       feed.replaceChildren();
-      if (!messages.length && !pending.length) {
+      if (!messages.length && !pending.length && !stream) {
         const empty = document.createElement('div');
         empty.className = 'empty';
         empty.textContent = tr('empty');
         feed.append(empty);
       }
-      messages.forEach((m) => feed.append(bubble(m.role, m.text, '', m.name)));
-      pending.forEach((t) => feed.append(bubble('user', t, 'pending')));
-      if (thinking) {
+      // Tools on the last reply and on the user's last message.
+      const lastReply = messages.map((m) => m.role).lastIndexOf('assistant');
+      const lastOwn = messages.map((m) => m.role).lastIndexOf('user');
+      messages.forEach((m, i) => feed.append(row(m, { tools: i === lastReply || i === lastOwn })));
+      pending.forEach((p) => feed.append(row({ role: 'user', text: p.text, images: [] }, { pending: true })));
+      if (stream) feed.append(row({ role: 'assistant', text: stream }, {}));
+      else if (thinking) {
         const dots = document.createElement('div');
         dots.className = 'typing';
         dots.innerHTML = '<i></i><i></i><i></i>';
@@ -186,6 +351,31 @@
       }
       if (nearBottom) feed.scrollTop = feed.scrollHeight;
     }
+
+    function renderMenu() {
+      const list = (box, items, active, key, onPick) => {
+        box.replaceChildren();
+        items.forEach((item) => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.textContent = item[key] || '…';
+          if (item.id === active) b.className = 'active';
+          b.addEventListener('click', () => { closeMenu(); if (item.id !== active) onPick(item.id); });
+          box.append(b);
+        });
+      };
+      list($('chatList'), catalog.chats, catalog.chatId, 'title', (id) => command({ action: 'openChat', id }));
+      const add = document.createElement('button');
+      add.type = 'button';
+      add.className = 'add';
+      add.textContent = tr('newChat');
+      add.addEventListener('click', () => { closeMenu(); command({ action: 'newChat' }); });
+      $('chatList').prepend(add);
+      list($('charList'), catalog.characters, catalog.characterId, 'name', (id) => command({ action: 'openCharacter', id }));
+    }
+    function closeMenu() { $('sheet').classList.remove('open'); }
+    $('menuBtn').addEventListener('click', () => { renderMenu(); $('sheet').classList.add('open'); });
+    $('sheet').addEventListener('click', (e) => { if (e.target === $('sheet')) closeMenu(); });
 
     function showNotice(text) {
       notice = text;
@@ -204,20 +394,32 @@
           p.style.backgroundImage = msg.portrait ? 'url("' + msg.portrait.replace(/"/g, '%22') + '")' : '';
           p.textContent = msg.portrait ? '' : '🌸';
         }
-        if (msg.thinking != null) { thinking = msg.thinking; render(); }
-        desktopReady = true;
-        setStatus();
-      } else if (msg.type === 'history') {
-        messages = msg.messages || [];
-        pending = [];
+        if (msg.thinking != null) {
+          thinking = msg.thinking;
+          if (!thinking) stream = '';
+        }
         desktopReady = true;
         setStatus();
         render();
+      } else if (msg.type === 'history') {
+        messages = msg.messages || [];
+        pending = [];
+        stream = '';
+        desktopReady = true;
+        if (editing && !messages.some((m) => m.id === editing.id)) stopEdit();
+        setStatus();
+        render();
         feed.scrollTop = feed.scrollHeight;
+      } else if (msg.type === 'stream') {
+        stream = msg.text || '';
+        render();
+      } else if (msg.type === 'catalog') {
+        catalog = msg;
+        if ($('sheet').classList.contains('open')) renderMenu();
       } else if (msg.type === 'notice') {
         // The desktop did not take the message: give it back instead of losing it.
-        restore(pending.join('
-'));
+        const back = pending[pending.length - 1];
+        if (back) { restore(back.text); if (back.image && !image) setImage(back.image); }
         pending = [];
         showNotice(tr(msg.code));
       }
@@ -237,16 +439,48 @@
       };
       socket.onmessage = (e) => { try { handle(JSON.parse(e.data)); } catch (_) {} };
       socket.onclose = async () => {
-        connected = false; desktopReady = false; thinking = false; clearInterval(pingTimer);
+        connected = false; desktopReady = false; thinking = false; stream = ''; clearInterval(pingTimer);
         // The handshake gives no reason; the status route tells a wrong token from a stopped desktop.
         try {
-          const res = await fetch('/api/status', { headers: { 'X-Otaku-Token': token } });
+          const res = await fetch('/api/status', { headers: auth() });
           denied = res.status === 401;
         } catch (_) { /* server away: keep trying */ }
         setStatus(); render();
         if (!denied) setTimeout(connect, Math.min(1000 * 2 ** retry++, 15000));
       };
     }
+
+    async function post(path, body) {
+      try {
+        const res = await fetch(path, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...auth() },
+          body: JSON.stringify(body),
+        });
+        if (res.ok) return true;
+        showNotice(res.status === 413 ? tr('tooLong') : res.status === 415 ? tr('badImage') : res.status === 401 ? tr('denied') : tr('failed'));
+      } catch (_) {
+        showNotice(tr('connectionError'));
+      }
+      return false;
+    }
+
+    function command(body) { return post('/api/command', body); }
+
+    function startEdit(m) {
+      editing = { id: m.id, text: m.text };
+      $('editText').textContent = tr('editing');
+      $('editBar').hidden = false;
+      setImage('');
+      input.value = m.text;
+      autosize();
+      input.focus();
+    }
+    function stopEdit() {
+      editing = null;
+      $('editBar').hidden = true;
+    }
+    $('editCancel').addEventListener('click', () => { stopEdit(); input.value = ''; autosize(); });
 
     function restore(text) {
       if (!text || input.value.trim()) return;
@@ -255,37 +489,68 @@
     }
 
     async function send() {
+      if (thinking) { command({ action: 'stop' }); return; }
       const text = input.value.trim();
-      if (!text || sendBtn.disabled) return;
+      if (editing) {
+        if (!text) return;
+        const id = editing.id;
+        stopEdit();
+        input.value = '';
+        autosize();
+        if (!(await command({ action: 'edit', id, text }))) restore(text);
+        return;
+      }
+      if (!text && !image) return;
+      const sentImage = image;
       input.value = '';
       autosize();
-      pending.push(text);
+      setImage('');
+      const entry = { text, image: sentImage };
+      pending.push(entry);
       render();
       feed.scrollTop = feed.scrollHeight;
-      try {
-        const res = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Otaku-Token': token },
-          body: JSON.stringify({ message: text }),
-        });
-        if (!res.ok) {
-          pending = pending.filter((t) => t !== text);
-          if (res.status !== 413) restore(text);
-          showNotice(res.status === 413 ? tr('tooLong') : res.status === 401 ? tr('denied') : tr('failed'));
-        }
-      } catch (_) {
-        pending = pending.filter((t) => t !== text);
+      const ok = await post('/api/chat', sentImage ? { message: text, image: sentImage } : { message: text });
+      if (!ok) {
+        pending = pending.filter((p) => p !== entry);
         restore(text);
-        showNotice(tr('connectionError'));
+        if (sentImage && !image) setImage(sentImage);
+        render();
       }
     }
+
+    // Pictures are scaled down on the phone: a camera photo would be several MB otherwise.
+    const MAX_SIDE = 1600;
+    function setImage(dataUrl) {
+      image = dataUrl;
+      $('imageBar').hidden = !dataUrl;
+      $('imagePreview').src = dataUrl || '';
+    }
+    $('imageCancel').addEventListener('click', () => setImage(''));
+    $('attach').addEventListener('click', () => { if (!editing) $('picker').click(); });
+    $('picker').addEventListener('change', async () => {
+      const file = $('picker').files && $('picker').files[0];
+      $('picker').value = '';
+      if (!file) return;
+      try {
+        const bitmap = await createImageBitmap(file);
+        const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(bitmap.width * scale);
+        canvas.height = Math.round(bitmap.height * scale);
+        canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+        if (bitmap.close) bitmap.close();
+        setImage(canvas.toDataURL('image/jpeg', 0.85));
+      } catch (_) {
+        showNotice(tr('badImage'));
+      }
+    });
 
     function autosize() {
       input.style.height = 'auto';
       input.style.height = Math.min(input.scrollHeight, 120) + 'px';
     }
     input.addEventListener('input', autosize);
-    $('form').addEventListener('submit', (e) => { e.preventDefault(); send(); input.focus(); });
+    $('form').addEventListener('submit', (e) => { e.preventDefault(); send(); });
     // Enter sends on a keyboard; on a phone it makes a new line unless "send" is the key.
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && matchMedia('(pointer: fine)').matches) {

@@ -5,4 +5,9 @@ export type WebServerConfig = { enabled: boolean, port: number, host: string, au
  * Read-only token of the OBS overlay (`/overlay`, `/api/overlay-ws`): it shows the figure but
  * cannot read the chat or write into it, so the overlay address may sit in OBS scenes.
  */
-overlay_token: string, };
+overlay_token: string, 
+/**
+ * Address the phone link and QR code use; empty = the one the default route goes through.
+ * Needed with a VPN or several network cards, where that one is not reachable from the phone.
+ */
+advertised_ip: string, };

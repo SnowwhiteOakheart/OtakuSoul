@@ -25,7 +25,11 @@ const DEFAULT_WEB_CONFIG: WebServerConfig = {
   host: '0.0.0.0',
   auth_token: '',
   overlay_token: '',
+  advertised_ip: '',
 };
+
+/** Windows asks once whether the app may be reached on the network; a "no" there blocks the phone. */
+const IS_WINDOWS = typeof navigator !== 'undefined' && navigator.userAgent.includes('Windows');
 
 export const WebClientTab: React.FC = () => {
   const { t } = useTranslation();
@@ -134,6 +138,13 @@ export const WebClientTab: React.FC = () => {
               )}
             </div>
           </div>
+
+          {webServerStatus?.is_running && IS_WINDOWS && (
+            <div className="flex items-start gap-2 rounded-xl border border-sky-500/30 bg-sky-500/10 p-3 text-xs text-sky-200">
+              <Shield className="w-4 h-4 shrink-0 mt-0.5" />
+              <p>{t('int.webFirewall')}</p>
+            </div>
+          )}
 
           {webServerStatus?.is_running && localWebConfig.host !== '127.0.0.1' && localWebConfig.host !== 'localhost' && (
             <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
@@ -266,6 +277,29 @@ export const WebClientTab: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {(webServerStatus?.addresses.length ?? 0) > 0 && (
+            <div>
+              <label htmlFor="web-address" className="block text-xs font-semibold text-slate-300 mb-1.5">
+                {t('int.webAddress')}
+              </label>
+              <select
+                id="web-address"
+                value={localWebConfig.advertised_ip}
+                onChange={(e) => setLocalWebConfig({ ...localWebConfig, advertised_ip: e.target.value })}
+                className="w-full bg-app border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono"
+              >
+                <option value="">{t('int.webAddressAuto', { address: webServerStatus?.addresses[0] ?? '' })}</option>
+                {webServerStatus?.addresses.map((address) => (
+                  <option key={address} value={address}>{address}</option>
+                ))}
+                {localWebConfig.advertised_ip && !webServerStatus?.addresses.includes(localWebConfig.advertised_ip) && (
+                  <option value={localWebConfig.advertised_ip}>{localWebConfig.advertised_ip}</option>
+                )}
+              </select>
+              <p className="mt-1 text-[11px] text-slate-500">{t('int.webAddressHint')}</p>
+            </div>
+          )}
 
           <div className="flex items-center justify-between pt-2 border-t border-slate-800/80">
             <div className="text-xs text-slate-400">

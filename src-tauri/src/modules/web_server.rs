@@ -1,5 +1,6 @@
 use axum::{
     Router,
+    extract::DefaultBodyLimit,
     extract::ws::{Message as WsMessage, WebSocket},
     extract::{Query, State, WebSocketUpgrade},
     http::{HeaderMap, HeaderValue, StatusCode, header},
@@ -10,7 +11,7 @@ use qrcode::QrCode;
 use qrcode::render::svg;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::net::{SocketAddr, UdpSocket};
+use std::net::{IpAddr, SocketAddr, UdpSocket};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -31,6 +32,10 @@ pub struct WebServerConfig {
     /// cannot read the chat or write into it, so the overlay address may sit in OBS scenes.
     #[serde(default = "WebServerConfig::generate_token")]
     pub overlay_token: String,
+    /// Address the phone link and QR code use; empty = the one the default route goes through.
+    /// Needed with a VPN or several network cards, where that one is not reachable from the phone.
+    #[serde(default)]
+    pub advertised_ip: String,
 }
 
 impl Default for WebServerConfig {
@@ -41,6 +46,7 @@ impl Default for WebServerConfig {
             host: "0.0.0.0".to_string(),
             auth_token: Self::generate_token(),
             overlay_token: Self::generate_token(),
+            advertised_ip: String::new(),
         }
     }
 }
@@ -78,12 +84,19 @@ pub struct WebServerStatus {
     pub qr_code_svg: String,
     pub auth_token: String,
     pub overlay_token: String,
+    /// The computer's IPv4 addresses a phone could reach, home network ones first.
+    pub addresses: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct MobileChatRequest {
+    #[serde(default)]
     pub message: String,
+    /// A picture from the phone as data URL (PNG, JPEG, WebP, GIF), already scaled down there.
+    #[serde(default)]
+    #[ts(optional)]
+    pub image: Option<String>,
 }
 
 #[derive(Clone)]
@@ -167,6 +180,7 @@ impl WebServerManager {
         let mut cfg = self.config.read().await.clone();
         cfg.port = config.port;
         cfg.host = config.host;
+        cfg.advertised_ip = config.advertised_ip.trim().to_string();
         self.store(cfg).await
     }
 
@@ -194,15 +208,35 @@ impl WebServerManager {
         Ok(cfg.overlay_token)
     }
 
-    pub fn detect_local_ip() -> String {
-        // Query outbound routing IP without transmitting packets
-        if let Ok(socket) = UdpSocket::bind("0.0.0.0:0")
-            && socket.connect("8.8.8.8:80").is_ok()
-            && let Ok(addr) = socket.local_addr()
-        {
-            return addr.ip().to_string();
+    /// The computer's IPv4 addresses a phone could reach. Without a crate for network
+    /// interfaces: the source address a route to typical home networks and to the internet would
+    /// use (no packet is sent). A VPN often takes the default route; the home network's card still
+    /// answers for its own range. Private (home network) addresses first.
+    pub fn local_addresses() -> Vec<String> {
+        const PROBES: [&str; 7] = [
+            "192.168.178.1:80",
+            "192.168.0.1:80",
+            "192.168.1.1:80",
+            "10.0.0.1:80",
+            "172.16.0.1:80",
+            "100.64.0.1:80",
+            "8.8.8.8:80",
+        ];
+        let mut found: Vec<std::net::Ipv4Addr> = Vec::new();
+        for probe in PROBES {
+            if let Ok(socket) = UdpSocket::bind("0.0.0.0:0")
+                && socket.connect(probe).is_ok()
+                && let Ok(addr) = socket.local_addr()
+                && let IpAddr::V4(ip) = addr.ip()
+                && !ip.is_loopback()
+                && !ip.is_unspecified()
+                && !found.contains(&ip)
+            {
+                found.push(ip);
+            }
         }
-        "127.0.0.1".to_string()
+        found.sort_by_key(|ip| !ip.is_private());
+        found.iter().map(|ip| ip.to_string()).collect()
     }
 
     pub fn generate_qr_svg(url: &str) -> String {
@@ -220,7 +254,15 @@ impl WebServerManager {
     pub async fn get_status(&self) -> WebServerStatus {
         let running = self.is_running.load(Ordering::Relaxed);
         let cfg = self.config.read().await.clone();
-        let local_ip = Self::detect_local_ip();
+        let addresses = Self::local_addresses();
+        let local_ip = if cfg.advertised_ip.is_empty() {
+            addresses
+                .first()
+                .cloned()
+                .unwrap_or_else(|| "127.0.0.1".to_string())
+        } else {
+            cfg.advertised_ip.clone()
+        };
         // Fragments are not sent in HTTP requests or referrer headers.
         let connection_url = format!("http://{}:{}/#token={}", local_ip, cfg.port, cfg.auth_token);
         let qr_code_svg = Self::generate_qr_svg(&connection_url);
@@ -233,6 +275,7 @@ impl WebServerManager {
             qr_code_svg,
             auth_token: cfg.auth_token,
             overlay_token: cfg.overlay_token,
+            addresses,
         }
     }
 
@@ -242,7 +285,6 @@ impl WebServerManager {
         }
 
         let cfg = self.config.read().await.clone();
-        self.remember_enabled(true).await;
         let bind_addr: SocketAddr = format!("{}:{}", cfg.host, cfg.port).parse().map_err(
             |e: std::net::AddrParseError| {
                 crate::err!(
@@ -253,6 +295,16 @@ impl WebServerManager {
                 )
             },
         )?;
+
+        // Bind before reporting success: a port in use (another app, a second OtakuSoul) must
+        // show up as an error, not as a running server nobody can reach.
+        let listener = tokio::net::TcpListener::bind(bind_addr)
+            .await
+            .map_err(|e| {
+                self.is_running.store(false, Ordering::Relaxed);
+                crate::err!("backend.webServer.bind", port = cfg.port, error = e)
+            })?;
+        self.remember_enabled(true).await;
 
         let (shutdown_tx, shutdown_rx) = oneshot::channel::<()>();
         *self.shutdown_tx.lock().await = Some(shutdown_tx);
@@ -268,7 +320,15 @@ impl WebServerManager {
         let app = Router::new()
             .route("/", get(handle_index))
             .route("/api/status", get(handle_status))
-            .route("/api/chat", post(handle_chat))
+            .route(
+                "/api/chat",
+                // Room for a picture from the phone (data URL) plus the text.
+                post(handle_chat).layer(DefaultBodyLimit::max(
+                    crate::modules::mobile::MAX_IMAGE_CHARS + 64 * 1024,
+                )),
+            )
+            .route("/api/command", post(handle_command))
+            .route("/api/attachment", get(handle_attachment))
             .route("/api/ws", get(handle_ws))
             .route("/overlay", get(handle_overlay))
             .route("/api/overlay-ws", get(handle_overlay_ws))
@@ -276,26 +336,13 @@ impl WebServerManager {
 
         tokio::spawn(async move {
             info!("Mobiler Web-Server lauscht auf http://{}", bind_addr);
-
-            match tokio::net::TcpListener::bind(bind_addr).await {
-                Ok(listener) => {
-                    let server = axum::serve(listener, app).with_graceful_shutdown(async move {
-                        let _ = shutdown_rx.await;
-                        info!("Web-Server beendet.");
-                    });
-
-                    if let Err(e) = server.await {
-                        error!("Web-Server Fehler im Laufzeit-Loop: {}", e);
-                    }
-                }
-                Err(e) => {
-                    error!(
-                        "Fehler beim Binden des Web-Servers auf {}: {}",
-                        bind_addr, e
-                    );
-                }
+            let server = axum::serve(listener, app).with_graceful_shutdown(async move {
+                let _ = shutdown_rx.await;
+                info!("Web-Server beendet.");
+            });
+            if let Err(e) = server.await {
+                error!("Web-Server Fehler im Laufzeit-Loop: {}", e);
             }
-
             is_running_flag.store(false, Ordering::Relaxed);
         });
 
@@ -365,7 +412,7 @@ async fn handle_index() -> impl IntoResponse {
     let mut headers = HeaderMap::new();
     headers.insert(
         header::CONTENT_SECURITY_POLICY,
-        HeaderValue::from_static("default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self' ws:; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"),
+        HeaderValue::from_static("default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self' ws:; img-src data: blob:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"),
     );
     headers.insert(
         header::REFERRER_POLICY,
@@ -474,13 +521,19 @@ async fn handle_chat(
         return unauthorized();
     }
     let text = payload.message.trim();
-    if text.is_empty() {
+    let image = payload.image.as_deref().filter(|i| !i.is_empty());
+    if let Some(image) = image
+        && !crate::modules::mobile::valid_image(image)
+    {
+        return (StatusCode::UNSUPPORTED_MEDIA_TYPE, "Unsupported picture").into_response();
+    }
+    if text.is_empty() && image.is_none() {
         return (StatusCode::BAD_REQUEST, "Empty message").into_response();
     }
     if text.chars().count() > crate::modules::mobile::MAX_INCOMING_CHARS {
         return (StatusCode::PAYLOAD_TOO_LARGE, "Message too long").into_response();
     }
-    match crate::modules::mobile::deliver(text) {
+    match crate::modules::mobile::deliver(text, image) {
         Ok(()) => (
             StatusCode::ACCEPTED,
             Json(serde_json::json!({ "accepted": true })),
@@ -490,6 +543,79 @@ async fn handle_chat(
             warn!("Handy-Nachricht nicht zugestellt: {}", e);
             (StatusCode::SERVICE_UNAVAILABLE, "Desktop app not ready").into_response()
         }
+    }
+}
+
+/// A command from the phone (stop, new variant, other variant, edit, other chat or character).
+/// Checked here against a fixed list; the main window carries it out and answers over the WebSocket.
+async fn handle_command(
+    State(ctx): State<AppStateContext>,
+    headers: HeaderMap,
+    Query(params): Query<AuthParams>,
+    Json(payload): Json<serde_json::Value>,
+) -> Response {
+    if !check_auth(&headers, &params, &ctx.auth_token.read().await) {
+        return unauthorized();
+    }
+    let Some(command) = crate::modules::mobile::command(&payload) else {
+        return (StatusCode::BAD_REQUEST, "Unknown command").into_response();
+    };
+    match crate::modules::mobile::deliver_command(command) {
+        Ok(()) => (
+            StatusCode::ACCEPTED,
+            Json(serde_json::json!({ "accepted": true })),
+        )
+            .into_response(),
+        Err(e) => {
+            warn!("Handy-Befehl nicht zugestellt: {}", e);
+            (StatusCode::SERVICE_UNAVAILABLE, "Desktop app not ready").into_response()
+        }
+    }
+}
+
+#[derive(Deserialize)]
+struct AttachmentParams {
+    file: String,
+}
+
+/// A picture of the open chat (scene image, selfie, an image someone sent). Only files that are
+/// in the history the main window last reported are served; the token goes as a header, so the
+/// page loads it with `fetch` and shows it as a blob.
+async fn handle_attachment(
+    State(ctx): State<AppStateContext>,
+    headers: HeaderMap,
+    Query(params): Query<AttachmentParams>,
+) -> Response {
+    if !check_auth(
+        &headers,
+        &AuthParams { token: None },
+        &ctx.auth_token.read().await,
+    ) {
+        return unauthorized();
+    }
+    let Some(mime) = crate::modules::mobile::hub().file_mime(&params.file) else {
+        return StatusCode::NOT_FOUND.into_response();
+    };
+    let Some(path) = crate::modules::attachments::path_of(&params.file) else {
+        return StatusCode::NOT_FOUND.into_response();
+    };
+    match tokio::fs::read(&path).await {
+        Ok(bytes) => {
+            let mut headers = HeaderMap::new();
+            if let Ok(value) = HeaderValue::from_str(&mime) {
+                headers.insert(header::CONTENT_TYPE, value);
+            }
+            headers.insert(
+                header::CACHE_CONTROL,
+                HeaderValue::from_static("private, max-age=3600"),
+            );
+            headers.insert(
+                header::X_CONTENT_TYPE_OPTIONS,
+                HeaderValue::from_static("nosniff"),
+            );
+            (headers, bytes).into_response()
+        }
+        Err(_) => StatusCode::NOT_FOUND.into_response(),
     }
 }
 
