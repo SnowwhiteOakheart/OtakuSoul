@@ -2933,6 +2933,8 @@
   "int.overlayCopy": "Overlay-Adresse kopieren",
   "int.overlayCopied": "Kopiert!",
   "int.overlayNote": "Die Adresse enthält den Zugangs-Token; nicht im Stream zeigen.",
+  "int.overlayNewToken": "Neues Overlay-Token erzeugen",
+  "int.overlayTokenHint": "Das Overlay hat ein eigenes Token: Es zeigt nur Figur, Stimmung und Sprechblase, kann den Chat aber weder lesen noch hineinschreiben. Overlay-Adressen aus älteren Versionen gelten nicht mehr – bitte in OBS neu eintragen.",
   "int.port": "Port",
   "int.authToken": "Sicherheitstoken (Auth-Token)",
   "int.host": "Host:",

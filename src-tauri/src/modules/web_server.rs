@@ -27,6 +27,10 @@ pub struct WebServerConfig {
     pub port: u16,
     pub host: String,
     pub auth_token: String,
+    /// Read-only token of the OBS overlay (`/overlay`, `/api/overlay-ws`): it shows the figure but
+    /// cannot read the chat or write into it, so the overlay address may sit in OBS scenes.
+    #[serde(default = "WebServerConfig::generate_token")]
+    pub overlay_token: String,
 }
 
 impl Default for WebServerConfig {
@@ -36,6 +40,7 @@ impl Default for WebServerConfig {
             port: 8088,
             host: "0.0.0.0".to_string(),
             auth_token: Self::generate_token(),
+            overlay_token: Self::generate_token(),
         }
     }
 }
@@ -72,6 +77,7 @@ pub struct WebServerStatus {
     pub connection_url: String,
     pub qr_code_svg: String,
     pub auth_token: String,
+    pub overlay_token: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -83,11 +89,13 @@ pub struct MobileChatRequest {
 #[derive(Clone)]
 struct AppStateContext {
     auth_token: Arc<RwLock<String>>,
+    overlay_token: Arc<RwLock<String>>,
 }
 
 pub struct WebServerManager {
     config: Arc<RwLock<WebServerConfig>>,
     active_token: Arc<RwLock<String>>,
+    active_overlay_token: Arc<RwLock<String>>,
     is_running: Arc<AtomicBool>,
     shutdown_tx: Arc<tokio::sync::Mutex<Option<oneshot::Sender<()>>>>,
 }
@@ -103,6 +111,7 @@ impl WebServerManager {
         let config = Self::load_config();
         Self {
             active_token: Arc::new(RwLock::new(config.auth_token.clone())),
+            active_overlay_token: Arc::new(RwLock::new(config.overlay_token.clone())),
             config: Arc::new(RwLock::new(config)),
             is_running: Arc::new(AtomicBool::new(false)),
             shutdown_tx: Arc::new(tokio::sync::Mutex::new(None)),
@@ -121,6 +130,13 @@ impl WebServerManager {
             {
                 warn!("Unsicheres Web-Server-Token erkannt, es wurde neu erzeugt.");
                 cfg.auth_token = WebServerConfig::generate_token();
+                let _ = Self::save_config_internal(&cfg);
+            }
+            // Configs from before the overlay token: the generated one must survive restarts.
+            if !content.contains("\"overlay_token\"") || cfg.overlay_token.len() < 32 {
+                if cfg.overlay_token.len() < 32 {
+                    cfg.overlay_token = WebServerConfig::generate_token();
+                }
                 let _ = Self::save_config_internal(&cfg);
             }
             return cfg;
@@ -144,20 +160,38 @@ impl WebServerManager {
         Ok(())
     }
 
-    pub async fn save_config(&self, mut config: WebServerConfig) -> Result<(), String> {
-        // Whether the server runs is tracked by start/stop; a form opened earlier must not reset it.
-        config.enabled = self.config.read().await.enabled;
-        Self::save_config_internal(&config)?;
-        *self.active_token.write().await = config.auth_token.clone();
-        *self.config.write().await = config;
+    /// Saves what the settings form may change (port, host). Whether the server runs is tracked
+    /// by start/stop and the tokens change only through "renew": a form opened earlier must not
+    /// put back an old token or switch the autostart off.
+    pub async fn save_config(&self, config: WebServerConfig) -> Result<(), String> {
+        let mut cfg = self.config.read().await.clone();
+        cfg.port = config.port;
+        cfg.host = config.host;
+        self.store(cfg).await
+    }
+
+    async fn store(&self, cfg: WebServerConfig) -> Result<(), String> {
+        Self::save_config_internal(&cfg)?;
+        *self.active_token.write().await = cfg.auth_token.clone();
+        *self.active_overlay_token.write().await = cfg.overlay_token.clone();
+        *self.config.write().await = cfg;
         Ok(())
     }
 
+    /// New token for the phone; open phone pages are cut off, the overlay keeps running.
     pub async fn regenerate_token(&self) -> Result<String, String> {
         let mut cfg = self.config.read().await.clone();
         cfg.auth_token = WebServerConfig::generate_token();
-        self.save_config(cfg.clone()).await?;
+        self.store(cfg.clone()).await?;
         Ok(cfg.auth_token)
+    }
+
+    /// New overlay token; open overlay pages are cut off, phones stay connected.
+    pub async fn regenerate_overlay_token(&self) -> Result<String, String> {
+        let mut cfg = self.config.read().await.clone();
+        cfg.overlay_token = WebServerConfig::generate_token();
+        self.store(cfg.clone()).await?;
+        Ok(cfg.overlay_token)
     }
 
     pub fn detect_local_ip() -> String {
@@ -198,6 +232,7 @@ impl WebServerManager {
             connection_url,
             qr_code_svg,
             auth_token: cfg.auth_token,
+            overlay_token: cfg.overlay_token,
         }
     }
 
@@ -227,6 +262,7 @@ impl WebServerManager {
 
         let state = AppStateContext {
             auth_token: Arc::clone(&self.active_token),
+            overlay_token: Arc::clone(&self.active_overlay_token),
         };
 
         let app = Router::new()
@@ -361,10 +397,12 @@ async fn handle_overlay_ws(
     headers: HeaderMap,
     Query(params): Query<AuthParams>,
 ) -> Response {
-    if !check_auth(&headers, &params, &ctx.auth_token.read().await) {
+    // Only the overlay token: the phone's token is not needed here, and the overlay token opens
+    // nothing else (no chat, no history).
+    if !check_auth(&headers, &params, &ctx.overlay_token.read().await) {
         return (StatusCode::UNAUTHORIZED, "Invalid token for WebSocket").into_response();
     }
-    let token = Arc::clone(&ctx.auth_token);
+    let token = Arc::clone(&ctx.overlay_token);
     ws.on_upgrade(move |socket| handle_overlay_socket(socket, token))
 }
 

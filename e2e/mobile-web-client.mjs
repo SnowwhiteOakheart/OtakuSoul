@@ -61,6 +61,28 @@ try {
   const portrait = messages.findLast((m) => m.type === 'state' && m.portrait)?.portrait ?? '';
   assert.ok(portrait.length < 200_000, `Porträt zu groß: ${portrait.length} Zeichen`);
 
+  // The overlay has its own read-only token: it opens the overlay feed and nothing else, and the
+  // phone's token does not open the overlay feed.
+  const { overlay_token: overlayToken } = await invoke('get_web_server_status');
+  assert.ok(overlayToken && overlayToken !== token, 'Kein eigenes Overlay-Token');
+  assert.equal((await fetch(`${base}/api/status`, { headers: { 'X-Otaku-Token': overlayToken } })).status, 401, 'Overlay-Token öffnet den Status');
+  assert.equal((await post('vom Overlay', { 'X-Otaku-Token': overlayToken })).status, 401, 'Overlay-Token darf schreiben');
+  const opens = (url) => new Promise((resolve) => {
+    const ws = new WebSocket(url);
+    ws.onopen = () => resolve(ws);
+    ws.onerror = () => resolve(null);
+  });
+  assert.equal(await opens(`ws://127.0.0.1:${port}/api/ws?token=${overlayToken}`), null, 'Overlay-Token öffnet den Chat-Feed');
+  assert.equal(await opens(`ws://127.0.0.1:${port}/api/overlay-ws?token=${token}`), null, 'Handy-Token öffnet das Overlay');
+  const overlay = await opens(`ws://127.0.0.1:${port}/api/overlay-ws?token=${overlayToken}`);
+  assert.ok(overlay, 'Overlay-Token öffnet das Overlay nicht');
+  let overlayClosed = false;
+  overlay.onclose = () => { overlayClosed = true; };
+  // A new overlay token cuts off the overlay, the phone stays connected.
+  await invoke('regenerate_overlay_token');
+  await browser.waitUntil(() => overlayClosed, { timeout: 10_000, timeoutMsg: 'Overlay blieb nach neuem Overlay-Token offen' });
+  assert.equal(socket.readyState, WebSocket.OPEN, 'Handy wurde vom neuen Overlay-Token getrennt');
+
   // A new token ends the open connection; the old one no longer works.
   let closed = false;
   socket.onclose = () => { closed = true; };

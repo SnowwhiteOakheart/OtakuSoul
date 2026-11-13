@@ -242,4 +242,9 @@ export const integrationsApi = {
   regenerateWebServerToken: async (): Promise<string> => {
     return await invoke<string>('regenerate_web_server_token');
   },
+
+  /** New read-only token for the OBS overlay; open overlay pages are cut off. */
+  regenerateOverlayToken: async (): Promise<string> => {
+    return await invoke<string>('regenerate_overlay_token');
+  },
 };

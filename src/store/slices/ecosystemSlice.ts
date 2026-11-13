@@ -80,6 +80,7 @@ export interface EcosystemSlice {
   startWebServer: () => Promise<void>;
   stopWebServer: () => Promise<void>;
   regenerateWebServerToken: () => Promise<string | null>;
+  regenerateOverlayToken: () => Promise<string | null>;
 }
 
 export const createEcosystemSlice: SliceCreator<EcosystemSlice> = (set, get) => ({
@@ -425,6 +426,17 @@ export const createEcosystemSlice: SliceCreator<EcosystemSlice> = (set, get) => 
       return token;
     } catch (e) {
       reportFailure('Failed to regenerate token:', e);
+      return null;
+    }
+  },
+
+  regenerateOverlayToken: async () => {
+    try {
+      const token = await api.regenerateOverlayToken();
+      await get().fetchWebServerStatus();
+      return token;
+    } catch (e) {
+      reportFailure('Failed to regenerate overlay token:', e);
       return null;
     }
   },

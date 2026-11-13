@@ -350,6 +350,11 @@ pub async fn regenerate_web_server_token(state: State<'_, AppState>) -> Result<S
 }
 
 #[tauri::command]
+pub async fn regenerate_overlay_token(state: State<'_, AppState>) -> Result<String, String> {
+    state.web_server.regenerate_overlay_token().await
+}
+
+#[tauri::command]
 pub fn build_character_wizard_prompt_cmd(
     input: crate::modules::characters::CharacterWizardInput,
 ) -> Result<String, String> {

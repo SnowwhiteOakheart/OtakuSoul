@@ -24,16 +24,17 @@ const DEFAULT_WEB_CONFIG: WebServerConfig = {
   port: 8088,
   host: '0.0.0.0',
   auth_token: '',
+  overlay_token: '',
 };
 
 export const WebClientTab: React.FC = () => {
   const { t } = useTranslation();
   const {
     webServerConfig, webServerStatus, saveWebServerConfig, startWebServer, stopWebServer,
-    regenerateWebServerToken,
+    regenerateWebServerToken, regenerateOverlayToken,
   } = useStoreFields(
     'webServerConfig', 'webServerStatus', 'saveWebServerConfig', 'startWebServer', 'stopWebServer',
-    'regenerateWebServerToken',
+    'regenerateWebServerToken', 'regenerateOverlayToken',
   );
 
   const [copiedUrl, setCopiedUrl] = useState(false);
@@ -54,7 +55,7 @@ export const WebClientTab: React.FC = () => {
   };
 
   const overlayUrl = webServerStatus
-    ? `http://127.0.0.1:${webServerStatus.port}/overlay?token=${webServerStatus.auth_token}`
+    ? `http://127.0.0.1:${webServerStatus.port}/overlay?token=${webServerStatus.overlay_token}`
     : '';
 
   const handleCopyOverlayUrl = async () => {
@@ -202,6 +203,14 @@ export const WebClientTab: React.FC = () => {
                   {copiedOverlay ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                   <span>{copiedOverlay ? t('int.overlayCopied') : t('int.overlayCopy')}</span>
                 </button>
+                <button
+                  onClick={regenerateOverlayToken}
+                  title={t('int.overlayNewToken')}
+                  aria-label={t('int.overlayNewToken')}
+                  className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
                 <a
                   href={overlayUrl}
                   target="_blank"
@@ -214,6 +223,7 @@ export const WebClientTab: React.FC = () => {
               </div>
               <p className="text-[11px] text-slate-500 font-mono break-words">{t('int.overlayOptions')}</p>
               <p className="text-[11px] text-amber-300/80">{t('int.overlayNote')}</p>
+              <p className="text-[11px] text-slate-400">{t('int.overlayTokenHint')}</p>
             </div>
           )}
 

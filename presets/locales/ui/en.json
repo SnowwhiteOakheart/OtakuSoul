@@ -2933,6 +2933,8 @@
   "int.overlayCopy": "Copy overlay address",
   "int.overlayCopied": "Copied!",
   "int.overlayNote": "The address contains the access token; do not show it on stream.",
+  "int.overlayNewToken": "Generate new overlay token",
+  "int.overlayTokenHint": "The overlay has its own token: it only shows the character, mood and speech bubble and can neither read the chat nor write into it. Overlay addresses from older versions no longer work – please enter the new one in OBS.",
   "int.port": "Port",
   "int.authToken": "Security token (auth token)",
   "int.host": "Host:",

@@ -658,6 +658,7 @@ pub fn run() {
             commands::ecosystem::overlay_push,
             commands::ecosystem::mobile_push,
             commands::ecosystem::regenerate_web_server_token,
+            commands::ecosystem::regenerate_overlay_token,
             commands::ecosystem::build_character_wizard_prompt_cmd,
             commands::characters::parse_character_wizard_draft_cmd,
             commands::characters::create_character_from_draft,
