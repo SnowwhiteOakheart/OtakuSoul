@@ -230,6 +230,11 @@ export const integrationsApi = {
     return await invoke<number>('overlay_push', { message });
   },
 
+  /** Tells the phone's web client (LAN) state, history or a notice; returns how many pages are open. */
+  mobilePush: async (message: Record<string, unknown>): Promise<number> => {
+    return await invoke<number>('mobile_push', { message });
+  },
+
   getWebServerStatus: async (): Promise<WebServerStatus> => {
     return await invoke<WebServerStatus>('get_web_server_status');
   },

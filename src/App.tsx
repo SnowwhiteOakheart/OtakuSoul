@@ -11,6 +11,7 @@ import { useProactiveMessages } from './hooks/useProactiveMessages';
 import { useJournal } from './hooks/useJournal';
 import { useDesktopPetBridge } from './hooks/useDesktopPetBridge';
 import { useOverlayBridge } from './hooks/useOverlayBridge';
+import { useMobileBridge } from './hooks/useMobileBridge';
 import { isPetWindow } from './services/desktopPet';
 import { useTranslation } from './i18n';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
@@ -51,6 +52,7 @@ export function App() {
   useJournal(!isPet);
   useDesktopPetBridge(!isPet);
   useOverlayBridge(!isPet);
+  useMobileBridge(!isPet);
   useSyncUpdateCheck(!isPet && onboardingCompleted);
 
   if (isPet) {

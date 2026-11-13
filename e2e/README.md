@@ -35,7 +35,7 @@ Die Suite umfasst über 90 spezialisierte Testmodule:
    - `smoke.mjs`: Start, Kontextzähler, automatische Zusammenfassungen im System-Prompt, Verlaufsnavigation.
    - `chat-navigation.mjs`, `chat-return.mjs`, `chat-tools.mjs`, `chat-style.mjs`, `prompt-log.mjs`, `partial-reply.mjs`, `chat-jsonl.mjs`.
    - `chat-reply-ideas.mjs`, `chat-direction.mjs`, `chat-repeats.mjs`, `chat-reply-length.mjs`, `chat-reply-filters.mjs`, `chat-quick-replies.mjs`, `chat-prompt-hits.mjs`, `chat-remember.mjs`.
-   - `chat-group.mjs`, `chat-memory-guests.mjs`, `chat-proactive.mjs`, `chat-dream.mjs`, `chat-offscreen.mjs`, `chat-scene-image.mjs`, `chat-selfie.mjs`, `chat-emotion-tag.mjs`, `chat-narrator-voice.mjs`.
+   - `chat-group.mjs`, `chat-memory-guests.mjs`, `chat-proactive.mjs`, `chat-dream.mjs`, `chat-offscreen.mjs`, `chat-scene-image.mjs`, `chat-selfie.mjs`, `chat-emotion-tag.mjs`, `chat-narrator-voice.mjs`, `mobile-web-client.mjs` (Handy-Web-Client über HTTP/WebSocket).
 
 2. **Fehlertoleranz & Entwurfsschutz (SQLite-Trigger im Wegwerfprofil):**
    - `chat-edit-errors.mjs`, `chat-generation-errors.mjs`, `chat-sessions-abort.mjs`, `chat-sidebar-errors.mjs`.

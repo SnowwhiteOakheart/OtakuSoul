@@ -330,6 +330,13 @@ pub fn overlay_push(message: serde_json::Value) -> usize {
     crate::modules::overlay::hub().push(&message)
 }
 
+/// The main window tells the phone's web client (state, history, notices); returns how many
+/// phone pages are open (history and portrait are only worth sending while it is above 0).
+#[tauri::command]
+pub fn mobile_push(message: serde_json::Value) -> usize {
+    crate::modules::mobile::hub().push(&message)
+}
+
 #[tauri::command]
 pub async fn get_web_server_status(
     state: State<'_, AppState>,

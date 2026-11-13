@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#050811">
+  <title>OtakuSoul</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; background: #050811; color: #f1f5f9; font-family: system-ui, -apple-system, sans-serif; }
+    header { display: flex; align-items: center; gap: 12px; padding: 10px 14px; padding-top: max(10px, env(safe-area-inset-top)); background: rgba(15, 23, 42, .92); border-bottom: 1px solid rgba(56, 189, 248, .2); }
+    .avatar { position: relative; flex: none; width: 44px; height: 44px; border-radius: 14px; background: linear-gradient(135deg, #06b6d4, #d946ef); padding: 2px; }
+    .avatar > div { width: 100%; height: 100%; border-radius: 12px; background: #0f172a center / cover no-repeat; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+    .dot { position: absolute; right: -3px; bottom: -3px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #050811; background: #64748b; }
+    .dot.on { background: #34d399; }
+    .dot.off { background: #f43f5e; }
+    .who { min-width: 0; }
+    #charName { margin: 0; font-size: 15px; font-weight: 700; color: #67e8f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sub { margin-top: 3px; display: flex; align-items: center; gap: 6px; font-size: 12px; color: #94a3b8; }
+    #emotionBadge { padding: 1px 8px; border-radius: 12px; color: #67e8f9; background: #083344; border: 1px solid rgba(34, 211, 238, .3); font-family: ui-monospace, monospace; }
+    #emotionBadge:empty { display: none; }
+    #feed { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 14px; overscroll-behavior: contain; }
+    .msg { max-width: 86%; padding: 10px 13px; border-radius: 16px; font-size: 15px; line-height: 1.45; overflow-wrap: anywhere; white-space: pre-wrap; }
+    .msg.assistant { align-self: flex-start; background: #0f172a; border: 1px solid #1e293b; color: #e2e8f0; border-bottom-left-radius: 5px; }
+    .msg.user { align-self: flex-end; background: #0891b2; color: #fff; border-bottom-right-radius: 5px; }
+    .msg.pending { opacity: .6; }
+    .note { align-self: center; max-width: 92%; padding: 6px 12px; border-radius: 12px; background: #3f1d2b; color: #fda4af; font-size: 13px; text-align: center; }
+    .empty { margin: auto; max-width: 280px; text-align: center; color: #64748b; font-size: 14px; line-height: 1.5; }
+    .typing { align-self: flex-start; display: flex; gap: 5px; padding: 12px 14px; border-radius: 16px; background: #0f172a; border: 1px solid #1e293b; }
+    .typing i { width: 7px; height: 7px; border-radius: 50%; background: #67e8f9; animation: blink 1.2s infinite; }
+    .typing i:nth-child(2) { animation-delay: .2s; }
+    .typing i:nth-child(3) { animation-delay: .4s; }
+    @keyframes blink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) { .typing i { animation: none; opacity: .7; } }
+    form { display: flex; align-items: flex-end; gap: 8px; padding: 10px 12px; padding-bottom: max(10px, env(safe-area-inset-bottom)); background: rgba(15, 23, 42, .92); border-top: 1px solid rgba(56, 189, 248, .2); }
+    textarea { flex: 1; min-width: 0; max-height: 120px; resize: none; padding: 11px 14px; border: 1px solid #334155; border-radius: 18px; background: #0f172a; color: #f1f5f9; font: inherit; font-size: 16px; line-height: 1.35; }
+    textarea:focus { outline: 2px solid #22d3ee; outline-offset: -1px; }
+    button { flex: none; width: 46px; height: 46px; border: 0; border-radius: 50%; background: linear-gradient(135deg, #06b6d4, #2563eb); color: #fff; font-size: 20px; cursor: pointer; }
+    button:disabled { opacity: .45; cursor: default; }
+    button:active:not(:disabled) { transform: scale(.94); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="avatar"><div id="portrait">🌸</div><span class="dot" id="dot"></span></div>
+    <div class="who">
+      <h1 id="charName">OtakuSoul</h1>
+      <div class="sub"><span id="emotionBadge"></span><span id="statusText"></span></div>
+    </div>
+  </header>
+  <main id="feed" aria-live="polite"></main>
+  <form id="form">
+    <textarea id="input" rows="1" enterkeyhint="send" autocomplete="off"></textarea>
+    <button type="submit" id="send">➤</button>
+  </form>
+
+  <script>
+    // The page follows the phone's browser language; the app itself is not asked.
+    const MESSAGES = {
+      de: {
+        placeholder: 'Schreibe eine Nachricht …',
+        send: 'Senden',
+        empty: 'Hier erscheint euer Gespräch. Schreib etwas, die Antwort kommt von deinem Desktop.',
+        connecting: 'Verbinde …',
+        online: 'Verbunden',
+        offline: 'Getrennt – verbinde neu …',
+        waiting: 'Warte auf die Desktop-App …',
+        denied: 'Kein Zugriff. Scanne den QR-Code in der Desktop-App erneut.',
+        busy: 'Die Figur antwortet noch. Versuch es gleich noch einmal.',
+        failed: 'Die Nachricht konnte nicht gesendet werden.',
+        noChat: 'Am Desktop ist kein Chat geöffnet.',
+        connectionError: 'Keine Verbindung zum Desktop-Server.',
+        tooLong: 'Die Nachricht ist zu lang.',
+      },
+      en: {
+        placeholder: 'Write a message …',
+        send: 'Send',
+        empty: 'Your conversation shows up here. Write something; the answer comes from your desktop.',
+        connecting: 'Connecting …',
+        online: 'Connected',
+        offline: 'Disconnected – reconnecting …',
+        waiting: 'Waiting for the desktop app …',
+        denied: 'No access. Scan the QR code in the desktop app again.',
+        busy: 'The character is still replying. Try again in a moment.',
+        failed: 'The message could not be sent.',
+        noChat: 'No chat is open on the desktop.',
+        connectionError: 'No connection to the desktop server.',
+        tooLong: 'The message is too long.',
+      },
+      ru: {
+        placeholder: 'Напиши сообщение …',
+        send: 'Отправить',
+        empty: 'Здесь появится ваш разговор. Напиши что-нибудь, ответ придёт с компьютера.',
+        connecting: 'Подключение …',
+        online: 'На связи',
+        offline: 'Нет связи – переподключаюсь …',
+        waiting: 'Жду приложение на компьютере …',
+        denied: 'Нет доступа. Ещё раз отсканируй QR-код в приложении.',
+        busy: 'Персонаж ещё отвечает. Попробуй через секунду.',
+        failed: 'Не удалось отправить сообщение.',
+        noChat: 'На компьютере не открыт чат.',
+        connectionError: 'Нет связи с сервером на компьютере.',
+        tooLong: 'Сообщение слишком длинное.',
+      },
+    };
+    const lang = (navigator.languages || [navigator.language || 'en'])
+      .map((l) => String(l).slice(0, 2).toLowerCase())
+      .find((l) => l in MESSAGES) || 'en';
+    const tr = (key) => MESSAGES[lang][key] ?? MESSAGES.en[key] ?? key;
+    document.documentElement.lang = lang;
+
+    const $ = (id) => document.getElementById(id);
+    const feed = $('feed');
+    const input = $('input');
+    const sendBtn = $('send');
+    input.placeholder = tr('placeholder');
+    input.setAttribute('aria-label', tr('placeholder'));
+    sendBtn.title = tr('send');
+    sendBtn.setAttribute('aria-label', tr('send'));
+
+    // The token comes in the address fragment (never sent to the server) and is then kept per tab.
+    const hash = new URLSearchParams(window.location.hash.slice(1));
+    let token = hash.get('token') || '';
+    try {
+      if (token) {
+        sessionStorage.setItem('otaku_token', token);
+        history.replaceState(null, '', window.location.pathname);
+      } else {
+        token = sessionStorage.getItem('otaku_token') || '';
+      }
+    } catch (_) { /* storage blocked: the token stays in memory */ }
+
+    let messages = [];
+    let pending = [];
+    let thinking = false;
+    let connected = false;
+    let denied = false;
+    let desktopReady = false;
+    let notice = '';
+    let noticeTimer = 0;
+
+    function setStatus() {
+      const dot = $('dot');
+      dot.className = 'dot' + (denied || !connected ? ' off' : desktopReady ? ' on' : '');
+      $('statusText').textContent = denied ? tr('denied') : !connected ? tr('offline') : desktopReady ? tr('online') : tr('waiting');
+    }
+
+    function bubble(role, text, extra) {
+      const el = document.createElement('div');
+      el.className = 'msg ' + role + (extra ? ' ' + extra : '');
+      el.textContent = text;
+      return el;
+    }
+
+    function render() {
+      const nearBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 80;
+      feed.replaceChildren();
+      if (!messages.length && !pending.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.textContent = tr('empty');
+        feed.append(empty);
+      }
+      messages.forEach((m) => feed.append(bubble(m.role, m.text)));
+      pending.forEach((t) => feed.append(bubble('user', t, 'pending')));
+      if (thinking) {
+        const dots = document.createElement('div');
+        dots.className = 'typing';
+        dots.innerHTML = '<i></i><i></i><i></i>';
+        feed.append(dots);
+      }
+      if (notice) {
+        const el = document.createElement('div');
+        el.className = 'note';
+        el.setAttribute('role', 'alert');
+        el.textContent = notice;
+        feed.append(el);
+      }
+      if (nearBottom) feed.scrollTop = feed.scrollHeight;
+    }
+
+    function showNotice(text) {
+      notice = text;
+      clearTimeout(noticeTimer);
+      noticeTimer = setTimeout(() => { notice = ''; render(); }, 6000);
+      render();
+      feed.scrollTop = feed.scrollHeight;
+    }
+
+    function handle(msg) {
+      if (msg.type === 'state') {
+        if (msg.characterName != null) $('charName').textContent = msg.characterName;
+        if (msg.emotion != null) $('emotionBadge').textContent = msg.emotion;
+        if (msg.portrait != null) {
+          const p = $('portrait');
+          p.style.backgroundImage = msg.portrait ? 'url("' + msg.portrait.replace(/"/g, '%22') + '")' : '';
+          p.textContent = msg.portrait ? '' : '🌸';
+        }
+        if (msg.thinking != null) { thinking = msg.thinking; render(); }
+        desktopReady = true;
+        setStatus();
+      } else if (msg.type === 'history') {
+        messages = msg.messages || [];
+        pending = [];
+        desktopReady = true;
+        setStatus();
+        render();
+        feed.scrollTop = feed.scrollHeight;
+      } else if (msg.type === 'notice') {
+        pending = [];
+        showNotice(tr(msg.code));
+      }
+    }
+
+    let socket = null;
+    let retry = 0;
+    let pingTimer = 0;
+    function connect() {
+      if (!token) { denied = true; setStatus(); return; }
+      const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      socket = new WebSocket(proto + '//' + location.host + '/api/ws?token=' + encodeURIComponent(token));
+      socket.onopen = () => {
+        connected = true; retry = 0; denied = false; setStatus();
+        clearInterval(pingTimer);
+        pingTimer = setInterval(() => { try { socket.send('{"type":"ping"}'); } catch (_) {} }, 25000);
+      };
+      socket.onmessage = (e) => { try { handle(JSON.parse(e.data)); } catch (_) {} };
+      socket.onclose = async () => {
+        connected = false; desktopReady = false; thinking = false; clearInterval(pingTimer);
+        // The handshake gives no reason; the status route tells a wrong token from a stopped desktop.
+        try {
+          const res = await fetch('/api/status', { headers: { 'X-Otaku-Token': token } });
+          denied = res.status === 401;
+        } catch (_) { /* server away: keep trying */ }
+        setStatus(); render();
+        if (!denied) setTimeout(connect, Math.min(1000 * 2 ** retry++, 15000));
+      };
+    }
+
+    async function send() {
+      const text = input.value.trim();
+      if (!text || sendBtn.disabled) return;
+      input.value = '';
+      autosize();
+      pending.push(text);
+      render();
+      feed.scrollTop = feed.scrollHeight;
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Otaku-Token': token },
+          body: JSON.stringify({ message: text }),
+        });
+        if (!res.ok) {
+          pending = pending.filter((t) => t !== text);
+          showNotice(res.status === 413 ? tr('tooLong') : res.status === 401 ? tr('denied') : tr('failed'));
+        }
+      } catch (_) {
+        pending = pending.filter((t) => t !== text);
+        showNotice(tr('connectionError'));
+      }
+    }
+
+    function autosize() {
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+    }
+    input.addEventListener('input', autosize);
+    $('form').addEventListener('submit', (e) => { e.preventDefault(); send(); input.focus(); });
+    // Enter sends on a keyboard; on a phone it makes a new line unless "send" is the key.
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && matchMedia('(pointer: fine)').matches) {
+        e.preventDefault();
+        send();
+      }
+    });
+
+    $('statusText').textContent = tr('connecting');
+    render();
+    connect();
+  </script>
+</body>
+</html>

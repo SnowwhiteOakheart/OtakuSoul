@@ -174,6 +174,13 @@ pub fn run() {
             tauri::async_runtime::spawn(modules::vroid_hub::sync());
             allow_app_asset_dirs(app);
             create_main_window(app)?;
+            // Phone web client: messages from the phone go to the main window as an event; the
+            // server comes back by itself when it was running at the last exit.
+            modules::mobile::set_app(app.handle().clone());
+            {
+                let web_server = app.state::<AppState>().web_server.clone();
+                tauri::async_runtime::spawn(async move { web_server.autostart().await });
+            }
             #[cfg(desktop)]
             commands::desktop_pet::register_shortcut(app.handle());
             // Attachment files left by failed or stopped sends; in the background.
@@ -649,6 +656,7 @@ pub fn run() {
             commands::ecosystem::stop_web_server,
             commands::ecosystem::get_web_server_status,
             commands::ecosystem::overlay_push,
+            commands::ecosystem::mobile_push,
             commands::ecosystem::regenerate_web_server_token,
             commands::ecosystem::build_character_wizard_prompt_cmd,
             commands::characters::parse_character_wizard_draft_cmd,

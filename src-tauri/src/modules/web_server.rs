@@ -80,30 +80,9 @@ pub struct MobileChatRequest {
     pub message: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, TS)]
-#[ts(export)]
-pub struct MobileChatResponse {
-    pub reply: String,
-    pub character_name: String,
-    pub emotion: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, TS)]
-#[ts(export)]
-pub struct MobileStatusResponse {
-    pub character_name: String,
-    pub emotion: String,
-    pub mood_label: String,
-    pub dopamine: f32,
-    pub oxytocin: f32,
-    pub system_status: String,
-}
-
 #[derive(Clone)]
 struct AppStateContext {
     auth_token: Arc<RwLock<String>>,
-    active_character_name: Arc<RwLock<String>>,
-    active_emotion: Arc<RwLock<String>>,
 }
 
 pub struct WebServerManager {
@@ -226,6 +205,7 @@ impl WebServerManager {
         }
 
         let cfg = self.config.read().await.clone();
+        self.remember_enabled(true).await;
         let bind_addr: SocketAddr = format!("{}:{}", cfg.host, cfg.port).parse().map_err(
             |e: std::net::AddrParseError| {
                 crate::err!(
@@ -245,8 +225,6 @@ impl WebServerManager {
 
         let state = AppStateContext {
             auth_token: Arc::clone(&self.active_token),
-            active_character_name: Arc::new(RwLock::new("OtakuSoul Companion".to_string())),
-            active_emotion: Arc::new(RwLock::new("warm".to_string())),
         };
 
         let app = Router::new()
@@ -286,7 +264,26 @@ impl WebServerManager {
         Ok(())
     }
 
+    /// Remembers whether the server should come back at the next start.
+    async fn remember_enabled(&self, enabled: bool) {
+        let mut cfg = self.config.write().await;
+        if cfg.enabled != enabled {
+            cfg.enabled = enabled;
+            let _ = Self::save_config_internal(&cfg);
+        }
+    }
+
+    /// Starts the server at app start when it was running when the app was closed.
+    pub async fn autostart(&self) {
+        if self.config.read().await.enabled
+            && let Err(e) = self.start_server().await
+        {
+            warn!("Web-Server-Autostart fehlgeschlagen: {}", e);
+        }
+    }
+
     pub async fn stop_server(&self) -> Result<(), String> {
+        self.remember_enabled(false).await;
         self.is_running.store(false, Ordering::Relaxed);
         if let Some(tx) = self.shutdown_tx.lock().await.take() {
             let _ = tx.send(());
@@ -337,7 +334,7 @@ async fn handle_index() -> impl IntoResponse {
         HeaderValue::from_static("no-referrer"),
     );
     headers.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
-    (headers, Html(MOBILE_CLIENT_HTML))
+    (headers, Html(crate::modules::mobile::PAGE))
 }
 
 /// The streaming overlay for OBS (browser source): a transparent page; what it shows comes over
@@ -396,35 +393,27 @@ async fn handle_overlay_socket(mut socket: WebSocket) {
     }
 }
 
+fn unauthorized() -> Response {
+    (
+        StatusCode::UNAUTHORIZED,
+        "Invalid or missing authentication token",
+    )
+        .into_response()
+}
+
 async fn handle_status(
     State(ctx): State<AppStateContext>,
     headers: HeaderMap,
     Query(params): Query<AuthParams>,
 ) -> Response {
     if !check_auth(&headers, &params, &ctx.auth_token.read().await) {
-        return (
-            StatusCode::UNAUTHORIZED,
-            "Invalid or missing authentication token",
-        )
-            .into_response();
+        return unauthorized();
     }
-
-    let char_name = ctx.active_character_name.read().await.clone();
-    let emotion = ctx.active_emotion.read().await.clone();
-
-    let resp = MobileStatusResponse {
-        character_name: char_name,
-        emotion,
-        // Mood code, translated by the page.
-        mood_label: "connected".to_string(),
-        dopamine: 75.0,
-        oxytocin: 85.0,
-        system_status: "Online".to_string(),
-    };
-
-    Json(resp).into_response()
+    Json(crate::modules::mobile::hub().status()).into_response()
 }
 
+/// A message from the phone. It is handed to the main window, which answers through the normal
+/// chat pipeline; the answer arrives over the WebSocket, so this only acknowledges (202).
 async fn handle_chat(
     State(ctx): State<AppStateContext>,
     headers: HeaderMap,
@@ -432,32 +421,26 @@ async fn handle_chat(
     Json(payload): Json<MobileChatRequest>,
 ) -> Response {
     if !check_auth(&headers, &params, &ctx.auth_token.read().await) {
-        return (
-            StatusCode::UNAUTHORIZED,
-            "Invalid or missing authentication token",
-        )
-            .into_response();
+        return unauthorized();
     }
-
-    let user_msg = payload.message.trim();
-    let char_name = ctx.active_character_name.read().await.clone();
-    let current_emo = ctx.active_emotion.read().await.clone();
-
-    let lang = crate::modules::content_lang::ContentLang::current();
-    let reply_text = if user_msg.is_empty() {
-        lang.t("I'm here! What would you like to talk about?")
-            .to_string()
-    } else {
-        lang.fill_t("*smiles warmly at you* So nice to be connected from your phone! You said: “{}”. I'm with you any time.", &[&user_msg], )
-    };
-
-    let resp = MobileChatResponse {
-        reply: reply_text,
-        character_name: char_name,
-        emotion: current_emo,
-    };
-
-    Json(resp).into_response()
+    let text = payload.message.trim();
+    if text.is_empty() {
+        return (StatusCode::BAD_REQUEST, "Empty message").into_response();
+    }
+    if text.chars().count() > crate::modules::mobile::MAX_INCOMING_CHARS {
+        return (StatusCode::PAYLOAD_TOO_LARGE, "Message too long").into_response();
+    }
+    match crate::modules::mobile::deliver(text) {
+        Ok(()) => (
+            StatusCode::ACCEPTED,
+            Json(serde_json::json!({ "accepted": true })),
+        )
+            .into_response(),
+        Err(e) => {
+            warn!("Handy-Nachricht nicht zugestellt: {}", e);
+            (StatusCode::SERVICE_UNAVAILABLE, "Desktop app not ready").into_response()
+        }
+    }
 }
 
 async fn handle_ws(
@@ -469,302 +452,50 @@ async fn handle_ws(
     if !check_auth(&headers, &params, &ctx.auth_token.read().await) {
         return (StatusCode::UNAUTHORIZED, "Invalid token for WebSocket").into_response();
     }
-
-    ws.on_upgrade(move |socket| handle_ws_socket(socket, ctx))
+    ws.on_upgrade(handle_ws_socket)
 }
 
-async fn handle_ws_socket(mut socket: WebSocket, ctx: AppStateContext) {
-    let char_name = ctx.active_character_name.read().await.clone();
-    let welcome = serde_json::json!({
-        "type": "connected",
-        "character_name": char_name,
-        "status": "ready"
-    })
-    .to_string();
-
-    let _ = socket.send(WsMessage::Text(welcome.into())).await;
-
-    while let Some(msg_res) = socket.recv().await {
-        if let Ok(msg) = msg_res {
-            if let WsMessage::Text(text) = msg {
-                if let Ok(val) = serde_json::from_str::<serde_json::Value>(&text)
-                    && val.get("type").and_then(|v| v.as_str()) == Some("ping")
-                {
-                    let pong = serde_json::json!({"type": "pong"}).to_string();
-                    let _ = socket.send(WsMessage::Text(pong.into())).await;
+/// The phone's page: state and history first, then everything the main window reports.
+async fn handle_ws_socket(mut socket: WebSocket) {
+    let hub = crate::modules::mobile::hub();
+    // Subscribe before the snapshot so nothing falls between the two.
+    let (mut feed, _guard) = hub.subscribe();
+    for message in hub.snapshot() {
+        if socket.send(WsMessage::Text(message.into())).await.is_err() {
+            return;
+        }
+    }
+    loop {
+        tokio::select! {
+            message = feed.recv() => match message {
+                Ok(text) => {
+                    if socket.send(WsMessage::Text(text.into())).await.is_err() {
+                        break;
+                    }
                 }
-            } else if let WsMessage::Close(_) = msg {
-                break;
-            }
-        } else {
-            break;
+                // A slow phone skips messages; the next history message makes it whole again.
+                Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => {}
+                Err(_) => break,
+            },
+            incoming = socket.recv() => match incoming {
+                Some(Ok(WsMessage::Text(text))) => {
+                    if serde_json::from_str::<serde_json::Value>(&text)
+                        .ok()
+                        .and_then(|v| v.get("type").and_then(|t| t.as_str()).map(|t| t == "ping"))
+                        == Some(true)
+                    {
+                        let pong = serde_json::json!({"type": "pong"}).to_string();
+                        if socket.send(WsMessage::Text(pong.into())).await.is_err() {
+                            break;
+                        }
+                    }
+                }
+                Some(Ok(WsMessage::Close(_))) | None | Some(Err(_)) => break,
+                Some(Ok(_)) => {}
+            },
         }
     }
 }
-
-// ============================================================================
-// EMBEDDED RESPONSIVE MOBILE WEB CLIENT
-// ============================================================================
-
-const MOBILE_CLIENT_HTML: &str = r#"<!DOCTYPE html>
-<html lang="en" class="dark">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>OtakuSoul</title>
-  <style>
-    * { box-sizing: border-box; }
-    body { margin: 0; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; background: #050811; color: #f1f5f9; font-family: system-ui, -apple-system, sans-serif; }
-    .glass { background: rgba(15, 23, 42, .9); backdrop-filter: blur(16px); border: 1px solid rgba(56, 189, 248, .2); }
-    header { display: flex; align-items: center; justify-content: space-between; padding: 12px; gap: 12px; box-shadow: 0 4px 16px #0005; }
-    header > div, header > div:first-child > div:last-child > div { display: flex; align-items: center; gap: 10px; }
-    header > div:first-child > div:last-child { display: block; }
-    header h1 { margin: 0 0 4px; font-size: 14px; color: #67e8f9; }
-    header span, #moodLabel { font-size: 11px; color: #94a3b8; }
-    #emotionBadge { padding: 2px 7px; border-radius: 12px; color: #67e8f9; background: #083344; }
-    header > div:first-child > div:first-child { font-size: 28px; }
-    #chatFeed { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 16px; }
-    #chatFeed > div { display: flex; align-items: flex-start; gap: 8px; max-width: 85%; align-self: flex-start; }
-    #chatFeed > div.self-end { align-self: flex-end; }
-    #chatFeed > div > div:last-child { padding: 12px; border-radius: 16px; background: #0f172a; border: 1px solid #1e293b; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
-    #chatFeed > div.self-end > div:last-child { background: #0891b2; border-color: #0891b2; color: white; }
-    footer { padding: 12px; }
-    footer > div { display: flex; align-items: center; gap: 8px; }
-    button { cursor: pointer; padding: 10px; border: 1px solid #334155; border-radius: 14px; background: #1e293b; color: #cbd5e1; font-size: 16px; }
-    button:active { transform: scale(.95); }
-    footer button:last-child { background: linear-gradient(90deg, #06b6d4, #2563eb); color: white; border: 0; }
-    #msgInput { flex: 1; min-width: 0; padding: 11px 14px; border: 1px solid #334155; border-radius: 14px; background: #0f172a; color: #f1f5f9; font-size: 14px; }
-    #msgInput:focus { outline: 1px solid #22d3ee; }
-    .text-cyan-400 { color: #22d3ee; }
-    .bg-rose-600 { background: #e11d48; }
-    .animate-pulse { animation: pulse 1.5s infinite; }
-    @keyframes pulse { 50% { opacity: .55; } }
-  </style>
-</head>
-<body class="h-screen w-screen flex flex-col justify-between overflow-hidden">
-  <!-- Top Navigation & Character Status -->
-  <header class="glass p-3 flex items-center justify-between shadow-lg z-10">
-    <div class="flex items-center gap-3">
-      <div class="relative">
-        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-500 to-fuchsia-500 p-0.5 shadow-md">
-          <div class="w-full h-full bg-slate-900 rounded-[14px] flex items-center justify-center text-lg">🌸</div>
-        </div>
-        <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 border-2 border-slate-950 rounded-full animate-pulse"></span>
-      </div>
-      <div>
-        <h1 id="charName" class="text-sm font-bold tracking-tight text-cyan-300">OtakuSoul Companion</h1>
-        <div class="flex items-center gap-1.5 text-[11px] text-slate-400">
-          <span id="emotionBadge" class="px-1.5 py-0.2 rounded-full bg-cyan-950 border border-cyan-500/30 text-cyan-300 font-mono">warm</span>
-          <span>•</span>
-          <span id="moodLabel" data-i18n="mood.connected"></span>
-        </div>
-      </div>
-    </div>
-    <div class="flex items-center gap-2">
-      <button onclick="toggleAudioPlayback()" id="audioBtn" data-i18n-title="voiceOutput" class="p-2 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-300 active:scale-95 transition">
-        🔊
-      </button>
-    </div>
-  </header>
-
-  <!-- Chat Log Feed -->
-  <main id="chatFeed" class="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
-    <div class="flex gap-2 max-w-[85%] self-start animate-fade-in">
-      <div class="w-7 h-7 rounded-xl bg-cyan-950/80 border border-cyan-500/30 flex items-center justify-center text-xs shrink-0 mt-0.5">🌸</div>
-      <div class="p-3 rounded-2xl bg-slate-900/90 border border-slate-800 text-sm text-slate-200 shadow-md" data-i18n="greeting"></div>
-    </div>
-  </main>
-
-  <!-- Input Area & Microphone Dock -->
-  <footer class="glass p-3 flex flex-col gap-2">
-    <div class="flex items-center gap-2">
-      <input 
-        type="text" 
-        id="msgInput" 
-        data-i18n-placeholder="placeholder" 
-        class="flex-1 bg-slate-900/90 border border-slate-700/80 rounded-2xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition"
-        onkeydown="if(event.key==='Enter') sendChatMessage()"
-      />
-      <button 
-        onclick="toggleMicrophone()" 
-        id="micBtn" 
-        data-i18n-title="voiceInput" 
-        class="p-2.5 rounded-2xl bg-slate-800 border border-slate-700 text-slate-300 active:scale-95 transition"
-      >
-        🎙️
-      </button>
-      <button 
-        onclick="sendChatMessage()" 
-        data-i18n-title="send"
-        class="p-2.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold shadow-md shadow-cyan-500/20 active:scale-95 transition"
-      >
-        ➤
-      </button>
-    </div>
-  </footer>
-
-  <script>
-    // The page follows the phone's browser language; the app itself is not asked.
-    const MESSAGES = {
-      de: {
-        greeting: 'Hallo! Schön, dass wir auch über dein Smartphone verbunden sind. Wie kann ich dir heute zur Seite stehen? ✨',
-        placeholder: 'Schreibe eine Nachricht …',
-        voiceOutput: 'Sprachausgabe',
-        voiceInput: 'Sprachaufnahme',
-        send: 'Senden',
-        connectionError: 'Keine Verbindung zum Desktop-Server.',
-        micDenied: 'Mikrofonzugriff nicht erlaubt oder nicht verfügbar.',
-        'mood.connected': 'Aktiv & verbunden',
-      },
-      en: {
-        greeting: "Hi! Nice to be connected through your phone too. How can I help you today? ✨",
-        placeholder: 'Write a message …',
-        voiceOutput: 'Voice output',
-        voiceInput: 'Voice input',
-        send: 'Send',
-        connectionError: 'No connection to the desktop server.',
-        micDenied: 'Microphone access denied or unavailable.',
-        'mood.connected': 'Active & connected',
-      },
-      ru: {
-        greeting: 'Привет! Здорово, что мы на связи и через твой телефон. Чем могу помочь сегодня? ✨',
-        placeholder: 'Напиши сообщение …',
-        voiceOutput: 'Озвучка',
-        voiceInput: 'Голосовой ввод',
-        send: 'Отправить',
-        connectionError: 'Нет связи с сервером на компьютере.',
-        micDenied: 'Доступ к микрофону запрещён или недоступен.',
-        'mood.connected': 'Активна и на связи',
-      },
-    };
-    const lang = (navigator.languages || [navigator.language || 'en'])
-      .map((l) => String(l).slice(0, 2).toLowerCase())
-      .find((l) => l in MESSAGES) || 'en';
-    const tr = (key) => MESSAGES[lang][key] ?? MESSAGES.en[key] ?? key;
-    // Mood codes from the desktop app; unknown values are shown as they are.
-    const moodText = (code) => (('mood.' + code) in MESSAGES.en ? tr('mood.' + code) : code);
-
-    document.documentElement.lang = lang;
-    document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = tr(el.dataset.i18n); });
-    document.querySelectorAll('[data-i18n-title]').forEach((el) => {
-      el.title = tr(el.dataset.i18nTitle);
-      el.setAttribute('aria-label', el.title);
-    });
-    document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => { el.placeholder = tr(el.dataset.i18nPlaceholder); });
-
-    const urlParams = new URLSearchParams(window.location.hash.slice(1));
-    let token = urlParams.get('token') || sessionStorage.getItem('otaku_token') || '';
-    if (urlParams.get('token')) {
-      sessionStorage.setItem('otaku_token', token);
-      // Keep the token out of the address bar and browser history.
-      history.replaceState(null, '', window.location.pathname);
-    }
-    const authHeaders = () => ({ 'X-Otaku-Token': token });
-
-    let isRecording = false;
-    let mediaRecorder = null;
-    let audioChunks = [];
-
-    async function fetchStatus() {
-      try {
-        const res = await fetch('/api/status', { headers: authHeaders() });
-        if (res.ok) {
-          const data = await res.json();
-          document.getElementById('charName').textContent = data.character_name;
-          document.getElementById('emotionBadge').textContent = data.emotion;
-          document.getElementById('moodLabel').textContent = moodText(data.mood_label);
-        }
-      } catch (err) {
-        console.warn('Status fetch error:', err);
-      }
-    }
-
-    async function sendChatMessage() {
-      const input = document.getElementById('msgInput');
-      const text = input.value.trim();
-      if (!text) return;
-      input.value = '';
-
-      appendMessage(text, 'user');
-
-      try {
-        const res = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...authHeaders() },
-          body: JSON.stringify({ message: text })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          appendMessage(data.reply, 'companion');
-          if (data.emotion) {
-            document.getElementById('emotionBadge').textContent = data.emotion;
-          }
-        }
-      } catch (err) {
-        appendMessage(tr('connectionError'), 'system');
-      }
-    }
-
-    function appendMessage(text, sender) {
-      const feed = document.getElementById('chatFeed');
-      const wrapper = document.createElement('div');
-
-      if (sender === 'user') {
-        wrapper.className = 'flex gap-2 max-w-[85%] self-end';
-        wrapper.innerHTML = `<div class="p-3 rounded-2xl bg-cyan-600 text-white text-sm shadow-md">${escapeHtml(text)}</div>`;
-      } else {
-        wrapper.className = 'flex gap-2 max-w-[85%] self-start';
-        wrapper.innerHTML = `
-          <div class="w-7 h-7 rounded-xl bg-cyan-950/80 border border-cyan-500/30 flex items-center justify-center text-xs shrink-0 mt-0.5">🌸</div>
-          <div class="p-3 rounded-2xl bg-slate-900/90 border border-slate-800 text-sm text-slate-200 shadow-md">${escapeHtml(text)}</div>
-        `;
-      }
-
-      feed.appendChild(wrapper);
-      feed.scrollTop = feed.scrollHeight;
-    }
-
-    function escapeHtml(str) {
-      return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
-    }
-
-    function toggleAudioPlayback() {
-      const btn = document.getElementById('audioBtn');
-      btn.classList.toggle('text-cyan-400');
-    }
-
-    async function toggleMicrophone() {
-      const btn = document.getElementById('micBtn');
-      if (!isRecording) {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          mediaRecorder = new MediaRecorder(stream);
-          audioChunks = [];
-          mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-          mediaRecorder.onstop = async () => {
-            const blob = new Blob(audioChunks, { type: 'audio/webm' });
-            btn.classList.remove('bg-rose-600', 'text-white', 'animate-pulse');
-            btn.classList.add('bg-slate-800', 'text-slate-300');
-            isRecording = false;
-          };
-          mediaRecorder.start();
-          isRecording = true;
-          btn.classList.remove('bg-slate-800', 'text-slate-300');
-          btn.classList.add('bg-rose-600', 'text-white', 'animate-pulse');
-        } catch (err) {
-          alert(tr('micDenied'));
-        }
-      } else {
-        if (mediaRecorder) mediaRecorder.stop();
-      }
-    }
-
-    fetchStatus();
-    setInterval(fetchStatus, 6000);
-  </script>
-</body>
-</html>
-"#;
 
 #[cfg(test)]
 mod tests {
