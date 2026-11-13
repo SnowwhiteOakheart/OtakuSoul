@@ -320,7 +320,9 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
             </>
           }
           heading={t('avatar.emotionMenu')}
-          menuClassName="max-h-72 overflow-y-auto"
+          // The panel clips overflow: open to the right of the leading pill and never wider than the panel.
+          align="left"
+          menuClassName="max-h-72 overflow-y-auto min-w-0! w-56 max-w-[calc(100cqw-1.5rem)]"
           items={[
             ...extraPortraits.map((m) => ({
               label: t(`portrait.${m.key}` as TranslationKey),
