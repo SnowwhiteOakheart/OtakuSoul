@@ -34,6 +34,8 @@ import {
   BellRing,
   BellOff,
   Camera,
+  PanelLeft,
+  PanelRight,
 } from 'lucide-react';
 import { DropdownMenu } from '../ui/DropdownMenu';
 import { VolumePopover } from '../ui/VolumePopover';
@@ -112,6 +114,8 @@ export const ChatView: React.FC = () => {
   const [streamThought, setStreamThought] = useState('');
   const [showCurrentThought, setShowCurrentThought] = useState(true);
   const [showAvatar, setShowAvatar] = usePersistentFlag('otakusoul.chat.avatar', true);
+  // Where the avatar panel sits: left of the chat (default) or right of it.
+  const [avatarRight, setAvatarRight] = usePersistentFlag('otakusoul.chat.avatarRight', false);
   const [compact, setCompact] = usePersistentFlag('otakusoul.chat.compact', false);
   // Group chat: everyone as portraits, or (default) only who speaks or spoke last.
   const [showEveryone, setShowEveryone] = usePersistentFlag('otakusoul.chat.groupEveryone', false);
@@ -575,6 +579,11 @@ export const ChatView: React.FC = () => {
             trigger={<MoreHorizontal className="w-3.5 h-3.5" />}
             items={[
               { label: t('chat.voiceTooltip'), icon: Volume2, onSelect: () => setShowVoiceModal(true) },
+              ...(showAvatar && activeCharacter
+                ? [avatarRight
+                  ? { label: t('chat.avatarLeft'), icon: PanelLeft, onSelect: () => setAvatarRight(false) }
+                  : { label: t('chat.avatarRight'), icon: PanelRight, onSelect: () => setAvatarRight(true) }]
+                : []),
               ...(activeChatId && activeCharacter && !isGeneratingSceneImage
                 ? [{ label: t('selfie.request'), icon: Camera, onSelect: () => void requestSelfie() }]
                 : []),
@@ -594,8 +603,8 @@ export const ChatView: React.FC = () => {
       {/* Adaptive HUD Bar */}
       <AdaptiveHud compact={compact} />
 
-      {/* Main Split Layout: Avatar (Left) + Chat (Right) */}
-      <div className="flex-1 flex overflow-hidden">
+      {/* Main Split Layout: avatar beside the chat, left by default or right on request */}
+      <div className={`flex-1 flex overflow-hidden ${avatarRight ? 'flex-row-reverse' : ''}`}>
         {showAvatar && activeCharacter && (
           <div className="hidden md:flex w-5/12 lg:w-1/3 h-full" data-avatar-speaker={shownSpeaker.id || 'host'}>
             {showEveryone && speakers.length > 1 ? (

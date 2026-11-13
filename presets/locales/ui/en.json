@@ -582,6 +582,8 @@
   "chat.avatar": "Avatar",
   "chat.hideAvatar": "Hide avatar",
   "chat.showAvatar": "Show avatar",
+  "chat.avatarRight": "Show avatar on the right",
+  "chat.avatarLeft": "Show avatar on the left",
   "chat.deleteSession": "Delete current conversation",
   "chat.avatarLoading": "Loading avatar…",
   "chat.you": "You",

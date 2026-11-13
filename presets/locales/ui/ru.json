@@ -582,6 +582,8 @@
   "chat.avatar": "Аватар",
   "chat.hideAvatar": "Скрыть аватар",
   "chat.showAvatar": "Показать аватар",
+  "chat.avatarRight": "Аватар справа",
+  "chat.avatarLeft": "Аватар слева",
   "chat.deleteSession": "Удалить текущий диалог",
   "chat.avatarLoading": "Загрузка аватара…",
   "chat.you": "Вы",
