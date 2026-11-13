@@ -48,6 +48,7 @@ import { voiceParts } from '../../services/narratorVoice';
 import { CharacterVoiceModal } from '../voice/CharacterVoiceModal';
 import { PromptLogModal } from './PromptLogModal';
 import { translate, useTranslation } from '../../i18n';
+import { AvatarResizeHandle, useAvatarWidth } from './AvatarResizeHandle';
 import { toast } from '../ui/feedback';
 import { errorMessage } from '../../utils/errors';
 import { applyReplacements, applyScripts } from '../../utils/replyFilters';
@@ -116,6 +117,8 @@ export const ChatView: React.FC = () => {
   const [showAvatar, setShowAvatar] = usePersistentFlag('otakusoul.chat.avatar', true);
   // Where the avatar panel sits: left of the chat (default) or right of it.
   const [avatarRight, setAvatarRight] = usePersistentFlag('otakusoul.chat.avatarRight', false);
+  const [avatarWidth, setAvatarWidth] = useAvatarWidth();
+  const splitRef = useRef<HTMLDivElement>(null);
   const [compact, setCompact] = usePersistentFlag('otakusoul.chat.compact', false);
   // Group chat: everyone as portraits, or (default) only who speaks or spoke last.
   const [showEveryone, setShowEveryone] = usePersistentFlag('otakusoul.chat.groupEveryone', false);
@@ -605,9 +608,14 @@ export const ChatView: React.FC = () => {
       <AdaptiveHud compact={compact} />
 
       {/* Main Split Layout: avatar beside the chat, left by default or right on request */}
-      <div className={`flex-1 flex overflow-hidden ${avatarRight ? 'flex-row-reverse' : ''}`}>
+      <div ref={splitRef} className={`flex-1 flex overflow-hidden ${avatarRight ? 'flex-row-reverse' : ''}`}>
         {showAvatar && activeCharacter && (
-          <div className="hidden md:flex w-5/12 lg:w-1/3 h-full" data-avatar-speaker={shownSpeaker.id || 'host'}>
+          <div
+            data-avatar-panel
+            className={`hidden md:flex h-full shrink-0 ${avatarWidth === null ? 'w-5/12 lg:w-1/3' : ''}`}
+            style={avatarWidth === null ? undefined : { width: `${avatarWidth}%` }}
+            data-avatar-speaker={shownSpeaker.id || 'host'}
+          >
             {showEveryone && speakers.length > 1 ? (
               <GroupPortraits speakers={speakers} speakerId={shownSpeaker.id} isSpeaking={isAudioSpeaking} />
             ) : (
@@ -619,6 +627,14 @@ export const ChatView: React.FC = () => {
               </React.Suspense>
             )}
           </div>
+        )}
+        {showAvatar && activeCharacter && (
+          <AvatarResizeHandle
+            containerRef={splitRef}
+            avatarRight={avatarRight}
+            width={avatarWidth}
+            onChange={setAvatarWidth}
+          />
         )}
 
         {/* Chat Area */}

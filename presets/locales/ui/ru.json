@@ -584,6 +584,8 @@
   "chat.showAvatar": "Показать аватар",
   "chat.avatarRight": "Аватар справа",
   "chat.avatarLeft": "Аватар слева",
+  "chat.avatarResize": "Ширина аватара",
+  "chat.avatarResizeHint": "Перетащите, чтобы изменить ширину аватара; двойной щелчок — сброс",
   "chat.deleteSession": "Удалить текущий диалог",
   "chat.avatarLoading": "Загрузка аватара…",
   "chat.you": "Вы",

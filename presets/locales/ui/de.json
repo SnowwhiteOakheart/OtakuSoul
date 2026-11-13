@@ -584,6 +584,8 @@
   "chat.showAvatar": "Avatar einblenden",
   "chat.avatarRight": "Avatar rechts anzeigen",
   "chat.avatarLeft": "Avatar links anzeigen",
+  "chat.avatarResize": "Avatar-Breite",
+  "chat.avatarResizeHint": "Ziehen ändert die Avatar-Breite, Doppelklick setzt sie zurück",
   "chat.deleteSession": "Aktuelles Gespräch löschen",
   "chat.avatarLoading": "Avatar wird geladen…",
   "chat.you": "Du",

@@ -584,6 +584,8 @@
   "chat.showAvatar": "Show avatar",
   "chat.avatarRight": "Show avatar on the right",
   "chat.avatarLeft": "Show avatar on the left",
+  "chat.avatarResize": "Avatar width",
+  "chat.avatarResizeHint": "Drag to change the avatar width, double-click to reset",
   "chat.deleteSession": "Delete current conversation",
   "chat.avatarLoading": "Loading avatar…",
   "chat.you": "You",
