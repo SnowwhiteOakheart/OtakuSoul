@@ -25,6 +25,7 @@ src-tauri/gen/schemas/
 
 # Large AI models & local binaries
 bin/
+!src-tauri/vendor/kokoro-en/src/bin/
 models/
 assets/models/
 # Local test avatars (third-party models, never committed)
