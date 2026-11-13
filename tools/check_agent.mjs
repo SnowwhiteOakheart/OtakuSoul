@@ -204,6 +204,12 @@ if (onlyFast) {
     summarize: summarizeCargoTests,
     extractError: extractCargoFailure,
   });
+  steps.push({
+    name: 'types:check',
+    cmd: process.execPath,
+    args: ['tools/types_check.mjs'],
+    summarize: (out) => out.replace(/^✓\s*types:check:\s*/i, '').trim() || 'OK',
+  });
 }
 
 const totalStart = Date.now();

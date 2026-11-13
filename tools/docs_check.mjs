@@ -72,6 +72,16 @@ const checkDocLinks = (docName, content) => {
 checkDocLinks('AI.md', aiMd);
 checkDocLinks('ARCHITECTURE_INDEX.md', archMd);
 
+const rulesDir = path.join(root, '.claude/rules');
+let ruleFilesCount = 0;
+if (fs.existsSync(rulesDir)) {
+  const ruleFiles = fs.readdirSync(rulesDir).filter((f) => f.endsWith('.md')).sort();
+  ruleFilesCount = ruleFiles.length;
+  for (const rf of ruleFiles) {
+    checkDocLinks(`.claude/rules/${rf}`, fs.readFileSync(path.join(rulesDir, rf), 'utf8'));
+  }
+}
+
 // Quellcode-Pfade im Themen-Navigator von ARCHITECTURE_INDEX.md prüfen
 const navSection = archMd.split('## 🧭 Themen-Navigator')[1]?.split('\n---')[0] ?? '';
 const navPaths = [...navSection.matchAll(/`((?:src-tauri|src|crates|presets)\/[^`]+)`/g)].map((m) => m[1]);
@@ -88,4 +98,5 @@ if (errors.length > 0) {
   process.exit(1);
 }
 
-console.log(`✓ docs:check OK (${moduleFiles.length} Themen-Module unter docs/ai/, ${navPaths.length} Navigator-Pfade geprüft)`);
+const rulesNote = ruleFilesCount > 0 ? `, ${ruleFilesCount} .claude/rules` : '';
+console.log(`✓ docs:check OK (${moduleFiles.length} Themen-Module unter docs/ai/${rulesNote}, ${navPaths.length} Navigator-Pfade geprüft)`);

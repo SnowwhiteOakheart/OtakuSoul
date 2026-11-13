@@ -22,6 +22,7 @@
     "check:agent": "node tools/check_agent.mjs",
     "check:fast": "node tools/docs_check.mjs && oxlint && tsc --noEmit && cargo check --manifest-path src-tauri/Cargo.toml --message-format=short",
     "types:gen": "cargo test --manifest-path src-tauri/Cargo.toml --lib export_bindings && cargo test -p otakusoul-rules5e --lib export_bindings",
+    "types:check": "node tools/types_check.mjs",
     "lint": "oxlint",
     "docs:check": "node tools/docs_check.mjs",
     "i18n:check": "node tools/i18n_check.mjs",

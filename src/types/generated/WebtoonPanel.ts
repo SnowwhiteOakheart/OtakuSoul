@@ -2,7 +2,7 @@
 
 export type WebtoonPanel = { speaker: string, 
 /**
- * `narrator`, `player`, `figure` or `system`.
+ * `narrator`, `player`, `figure`, `system` or `picture` (a scene picture of its own, in `bg`).
  */
 voice: string, text: string, 
 /**

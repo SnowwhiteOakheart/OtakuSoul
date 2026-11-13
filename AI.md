@@ -34,7 +34,7 @@ Nutzer mit „Du“ ansprechen. Antworten, Commits und Doku auf Deutsch.
 | **Alle Checks** | `npm run check` (`npm run check:agent [-- --fast\|--web\|--rust\|--json]`) |
 | **Schneller Pre-Check** | `npm run check:fast` |
 | Doku-Links prüfen | `npm run docs:check` |
-| TS-Typen aus Rust (ts-rs → `src/types/generated/`, mit einchecken) | `npm run types:gen` |
+| TS-Typen aus Rust (ts-rs → `src/types/generated/`, mit einchecken) | `npm run types:gen` (Drift-Check: `npm run types:check`) |
 | E2E-Rauchtest (baut nach `target/e2e`, tauri-driver + Mock-LLM) | `npm run e2e` (`e2e:run` ohne Build, `npm run e2e:filter -- <muster>` gezielt) |
 | Langchat-Messung (1000 Nachrichten) | `npm run e2e:perf` |
 | README-Screenshots (nach `e2e:build`, nicht Teil von `e2e`) | `xvfb-run -a node e2e/readme-screenshots.mjs de\|en\|ru` → `docs/assets/screenshots/<lang>/` |
