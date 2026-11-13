@@ -247,5 +247,4 @@ export const HubView = () => {
     </div>
   );
 };
-export const SoulHubView = HubView;
 export default HubView;

@@ -106,8 +106,6 @@ export interface AvatarStageOptions {
 const PROBE_ALPHA = 24;
 /** Frame interval of the pet in power-saving mode (~12 FPS). */
 export const SAVER_FRAME_MS = 83;
-/** Frame rates the pet offers; 30 unless chosen otherwise. */
-export const PET_FRAME_RATES = [20, 30, 60] as const;
 export const DEFAULT_PET_FRAME_RATE = 30;
 /** Interval between frames for a rate (a millisecond less, so a 60 Hz display keeps every second frame). */
 export const frameInterval = (fps: number) => (fps >= 60 ? 0 : 1000 / fps - 1);
