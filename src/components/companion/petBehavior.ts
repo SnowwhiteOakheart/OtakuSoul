@@ -1089,8 +1089,9 @@ export class PetBehavior {
     const recover = { kind: recovering.kind, id: recovering.id };
     if (recovering.kind === 'feet') return { expression: elapsed < 500 ? 'surprised' : 'relaxed', gaze: null, recover, turn: 0 };
     const phases = RECOVER_PHASES[recovering.kind];
-    // Seated it turns to the side like any floor seat (the knees do not point at the camera).
-    const turn = elapsed >= phases.impact * 1000 && elapsed < phases.rub * 1000 ? this.sitSide * SIT_TURN : 0;
+    // Sitting up it turns to the side like any floor seat (the knees do not point at the camera);
+    // lying flat it still faces the screen.
+    const turn = elapsed >= phases.settle * 1000 && elapsed < phases.rub * 1000 ? this.sitSide * SIT_TURN : 0;
     if (elapsed < phases.settle * 1000) return { expression: 'surprised', gaze: { x: 0, y: -0.2 }, recover, turn };
     if (elapsed < phases.rub * 1000) return { expression: 'sad', gaze: { x: 0, y: -0.45 }, recover, turn };
     return { expression: 'relaxed', gaze: null, recover, turn };

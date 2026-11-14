@@ -20,7 +20,7 @@ import {
 } from '../components/companion/petBond';
 import { AWAY_AFTER_MS, BREAK_AFTER_MS, BREAK_AGAIN_MS, greetingFor, PAUSE_MS, Presence } from '../components/companion/petPresence';
 import { CLIMB_HANG_S, CLIMB_TOTAL_S, climbLift, HAND_POSE_S, handWeight } from '../components/avatar/handTimeline';
-import { kittenKick } from '../components/avatar/hangTimeline';
+import { kittenKick, RECOVER_PHASES, recoverLean, recoverPush, recoverRoll, recoverSeat } from '../components/avatar/hangTimeline';
 import { ELEGANT_SIDE, HARD_LANDING, PetBehavior, WALL_SPLAT, type PetCue } from '../components/companion/petBehavior';
 import { LEDGE_GRIP, stepBody, type Body, type Platform } from '../components/companion/petPhysics';
 
@@ -321,5 +321,36 @@ describe('pet physics impacts and ledges', () => {
     const gone = stepBody(hanging, size, area, 0.02, 0, 1, [], false, { ledges: true });
     expect(gone.onLedge).toBeFalsy();
     expect(gone.grounded).toBe(false);
+  });
+});
+
+describe('getting up after a fall', () => {
+  it('lies, topples flat, pushes itself up into sitting, then stands', () => {
+    const p = RECOVER_PHASES.head;
+    // Head down at the landing: it keeps lying, then falls over flat on that side.
+    expect(recoverRoll('head', p.impact - 0.05, 3)).toBe(3);
+    expect(recoverRoll('head', p.settle - 0.001, 3)).toBeCloseTo(Math.PI / 2, 1);
+    // Pushing up it turns upright while the legs draw in, with a hand on the floor halfway.
+    const half = (p.settle + p.rise) / 2;
+    expect(recoverRoll('head', half, 3)).toBeGreaterThan(0.3);
+    expect(recoverRoll('head', half, 3)).toBeLessThan(Math.PI / 2);
+    expect(recoverSeat('head', half)).toBeGreaterThan(0.2);
+    expect(recoverSeat('head', half)).toBeLessThan(0.8);
+    expect(recoverPush('head', half)).toBeGreaterThan(0.8);
+    expect(recoverRoll('head', p.rise, 3)).toBe(0);
+    // Not snapped into the seat: nothing of it before it starts pushing up.
+    expect(recoverSeat('head', p.settle - 0.01)).toBe(0);
+    expect(recoverSeat('head', (p.rise + p.rub) / 2)).toBe(1);
+    // Standing up it leans forward and leaves the seat.
+    expect(recoverLean('head', (p.rub + p.total) / 2)).toBeGreaterThan(0.9);
+    expect(recoverSeat('head', p.total)).toBeCloseTo(0, 5);
+  });
+
+  it('plops down onto its backside (no toppling) and lands on its feet without sitting', () => {
+    const p = RECOVER_PHASES.back;
+    expect(recoverRoll('back', p.settle, 0.2)).toBe(0);
+    expect(recoverSeat('back', p.impact + 0.01)).toBeGreaterThan(0);
+    expect(recoverPush('back', (p.settle + p.rise) / 2)).toBe(0);
+    expect(recoverSeat('feet', 0.5)).toBeNull();
   });
 });

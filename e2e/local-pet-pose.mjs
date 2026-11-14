@@ -84,7 +84,8 @@ for (const withPack of [true, false]) {
           }
           await browser.pause(3000);
           await emit('pet:test-hang', { at });
-          for (const [label, wait] of [['aufprall', 350], ['sitzt', 1400], ['steht', 3500]]) {
+          // Getting up: lying, toppling flat, pushing up on one hand, sitting, standing up.
+          for (const [label, wait] of [['aufprall', 350], ['kippt', 450], ['stuetzt', 700], ['sitzt', 900], ['reibt', 1200], ['steht-auf', 1400], ['steht', 1600]]) {
             await browser.pause(wait);
             await browser.saveScreenshot(path.join(out, `${tag}-${grip}-${label}.png`));
           }

@@ -445,9 +445,12 @@ export const VrmViewer = ({
       // moved them (procedural or a motion), eased in and out.
       // Getting up after a hard landing sits down on the ground for a while.
       hangRig?.sync(hangRef.current, recoverRef.current, elapsed);
-      const wanted = seatRef.current ?? hangRig?.seat(elapsed) ?? null;
+      // Getting up sets how far it sits itself (drawn in as it pushes itself up, not snapped).
+      const rigSeat = seatRef.current ? null : (hangRig?.seatShare(elapsed) ?? null);
+      const wanted = seatRef.current ?? (rigSeat !== null ? 'floor' : null);
       if (wanted) seatKind = wanted;
-      seat += ((wanted ? 1 : 0) - seat) * Math.min(1, delta * 2.5);
+      if (rigSeat !== null) seat = rigSeat;
+      else seat += ((wanted ? 1 : 0) - seat) * Math.min(1, delta * 2.5);
       const activeSeatPose: SeatPose =
         seatRef.current && seatPoseRef.current ? seatPoseRef.current : seatKind === 'edge' ? 'dangle' : 'hugKnees';
       let sitSpec: ReturnType<typeof computeSitPose> | null = null;

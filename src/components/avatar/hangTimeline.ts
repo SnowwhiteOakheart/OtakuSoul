@@ -61,15 +61,78 @@ export interface Recover {
 }
 
 /**
- * Getting up, in seconds since the landing: until `impact` it lies as it fell, until `settle`
- * it tips or plops into sitting, until `rub` it sits rubbing its head or back, then stands up
- * (done at `total`). Landing on the feet is only a crouch that ends at `total`.
+ * Getting up, in seconds since the landing, as a person would: until `impact` it lies as it fell;
+ * until `settle` it topples over flat (from the head; landing on the backside it already sits
+ * down); until `rise` it pushes itself up on one hand into sitting, the legs drawing in; until
+ * `rub` it sits rubbing its head or back; then it leans forward and stands up (done at `total`).
+ * Landing on the feet is only a crouch that ends at `total`.
  */
-export const RECOVER_PHASES: Record<Landing, { impact: number; settle: number; rub: number; total: number }> = {
-  head: { impact: 0.3, settle: 1.1, rub: 3.1, total: 4.3 },
-  back: { impact: 0.25, settle: 0.9, rub: 2.7, total: 3.9 },
-  feet: { impact: 0.12, settle: 0.12, rub: 0.12, total: 1.1 },
+export interface RecoverPhases {
+  impact: number;
+  settle: number;
+  rise: number;
+  rub: number;
+  total: number;
+}
+
+export const RECOVER_PHASES: Record<Landing, RecoverPhases> = {
+  head: { impact: 0.3, settle: 0.9, rise: 2.1, rub: 3.9, total: 5.2 },
+  back: { impact: 0.25, settle: 0.6, rise: 1.2, rub: 3.0, total: 4.3 },
+  feet: { impact: 0.12, settle: 0.12, rise: 0.12, rub: 0.12, total: 1.1 },
 };
+
+const smooth01 = (x: number) => {
+  const t = Math.min(1, Math.max(0, x));
+  return t * t * (3 - 2 * t);
+};
+
+/**
+ * How far it sits (0 lying or standing, 1 seated) at `t` seconds after landing: drawn in while it
+ * pushes itself up (landing on the backside from the impact on: it plops down), held while it
+ * rubs, given up while it stands. Null when it does not sit at all (on the feet).
+ */
+export function recoverSeat(kind: Landing, t: number): number | null {
+  if (kind === 'feet') return null;
+  const p = RECOVER_PHASES[kind];
+  const from = kind === 'back' ? p.impact : p.settle;
+  if (t < from) return 0;
+  if (t < p.rise) return smooth01((t - from) / (p.rise - from));
+  if (t < p.rub) return 1;
+  return 1 - smooth01((t - p.rub) / (p.total - p.rub));
+}
+
+/**
+ * The body's turn on the screen while it gets up (radians, 0 upright): from where it lay at the
+ * landing (`from`) it falls over to lie flat on that side (gravity: slow, then faster), then
+ * turns upright as it pushes itself up. Landing on the backside it only straightens.
+ */
+export function recoverRoll(kind: Landing, t: number, from: number): number {
+  const p = RECOVER_PHASES[kind];
+  if (kind === 'feet' || t < p.impact) return kind === 'feet' ? 0 : from;
+  const flat = kind === 'head' ? (Math.sign(from) || 1) * (Math.PI / 2) : 0;
+  if (t < p.settle) {
+    const x = (t - p.impact) / Math.max(1e-3, p.settle - p.impact);
+    return from + (flat - from) * x * x;
+  }
+  if (t < p.rise) return flat * (1 - smooth01((t - p.settle) / (p.rise - p.settle)));
+  return 0;
+}
+
+/** Pushing itself up: how much one hand leans on the floor (0…1, most halfway up). */
+export function recoverPush(kind: Landing, t: number): number {
+  if (kind !== 'head') return 0;
+  const p = RECOVER_PHASES[kind];
+  if (t <= p.settle - 0.1 || t >= p.rise) return 0;
+  return Math.sin(Math.PI * Math.min(1, (t - (p.settle - 0.1)) / (p.rise - p.settle + 0.1)));
+}
+
+/** Standing up from the floor: how far it leans forward (0…1, most halfway up). */
+export function recoverLean(kind: Landing, t: number): number {
+  if (kind === 'feet') return 0;
+  const p = RECOVER_PHASES[kind];
+  if (t <= p.rub || t >= p.total) return 0;
+  return Math.sin(Math.PI * ((t - p.rub) / (p.total - p.rub)));
+}
 
 /**
  * The grip at this height (share of the viewer from the top) for a figure drawn between `top`

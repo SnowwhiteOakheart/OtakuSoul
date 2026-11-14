@@ -6,6 +6,10 @@ import {
   groundAngle,
   kittenKick,
   RECOVER_PHASES,
+  recoverLean,
+  recoverPush,
+  recoverRoll,
+  recoverSeat,
   swingStep,
   TOPPLE_KICK,
   wrapAngle,
@@ -103,7 +107,10 @@ export class HangRig {
   /** Held by a foot the user drags: where it is and where the floor is (see `HangHold`). */
   private hold: HangHold | null = null;
   private grabbed: Grabbed | null = null;
-  private recover: (Recover & { start: number; tipTo: number; rubSide: 'left' | 'right'; springsReset: boolean }) | null = null;
+  /** Getting up: since when, the turn and tilt it landed with, the hand that rubs. */
+  private recover: (Recover & { start: number; from: number; pitchFrom: number; rubSide: 'left' | 'right'; springsReset: boolean }) | null = null;
+  /** When it last hung (a landing long after that came from standing: no hanging pose to keep). */
+  private lastHangAt = Number.NEGATIVE_INFINITY;
   private lastRecoverId = -1;
   private readonly lastSpeed = { x: 0, y: 0 };
   /** Swing of arms and legs about the view axis (radians), trailing the body's. */
@@ -165,6 +172,7 @@ export class HangRig {
 
   /** Takes the props of this frame: a new grab, a new landing. */
   sync(hang: Hang | null, recover: Recover | null, elapsed: number) {
+    if (hang) this.lastHangAt = elapsed;
     if (hang !== this.hang) {
       this.hang = hang;
       if (hang) {
@@ -179,10 +187,16 @@ export class HangRig {
     }
     if (recover && recover.id !== this.lastRecoverId) {
       this.lastRecoverId = recover.id;
-      // Tips over the way it already leans: from head down a half turn further round.
-      const flipped = Math.abs(this.roll) > Math.PI / 2;
-      const tipTo = flipped ? Math.sign(this.roll) * 2 * Math.PI : 0;
-      this.recover = { ...recover, start: elapsed, tipTo, rubSide: this.grabbed?.heldLeg ?? 'right', springsReset: false };
+      // Knocked down from standing (not dropped from the hand): no hanging pose to lie in.
+      if (elapsed - this.lastHangAt > 0.6) this.grabbed = null;
+      this.recover = {
+        ...recover,
+        start: elapsed,
+        from: wrapAngle(this.roll),
+        pitchFrom: this.pitch,
+        rubSide: this.grabbed?.heldLeg ?? 'right',
+        springsReset: false,
+      };
     }
     if (this.recover && elapsed - this.recover.start > RECOVER_PHASES[this.recover.kind].total) this.recover = null;
   }
@@ -192,13 +206,14 @@ export class HangRig {
     this.hold = hold;
   }
 
-  /** Getting up sits on the ground for a while (the viewer's floor seat). */
-  seat(elapsed: number): 'floor' | null {
+  /**
+   * Getting up sits on the ground for a while (the viewer's floor seat): how far (0…1), drawn in
+   * as it pushes itself up and given up as it stands; null when it is not getting up.
+   */
+  seatShare(elapsed: number): number | null {
     const recover = this.recover;
-    if (!recover || recover.kind === 'feet') return null;
-    const t = elapsed - recover.start;
-    const phases = RECOVER_PHASES[recover.kind];
-    return t >= phases.impact && t < phases.rub ? 'floor' : null;
+    if (!recover) return null;
+    return recoverSeat(recover.kind, elapsed - recover.start);
   }
 
   /** Back to standing as loaded (the cached model is shown again later). */
@@ -376,8 +391,6 @@ export class HangRig {
       rollTarget = this.roll;
       pitchTarget = this.pitch;
       weightTarget = 1;
-    } else if (recover) {
-      rollTarget = recover.tipTo;
     }
 
     const accel = { x: (sway.x - this.lastSpeed.x) / dt, y: (sway.y - this.lastSpeed.y) / dt };
@@ -401,6 +414,10 @@ export class HangRig {
       this.roll = rollTarget + swing.angle;
       this.rollSpeed = swing.speed;
       this.hanging = swing.hanging;
+    } else if (recover && !lying) {
+      // Getting up follows its timeline: falls over flat, pushes itself up, sits (see `recoverRoll`).
+      this.roll = recoverRoll(recover.kind, t, recover.from);
+      this.rollSpeed = 0;
     } else {
       for (let i = 0; i < steps; i++) {
         this.rollSpeed += (TIP_STIFFNESS * (rollTarget - this.roll) - TIP_DAMPING * this.rollSpeed) * step;
@@ -410,19 +427,21 @@ export class HangRig {
     // Arms and legs swing with the body, a little behind it.
     const limbTarget = hang && grabbed ? this.roll - rollTarget : 0;
     this.limbAngle += (limbTarget - this.limbAngle) * Math.min(1, dt * LIMB_FOLLOW);
-    for (let i = 0; i < steps; i++) {
-      this.pitchSpeed += (TIP_STIFFNESS * (pitchTarget - this.pitch) - TIP_DAMPING * this.pitchSpeed) * step;
-      this.pitch += this.pitchSpeed * step;
-    }
-    // Tipped a whole turn round: that is upright again.
-    if (!hang && recover && recover.tipTo !== 0 && Math.abs(this.roll - recover.tipTo) < 0.01 && Math.abs(this.rollSpeed) < 0.05) {
-      this.roll -= recover.tipTo;
-      recover.tipTo = 0;
+    if (recover && !lying && phases) {
+      // Folded over the hand it unfolds while it comes down onto its backside.
+      const unfold = Math.min(1, Math.max(0, (t - phases.impact) / Math.max(1e-3, phases.rise - phases.impact)));
+      this.pitch = recover.pitchFrom * (1 - unfold * unfold * (3 - 2 * unfold));
+      this.pitchSpeed = 0;
+    } else {
+      for (let i = 0; i < steps; i++) {
+        this.pitchSpeed += (TIP_STIFFNESS * (pitchTarget - this.pitch) - TIP_DAMPING * this.pitchSpeed) * step;
+        this.pitch += this.pitchSpeed * step;
+      }
     }
     // Upright again after head down or folded: long hair may have caught on the head's and
     // body's colliders on the wrong side (twin tails stood up); it falls back into place.
     if (recover && !recover.springsReset && recover.kind !== 'feet' && phases && t > phases.settle) {
-      if (recover.tipTo === 0 && Math.abs(this.roll) < 0.2 && Math.abs(this.pitch) < 0.2) {
+      if (Math.abs(this.roll) < 0.2 && Math.abs(this.pitch) < 0.2) {
         recover.springsReset = true;
         this.vrm.springBoneManager?.reset();
       }
@@ -541,7 +560,11 @@ export class HangRig {
         this.offset.lerp(wanted, Math.min(1, dt * 14));
       }
     } else if (recover) {
-      this.offset.x += (0 - this.offset.x) * Math.min(1, dt * 6);
+      // Lying and pushing itself up it turns about the feet: the hips stay in the middle instead,
+      // so the body does not slide out of the window to one side.
+      const hipsNow = this.bone('hips');
+      const centre = hipsNow ? -(hipsNow.getWorldPosition(this.b).x - this.restPosition.x) : 0;
+      this.offset.x += (centre - this.offset.x) * Math.min(1, dt * 6);
       this.offset.z += (0 - this.offset.z) * Math.min(1, dt * 6);
       // Falls the rest of the way at once (gravity), rises gently (standing up lifts the seat).
       const floor = -(this.lowest() - this.restPosition.y) + 0.015 * this.height;
@@ -607,7 +630,30 @@ export class HangRig {
 
     // 5. Sitting after the landing: one hand rubs the head (or the lower back).
     if (recover && phases && recover.kind !== 'feet') {
-      const rub = ramp(t, phases.settle - 0.2, phases.settle + 0.3) * (1 - ramp(t, phases.rub - 0.4, phases.rub));
+      // Pushing itself up: the hand on the floor side leans on the ground beside the hips.
+      const push = recoverPush(recover.kind, t);
+      const hipsAt = this.bone('hips');
+      if (push > 0.001 && hipsAt) {
+        const left = this.bone('leftUpperArm');
+        const right = this.bone('rightUpperArm');
+        if (left && right) {
+          const lower = left.getWorldPosition(this.a).y < right.getWorldPosition(this.b).y ? 'left' : 'right';
+          const shoulder = lower === 'left' ? left : right;
+          const floorY = this.restPosition.y + 0.02 * this.height;
+          const target = shoulder
+            .getWorldPosition(this.c)
+            .lerp(hipsAt.getWorldPosition(this.d), 0.45)
+            .setY(floorY);
+          this.reach(lower, 'Arm', target, push);
+        }
+      }
+      // Standing up it leans forward over its feet, as one does getting up from the floor.
+      const lean = recoverLean(recover.kind, t);
+      if (lean > 0.001) {
+        this.pose({ spine: [0.35, 0, 0], chest: [0.2, 0, 0], neck: [-0.15, 0, 0] }, 0.8 * lean);
+        scene.updateMatrixWorld(true);
+      }
+      const rub = ramp(t, phases.rise - 0.2, phases.rise + 0.3) * (1 - ramp(t, phases.rub - 0.4, phases.rub));
       const side = recover.rubSide;
       if (rub > 0.001) {
         const up = this.a.copy(UP).applyQuaternion(this.turn);
