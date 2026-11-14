@@ -515,6 +515,7 @@ export const VrmViewer = ({
         stage.setShadowFloor?.(0);
       }
       // Held up or getting up: the whole body turns about the grip, limbs hang, a hand rubs.
+      hangRig?.setHold(stage.hangHold?.() ?? null);
       hangRig?.apply(delta, elapsed, sway.windowSpeed);
       model.humanoid
         .getNormalizedBoneNode('head')

@@ -1,5 +1,6 @@
 import { answerSnapshots } from '../../services/avatarSnapshot';
 import { watchTaps, zoneInViewer, type FigureTouch } from './avatarTouch';
+import type { HangHold } from './hangTimeline';
 import * as THREE from 'three';
 import { OutlineEffect } from 'three/examples/jsm/effects/OutlineEffect.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -97,6 +98,13 @@ export interface AvatarStage {
    */
   setShadowFloor?: (y: number | null) => void;
   /**
+   * Desktop pet held by a foot that the user drags: where the foot is drawn and where the floor
+   * is (window shares); the hanging body stays above that floor. Null: the hang's own anchor.
+   */
+  setHangHold?: (hold: HangHold | null) => void;
+  /** The hold set last (read by the VRM viewer every frame). */
+  hangHold?: () => HangHold | null;
+  /**
    * Desktop pet: marks high-activity states (walking, falling, dragged, talking, dancing) so
    * full configured frame rate runs while calm idling throttles to ~30 FPS.
    */
@@ -109,7 +117,7 @@ export type PetFigure = Pick<
   AvatarStage,
   'mouse' | 'probe' | 'setPaused' | 'setSaver' | 'setFrameRate' | 'addWindowMove' | 'setTurn' | 'setFraming' | 'headLine' | 'handAt'
 > &
-  Partial<Pick<AvatarStage, 'setAmbientTint' | 'listParts' | 'setHiddenParts' | 'setShadowFloor' | 'setActivity'>>;
+  Partial<Pick<AvatarStage, 'setAmbientTint' | 'listParts' | 'setHiddenParts' | 'setShadowFloor' | 'setActivity' | 'setHangHold'>>;
 
 /** Names of all meshes under `root`, each once, in scene order (empty names left out). */
 export function meshNames(root: THREE.Object3D): string[] {
@@ -149,6 +157,7 @@ export function createAvatarStage(container: HTMLElement, modelPath: string, opt
   // The pet moves all the time (breathing, drifting arms): it draws at its own steady rate.
   let petFrameMs = frameInterval(DEFAULT_PET_FRAME_RATE);
   let windowMove = { dx: 0, dy: 0 };
+  let hangHold: HangHold | null = null;
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(32, container.clientWidth / container.clientHeight, 0.1, 20.0);
   camera.position.fromArray(DEFAULT_CAMERA_POSITION);
@@ -430,6 +439,11 @@ export function createAvatarStage(container: HTMLElement, modelPath: string, opt
     setTapHandler: (handler) => {
       tapHandler = handler;
     },
+    setHangHold: (hold) => {
+      hangHold = hold;
+      markActive();
+    },
+    hangHold: () => hangHold,
     setShadowFloor: (y) => {
       if (!shadowPlane) return;
       shadowPlane.visible = y !== null;

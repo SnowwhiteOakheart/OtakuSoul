@@ -114,9 +114,20 @@ export const eyeLine = (headEnd: number) => headEnd * EYES_IN_HEAD;
 export const HOLD_HAND_MS = 450;
 
 /** One-time things to do this tick. */
+/**
+ * Lines the behaviour asks for (the caller picks the words): dozing off, waking up, being dragged
+ * over the floor by a foot, hanging head down for a while.
+ */
+export type PetBubbleCue = 'doze' | 'wake' | 'scrape' | 'upsideDown';
+
+/** Dragged over the floor it complains again after this long (ms, random within). */
+export const SCRAPE_GAP_MS: [number, number] = [3500, 6500];
+/** Held head down this long (ms) without touching the floor, it says so (once per grab). */
+export const UPSIDE_DOWN_MS = 2200;
+
 export type PetCue =
   | { kind: 'gesture'; role: MotionRole }
-  | { kind: 'bubble'; text: 'doze' | 'wake' }
+  | { kind: 'bubble'; text: PetBubbleCue }
   /** Jump to a nearby window's edge; the caller plans it and reports back with `jumped`. */
   | { kind: 'jump' }
   /** Something happened to the figure that it may comment on (the caller decides whether and how often). */
@@ -237,6 +248,13 @@ export class PetBehavior {
   private releasedAt: number | null = null;
   private fallStart = 0;
   private recovering: (PetRecover & { start: number }) | null = null;
+  /** Held by a foot near the floor (lying or at an angle) and when it last moved along it. */
+  private groundDrag = false;
+  private groundMovedAt = Number.NEGATIVE_INFINITY;
+  private nextScrapeAt = 0;
+  /** Since when it hangs head down off the floor, and whether it said so in this grab. */
+  private upsideSince: number | null = null;
+  private upsideSaid = false;
   private recoverId = 0;
 
   constructor(
@@ -288,6 +306,39 @@ export class PetBehavior {
     this.recovering = null;
     this.hang = hang;
     this.releasedAt = null;
+    this.groundDrag = false;
+    this.groundMovedAt = Number.NEGATIVE_INFINITY;
+    this.nextScrapeAt = 0;
+    this.upsideSince = null;
+    this.upsideSaid = false;
+  }
+
+  /**
+   * Held by a foot while the user drags it (from the caller's window moves): `grounded` when the
+   * body lies on or leans against the floor, `moving` when it is pulled along it right now. Being
+   * scraped over the floor it gets cross and complains now and then; hanging head down a while
+   * it says that once.
+   */
+  dragAlong(now: number, grounded: boolean, moving: boolean) {
+    if (this.mode !== 'dragged' || this.hang?.grip !== 'feet') return;
+    this.lastPointer = now;
+    this.groundDrag = grounded;
+    if (grounded) {
+      this.upsideSince = null;
+      if (!moving) return;
+      this.groundMovedAt = now;
+      if (now >= this.nextScrapeAt) {
+        const [min, max] = SCRAPE_GAP_MS;
+        this.nextScrapeAt = now + min + this.random() * (max - min);
+        this.cues.push({ kind: 'bubble', text: 'scrape' });
+      }
+      return;
+    }
+    this.upsideSince ??= now;
+    if (!this.upsideSaid && now - this.upsideSince >= UPSIDE_DOWN_MS) {
+      this.upsideSaid = true;
+      this.cues.push({ kind: 'bubble', text: 'upsideDown' });
+    }
   }
 
   dragEnd(now: number) {
@@ -725,9 +776,22 @@ export class PetBehavior {
       case 'dozing':
         frame = { ...still, mode: 'dozing', expression: 'relaxed', gaze: { x: 0, y: -0.8 }, loop: 'sleep', seat: kept, turn: this.seatTurn(kept) };
         break;
-      case 'dragged':
-        frame = { ...still, mode: 'dragged', expression: 'surprised', gaze: { x: 0, y: -0.6 }, loop: 'fall', ...this.hangFrame() };
+      case 'dragged': {
+        // Scraped over the floor: cross while pulled, sulking while it lies still; head down a
+        // while it gets unhappy; otherwise startled.
+        const scraped = this.groundDrag && now - this.groundMovedAt < 600;
+        const expression = this.groundDrag
+          ? scraped
+            ? 'angry'
+            : 'sad'
+          : this.upsideSince !== null && now - this.upsideSince > UPSIDE_DOWN_MS
+            ? 'sad'
+            : 'surprised';
+        // Lying, it looks up at the hand holding its foot.
+        const gaze = this.groundDrag ? { x: 0, y: 0.45 } : { x: 0, y: -0.6 };
+        frame = { ...still, mode: 'dragged', expression, gaze, loop: 'fall', ...this.hangFrame() };
         break;
+      }
       case 'falling':
         frame = this.leaping
           ? { ...still, mode: 'falling', expression: 'happy', gaze: null, loop: 'fall' }

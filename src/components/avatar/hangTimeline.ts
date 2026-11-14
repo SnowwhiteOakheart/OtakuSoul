@@ -27,6 +27,29 @@ export interface Hang {
   anchor: HangPoint;
 }
 
+/**
+ * Held by a foot that the user drags along (the pet moves its window itself then): where the
+ * held foot is drawn right now, where the floor is (share of the window's height from the top;
+ * beyond 1 when it is below the window) and how long the body is from the foot to the top of
+ * the head (window heights). Too near the floor, the body cannot hang straight down: it lies at
+ * an angle, or flat on the floor, and is dragged along.
+ */
+export interface HangHold {
+  anchor: HangPoint;
+  floor: number;
+  reach: number;
+}
+
+/**
+ * Smallest swing (radians either way from hanging straight down) that keeps the head above the
+ * floor: 0 with room enough, π/2 (lying flat) with the foot on the floor.
+ */
+export function groundAngle(hold: HangHold): number {
+  const clearance = hold.floor - hold.anchor.y;
+  if (clearance >= hold.reach) return 0;
+  return Math.acos(Math.max(0, clearance) / Math.max(1e-3, hold.reach));
+}
+
 /** What it landed on after being dropped: head (held by the feet), backside (by the hips) or feet. */
 export type Landing = 'head' | 'back' | 'feet';
 

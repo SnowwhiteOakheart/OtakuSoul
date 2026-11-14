@@ -2,7 +2,18 @@ import * as THREE from 'three';
 import type { VRM, VRMHumanBoneName } from '@pixiv/three-vrm';
 import { reachWithArm } from './armReach';
 import { forFacing, type BodyPose } from './proceduralBody';
-import { RECOVER_PHASES, swingStep, TOPPLE_KICK, wrapAngle, type Hang, type HangPoint, type Recover, type Swing } from './hangTimeline';
+import {
+  groundAngle,
+  RECOVER_PHASES,
+  swingStep,
+  TOPPLE_KICK,
+  wrapAngle,
+  type Hang,
+  type HangHold,
+  type HangPoint,
+  type Recover,
+  type Swing,
+} from './hangTimeline';
 
 /**
  * Desktop pet (VRM): hanging from where the user grabbed it and getting up after a hard landing.
@@ -45,6 +56,8 @@ const TIP_STIFFNESS = 45;
 const TIP_DAMPING = 11;
 /** The first moments after grabbing it struggles (kicks its legs), later it only dangles. */
 const STRUGGLE_S = 1.6;
+/** Lying on the floor it is dragged along: its swing loses this share of its speed per second. */
+const GROUND_FRICTION = 8;
 /** A skirt keeps falling about the legs, not over the head (spring joints by these names). */
 const SKIRT = /skirt|スカート|dress|apron|coat|cloth/i;
 
@@ -82,6 +95,8 @@ export class HangRig {
   private weight = 0;
   private readonly offset = new THREE.Vector3();
   private hang: Hang | null = null;
+  /** Held by a foot the user drags: where it is and where the floor is (see `HangHold`). */
+  private hold: HangHold | null = null;
   private grabbed: Grabbed | null = null;
   private recover: (Recover & { start: number; tipTo: number; rubSide: 'left' | 'right'; springsReset: boolean }) | null = null;
   private lastRecoverId = -1;
@@ -165,6 +180,11 @@ export class HangRig {
       this.recover = { ...recover, start: elapsed, tipTo, rubSide: this.grabbed?.heldLeg ?? 'right', springsReset: false };
     }
     if (this.recover && elapsed - this.recover.start > RECOVER_PHASES[this.recover.kind].total) this.recover = null;
+  }
+
+  /** The held foot's place and the floor while the user drags it (null: the hang's own anchor). */
+  setHold(hold: HangHold | null) {
+    this.hold = hold;
   }
 
   /** Getting up sits on the ground for a while (the viewer's floor seat). */
@@ -350,6 +370,17 @@ export class HangRig {
       // A pendulum about the grip (see `swingStep`), measured from hanging still.
       const swing: Swing = { angle: this.roll - rollTarget, speed: this.rollSpeed, hanging: this.hanging };
       for (let i = 0; i < steps; i++) swingStep(swing, accel, sway, grabbed.length, step);
+      // Held by a foot near the floor: the head stays above it, the body lies at an angle (flat
+      // with the foot on the floor) on the side it trails to, and drags along with friction.
+      const ground = hang.grip === 'feet' && this.hold ? groundAngle(this.hold) : 0;
+      if (ground > 0 && Math.abs(wrapAngle(swing.angle)) < ground) {
+        const angle = wrapAngle(swing.angle);
+        // Positive turns the body to the right on screen; pulled right it trails to the left.
+        const side = Math.abs(angle) > 0.02 ? Math.sign(angle) : sway.x > 0.05 ? -1 : sway.x < -0.05 ? 1 : 1;
+        swing.angle = side * ground;
+        if (Math.sign(swing.speed) !== side) swing.speed = 0;
+        swing.speed *= Math.max(0, 1 - GROUND_FRICTION * dt);
+      }
       this.roll = rollTarget + swing.angle;
       this.rollSpeed = swing.speed;
       this.hanging = swing.hanging;
@@ -482,7 +513,8 @@ export class HangRig {
     if (hang && grabbed) {
       const pivot = this.bone(grabbed.pivot);
       if (pivot) {
-        const wanted = this.anchorInWorld(hang.anchor, this.c).sub(pivot.getWorldPosition(this.b));
+        const anchor = hang.grip === 'feet' && this.hold ? this.hold.anchor : hang.anchor;
+        const wanted = this.anchorInWorld(anchor, this.c).sub(pivot.getWorldPosition(this.b));
         this.offset.lerp(wanted, Math.min(1, dt * 14));
       }
     } else if (recover) {

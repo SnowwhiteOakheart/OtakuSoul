@@ -37,6 +37,9 @@ import {
   within,
 } from './petConstants';
 
+/** A title bar this far above the pointer (physical px) still holds the dragged foot's body. */
+const FLOOR_SLACK_PX = 10;
+
 export interface DragState {
   startedAt: number;
   movedAt: number;
@@ -446,6 +449,25 @@ export function usePetWindowPhysics({
 
   const currentHeight = useCallback(() => heightRef.current, []);
 
+  /**
+   * The floor under a point (physical px): the nearest top edge of a window (title bar) or the
+   * work area's bottom (taskbar) at or below it. Null while the physics does not know the screen.
+   */
+  const floorBelow = useCallback((x: number, y: number): number | null => {
+    const field = area.current;
+    if (!field) return null;
+    const monitor = monitors.current.find((m) => x >= m.x && x < m.x + m.width) ?? field;
+    let floor = monitor.y + monitor.height;
+    for (const edge of platforms.current) {
+      // A little below the pointer still counts (the foot is held a few pixels into the bar).
+      if (x >= edge.left && x <= edge.right && edge.y >= y - FLOOR_SLACK_PX && edge.y < floor) floor = edge.y;
+    }
+    return floor;
+  }, []);
+
+  /** Being dragged right now (pressed and moved, until the drag has settled). */
+  const isDragging = useCallback(() => drag.current !== null && !drag.current.ending, []);
+
   /** Holds the window still (menu open) or lets the physics go on; after releasing, call `syncWindow`. */
   const holdWindow = useCallback((on: boolean) => {
     held.current = on;
@@ -471,6 +493,8 @@ export function usePetWindowPhysics({
     readBubbleSide,
     currentHeight,
     holdWindow,
+    floorBelow,
+    isDragging,
     nearestWall,
     startJump,
     comeHere,

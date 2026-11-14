@@ -3,6 +3,7 @@ import type React from 'react';
 import { emitTo, listen } from '@tauri-apps/api/event';
 import { currentMonitor, getCurrentWindow, LogicalSize, PhysicalPosition } from '@tauri-apps/api/window';
 import type { PetFigure } from '../avatar/avatarStage';
+import type { HangHold } from '../avatar/hangTimeline';
 import { StrokeDetector } from './petStroke';
 import { openGuestMenu } from './pet/PetMenu';
 import { atMouth, EAT_DWELL_MS, FEED_TIMEOUT_MS, type PetFood } from './petFood';
@@ -38,6 +39,7 @@ import {
   type PetHang,
   type PetMode,
   type PetRecover,
+  type PetBubbleCue,
   type PetSeat,
   type SeatPose,
   type TouchZone,
@@ -171,6 +173,12 @@ async function closeAfterHang(width: number) {
   await within(win.setSize(new LogicalSize(width, size.height / factor)));
   await within(win.setPosition(new PhysicalPosition(Math.round(position.x + (size.width - width * factor) / 2), position.y)));
 }
+
+/**
+ * Held by a foot, the body counts as lying on (or leaning against) the floor when the foot is
+ * less than this share of the body's length above it.
+ */
+const GROUND_DRAG_SHARE = 0.8;
 
 /** The settings card wants at least this much window width (logical px). */
 const SETTINGS_WIDTH = 300;
@@ -330,6 +338,8 @@ export const DesktopPet: React.FC = () => {
     readBubbleSide,
     currentHeight,
     holdWindow,
+    floorBelow,
+    isDragging,
     nearestWall,
     startJump,
     comeHere,
@@ -424,6 +434,67 @@ export const DesktopPet: React.FC = () => {
       });
     },
     [behavior, holdWindow, queueMenu, resizeTo, syncWindow],
+  );
+
+  /**
+   * Held by a foot (VRM): the pet moves its window with the pointer itself (no system drag), so
+   * the foot stays under the pointer and the body above the floor: lifted high it hangs head
+   * down, held low it lies at an angle or flat and is dragged along the taskbar or title bar.
+   */
+  const footDragRef = useRef<{
+    /** The foot sideways from the window's middle (window heights). */
+    anchorX: number;
+    /** Where the foot hangs from with room enough (share of the height from the top). */
+    topAnchor: number;
+    /** Where the feet stand on the floor, and the body's length from foot to head top (shares). */
+    feetLine: number;
+    reach: number;
+    /** The window's size (logical px) and the monitor's scale. */
+    width: number;
+    height: number;
+    factor: number;
+    /** A move is on its way; the newest wish waits for it. */
+    busy: boolean;
+    next: { x: number; y: number; hold: HangHold } | null;
+    lastAt: { x: number; y: number } | null;
+  } | null>(null);
+  /** The pointer's last global position (physical px). */
+  const lastCursorRef = useRef<{ x: number; y: number } | null>(null);
+
+  /** Puts the window so the held foot is at the pointer, never lower than standing on the floor below it. */
+  const placeFoot = useCallback(
+    (gx: number, gy: number) => {
+      const held = footDragRef.current;
+      if (!held) return;
+      const height = held.height * held.factor;
+      const floor = floorBelow(gx, gy);
+      const hanging = gy - held.topAnchor * height;
+      const top = floor === null ? hanging : Math.min(hanging, floor - held.feetLine * height);
+      const left = gx - (held.width / 2 + held.anchorX * held.height) * held.factor;
+      const floorShare = floor === null ? Number.POSITIVE_INFINITY : (floor - top) / height;
+      const hold: HangHold = {
+        anchor: { x: held.anchorX, y: Math.min((gy - top) / height, floorShare) },
+        floor: floorShare,
+        reach: held.reach,
+      };
+      const moved = !!held.lastAt && Math.hypot(gx - held.lastAt.x, gy - held.lastAt.y) > 2 * held.factor;
+      held.lastAt = { x: gx, y: gy };
+      behavior.dragAlong(performance.now(), hold.floor - hold.anchor.y < held.reach * GROUND_DRAG_SHARE, moved);
+      held.next = { x: Math.round(left), y: Math.round(top), hold };
+      if (held.busy) return;
+      held.busy = true;
+      void (async () => {
+        while (footDragRef.current === held && held.next) {
+          const { x, y, hold: placed } = held.next;
+          held.next = null;
+          await within(getCurrentWindow().setPosition(new PhysicalPosition(x, y))).catch(() => {});
+          // The foot is drawn at its new place once the window is there (no jump in between).
+          stageRef.current?.setHangHold?.(placed);
+        }
+        held.busy = false;
+      })();
+    },
+    [behavior, floorBelow],
   );
 
   /** Resizes now, or after the menu let go of the window. */
@@ -600,9 +671,14 @@ export const DesktopPet: React.FC = () => {
     if (!IS_GUEST_PET) say(tRef.current(Math.random() < 0.5 ? 'pet.eatReply1' : 'pet.eatReply2'));
     void applyHormoneInteraction('feed');
   }, [behavior, say, stopFeeding, applyHormoneInteraction]);
-  const cueTexts = useRef({ doze: '', wake: '' });
+  const cueTexts = useRef<Record<PetBubbleCue, string[]>>({ doze: [], wake: [], scrape: [], upsideDown: [] });
   useEffect(() => {
-    cueTexts.current = { doze: t('pet.doze'), wake: t('pet.wake') };
+    cueTexts.current = {
+      doze: [t('pet.doze')],
+      wake: [t('pet.wake')],
+      scrape: [t('pet.scrape1'), t('pet.scrape2'), t('pet.scrape3'), t('pet.scrape4'), t('pet.scrape5')],
+      upsideDown: [t('pet.upsideDown1'), t('pet.upsideDown2'), t('pet.upsideDown3')],
+    };
   });
 
   /** Window in front at the last screen report (0: none), to notice a switch. */
@@ -677,7 +753,12 @@ export const DesktopPet: React.FC = () => {
         if (cue.kind === 'gesture') playLocalGesture(cue.role);
         else if (cue.kind === 'jump') startJump(now);
         else if (cue.kind === 'event') askRemark(cue.event, now);
-        else say(cueTexts.current[cue.text]);
+        else {
+          const lines = cueTexts.current[cue.text];
+          const line = lines[Math.floor(Math.random() * lines.length)];
+          // The guest only decorates: it keeps quiet.
+          if (line && !IS_GUEST_PET) say(line);
+        }
       }
     }, BEHAVIOR_TICK_MS);
     return () => window.clearInterval(timer);
@@ -818,6 +899,12 @@ export const DesktopPet: React.FC = () => {
       listenOwn<PetCursor>(PET_CURSOR_EVENT, ({ payload: { x, y, inside, button, through, gx, gy, t: polledAt } }) => {
         throughRef.current = through !== false;
         recordCursorMove(gx, gy, button, polledAt);
+        lastCursorRef.current = { x: gx, y: gy };
+        // Held by a foot: the window follows the pointer until the button is let go.
+        if (footDragRef.current) {
+          if (button === false || !isDragging()) footDragRef.current = null;
+          else placeFoot(gx, gy);
+        }
         // A new click anywhere but on the menu closes it (clicks outside never reach this window).
         const clicked = button === true && lastButton.current !== true;
         lastButton.current = button;
@@ -893,7 +980,22 @@ export const DesktopPet: React.FC = () => {
       if (bubbleTimer.current !== null) window.clearTimeout(bubbleTimer.current);
       if (sentenceTimer.current !== null) window.clearTimeout(sentenceTimer.current);
     };
-  }, [setIgnore, behavior, say, comeHere, resizePet, headEnd, recordCursorMove, setPlatforms, trackWindowMoved, stopFeeding, eatFood, closeMenu]);
+  }, [
+    setIgnore,
+    behavior,
+    say,
+    comeHere,
+    resizePet,
+    headEnd,
+    recordCursorMove,
+    setPlatforms,
+    trackWindowMoved,
+    stopFeeding,
+    eatFood,
+    closeMenu,
+    isDragging,
+    placeFoot,
+  ]);
 
   // A new bubble leans away from the nearer screen edge (where the figure stands right now).
   useEffect(() => {
@@ -1156,6 +1258,49 @@ export const DesktopPet: React.FC = () => {
     }
     pressRef.current = press;
   };
+  /**
+   * Starts dragging by a foot: the window widens (the body may lie sideways), the foot stays
+   * where it was grabbed, standing on the floor, until the window follows the pointer.
+   */
+  const startFootDrag = (held: PetHang) => {
+    const { innerWidth: width, innerHeight: height } = window;
+    const framed = framingRef.current;
+    const feetLine = 1 - PET_FEET_SHARE - framed.lift;
+    const reach = Math.max(0.3, feetLine - petFigureTop(framed));
+    stageRef.current?.setHangHold?.({ anchor: held.at, floor: feetLine, reach });
+    const win = getCurrentWindow();
+    void (async () => {
+      const [position, factor] = await within(Promise.all([win.outerPosition(), win.scaleFactor()]));
+      const wide = Math.max(width, Math.round(height * HANG_ASPECT));
+      if (wide > width) {
+        await within(win.setSize(new LogicalSize(wide, height)));
+        await within(win.setPosition(new PhysicalPosition(Math.round(position.x - ((wide - width) / 2) * factor), position.y)));
+        if (widenedFrom.current === null) widenedFrom.current = width;
+      }
+      // Let go meanwhile: the drag is over before it began.
+      if (!isDragging()) return;
+      footDragRef.current = {
+        anchorX: held.at.x,
+        topAnchor: held.anchor.y,
+        feetLine,
+        reach,
+        width: wide,
+        height,
+        factor,
+        busy: false,
+        next: null,
+        lastAt: null,
+      };
+      const cursor = lastCursorRef.current;
+      if (cursor) placeFoot(cursor.x, cursor.y);
+    })().catch(() => {});
+  };
+
+  // The hang is over (landed, standing again): the foot's place goes back to the hang's own.
+  useEffect(() => {
+    if (!hang) stageRef.current?.setHangHold?.(null);
+  }, [hang]);
+
   const onPointerMove = (e: React.PointerEvent) => {
     const press = pressRef.current;
     // Without a pressed button, wiggling or circling over the figure is stroking it.
@@ -1176,6 +1321,12 @@ export const DesktopPet: React.FC = () => {
     // part (drawn at `anchor`) is under the pointer before the system drag keeps that offset.
     const held = behavior.canHang && !sittingRef.current ? grabbedAt(press, framingRef.current, seatDrop(seatRef.current)) : null;
     behavior.dragStart(now, held);
+    if (held?.grip === 'feet') {
+      // The pet moves the window itself; the press keeps its pointer until it is let go.
+      (e.target as Element).setPointerCapture?.(e.pointerId);
+      startFootDrag(held);
+      return;
+    }
     const win = getCurrentWindow();
     void openForHang(held)
       .then((width) => {
