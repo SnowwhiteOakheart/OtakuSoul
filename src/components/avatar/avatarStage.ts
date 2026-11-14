@@ -58,6 +58,11 @@ export interface AvatarStage {
   setPaused: (paused: boolean) => void;
   /** Desktop pet on battery and at rest: draws only ~12 FPS, whatever happens. */
   setSaver: (saver: boolean) => void;
+  /**
+   * Desktop pet: tints the lights with the colours of the desktop beside the window (RGB 0…255;
+   * left tints the rim light, right the key light); null puts the studio colours back.
+   */
+  setAmbientTint: (left: readonly [number, number, number] | null, right: readonly [number, number, number] | null) => void;
   /** Desktop pet: frames per second it draws (20, 30 or 60); the battery saver goes below. */
   setFrameRate: (fps: number) => void;
   /**
@@ -89,7 +94,8 @@ export interface AvatarStage {
 /** What the desktop pet needs of any figure (3D stage or Inochi2D puppet). */
 export type PetFigure = Pick<
   AvatarStage,
-  'mouse' | 'probe' | 'setPaused' | 'setSaver' | 'setFrameRate' | 'addWindowMove' | 'setTurn' | 'setFraming' | 'headLine' | 'handAt'>;
+  'mouse' | 'probe' | 'setPaused' | 'setSaver' | 'setFrameRate' | 'addWindowMove' | 'setTurn' | 'setFraming' | 'headLine' | 'handAt'> &
+  Partial<Pick<AvatarStage, 'setAmbientTint'>>;
 
 /** Reach around a wrist bone that counts as the hand (metres; the hand itself is about this long). */
 const HAND_REACH = 0.11;
@@ -397,6 +403,16 @@ export function createAvatarStage(container: HTMLElement, modelPath: string, opt
     },
     setSaver: (next) => {
       saver = next;
+    },
+    setAmbientTint: (left, right) => {
+      // Half way between the studio colour and the desktop's, so the figure stays itself.
+      const mix = (light: THREE.DirectionalLight, base: number, tint: readonly [number, number, number] | null) => {
+        light.color.setHex(base);
+        if (tint) light.color.lerp(new THREE.Color(tint[0] / 255, tint[1] / 255, tint[2] / 255), 0.5);
+      };
+      mix(rimLight, 0xccdcff, left);
+      mix(keyLight, 0xfff5ea, right);
+      markActive();
     },
     setFrameRate: (fps) => {
       petFrameMs = frameInterval(fps);

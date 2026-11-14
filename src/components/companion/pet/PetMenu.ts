@@ -14,6 +14,8 @@ import {
 import type { MotionPackItem } from '../../../types/generated/MotionPackItem';
 import { lacksPetMotions, recommendedMotionPack } from '../../../utils/motionPacks';
 import type { TranslationKey } from '../../../i18n';
+import { PET_FOODS, type PetFood } from '../petFood';
+import { minutesLeft, TIMER_PRESETS_MIN, type PetTimerState } from '../petTimer';
 
 interface OpenPetMenuArgs {
   pet: PetState | null;
@@ -26,6 +28,15 @@ interface OpenPetMenuArgs {
   tEmotion: (emotion: string) => string;
   openCompose: () => void;
   pat: () => Promise<void>;
+  peeking: boolean;
+  startPeek: () => void;
+  endPeek: () => void;
+  feeding: boolean;
+  startFeeding: (food: PetFood) => void;
+  stopFeeding: () => void;
+  timer: PetTimerState | null;
+  startAlarm: (kind: 'timer' | 'pomodoro', minutes?: number) => void;
+  stopAlarm: () => void;
   loadMotionPack: (pack: MotionPackItem) => Promise<void>;
   setStatusOpen: React.Dispatch<React.SetStateAction<boolean>>;
   setPrefs: React.Dispatch<React.SetStateAction<PetPrefs>>;
@@ -45,6 +56,15 @@ export async function openPetContextMenu({
   tEmotion,
   openCompose,
   pat,
+  peeking,
+  startPeek,
+  endPeek,
+  feeding,
+  startFeeding,
+  stopFeeding,
+  timer,
+  startAlarm,
+  stopAlarm,
   loadMotionPack,
   setStatusOpen,
   setPrefs,
@@ -188,9 +208,40 @@ export async function openPetContextMenu({
         action: () => setPrefs((p) => ({ ...p, eventRemarks: !p.eventRemarks })),
       },
       {
+        text: t('pet.ambientLight'),
+        checked: prefs.ambientLight,
+        action: () => setPrefs((p) => ({ ...p, ambientLight: !p.ambientLight })),
+      },
+      {
         text: t('pet.hideInFullscreen'),
         checked: prefs.hideInFullscreen,
         action: () => setPrefs((p) => ({ ...p, hideInFullscreen: !p.hideInFullscreen })),
+      },
+      peeking
+        ? { text: t('pet.peekEnd'), action: endPeek }
+        : { text: t('pet.peek'), enabled: prefs.physics, action: startPeek },
+      {
+        text: t('pet.feed'),
+        items: [
+          ...PET_FOODS.map((food) => ({
+            text: `${food.emoji} ${t(`pet.food.${food.id}` as TranslationKey)}`,
+            action: () => startFeeding(food),
+          })),
+          ...(feeding ? [{ item: 'Separator' as const }, { text: t('pet.feedStop'), action: stopFeeding }] : []),
+        ],
+      },
+      {
+        text: timer
+          ? t('pet.timerRunning', { phase: t(`pet.timerPhase.${timer.phase}` as TranslationKey), minutes: minutesLeft(timer, Date.now()) })
+          : t('pet.timer'),
+        items: [
+          ...TIMER_PRESETS_MIN.map((minutes) => ({
+            text: t('pet.timerMinutes', { minutes }),
+            action: () => startAlarm('timer', minutes),
+          })),
+          { text: t('pet.pomodoro'), action: () => startAlarm('pomodoro') },
+          ...(timer ? [{ item: 'Separator' as const }, { text: t('pet.timerStop'), action: stopAlarm }] : []),
+        ],
       },
       {
         text: t('pet.ignoredApps'),

@@ -223,3 +223,38 @@ describe('planJump', () => {
     expect(planJump(at(650, floor), size, area, 1, [])).toBeNull();
   });
 });
+
+describe('dancing at the screen edge', () => {
+  it('glides back inside instead of snapping, and stays inside', () => {
+    const win = { width: 300, height: 400 };
+    const field = { x: 0, y: 0, width: 1920, height: 1080 };
+    const { floor: ground } = bounds(win, field);
+    let body: Body = { x: -80, y: ground, vy: 0, vx: 0, support: null, edge: null };
+    const first = stepBody(body, win, field, 0.05, 0, 1, [], false, { keepInside: true });
+    // Normal walls would allow -90; dancing pulls it in, but only by a step.
+    expect(first.body.x).toBeGreaterThan(-80);
+    expect(first.body.x).toBeLessThan(0);
+    for (let i = 0; i < 40; i++) body = stepBody(body, win, field, 0.05, 0, 1, [], false, { keepInside: true }).body;
+    expect(body.x).toBe(0);
+    // Without dancing the overhang stays allowed.
+    const calm = stepBody({ ...body, x: -80 }, win, field, 0.05, 0, 1, [], false, {});
+    expect(calm.body.x).toBe(-80);
+  });
+
+  it('peeking slides further out on one side only, and glides back when it ends', () => {
+    const win = { width: 300, height: 400 };
+    const field = { x: 0, y: 0, width: 1920, height: 1080 };
+    const { floor: ground } = bounds(win, field);
+    let body: Body = { x: 0, y: ground, vy: 0, vx: 0, support: null, edge: null };
+    for (let i = 0; i < 80; i++) body = stepBody(body, win, field, 0.05, -1, 1, [], false, { peek: -1 }).body;
+    expect(body.x).toBe(-180);
+    // The other wall stays as it was.
+    expect(bounds(win, field, false, -1).maxX).toBe(bounds(win, field).maxX);
+    // Peek over: it slides back to the normal limit (-90), not abruptly.
+    const first = stepBody(body, win, field, 0.05, 0, 1, [], false, {}).body;
+    expect(first.x).toBeGreaterThan(-180);
+    expect(first.x).toBeLessThan(-90);
+    for (let i = 0; i < 40; i++) body = stepBody(body, win, field, 0.05, 0, 1, [], false, {}).body;
+    expect(body.x).toBe(-90);
+  });
+});

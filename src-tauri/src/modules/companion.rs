@@ -164,6 +164,13 @@ impl Neurohormones {
                 self.oxytocin = (self.oxytocin + 4.0).clamp(0.0, 100.0);
                 self.cortisol = (self.cortisol - 2.0).clamp(0.0, 100.0);
             }
+            // Desktop pet: fed something it likes – content and a little more energy.
+            "feed" => {
+                self.dopamine = (self.dopamine + 6.0).clamp(0.0, 100.0);
+                self.oxytocin = (self.oxytocin + 4.0).clamp(0.0, 100.0);
+                self.cortisol = (self.cortisol - 3.0).clamp(0.0, 100.0);
+                self.fatigue = (self.fatigue - 3.0).clamp(0.0, 100.0);
+            }
             "challenge" | "quest" => {
                 self.dopamine = (self.dopamine + 10.0).clamp(0.0, 100.0);
                 self.cortisol = (self.cortisol + 5.0).clamp(0.0, 100.0);
@@ -1321,6 +1328,15 @@ mod tests {
         assert!(held.oxytocin > patted.oxytocin);
         assert!(held.cortisol < patted.cortisol);
         assert!(high_five.dopamine > held.dopamine);
+    }
+
+    #[test]
+    fn feeding_cheers_up_and_gives_energy() {
+        let mut fed = Neurohormones::default();
+        let before = fed.clone();
+        fed.apply_interaction("feed");
+        assert!(fed.dopamine > before.dopamine);
+        assert!(fed.fatigue < before.fatigue);
     }
 
     #[test]

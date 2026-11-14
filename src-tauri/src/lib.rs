@@ -466,6 +466,7 @@ pub fn run() {
             commands::desktop_pet::set_pet_ignored_apps,
             commands::desktop_pet::get_pet_last_app,
             commands::desktop_pet::pet_remark,
+            commands::desktop_pet::sample_pet_ambient,
             commands::companion::evaluate_companion_proactive,
             commands::app::get_app_paths,
             commands::app::hide_main_window,

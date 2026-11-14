@@ -116,13 +116,30 @@ export function walkArea(monitors: Rect[], feetX: number, fallback: Rect): Rect 
   return { x: left.x, y: under.y, width: right.x + right.width - left.x, height: under.height };
 }
 
-/** The floor (window top when the feet are on it) and the side limits for a window of `size`. */
-export function bounds(size: Size, area: Rect) {
-  const overhang = size.width * SIDE_OVERHANG;
+/** Share of the window that is outside the screen while the figure peeks in from the side. */
+export const PEEK_OVERHANG = 0.6;
+/** Overshoot (physical px) beyond a wall from which the figure glides back instead of snapping. */
+const GLIDE_MIN = 8;
+
+/** Options of a step: dancing keeps the figure inside the screen, peeking lets it slide out on one side. */
+export interface StepOptions {
+  keepInside?: boolean;
+  peek?: -1 | 0 | 1;
+}
+
+/** While dancing the figure glides back inside the screen at this speed (window heights per second). */
+export const DANCE_PAN = 1.2;
+
+/** The floor (window top when the feet are on it) and the side limits for a window of `size`; `inside`: no overhang. */
+export function bounds(size: Size, area: Rect, inside = false, peek: -1 | 0 | 1 = 0) {
+  const overhang = inside ? 0 : size.width * SIDE_OVERHANG;
+  // Peeking: on that side the figure slides further out, only part of it stays in view.
+  const left = peek === -1 ? size.width * PEEK_OVERHANG : overhang;
+  const right = peek === 1 ? size.width * PEEK_OVERHANG : overhang;
   return {
     floor: area.y + area.height - size.height,
-    minX: area.x - overhang,
-    maxX: area.x + area.width - size.width + overhang,
+    minX: area.x - left,
+    maxX: area.x + area.width - size.width + right,
   };
 }
 
@@ -247,8 +264,10 @@ export function stepBody(
   scale: number,
   platforms: Platform[] = [],
   ride = false,
+  options: StepOptions = {},
 ): StepResult {
-  const { floor, minX, maxX } = bounds(size, area);
+  const { keepInside = false, peek = 0 } = options;
+  const { floor, minX, maxX } = bounds(size, area, keepInside, peek);
   const usable = usablePlatforms(platforms, size, area);
   let { x, y, vy, support } = body;
   let vx = body.vx ?? 0;
@@ -316,7 +335,16 @@ export function stepBody(
   // On a window its ends are walls too: the figure walks back instead of off it.
   const left = standing ? Math.max(minX, standing.left - size.width / 2) : minX;
   const right = standing ? Math.min(maxX, standing.right - size.width / 2) : maxX;
-  if (x < left) {
+  const pan = DANCE_PAN * size.height * dt;
+  // A walking step that runs a little past the wall is a wall hit, not something to glide back from.
+  const walked = grounded && walk !== 0 ? WALK_PACE * size.height * dt : 0;
+  const glideMin = Math.max(GLIDE_MIN * scale, walked * 1.5);
+  if (x < left && grounded && left - x > glideMin) {
+    // Far beyond the wall (dancing at the edge, peek ended, dropped there): glide back, don't snap.
+    x = Math.min(left, x + pan);
+  } else if (x > right && grounded && x - right > glideMin) {
+    x = Math.max(right, x - pan);
+  } else if (x < left) {
     x = left;
     wall = -1;
     vx = Math.abs(vx) * WALL_BOUNCE;

@@ -53,6 +53,8 @@ interface UsePetWindowPhysicsArgs {
   figureRef: React.RefObject<HTMLDivElement | null>;
   seatRef: React.RefObject<PetSeat | null>;
   modelRef: React.RefObject<string>;
+  /** Peeking in from a side (-1 left, 1 right, 0 not); the figure slides out that far. */
+  peekRef: React.RefObject<-1 | 0 | 1>;
 }
 
 /**
@@ -67,6 +69,7 @@ export function usePetWindowPhysics({
   figureRef,
   seatRef,
   modelRef,
+  peekRef,
 }: UsePetWindowPhysicsArgs) {
   /** How far the window has sunk below where the figure stands (physical px): legs hanging off an edge. */
   const sink = useRef(0);
@@ -205,6 +208,7 @@ export function usePetWindowPhysics({
         monitorScale.current,
         platforms.current,
         prefsRef.current.rideWindows,
+        { keepInside: behavior.dancing, peek: peekRef.current },
       );
       behavior.setGrounded(result.grounded, now);
       behavior.setOnWindow(result.body.support !== null);
@@ -267,7 +271,7 @@ export function usePetWindowPhysics({
       window.clearInterval(step);
       window.clearInterval(refresh);
     };
-  }, [awayRef, behavior, prefsRef, seatRef, stageRef, syncWindow]);
+  }, [awayRef, behavior, peekRef, prefsRef, seatRef, stageRef, syncWindow]);
 
   /**
    * "Komm her" (tray menu, double click on the tray icon): with physics the figure walks along
@@ -426,6 +430,15 @@ export function usePetWindowPhysics({
 
   const currentHeight = useCallback(() => heightRef.current, []);
 
+  /** The side wall nearer to the figure (-1 left, 1 right); null while the physics does not know the floor. */
+  const nearestWall = useCallback((): -1 | 1 | null => {
+    const current = body.current;
+    const field = area.current;
+    if (!current || !field) return null;
+    const middle = current.x + windowSize.current.width / 2;
+    return middle < field.x + field.width / 2 ? -1 : 1;
+  }, []);
+
   return {
     syncWindow,
     beginDrag,
@@ -436,6 +449,7 @@ export function usePetWindowPhysics({
     setWalkDirection,
     readBubbleSide,
     currentHeight,
+    nearestWall,
     startJump,
     comeHere,
     resizeTo,

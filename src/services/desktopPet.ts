@@ -84,6 +84,21 @@ export interface PetRemark {
   event: PetEvent;
 }
 
+/** Colours of the desktop beside the pet window (from the backend). */
+export interface PetAmbient {
+  left: [number, number, number];
+  right: [number, number, number];
+}
+
+/** Moves `from` towards `to` by `k` (0…1) per channel: the lights follow the desktop gently. */
+export function smoothColor(
+  from: readonly [number, number, number],
+  to: readonly [number, number, number],
+  k: number,
+): [number, number, number] {
+  return [0, 1, 2].map((i) => Math.round(from[i]! + (to[i]! - from[i]!) * k)) as [number, number, number];
+}
+
 /** Both ways: the pet's switches changed (its menu or the Desktop-Pet tab); payload `PetPrefs`. */
 export const PET_PREFS_EVENT = 'pet:prefs';
 /** Main → pet: a model's framing changed in the avatar manager; payload `PetFramingChange`. */
@@ -276,6 +291,8 @@ export interface PetPrefs {
   openAtStart: boolean;
   /** Now and then a short line of the model about what happened to it (thrown, landed, woken, sat); off by default (costs a request). */
   eventRemarks: boolean;
+  /** The figure's lights take the colours of the desktop beside it (Windows; only two averages are read, nothing kept). */
+  ambientLight: boolean;
   /** Programs (file names, e.g. `game.exe`) the pet steps back for while they are in front. */
   ignoredApps: string[];
 }
@@ -321,6 +338,7 @@ const DEFAULT_PREFS: PetPrefs = {
   pose: 'auto',
   openAtStart: false,
   eventRemarks: false,
+  ambientLight: false,
   ignoredApps: [],
 };
 
@@ -368,6 +386,7 @@ export function loadPetPrefs(): PetPrefs {
       pose: PET_POSES.includes(stored?.pose as PetPose) ? stored!.pose! : DEFAULT_PREFS.pose,
       openAtStart: typeof stored?.openAtStart === 'boolean' ? stored.openAtStart : DEFAULT_PREFS.openAtStart,
       eventRemarks: typeof stored?.eventRemarks === 'boolean' ? stored.eventRemarks : DEFAULT_PREFS.eventRemarks,
+      ambientLight: typeof stored?.ambientLight === 'boolean' ? stored.ambientLight : DEFAULT_PREFS.ambientLight,
       ignoredApps: Array.isArray(stored?.ignoredApps)
         ? stored.ignoredApps.filter((a): a is string => typeof a === 'string' && a.length > 0 && a.length <= 128).slice(0, 64)
         : [],

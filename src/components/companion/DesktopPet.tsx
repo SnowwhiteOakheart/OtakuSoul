@@ -4,6 +4,8 @@ import { emitTo, listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import type { PetFigure } from '../avatar/avatarStage';
 import { StrokeDetector } from './petStroke';
+import { atMouth, EAT_DWELL_MS, FEED_TIMEOUT_MS, type PetFood } from './petFood';
+import { advance, loadTimer, saveTimer, startPomodoro, startTimer, type PetTimerState } from './petTimer';
 import type { PetEvent } from '../../types/generated/PetEvent';
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { useTranslation } from '../../i18n';
@@ -56,7 +58,9 @@ import {
   PET_STATE_EVENT,
   petModelPath,
   savePetPrefs,
+  smoothColor,
   watchOnBattery,
+  type PetAmbient,
   type PetAudioFrame,
   type PetCursor,
   type PetFramingChange,
@@ -75,6 +79,8 @@ import {
   DRAG_THRESHOLD,
   PROACTIVE_BUBBLE_MS,
   REMARK_GAP_MS,
+  AMBIENT_POLL_MS,
+  PEEK_MS,
   SIT_DROP,
   STATUS_POLL_MS,
   clamp,
@@ -152,6 +158,9 @@ export const DesktopPet: React.FC = () => {
   const ignoreRef = useRef<boolean | null>(null);
   /** Pressed on the pet: click-through stays off until released. */
   const holdRef = useRef(false);
+  /** Peeking in from a screen side (-1 left, 1 right, 0 not). */
+  const peekRef = useRef<-1 | 0 | 1>(0);
+  const [peeking, setPeeking] = useState(false);
   const lastRemarkAt = useRef(Number.NEGATIVE_INFINITY);
   /** Recognises stroking (pointer wiggling over the figure). */
   const strokeRef = useRef(new StrokeDetector());
@@ -178,6 +187,7 @@ export const DesktopPet: React.FC = () => {
     setWalkDirection,
     readBubbleSide,
     currentHeight,
+    nearestWall,
     startJump,
     comeHere,
     resizeTo,
@@ -189,6 +199,7 @@ export const DesktopPet: React.FC = () => {
     figureRef,
     seatRef,
     modelRef,
+    peekRef,
   });
 
   /** Where the head ends in the window now: from the figure, lower while it sits. */
@@ -240,6 +251,105 @@ export const DesktopPet: React.FC = () => {
     lastRemarkAt.current = now;
     void emitTo('main', PET_REMARK_EVENT, { event } satisfies PetRemark).catch(() => {});
   }, []);
+  /** The alarm (timer or pomodoro), kept across restarts of the pet. */
+  const [alarm, setAlarm] = useState<PetTimerState | null>(loadTimer);
+  const timerRef = useRef(alarm);
+  const startAlarm = useCallback((kind: 'timer' | 'pomodoro', minutes = 0) => {
+    const next = kind === 'pomodoro' ? startPomodoro(Date.now()) : startTimer(minutes, Date.now());
+    timerRef.current = next;
+    saveTimer(next);
+    setAlarm(next);
+  }, []);
+  const stopAlarm = useCallback(() => {
+    timerRef.current = null;
+    saveTimer(null);
+    setAlarm(null);
+  }, []);
+  // When a phase ends the figure wakes up, waves and says so; during fullscreen it waits.
+  useEffect(() => {
+    const check = window.setInterval(() => {
+      if (!timerRef.current || awayRef.current) return;
+      const { state, finished } = advance(timerRef.current, Date.now());
+      if (!finished) return;
+      timerRef.current = state;
+      saveTimer(state);
+      setAlarm(state);
+      behavior.announce(performance.now());
+      const key = finished === 'work' ? 'pet.pomodoroBreak' : finished === 'break' ? 'pet.pomodoroWork' : 'pet.timerDone';
+      say(t(key), PROACTIVE_BUBBLE_MS);
+    }, 2000);
+    return () => window.clearInterval(check);
+  }, [behavior, say, t]);
+  // The lights take the desktop's colours (only while shown, a second apart; off: studio colours).
+  useEffect(() => {
+    if (!prefs.ambientLight) {
+      stageRef.current?.setAmbientTint?.(null, null);
+      return undefined;
+    }
+    let colors: PetAmbient | null = null;
+    let live = true;
+    const read = () => {
+      if (awayRef.current) return;
+      void api
+        .samplePetAmbient()
+        .then((next) => {
+          if (!live || !next) return;
+          colors = colors
+            ? { left: smoothColor(colors.left, next.left, 0.5), right: smoothColor(colors.right, next.right, 0.5) }
+            : next;
+          stageRef.current?.setAmbientTint?.(colors.left, colors.right);
+        })
+        .catch(() => {});
+    };
+    read();
+    const timer = window.setInterval(read, AMBIENT_POLL_MS);
+    return () => {
+      live = false;
+      window.clearInterval(timer);
+    };
+  }, [prefs.ambientLight]);
+  /** Peeking: walks to the nearer screen side and slides half out of view until clicked, dragged or `PEEK_MS`. */
+  const endPeek = useCallback(() => {
+    if (peekRef.current === 0) return;
+    peekRef.current = 0;
+    setPeeking(false);
+    behavior.setPeeking(false);
+  }, [behavior]);
+  const startPeek = useCallback(() => {
+    const wall = nearestWall();
+    if (!wall || !prefsRef.current.physics) return;
+    behavior.setPeeking(true);
+    if (!behavior.come(performance.now(), wall)) {
+      behavior.setPeeking(false);
+      return;
+    }
+    peekRef.current = wall;
+    setPeeking(true);
+  }, [behavior, nearestWall]);
+  useEffect(() => {
+    if (!peeking) return undefined;
+    const timer = window.setTimeout(endPeek, PEEK_MS);
+    return () => window.clearTimeout(timer);
+  }, [peeking, endPeek]);
+  /** The food on the pointer (null: not feeding), when it reached the mouth, and where it is drawn. */
+  const feedRef = useRef<{ food: PetFood; until: number; atMouthSince: number | null } | null>(null);
+  const [feedView, setFeedView] = useState<{ emoji: string; x: number; y: number } | null>(null);
+  const stopFeeding = useCallback(() => {
+    feedRef.current = null;
+    setFeedView(null);
+  }, []);
+  const startFeeding = useCallback((food: PetFood) => {
+    feedRef.current = { food, until: performance.now() + FEED_TIMEOUT_MS, atMouthSince: null };
+  }, []);
+  /** The figure eats what is on the pointer. */
+  const eatFood = useCallback(() => {
+    const feeding = feedRef.current;
+    if (!feeding) return;
+    stopFeeding();
+    behavior.eat(performance.now());
+    say(Math.random() < 0.5 ? t('pet.eatReply1') : t('pet.eatReply2'));
+    void applyHormoneInteraction('feed');
+  }, [behavior, say, stopFeeding, t, applyHormoneInteraction]);
   const cueTexts = useRef({ doze: '', wake: '' });
   useEffect(() => {
     cueTexts.current = { doze: t('pet.doze'), wake: t('pet.wake') };
@@ -401,6 +511,25 @@ export const DesktopPet: React.FC = () => {
         const stage = stageRef.current;
         const { innerWidth: w, innerHeight: h } = window;
         behavior.pointer(performance.now());
+        // Feeding: the food follows the pointer; at the mouth for a moment, it is eaten.
+        const feeding = feedRef.current;
+        if (feeding) {
+          const at = performance.now();
+          if (at > feeding.until || awayRef.current) {
+            stopFeeding();
+          } else if (inside) {
+            setFeedView({ emoji: feeding.food.emoji, x, y });
+            if (atMouth(x, y, w, h, headEnd())) {
+              feeding.atMouthSince ??= at;
+              if (at - feeding.atMouthSince >= EAT_DWELL_MS) eatFood();
+            } else {
+              feeding.atMouthSince = null;
+            }
+          } else {
+            setFeedView(null);
+            feeding.atMouthSince = null;
+          }
+        }
         // The figure looks after the pointer, also elsewhere on the desktop.
         const eyes = eyeLine(headEnd()) * h;
         pointerGaze.current = { x: clamp((x - w / 2) / (w / 2)), y: clamp(-(y - eyes) / (h / 2)) };
@@ -446,7 +575,7 @@ export const DesktopPet: React.FC = () => {
       if (bubbleTimer.current !== null) window.clearTimeout(bubbleTimer.current);
       if (sentenceTimer.current !== null) window.clearTimeout(sentenceTimer.current);
     };
-  }, [setIgnore, behavior, say, comeHere, resizeTo, headEnd, recordCursorMove, setPlatforms, trackWindowMoved]);
+  }, [setIgnore, behavior, say, comeHere, resizeTo, headEnd, recordCursorMove, setPlatforms, trackWindowMoved, stopFeeding, eatFood]);
 
   // A new bubble leans away from the nearer screen edge (where the figure stands right now).
   useEffect(() => {
@@ -537,6 +666,15 @@ export const DesktopPet: React.FC = () => {
       tEmotion,
       openCompose,
       pat,
+      peeking,
+      startPeek,
+      endPeek,
+      feeding: feedRef.current !== null,
+      startFeeding,
+      stopFeeding,
+      timer: alarm,
+      startAlarm,
+      stopAlarm,
       loadMotionPack,
       setStatusOpen,
       setPrefs,
@@ -592,6 +730,7 @@ export const DesktopPet: React.FC = () => {
     if (press.holdTimer !== undefined) window.clearTimeout(press.holdTimer);
     const now = performance.now();
     beginDrag(now);
+    endPeek();
     behavior.dragStart(now);
     // The system moves the window from here and keeps the button release (on Windows the
     // call returns at once; the drag ends when the moves stop).
@@ -609,7 +748,9 @@ export const DesktopPet: React.FC = () => {
     holdRef.current = false;
     if (!press || press.dragging) return;
     if (press.holdTimer !== undefined) window.clearTimeout(press.holdTimer);
-    if (press.holding) behavior.releaseHand(performance.now());
+    if (peekRef.current !== 0) endPeek();
+    if (feedRef.current) eatFood();
+    else if (press.holding) behavior.releaseHand(performance.now());
     else if (press.hand) void highFive();
     else void pat(touchZoneAt(e.clientY / window.innerHeight, headEnd()));
   };
@@ -696,6 +837,23 @@ export const DesktopPet: React.FC = () => {
         onPointerUp={onPointerUp}
         noModelLabel={t('pet.noModel')}
       />
+
+      {feedView && (
+        <div
+          aria-hidden
+          style={{
+            position: 'fixed',
+            left: feedView.x,
+            top: feedView.y,
+            transform: 'translate(-50%, -50%)',
+            fontSize: 28,
+            pointerEvents: 'none',
+            zIndex: 20,
+          }}
+        >
+          {feedView.emoji}
+        </div>
+      )}
 
       {shownBubble && !statusOpen && !composeOpen && (
         <PetBubble

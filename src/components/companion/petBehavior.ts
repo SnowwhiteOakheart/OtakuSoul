@@ -182,6 +182,9 @@ export class PetBehavior {
   /** In the air by its own jump (a happy leap, not a startled fall). */
   private leaping = false;
   private drive: PetDrive = NEUTRAL_DRIVE;
+  private dancingNow = false;
+  /** Peeking in from a screen side: stays there, no walking off by itself. */
+  private peeking = false;
 
   constructor(
     now: number,
@@ -261,6 +264,15 @@ export class PetBehavior {
     this.react(now, 'happy', 1600, { x: 0, y: 0.1 });
     this.hopUntil = now + HOP_MS;
     this.cues.push({ kind: 'gesture', role: 'greeting' });
+  }
+
+  /** Fed something: delighted for a moment, a little hop and a happy gesture. */
+  eat(now: number) {
+    this.lastPointer = now;
+    if (this.mode === 'dozing') this.mode = 'idle';
+    this.react(now, 'happy', 2200, { x: 0, y: 0.1 });
+    this.hopUntil = now + HOP_MS;
+    this.cues.push({ kind: 'gesture', role: 'happy' });
   }
 
   /** A hand is held (pressed without dragging): it blushes and looks at it until let go. */
@@ -461,7 +473,7 @@ export class PetBehavior {
     const { fatigue, dopamine, cortisol, night } = this.drive;
     const lively = lift(dopamine) * (night ? 0.4 : 1);
     // A posture chosen in the menu: no walking or sitting by itself.
-    const free = this.pose === 'auto';
+    const free = this.pose === 'auto' && !this.peeking;
     const weights: [PetAction, number][] = [
       ['lookAround', pointerIdle ? 35 * (1 + above(cortisol) * 1.5) : 0],
       ['yawn', (now - this.lastPointer > 60_000 ? 25 : 10) * (1 + above(fatigue) * 2 + (night ? 1 : 0))],
@@ -521,6 +533,17 @@ export class PetBehavior {
       default:
         return { expression: null, gaze: null, mouth: 0 };
     }
+  }
+
+  /** Peeking in from the side (the caller walks it there with `come`): no random walks or sitting meanwhile. */
+  setPeeking(on: boolean) {
+    this.peeking = on;
+    if (!on && this.action?.come) this.action = null;
+  }
+
+  /** The figure dances to music right now (the window then keeps inside the screen). */
+  get dancing() {
+    return this.dancingNow;
   }
 
   /** Advances to `now` and returns the frame plus the one-time cues since the last tick. */
@@ -586,6 +609,7 @@ export class PetBehavior {
         };
       }
     }
+    this.dancingNow = frame.loop === 'dance';
     frame.hop = now < this.hopUntil && this.mode !== 'dragged';
     const cues = this.cues;
     this.cues = [];

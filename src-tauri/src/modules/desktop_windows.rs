@@ -161,6 +161,47 @@ pub fn screen_state(_exclude: isize) -> ScreenState {
     ScreenState::default()
 }
 
+/// Average colours of the desktop left and right of the pet window (RGB), for tinting its lights.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+pub struct Ambient {
+    pub left: [u8; 3],
+    pub right: [u8; 3],
+}
+
+/// Average colour of 32-bit BGRA pixels (alpha ignored); mid grey for an empty buffer.
+pub fn average_bgra(pixels: &[u8]) -> [u8; 3] {
+    let count = pixels.len() / 4;
+    if count == 0 {
+        return [128, 128, 128];
+    }
+    let (mut b, mut g, mut r) = (0u64, 0u64, 0u64);
+    for p in pixels.as_chunks::<4>().0 {
+        b += u64::from(p[0]);
+        g += u64::from(p[1]);
+        r += u64::from(p[2]);
+    }
+    let n = count as u64;
+    [(r / n) as u8, (g / n) as u8, (b / n) as u8]
+}
+
+/// How wide the strips beside the pet window are (physical px).
+pub const AMBIENT_BAND: i32 = 160;
+
+/// Colours of the desktop beside the window at (`x`,`y`) of `width`×`height` physical px.
+/// Only two averages leave; the pixels are not kept. Windows only.
+#[cfg(windows)]
+pub fn sample_ambient(x: i32, y: i32, width: i32, height: i32) -> Option<Ambient> {
+    Some(Ambient {
+        left: win::average_region(x - AMBIENT_BAND, y, AMBIENT_BAND, height)?,
+        right: win::average_region(x + width, y, AMBIENT_BAND, height)?,
+    })
+}
+
+#[cfg(not(windows))]
+pub fn sample_ambient(_x: i32, _y: i32, _width: i32, _height: i32) -> Option<Ambient> {
+    None
+}
+
 /// Whether the pet may let clicks through to the desktop. It then sees the pointer only through
 /// the global position: in a Wayland session (also under XWayland) that position stands still
 /// while the pointer is over other programs, so the pet could never be grabbed again and stays
@@ -492,6 +533,58 @@ mod win {
         true.into()
     }
 
+    /// Average colour of a screen region, taken as an 8×8 thumbnail (the pixels are dropped).
+    pub fn average_region(x: i32, y: i32, width: i32, height: i32) -> Option<[u8; 3]> {
+        use windows::Win32::Graphics::Gdi::{
+            BI_RGB, BITMAPINFO, BITMAPINFOHEADER, CreateCompatibleBitmap, CreateCompatibleDC,
+            DIB_RGB_COLORS, DeleteDC, DeleteObject, GetDC, GetDIBits, HALFTONE, ReleaseDC, SRCCOPY,
+            SelectObject, SetStretchBltMode, StretchBlt,
+        };
+        const N: i32 = 8;
+        if width <= 0 || height <= 0 {
+            return None;
+        }
+        // SAFETY: every GDI object created here is released below; the buffer holds N*N pixels.
+        unsafe {
+            let screen = GetDC(None);
+            if screen.is_invalid() {
+                return None;
+            }
+            let mem = CreateCompatibleDC(Some(screen));
+            let bitmap = CreateCompatibleBitmap(screen, N, N);
+            let old = SelectObject(mem, bitmap.into());
+            let _ = SetStretchBltMode(mem, HALFTONE);
+            let copied = StretchBlt(mem, 0, 0, N, N, Some(screen), x, y, width, height, SRCCOPY);
+            let mut info = BITMAPINFO {
+                bmiHeader: BITMAPINFOHEADER {
+                    biSize: std::mem::size_of::<BITMAPINFOHEADER>() as u32,
+                    biWidth: N,
+                    biHeight: -N,
+                    biPlanes: 1,
+                    biBitCount: 32,
+                    biCompression: BI_RGB.0,
+                    ..Default::default()
+                },
+                ..Default::default()
+            };
+            let mut pixels = vec![0u8; (N * N * 4) as usize];
+            let lines = GetDIBits(
+                mem,
+                bitmap,
+                0,
+                N as u32,
+                Some(pixels.as_mut_ptr().cast()),
+                &mut info,
+                DIB_RGB_COLORS,
+            );
+            SelectObject(mem, old);
+            let _ = DeleteObject(bitmap.into());
+            let _ = DeleteDC(mem);
+            ReleaseDC(None, screen);
+            (copied.as_bool() && lines > 0).then(|| super::average_bgra(&pixels))
+        }
+    }
+
     /// File name of the program owning the foreground window (not the pet, not the shell).
     pub fn foreground_app(exclude: isize) -> Option<String> {
         use windows::Win32::Foundation::CloseHandle;
@@ -637,6 +730,16 @@ mod tests {
         assert_eq!(last_app(), "game.exe");
         set_ignored_apps(&[]);
         assert!(!note_foreground(Some("game.exe".into())));
+    }
+
+    #[test]
+    fn averages_bgra_pixels_into_rgb() {
+        // Two pixels: BGRA (0,0,200,255) and (100,0,100,255) -> R 150, G 0, B 50.
+        assert_eq!(
+            average_bgra(&[0, 0, 200, 255, 100, 0, 100, 255]),
+            [150, 0, 50]
+        );
+        assert_eq!(average_bgra(&[]), [128, 128, 128]);
     }
 
     #[test]

@@ -57,3 +57,10 @@ describe('StrokeDetector', () => {
     expect(hits).toBeGreaterThan(0);
   });
 });
+
+describe('smoothColor', () => {
+  it('moves part of the way per channel', async () => {
+    const { smoothColor } = await import('../services/desktopPet');
+    expect(smoothColor([0, 100, 200], [100, 100, 0], 0.5)).toEqual([50, 100, 100]);
+  });
+});

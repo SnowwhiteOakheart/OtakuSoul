@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import type { PetRemarkRequest } from '../../types/generated/PetRemarkRequest';
+import type { PetAmbient } from '../desktopPet';
 import type {
   CompanionPlugin,
   CompanionSettings,
@@ -140,6 +141,11 @@ export const companionApi = {
     placement?: { x?: number; y?: number; width: number; height: number },
   ): Promise<boolean> => {
     return await invoke<boolean>('toggle_desktop_pet', { enable, placement: placement ?? null });
+  },
+
+  /** Colours of the desktop beside the pet window (Windows); null when unknown. */
+  samplePetAmbient: async (): Promise<PetAmbient | null> => {
+    return await invoke<PetAmbient | null>('sample_pet_ambient');
   },
 
   /** One short line of the character about what just happened to the pet; nothing goes into the chat. */

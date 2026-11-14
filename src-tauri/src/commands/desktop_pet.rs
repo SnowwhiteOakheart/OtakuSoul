@@ -507,3 +507,21 @@ pub async fn pet_remark(
 pub fn get_pet_last_app() -> String {
     crate::modules::desktop_windows::last_app()
 }
+
+/// Average colours of the desktop beside the pet window (left, right), for the figure's lights;
+/// `None` when the pet is closed or the system cannot say. Windows only; nothing is stored.
+#[tauri::command]
+pub fn sample_pet_ambient(app: AppHandle) -> Option<crate::modules::desktop_windows::Ambient> {
+    let window = app.get_webview_window(PET_LABEL)?;
+    if !window.is_visible().unwrap_or(false) {
+        return None;
+    }
+    let position = window.outer_position().ok()?;
+    let size = window.outer_size().ok()?;
+    crate::modules::desktop_windows::sample_ambient(
+        position.x,
+        position.y,
+        size.width as i32,
+        size.height as i32,
+    )
+}
