@@ -1,4 +1,4 @@
-import type { ImageStudioModel, ImageStudioRequest } from '../../types';
+import type { ImageStudioModel, ImageStudioRequest, LoraSelection } from '../../types';
 
 export interface ImageDraft {
   title: string;
@@ -11,6 +11,8 @@ export interface ImageDraft {
   cfgScale: number | null;
   seed: string;
   count: number;
+  /** The studio's own LoRA choice; `null` = the one of the image settings. */
+  loras: LoraSelection[] | null;
 }
 
 const DRAFT_KEY = 'otakusoul.imageStudio.draft';
@@ -27,6 +29,7 @@ export const DEFAULT_IMAGE_DRAFT: ImageDraft = {
   cfgScale: null,
   seed: '',
   count: 1,
+  loras: null,
 };
 
 export const loadImageDraft = (): ImageDraft => {
@@ -77,7 +80,8 @@ export const sizeForAspect = (native: [number, number], aspect: string): [number
   return [snap(width), snap(height)];
 };
 
-export const toImageRequest = (draft: ImageDraft, modelId: string): ImageStudioRequest => {
+/** `settingsLoras`: the image settings' choice, used while the studio has none of its own. */
+export const toImageRequest = (draft: ImageDraft, modelId: string, settingsLoras: LoraSelection[] = []): ImageStudioRequest => {
   const seed = Number.parseInt(draft.seed, 10);
   return {
     title: draft.title.trim(),
@@ -89,6 +93,7 @@ export const toImageRequest = (draft: ImageDraft, modelId: string): ImageStudioR
     cfg_scale: draft.cfgScale,
     seed: Number.isFinite(seed) && seed >= 0 ? seed : null,
     count: Math.min(MAX_COUNT, Math.max(1, draft.count)),
+    loras: draft.loras ?? settingsLoras,
   };
 };
 
@@ -102,4 +107,5 @@ export const fromImageRequest = (request: ImageStudioRequest, seed: number | nul
   cfgScale: request.cfg_scale,
   seed: seed === null ? '' : String(seed),
   count: 1,
+  loras: request.loras ?? null,
 });

@@ -39,6 +39,8 @@ pub struct ImageStudioRequest {
     pub seed: Option<i64>,
     /// How many images (1–8), seeds counting up.
     pub count: u32,
+    /// LoRAs of this request; `None` = those of the image settings.
+    pub loras: Option<Vec<crate::modules::image_loras::LoraSelection>>,
 }
 
 /// Progress of an Image Studio batch (`image-studio-progress`).
@@ -219,7 +221,7 @@ pub async fn generate(
                 prompt: &prompt,
                 negative: &negative,
                 seed: base_seed,
-                loras: &config.local_loras,
+                loras: request.loras.as_deref().unwrap_or(&config.local_loras),
                 reference: None,
                 size: Some((width, height)),
                 steps: request.steps.map(|s| s.clamp(1, 150)),

@@ -1,16 +1,20 @@
 //! LoRAs for local image generation: a small checked catalog of anime styles plus any file the
-//! user puts into `loras/`.
+//! user puts into `loras/` or imports (`import_lora`). What the user says about their own files
+//! (name, model family, trigger words, weight, adult content) lives in `loras/own_loras.json`.
+//! LoRAs marked for adults stay hidden and are never applied while adult content is off
+//! (`nsfw::allowed`).
 //!
 //! `sd-server` ignores `<lora:…>` tags in the prompt; LoRAs go into the `lora` field of
 //! `/sdapi/v1/txt2img` as paths relative to `--lora-model-dir`. A LoRA only works with the model
 //! family it was trained for. A wrong one is not an error, `sd.cpp` just applies none of its
-//! tensors, so catalog LoRAs are only sent to their own family. Files the user added have no
-//! known family and are always sent.
+//! tensors, so catalog LoRAs are only sent to their own family. Files the user added are sent to the
+//! family they were marked for, or to every family when it is unknown.
 //!
 //! Every catalog file was tested with `sd-server` (all tensors applied). XLabs' FLUX anime LoRA
 //! is missing on purpose: the original applies no tensors, the converted one blurs the image.
 
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
 use tauri::Emitter;
@@ -110,6 +114,42 @@ const CATALOG: &[CatalogLora] = &[
     },
 ];
 
+/// What the user says about a LoRA file of their own (`loras/own_loras.json`).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, TS)]
+#[serde(default)]
+#[ts(export)]
+pub struct OwnLoraMeta {
+    /// Shown name; empty = the file name.
+    pub name: String,
+    /// Model family it was trained for (`sd15`, `sdxl`, `flux`, …); `None` = unknown, sent to
+    /// every model.
+    pub family: Option<String>,
+    /// Words the LoRA was trained on; put in front of the prompt.
+    pub trigger: String,
+    /// Weight when chosen; 0 = 1.0.
+    pub weight: f32,
+    /// Content for adults: only shown and applied while adult content is on.
+    pub nsfw: bool,
+}
+
+const META_FILE: &str = "own_loras.json";
+
+fn load_meta(dir: &Path) -> BTreeMap<String, OwnLoraMeta> {
+    std::fs::read_to_string(dir.join(META_FILE))
+        .ok()
+        .and_then(|text| serde_json::from_str(&text).ok())
+        .unwrap_or_default()
+}
+
+fn save_meta(dir: &Path, meta: &BTreeMap<String, OwnLoraMeta>) -> Result<(), String> {
+    std::fs::create_dir_all(dir).map_err(|e| crate::err!("backend.common.dirCreate", error = e))?;
+    std::fs::write(
+        dir.join(META_FILE),
+        serde_json::to_string_pretty(meta).unwrap_or_default(),
+    )
+    .map_err(|e| crate::err!("backend.common.fileWrite", error = e))
+}
+
 /// A LoRA as the image settings show it: from the catalog or a file the user added.
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
@@ -127,6 +167,8 @@ pub struct LoraInfo {
     pub noncommercial: bool,
     pub trigger: String,
     pub default_weight: f32,
+    /// Marked as content for adults (own files only).
+    pub nsfw: bool,
 }
 
 fn loras_dir() -> PathBuf {
@@ -147,7 +189,8 @@ fn is_lora_file(path: &Path) -> bool {
     })
 }
 
-fn list_in(dir: &Path) -> Vec<LoraInfo> {
+fn list_in(dir: &Path, adult_allowed: bool) -> Vec<LoraInfo> {
+    let meta = load_meta(dir);
     let mut list: Vec<LoraInfo> = CATALOG
         .iter()
         .map(|l| LoraInfo {
@@ -161,6 +204,7 @@ fn list_in(dir: &Path) -> Vec<LoraInfo> {
             noncommercial: l.noncommercial,
             trigger: l.trigger.to_string(),
             default_weight: l.weight,
+            nsfw: false,
         })
         .collect();
     let mut own: Vec<LoraInfo> = std::fs::read_dir(dir)
@@ -171,20 +215,29 @@ fn list_in(dir: &Path) -> Vec<LoraInfo> {
         .filter(|p| p.is_file() && is_lora_file(p))
         .filter_map(|p| p.file_name()?.to_str().map(str::to_string))
         .filter(|file| !CATALOG.iter().any(|l| l.file == file))
-        .map(|file| LoraInfo {
-            name: Path::new(&file)
-                .file_stem()
-                .map_or(file.clone(), |s| s.to_string_lossy().to_string()),
-            file,
-            catalog_id: None,
-            family: None,
-            installed: true,
-            download_bytes: 0,
-            license: None,
-            noncommercial: false,
-            trigger: String::new(),
-            default_weight: 1.0,
+        .map(|file| {
+            let own = meta.get(&file).cloned().unwrap_or_default();
+            LoraInfo {
+                name: Some(own.name.trim().to_string())
+                    .filter(|n| !n.is_empty())
+                    .unwrap_or_else(|| {
+                        Path::new(&file)
+                            .file_stem()
+                            .map_or(file.clone(), |s| s.to_string_lossy().to_string())
+                    }),
+                file,
+                catalog_id: None,
+                family: own.family.filter(|f| !f.is_empty()),
+                installed: true,
+                download_bytes: 0,
+                license: None,
+                noncommercial: false,
+                trigger: own.trigger.trim().to_string(),
+                default_weight: if own.weight == 0.0 { 1.0 } else { own.weight },
+                nsfw: own.nsfw,
+            }
         })
+        .filter(|l| adult_allowed || !l.nsfw)
         .collect();
     own.sort_by_key(|l| l.name.to_lowercase());
     list.extend(own);
@@ -192,8 +245,89 @@ fn list_in(dir: &Path) -> Vec<LoraInfo> {
 }
 
 /// The catalog with install state, followed by the user's own files.
+/// LoRAs marked for adults only while adult content is on.
 pub fn list_loras() -> Vec<LoraInfo> {
-    list_in(&loras_dir())
+    list_in(&loras_dir(), crate::modules::nsfw::allowed())
+}
+
+/// A file name in `loras/` for `title` that neither an existing file nor a catalog LoRA uses.
+fn own_file_name(dir: &Path, title: &str, ext: &str) -> String {
+    let stem = crate::modules::studio_files::file_title(title, "LoRA");
+    let mut name = crate::modules::studio_files::unique_file_name(dir, &stem, ext);
+    let mut n = 2;
+    while CATALOG.iter().any(|l| l.file == name) {
+        name = crate::modules::studio_files::unique_file_name(dir, &format!("{stem} {n}"), ext);
+        n += 1;
+    }
+    name
+}
+
+fn import_in(
+    dir: &Path,
+    source: &Path,
+    mut meta: OwnLoraMeta,
+    adult_allowed: bool,
+) -> Result<String, String> {
+    if meta.nsfw && !adult_allowed {
+        return Err(crate::err!("backend.nsfw.disabled"));
+    }
+    if !is_lora_file(source) || !source.is_file() {
+        return Err(crate::err!(
+            "backend.localImage.loraInvalid",
+            path = source.display()
+        ));
+    }
+    let ext = source
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("safetensors")
+        .to_ascii_lowercase();
+    let stem = source
+        .file_stem()
+        .map(|s| s.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    if meta.name.trim().is_empty() {
+        meta.name = stem.clone();
+    }
+    std::fs::create_dir_all(dir).map_err(|e| crate::err!("backend.common.dirCreate", error = e))?;
+    let file = own_file_name(dir, &meta.name, &ext);
+    std::fs::copy(source, dir.join(&file))
+        .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
+    let mut all = load_meta(dir);
+    all.insert(file.clone(), meta);
+    save_meta(dir, &all)?;
+    Ok(file)
+}
+
+/// Copies a LoRA file of the user's into `loras/` with what they say about it; returns its
+/// file name there. Marking it for adults needs adult content on.
+pub async fn import_lora(source: PathBuf, meta: OwnLoraMeta) -> Result<String, String> {
+    let allowed = crate::modules::nsfw::allowed();
+    tokio::task::spawn_blocking(move || import_in(&loras_dir(), &source, meta, allowed))
+        .await
+        .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?
+}
+
+fn update_in(dir: &Path, file: &str, meta: OwnLoraMeta, adult_allowed: bool) -> Result<(), String> {
+    let mut all = load_meta(dir);
+    let was_nsfw = all.get(file).is_some_and(|m| m.nsfw);
+    // Hidden adult LoRAs stay untouched while adult content is off.
+    if (meta.nsfw || was_nsfw) && !adult_allowed {
+        return Err(crate::err!("backend.nsfw.disabled"));
+    }
+    if CATALOG.iter().any(|l| l.file == file)
+        || Path::new(file).file_name().and_then(|n| n.to_str()) != Some(file)
+        || !dir.join(file).is_file()
+    {
+        return Err(crate::err!("backend.localImage.unknownModel", model = file));
+    }
+    all.insert(file.to_string(), meta);
+    save_meta(dir, &all)
+}
+
+/// Changes what the user says about an own LoRA file.
+pub fn update_lora(file: &str, meta: OwnLoraMeta) -> Result<(), String> {
+    update_in(&loras_dir(), file, meta, crate::modules::nsfw::allowed())
 }
 
 /// Downloads a catalog LoRA (resumable, SHA-256 checked); progress goes to
@@ -253,9 +387,18 @@ pub fn delete_lora(file: &str) -> Result<(), String> {
     if file.is_empty() || Path::new(file).file_name().and_then(|n| n.to_str()) != Some(file) {
         return Err(crate::err!("backend.localImage.unknownModel", model = file));
     }
-    let path = loras_dir().join(file);
+    let dir = loras_dir();
+    let mut meta = load_meta(&dir);
+    if meta.get(file).is_some_and(|m| m.nsfw) && !crate::modules::nsfw::allowed() {
+        return Err(crate::err!("backend.nsfw.disabled"));
+    }
+    let path = dir.join(file);
     crate::modules::model_files::remove_partial(&path);
-    std::fs::remove_file(&path).map_err(|e| crate::err!("backend.common.fileWrite", error = e))
+    std::fs::remove_file(&path).map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
+    if meta.remove(file).is_some() {
+        save_meta(&dir, &meta)?;
+    }
+    Ok(())
 }
 
 /// What a generation with `family` uses of the selection.
@@ -264,19 +407,39 @@ pub struct AppliedLoras {
     /// `lora` field of the txt2img request.
     pub request: Vec<serde_json::Value>,
     /// Trigger words to put in front of the prompt.
-    pub triggers: Vec<&'static str>,
+    pub triggers: Vec<String>,
     /// Extra VRAM for the LoRA weights, in MB.
     pub vram_mb: u64,
 }
 
-fn apply_in(dir: &Path, selections: &[LoraSelection], family: &str) -> AppliedLoras {
+fn apply_in(
+    dir: &Path,
+    selections: &[LoraSelection],
+    family: &str,
+    adult_allowed: bool,
+) -> AppliedLoras {
     let mut applied = AppliedLoras::default();
+    let meta = load_meta(dir);
     for selection in selections {
         if selection.weight == 0.0 {
             continue;
         }
         let catalog = CATALOG.iter().find(|l| l.file == selection.file);
         if catalog.is_some_and(|l| l.family != family) {
+            continue;
+        }
+        let own = catalog
+            .is_none()
+            .then(|| meta.get(&selection.file))
+            .flatten();
+        if own.is_some_and(|m| m.nsfw && !adult_allowed) {
+            tracing::info!("LoRA {} ist für Erwachsene, NSFW ist aus", selection.file);
+            continue;
+        }
+        if own
+            .and_then(|m| m.family.as_deref())
+            .is_some_and(|f| !f.is_empty() && f != family)
+        {
             continue;
         }
         let Ok(meta) = std::fs::metadata(dir.join(&selection.file)) else {
@@ -288,8 +451,12 @@ fn apply_in(dir: &Path, selections: &[LoraSelection], family: &str) -> AppliedLo
             "path": selection.file,
             "multiplier": selection.weight,
         }));
-        if let Some(lora) = catalog.filter(|l| !l.trigger.is_empty()) {
-            applied.triggers.push(lora.trigger);
+        let trigger = catalog
+            .map(|l| l.trigger)
+            .or(own.map(|m| m.trigger.trim()))
+            .unwrap_or_default();
+        if !trigger.is_empty() {
+            applied.triggers.push(trigger.to_string());
         }
         applied.vram_mb += meta.len().div_ceil(1024 * 1024);
     }
@@ -298,15 +465,20 @@ fn apply_in(dir: &Path, selections: &[LoraSelection], family: &str) -> AppliedLo
 
 /// The selected LoRAs that exist and fit `family`.
 pub fn apply(selections: &[LoraSelection], family: &str) -> AppliedLoras {
-    apply_in(&loras_dir(), selections, family)
+    apply_in(
+        &loras_dir(),
+        selections,
+        family,
+        crate::modules::nsfw::allowed(),
+    )
 }
 
 /// `prompt` with the trigger words in front that it doesn't contain yet.
-pub fn with_triggers(prompt: &str, triggers: &[&str]) -> String {
+pub fn with_triggers(prompt: &str, triggers: &[String]) -> String {
     let lower = prompt.to_lowercase();
     let missing: Vec<&str> = triggers
         .iter()
-        .copied()
+        .map(String::as_str)
         .filter(|t| !lower.contains(&t.to_lowercase()))
         .collect();
     if missing.is_empty() {
@@ -356,7 +528,7 @@ mod tests {
         std::fs::write(dir.join("my-style.safetensors"), b"x").unwrap();
         std::fs::write(dir.join("notes.txt"), b"x").unwrap();
         std::fs::write(dir.join("anime-detailer-xl.safetensors"), b"partial").unwrap();
-        let list = list_in(&dir);
+        let list = list_in(&dir, false);
         assert_eq!(list.len(), CATALOG.len() + 1);
         let detailer = list
             .iter()
@@ -390,7 +562,7 @@ mod tests {
             pick("missing.safetensors", 1.0),
             pick("anime-detailer-xl.safetensors", 0.0),
         ];
-        let sdxl = apply_in(&dir, &selection, "sdxl");
+        let sdxl = apply_in(&dir, &selection, "sdxl", false);
         let paths: Vec<_> = sdxl
             .request
             .iter()
@@ -404,7 +576,7 @@ mod tests {
         assert!(sdxl.triggers.is_empty());
         assert_eq!(sdxl.vram_mb, 6);
 
-        let flux = apply_in(&dir, &selection, "flux");
+        let flux = apply_in(&dir, &selection, "flux", false);
         assert_eq!(flux.triggers, ["GHIBSKY style"]);
         assert_eq!(flux.request.len(), 2);
     }
@@ -412,14 +584,108 @@ mod tests {
     #[test]
     fn trigger_words_are_added_once() {
         assert_eq!(
-            with_triggers("a girl", &["GHIBSKY style"]),
+            with_triggers("a girl", &["GHIBSKY style".to_string()]),
             "GHIBSKY style, a girl"
         );
         assert_eq!(
-            with_triggers("ghibsky style, a girl", &["GHIBSKY style"]),
+            with_triggers("ghibsky style, a girl", &["GHIBSKY style".to_string()]),
             "ghibsky style, a girl"
         );
         assert_eq!(with_triggers("a girl", &[]), "a girl");
+    }
+
+    #[test]
+    fn own_loras_keep_family_trigger_and_hide_adult_content() {
+        let dir = temp_dir("own");
+        let source = temp_dir("own-source").join("Flux Uncensored V2.safetensors");
+        std::fs::write(&source, vec![0u8; 1024 * 1024]).unwrap();
+        let adult = OwnLoraMeta {
+            name: "Flux Uncensored".into(),
+            family: Some("flux".into()),
+            trigger: "nsfw".into(),
+            weight: 0.9,
+            nsfw: true,
+        };
+        // Marking for adults needs adult content on.
+        assert!(import_in(&dir, &source, adult.clone(), false).is_err());
+        let file = import_in(&dir, &source, adult.clone(), true).unwrap();
+        assert_eq!(file, "Flux Uncensored.safetensors");
+        assert!(dir.join(&file).is_file());
+
+        let shown = |allowed| {
+            list_in(&dir, allowed)
+                .into_iter()
+                .filter(|l| l.catalog_id.is_none())
+                .collect::<Vec<_>>()
+        };
+        assert!(shown(false).is_empty(), "hidden while adult content is off");
+        let own = shown(true).remove(0);
+        assert_eq!(
+            (
+                own.name.as_str(),
+                own.family.as_deref(),
+                own.trigger.as_str(),
+                own.default_weight,
+                own.nsfw
+            ),
+            ("Flux Uncensored", Some("flux"), "nsfw", 0.9, true)
+        );
+
+        let pick = [pick(&file, 0.9)];
+        assert!(apply_in(&dir, &pick, "flux", false).request.is_empty());
+        assert!(
+            apply_in(&dir, &pick, "sdxl", true).request.is_empty(),
+            "other family"
+        );
+        let flux = apply_in(&dir, &pick, "flux", true);
+        assert_eq!(flux.request.len(), 1);
+        assert_eq!(flux.triggers, ["nsfw"]);
+
+        // Editing: an adult LoRA stays untouched while adult content is off.
+        assert!(update_in(&dir, &file, OwnLoraMeta::default(), false).is_err());
+        update_in(
+            &dir,
+            &file,
+            OwnLoraMeta {
+                nsfw: false,
+                ..adult
+            },
+            true,
+        )
+        .unwrap();
+        assert_eq!(shown(false).len(), 1);
+        assert!(
+            update_in(
+                &dir,
+                "anime-detailer-xl.safetensors",
+                OwnLoraMeta::default(),
+                true
+            )
+            .is_err()
+        );
+        assert!(
+            import_in(
+                &dir,
+                &dir.join("own_loras.json"),
+                OwnLoraMeta::default(),
+                true
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn imports_never_take_a_catalog_name() {
+        let dir = temp_dir("catalog-name");
+        let source = temp_dir("catalog-name-source").join("x.safetensors");
+        std::fs::write(&source, b"x").unwrap();
+        let meta = OwnLoraMeta {
+            name: "anime-detailer-xl".into(),
+            ..Default::default()
+        };
+        let file = import_in(&dir, &source, meta, false).unwrap();
+        assert_ne!(file, "anime-detailer-xl.safetensors");
+        assert!(file.ends_with(".safetensors"));
     }
 
     #[test]

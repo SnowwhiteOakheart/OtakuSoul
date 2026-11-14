@@ -7,6 +7,7 @@ import { errorMessage } from '../../utils/errors';
 import { confirmDialog, toast } from '../ui/feedback';
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { RuntimeCard } from '../settings/sections/RuntimeCard';
+import { LocalLoraSettings } from '../integrations/tabs/LocalLoraSettings';
 import { StudioFolderPicker } from './StudioFolderPicker';
 import { useImageJob } from './imageJobStore';
 import {
@@ -83,6 +84,8 @@ export const ImageStudioView = () => {
   const model = models ? pickImageModel(models, modelChoice, imageGenConfig?.local_model_id) : null;
   const size = model ? sizeForAspect([model.width, model.height], draft.aspect) : null;
   const negative = draft.negative ?? imageGenConfig?.negative_prompt ?? '';
+  const settingsLoras = imageGenConfig?.local_loras ?? [];
+  const loras = draft.loras ?? settingsLoras;
   const canGenerate = !!runtime && !!model && !running && draft.prompt.trim().length > 0;
 
   const choose = (id: string) => {
@@ -92,7 +95,7 @@ export const ImageStudioView = () => {
 
   const generate = () => {
     if (!model) return;
-    void start(toImageRequest({ ...draft, negative }, model.id));
+    void start(toImageRequest({ ...draft, negative }, model.id, settingsLoras));
   };
 
   const reuse = (image: StudioImage) => {
@@ -172,6 +175,20 @@ export const ImageStudioView = () => {
                 </>
               )}
             </div>
+
+            {model && (
+              <div className="space-y-1.5">
+                <LocalLoraSettings selected={loras} onSelectedChange={(next) => update({ loras: next })} family={model.family} />
+                <p className="text-[11px] text-slate-500">
+                  {draft.loras === null ? t('imageStudio.lorasFromSettings') : t('imageStudio.lorasOwn')}
+                  {draft.loras !== null && (
+                    <button type="button" onClick={() => update({ loras: null })} className="ml-1 text-accent-300 hover:text-accent-200">
+                      {t('imageStudio.lorasReset')}
+                    </button>
+                  )}
+                </p>
+              </div>
+            )}
 
             <div className="space-y-1.5">
               <label htmlFor="image-title" className={labelClass}>{t('studio.fileTitle')}</label>

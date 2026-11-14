@@ -234,6 +234,25 @@ pub fn delete_image_lora(file: String) -> Result<(), String> {
     crate::modules::image_loras::delete_lora(&file)
 }
 
+/// Copies a LoRA file of the user's into `loras/` (name, family, trigger, adult content);
+/// returns its file name there.
+#[tauri::command]
+pub async fn import_image_lora(
+    source_path: String,
+    meta: crate::modules::image_loras::OwnLoraMeta,
+) -> Result<String, String> {
+    crate::modules::image_loras::import_lora(std::path::PathBuf::from(source_path), meta).await
+}
+
+/// Changes what the user says about an own LoRA file.
+#[tauri::command(async)]
+pub fn update_image_lora(
+    file: String,
+    meta: crate::modules::image_loras::OwnLoraMeta,
+) -> Result<(), String> {
+    crate::modules::image_loras::update_lora(&file, meta)
+}
+
 #[tauri::command]
 pub async fn stop_local_image_server(state: State<'_, AppState>) -> Result<(), String> {
     state.local_image.stop().await;

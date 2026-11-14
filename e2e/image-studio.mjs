@@ -33,16 +33,15 @@ try {
   await browser.$('button=Bild-Studio').waitForExist({ timeout: 20_000 });
   const models = path.join(home, 'data', 'image-models');
 
-  // By default the images go to the system's pictures folder plus OtakuSoul, shown as default.
+  // By default the images go to the system's pictures folder plus OtakuSoul. Asked from the
+  // backend only and set back at once: the gallery would show the user's real pictures.
   const defaultDir = studioDefaultDir('images');
-  assert.deepEqual(await invoke('get_studio_folder', { kind: 'images' }), { path: defaultDir, is_default: true });
+  const testDir = (await invoke('get_studio_folder', { kind: 'images' })).path;
+  assert.deepEqual(await invoke('set_studio_folder', { kind: 'images', path: null }), { path: defaultDir, is_default: true });
+  assert.deepEqual(await invoke('set_studio_folder', { kind: 'images', path: testDir }), { path: testDir, is_default: false });
 
   // No model: a hint that leads to the downloads.
   await openStudio();
-  await browser.waitUntil(async () => {
-    const shown = await folderText();
-    return shown.includes(defaultDir) && shown.includes('(Standard)');
-  }, { timeout: 5000, timeoutMsg: `Standard-Bilderordner ${defaultDir} wird nicht angezeigt` });
   await browser.waitUntil(async () => (await modelText()).includes('Noch kein lokales Bildmodell'), { timeout: 5000, timeoutMsg: 'Hinweis ohne Modell fehlt' });
   assert.equal(await browser.$('[data-testid="image-generate"]').isEnabled(), false);
 
@@ -110,9 +109,6 @@ try {
   assert.equal(existsSync(path.join(folder, 'Abendrot.png.json')), false);
 
   assert.deepEqual(await invoke('set_studio_folder', { kind: 'images', path: null }), { path: defaultDir, is_default: true });
-  // Back in the studio the default is selected again.
-  await openStudio();
-  await browser.waitUntil(async () => (await folderText()).includes(defaultDir), { timeout: 5000, timeoutMsg: 'Standardordner nach dem Zurücksetzen fehlt' });
   console.log('Bild-Studio: Modellwahl (keins/eins/mehrere), Ordner, Galerie, Vorschau, Übernehmen und Löschen bestanden.');
 } finally {
   await close();

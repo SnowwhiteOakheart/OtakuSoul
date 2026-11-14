@@ -15,17 +15,11 @@ const value = (selector) => browser.execute((sel) => document.querySelector(sel)
 try {
   await browser.$('button=Song-Studio').waitForExist({ timeout: 20_000 });
 
-  // By default the songs go to the system's music folder plus OtakuSoul, shown as default.
+  // By default the songs go to the system's music folder plus OtakuSoul. Asked from the backend
+  // only: the view would list the user's real songs (the harness gives the profile own folders).
   const defaultDir = studioDefaultDir('songs');
+  assert.deepEqual(await invoke('set_studio_folder', { kind: 'songs', path: null }), { path: defaultDir, is_default: true });
   assert.deepEqual(await invoke('get_studio_folder', { kind: 'songs' }), { path: defaultDir, is_default: true });
-  await jsClick(await browser.$('button=Song-Studio'));
-  await browser.$('[data-testid="song-studio"]').waitForDisplayed({ timeout: 15_000 });
-  await browser.waitUntil(async () => {
-    const shown = await folderText();
-    return shown.includes(defaultDir) && shown.includes('(Standard)');
-  }, { timeout: 5000, timeoutMsg: `Standard-Musikordner ${defaultDir} wird nicht angezeigt` });
-  // Leave the tab, so it reads the folder again when it opens next.
-  await jsClick(await browser.$('button=Chat'));
 
   // A folder of the test instead of the real music folder.
   const folder = path.join(home, 'meine-songs');

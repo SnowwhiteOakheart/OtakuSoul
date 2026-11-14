@@ -35,6 +35,7 @@ import type { DiskSpace } from './generated/DiskSpace';
 import type { PromptLog } from './generated/PromptLog';
 import type { PromptLogMessage } from './generated/PromptLogMessage';
 import type { LoraSelection } from './generated/LoraSelection';
+import type { OwnLoraMeta } from './generated/OwnLoraMeta';
 import type { LocalImageStatus } from './generated/LocalImageStatus';
 import type { VramPlan } from './generated/VramPlan';
 import type { VramStrategy } from './generated/VramStrategy';
@@ -176,6 +177,7 @@ export type {
   ImageModelProgress,
   LoraInfo,
   LoraSelection,
+  OwnLoraMeta,
   QuickReplyRequest,
   StarterModel,
   ChatLora,

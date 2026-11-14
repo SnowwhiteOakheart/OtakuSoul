@@ -228,8 +228,8 @@ export const LocalImageSettings = ({ config, onChange }: LocalImageSettingsProps
       </div>
 
       <LocalLoraSettings
-        config={config}
-        onChange={onChange}
+        selected={config.local_loras ?? []}
+        onSelectedChange={(local_loras) => onChange({ ...config, local_loras })}
         family={models?.find((m) => m.id === config.local_model_id)?.family ?? null}
       />
 

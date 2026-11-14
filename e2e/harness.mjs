@@ -62,6 +62,11 @@ export async function launch(settings = {}, { hubFiles, homeFiles = {} } = {}) {
       ...settings,
     }),
   );
+  // The studios' default folders are the user's real music and pictures folders: every test
+  // profile gets folders of its own, so no test lists, shows or photographs the user's files.
+  for (const kind of ['songs', 'images']) {
+    writeFileSync(path.join(home, 'config', `${kind}.json`), JSON.stringify({ output_dir: path.join(home, `studio-${kind}`) }));
+  }
   // Files placed before the start, relative to OTAKUSOUL_HOME (e.g. data/locales/ui/pl.json).
   for (const [file, content] of Object.entries(homeFiles)) {
     mkdirSync(path.dirname(path.join(home, file)), { recursive: true });

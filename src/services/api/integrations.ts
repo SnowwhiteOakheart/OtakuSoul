@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
+import type { OwnLoraMeta } from '../../types/generated/OwnLoraMeta';
 import type {
   BackupEntryInfo,
   BackupGroupSelection,
@@ -161,6 +162,15 @@ export const integrationsApi = {
 
   deleteImageLora: async (file: string): Promise<void> => {
     await invoke('delete_image_lora', { file });
+  },
+
+  /** Copies an own LoRA file into `loras/`; returns its file name there. */
+  importImageLora: async (sourcePath: string, meta: OwnLoraMeta): Promise<string> => {
+    return await invoke<string>('import_image_lora', { sourcePath, meta });
+  },
+
+  updateImageLora: async (file: string, meta: OwnLoraMeta): Promise<void> => {
+    await invoke('update_image_lora', { file, meta });
   },
 
   stopLocalImageServer: async (): Promise<void> => {

@@ -39,4 +39,14 @@ describe('Bild-Studio-Formular', () => {
     expect(draft).toMatchObject({ prompt: 'sunset', aspect: '16:9', seed: '13', count: 1, negative: 'blurry' });
     expect(fromImageRequest(request, null).negative).toBeNull();
   });
+
+  it('nimmt die LoRAs der Bild-Einstellungen, bis das Studio eigene hat', () => {
+    const settings = [{ file: 'pastel.safetensors', weight: 0.8 }];
+    expect(toImageRequest({ ...DEFAULT_IMAGE_DRAFT, prompt: 'x' }, 'm', settings).loras).toEqual(settings);
+    const own = [{ file: 'mein-stil.safetensors', weight: 1 }];
+    expect(toImageRequest({ ...DEFAULT_IMAGE_DRAFT, prompt: 'x', loras: own }, 'm', settings).loras).toEqual(own);
+    // No LoRAs on purpose is a choice of its own, not "use the settings".
+    expect(toImageRequest({ ...DEFAULT_IMAGE_DRAFT, prompt: 'x', loras: [] }, 'm', settings).loras).toEqual([]);
+    expect(fromImageRequest({ ...toImageRequest(DEFAULT_IMAGE_DRAFT, 'm'), loras: null }, null).loras).toBeNull();
+  });
 });

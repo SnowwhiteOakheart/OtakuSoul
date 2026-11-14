@@ -659,6 +659,8 @@ pub fn run() {
             commands::ecosystem::list_image_loras,
             commands::ecosystem::download_image_lora,
             commands::ecosystem::delete_image_lora,
+            commands::ecosystem::import_image_lora,
+            commands::ecosystem::update_image_lora,
             commands::ecosystem::stop_local_image_server,
             commands::ecosystem::set_discord_rpc_enabled,
             commands::ecosystem::get_discord_rpc_enabled,

@@ -15,4 +15,8 @@ catalog_id: string | null,
 /**
  * Model family it works with; `None` when unknown (user files).
  */
-family: string | null, installed: boolean, download_bytes: number, license: string | null, noncommercial: boolean, trigger: string, default_weight: number, };
+family: string | null, installed: boolean, download_bytes: number, license: string | null, noncommercial: boolean, trigger: string, default_weight: number, 
+/**
+ * Marked as content for adults (own files only).
+ */
+nsfw: boolean, };
