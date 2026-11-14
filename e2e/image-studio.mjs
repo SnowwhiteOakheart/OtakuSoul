@@ -10,6 +10,7 @@ const { browser, home, close } = await launch();
 const invoke = (command, args = {}) => browser.execute((cmd, payload) => window.__TAURI_INTERNALS__.invoke(cmd, payload), command, args);
 const jsClick = (element) => browser.execute((el) => el.click(), element);
 const text = (element) => browser.execute((el) => el.textContent, element);
+const modelText = () => browser.execute(() => document.querySelector('[data-testid="image-model"]')?.textContent ?? '');
 const value = (selector) => browser.execute((sel) => document.querySelector(sel)?.value, selector);
 const sparse = (dir, name, size) => {
   mkdirSync(dir, { recursive: true });
@@ -32,20 +33,19 @@ try {
 
   // No model: a hint that leads to the downloads.
   await openStudio();
-  const modelBox = await browser.$('[data-testid="image-model"]');
-  await browser.waitUntil(async () => (await text(modelBox)).includes('Noch kein lokales Bildmodell'), { timeout: 5000, timeoutMsg: 'Hinweis ohne Modell fehlt' });
+  await browser.waitUntil(async () => (await modelText()).includes('Noch kein lokales Bildmodell'), { timeout: 5000, timeoutMsg: 'Hinweis ohne Modell fehlt' });
   assert.equal(await browser.$('[data-testid="image-generate"]').isEnabled(), false);
 
   // One model: shown by name, no choice.
   sparse(models, 'Counterfeit-V3.0_fix_fp16.safetensors', 2_132_651_162);
   await openStudio();
-  await browser.waitUntil(async () => (await text(modelBox)).includes('Counterfeit V3.0'), { timeout: 5000, timeoutMsg: 'Einzelnes Modell fehlt' });
-  assert.equal(await modelBox.$('select').isExisting(), false);
+  await browser.waitUntil(async () => (await modelText()).includes('Counterfeit V3.0'), { timeout: 5000, timeoutMsg: 'Einzelnes Modell fehlt' });
+  assert.equal(await browser.$('[data-testid="image-model"] select').isExisting(), false);
 
   // Two models: a choice, kept for the next visit.
   sparse(models, 'animagine-xl-4.0-opt.safetensors', 6_938_350_040);
   await openStudio();
-  const select = await modelBox.$('select');
+  const select = await browser.$('[data-testid="image-model"] select');
   await select.waitForExist({ timeout: 5000 });
   assert.equal((await select.$$('option')).length, 2);
   await select.selectByAttribute('value', 'animagine-xl-4');
@@ -72,6 +72,8 @@ try {
   await browser.waitUntil(async () => (await text(await browser.$('[data-testid="studio-folder"]'))).includes('meine-bilder'), { timeout: 5000, timeoutMsg: 'Bildordner fehlt' });
   const gallery = await browser.$('[data-testid="image-gallery"]');
   await gallery.waitForDisplayed({ timeout: 5000 });
+  // The thumbnail loads once it is in view (blob URL: the folder is outside the asset scope).
+  await browser.waitUntil(async () => browser.execute((el) => !!el.querySelector('img')?.src.startsWith('blob:'), gallery), { timeout: 5000, timeoutMsg: 'Vorschaubild lädt nicht' });
   await browser.saveScreenshot(path.join(screenshotDir, 'image-studio.png'));
 
   // The preview shows the request and loads it into the form.
