@@ -77,4 +77,9 @@ describe('frameFullBody (desktop pet)', () => {
     const view = frameFullBody(1.6, FOV, ASPECT, { zoom: 1, lift: 0.1 });
     expect(feetShare(view)).toBeCloseTo(PET_FEET_SHARE + 0.1, 4);
   });
+
+  it('keeps extra horizontal room in narrow windows so limbs and turns are not clipped', () => {
+    const narrow = frameFullBody(1.6, FOV, 0.5);
+    expect(narrow.camera[2] * Math.tan((FOV * Math.PI) / 360) * 0.5).toBeGreaterThanOrEqual(1.6 * 0.32 - 1e-9);
+  });
 });

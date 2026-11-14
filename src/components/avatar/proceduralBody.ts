@@ -77,7 +77,49 @@ export interface BodyInput {
   sway: { x: number; y: number };
   /** Where the figure looks (-1…1, smoothed): neck and chest turn a little along. */
   look: { x: number; y: number };
+  /** Aktuelle Emotion für natürliche Körperhaltung (optional). */
+  mood?: string;
+  /** Ob die Figur gerade spricht, für subtile Sprech-Körpersprache (optional). */
+  speaking?: boolean;
 }
+
+interface PostureBias {
+  spinePitch: number;
+  chestPitch: number;
+  neckPitch: number;
+  neckRoll: number;
+  shoulderDrop: number;
+  elbowIn: number;
+  swayScale: number;
+}
+
+const NEUTRAL_POSTURE: PostureBias = {
+  spinePitch: 0,
+  chestPitch: 0,
+  neckPitch: 0,
+  neckRoll: 0,
+  shoulderDrop: 0,
+  elbowIn: 0,
+  swayScale: 1,
+};
+
+const MOOD_POSTURES: Record<string, PostureBias> = {
+  happy: { ...NEUTRAL_POSTURE, chestPitch: -0.022, swayScale: 1.25 },
+  ecstasy: { ...NEUTRAL_POSTURE, chestPitch: -0.022, swayScale: 1.25 },
+  teasing: { ...NEUTRAL_POSTURE, chestPitch: -0.02, neckRoll: 0.03, swayScale: 1.2 },
+  sad: { ...NEUTRAL_POSTURE, spinePitch: 0.045, chestPitch: 0.02, neckPitch: 0.07, shoulderDrop: 0.03, swayScale: 0.75 },
+  crying: { ...NEUTRAL_POSTURE, spinePitch: 0.055, chestPitch: 0.025, neckPitch: 0.08, shoulderDrop: 0.035, swayScale: 0.7 },
+  blush: { ...NEUTRAL_POSTURE, spinePitch: 0.01, neckPitch: 0.02, neckRoll: 0.045, shoulderDrop: 0.008, elbowIn: 0.12 },
+  afterglow: { ...NEUTRAL_POSTURE, spinePitch: 0.01, neckPitch: 0.02, neckRoll: 0.04, elbowIn: 0.1, swayScale: 0.85 },
+  seductive: { ...NEUTRAL_POSTURE, chestPitch: -0.015, neckRoll: 0.045, elbowIn: 0.1, swayScale: 1.1 },
+  aroused: { ...NEUTRAL_POSTURE, chestPitch: 0.012, neckRoll: 0.03, elbowIn: 0.08 },
+  angry: { ...NEUTRAL_POSTURE, spinePitch: 0.015, chestPitch: 0.025, shoulderDrop: -0.02, swayScale: 0.9 },
+  disgust: { ...NEUTRAL_POSTURE, spinePitch: 0.015, chestPitch: 0.025, neckPitch: -0.015, shoulderDrop: -0.015, swayScale: 0.9 },
+  surprised: { ...NEUTRAL_POSTURE, spinePitch: -0.03, chestPitch: -0.015, elbowIn: 0.15 },
+  fear: { ...NEUTRAL_POSTURE, spinePitch: -0.025, neckPitch: 0.02, elbowIn: 0.18, shoulderDrop: -0.02 },
+};
+
+const postureForMood = (mood?: string): PostureBias => (mood ? MOOD_POSTURES[mood] ?? NEUTRAL_POSTURE : NEUTRAL_POSTURE);
 
 /**
  * The pose for the rig's facing. The angles here are written for a rig that faces +Z with its
@@ -99,20 +141,29 @@ export function drift(t: number, seed: number): number {
 }
 
 /** The procedural pose for this moment. */
-export function bodyPose({ t, leftArm, rightArm, walkPhase, sway, look }: BodyInput): BodyPose {
+export function bodyPose({ t, leftArm, rightArm, walkPhase, sway, look, mood, speaking = false }: BodyInput): BodyPose {
+  const bias = postureForMood(mood);
   const breath = Math.sin(t * 1.8);
   // Weight shift: the hips sway slowly from one leg to the other, the spine leans back against it.
-  const shift = 0.022 * drift(t, 0.4);
-  const twist = 0.018 * drift(t, 2.2);
+  const shift = 0.022 * bias.swayScale * drift(t, 0.4);
+  const twist = 0.018 * bias.swayScale * drift(t, 2.2);
   const walking = walkPhase !== null;
   const step = walkPhase ?? 0;
+  const talkNod = speaking ? Math.sin(t * 4.1) * 0.022 + 0.015 * drift(t * 1.6, 5.3) : 0;
+  const talkTilt = speaking ? 0.018 * drift(t * 1.2, 7.1) : 0;
+  const talkChest = speaking ? Math.sin(t * 2.05) * 0.01 : 0;
+  const armDir = Math.sign(leftArm) || 1;
 
   const pose: BodyPose = {
     // Walking: the pelvis turns with the stepping leg and dips towards the swinging one.
     hips: [0, twist + (walking ? 0.07 * Math.sin(step) : 0), shift + (walking ? 0.035 * Math.cos(step) : 0)],
-    spine: [breath * 0.012, -twist * 0.5 + look.x * 0.03 - (walking ? 0.05 * Math.sin(step) : 0), -shift * 0.6],
-    chest: [breath * 0.016 - look.y * 0.02, look.x * 0.04, -shift * 0.3],
-    neck: [-look.y * 0.05, look.x * 0.07, 0],
+    spine: [
+      breath * 0.012 + bias.spinePitch * (walking ? 0.5 : 1),
+      -twist * 0.5 + look.x * 0.03 - (walking ? 0.05 * Math.sin(step) : 0),
+      -shift * 0.6,
+    ],
+    chest: [breath * 0.016 - look.y * 0.02 + bias.chestPitch + talkChest, look.x * 0.04, -shift * 0.3],
+    neck: [-look.y * 0.05 + bias.neckPitch + talkNod, look.x * 0.07, armDir * (bias.neckRoll + talkTilt)],
   };
 
   for (const [side, dir, seed] of [
@@ -124,9 +175,11 @@ export function bodyPose({ t, leftArm, rightArm, walkPhase, sway, look }: BodyIn
     const across = side === 'left' ? 1 : -1;
     // A swing forward/back while walking (against the leg on the same side), otherwise a slow drift.
     const legPhase = side === 'left' ? step : step + Math.PI;
-    const swing = walking ? -1.2 * WALK_THIGH * Math.sin(legPhase) : 0.05 * drift(t, seed + 5);
-    // Shoulders rise a little with each breath.
-    pose[`${side}Shoulder`] = [0, 0, -dir * (0.02 + breath * 0.012)];
+    const swing = walking ? -1.2 * WALK_THIGH * Math.sin(legPhase) : 0.05 * bias.swayScale * drift(t, seed + 5);
+    const talkHand = speaking ? 0.09 * (0.5 + 0.5 * drift(t * 1.4, seed + 6)) : 0;
+    const talkWrist = speaking ? 0.04 * drift(t * 1.9, seed + 8) : 0;
+    // Shoulders rise a little with each breath and react to emotional tension.
+    pose[`${side}Shoulder`] = [0, 0, -dir * (0.02 + breath * 0.012 + bias.shoulderDrop)];
     // The window's movement: arms lag behind sideways and rise when it drops (or is thrown up).
     const lift = Math.max(-0.2, Math.min(0.9, sway.y * 0.9));
     const lagSide = sway.x * 0.5;
@@ -135,8 +188,12 @@ export function bodyPose({ t, leftArm, rightArm, walkPhase, sway, look }: BodyIn
       -across * 0.05,
       -dir * (ARM_DOWN - breath * 0.015 + 0.04 * drift(t, seed + 1) - lift) + lagSide,
     ];
-    pose[`${side}LowerArm`] = [0.05, -across * (0.3 + 0.08 * drift(t, seed + 2) + (walking ? 0.15 : 0)), 0];
-    pose[`${side}Hand`] = [0.06 * drift(t, seed + 3), -across * 0.1, -dir * 0.08 * drift(t, seed + 4)];
+    pose[`${side}LowerArm`] = [
+      0.05,
+      -across * (0.3 + 0.08 * drift(t, seed + 2) + (walking ? 0.15 : 0) + bias.elbowIn + talkHand),
+      0,
+    ];
+    pose[`${side}Hand`] = [0.06 * drift(t, seed + 3) + talkWrist, -across * 0.1, -dir * 0.08 * drift(t, seed + 4)];
     // Relaxed fingers: curled towards the palm (down in the T-pose), thumbs in a little.
     for (const finger of FINGERS) {
       for (const segment of SEGMENTS) {
@@ -197,8 +254,8 @@ export function legReach({ thigh, shin }: LegLengths, reach: number, drop: numbe
 
 /** Sitting on the ground with knees drawn up, when the legs were not measured. */
 const DEFAULT_SIT_LEGS: LegAngles = { flex: 2.2, bend: 2.6 };
-/** Sitting on an edge: thighs level, shins hanging down a little forward. */
-export const EDGE_SIT_LEGS: LegAngles = { flex: Math.PI / 2, bend: 1.35 };
+/** Sitting on an edge: thighs level, shins hanging down relaxed so feet stay inside the sunk window. */
+export const EDGE_SIT_LEGS: LegAngles = { flex: Math.PI / 2, bend: 1.42 };
 
 /**
  * Sitting, knees closed. On the ground the knees are drawn up with the arms around them (a calm
@@ -207,18 +264,18 @@ export const EDGE_SIT_LEGS: LegAngles = { flex: Math.PI / 2, bend: 1.35 };
  * lengths); the foot stays level with the ground or hangs relaxed. `leftArm` is the rig's X
  * direction (VRM 0.x may flip it), which sets where "inwards" and "forwards" are.
  */
-export function floorSitPose(leftArm: number, legs: LegAngles = DEFAULT_SIT_LEGS, edge = false): BodyPose {
+export function floorSitPose(leftArm: number, legs: LegAngles = DEFAULT_SIT_LEGS, edge = false, breath = 0): BodyPose {
   const out = Math.sign(leftArm) || 1;
   const thigh = -legs.flex;
   const knee = legs.bend;
-  // On the ground the soles stay flat; hanging feet point down a little.
-  const foot = edge ? 0.35 : legs.flex - legs.bend;
+  // On the ground the soles stay flat; hanging feet rest lightly so toes don't dip past the window edge.
+  const foot = edge ? 0.18 : legs.flex - legs.bend;
   const armsForward = edge ? -0.45 : -0.8;
   const elbow = edge ? 0.7 : 1.1;
   const pose: BodyPose = {
-    spine: [edge ? 0.08 : 0.22, 0, 0],
-    chest: [edge ? 0.04 : 0.1, 0, 0],
-    neck: [edge ? -0.06 : -0.2, 0, 0],
+    spine: [(edge ? 0.08 : 0.22) + breath * 0.012, 0, 0],
+    chest: [(edge ? 0.04 : 0.1) + breath * 0.015, 0, 0],
+    neck: [(edge ? -0.06 : -0.2) - breath * 0.008, 0, 0],
     leftUpperLeg: [thigh, 0, -out * 0.04],
     leftLowerLeg: [knee, 0, 0],
     leftFoot: [foot, 0, 0],

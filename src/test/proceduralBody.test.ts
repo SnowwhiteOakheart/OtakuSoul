@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bodyPose, BodySway, drift, floorSitPose, legReach, walkBob, WALK_CYCLE_HZ, WALK_STRIDE, type BodyInput } from '../components/avatar/proceduralBody';
+import { bodyPose, BodySway, drift, EDGE_SIT_LEGS, floorSitPose, legReach, walkBob, WALK_CYCLE_HZ, WALK_STRIDE, type BodyInput } from '../components/avatar/proceduralBody';
 import { WALK_PACE } from '../components/companion/petPhysics';
 import { WALK_TURN } from '../components/companion/petBehavior';
 import { frameInterval } from '../components/avatar/avatarStage';
@@ -111,6 +111,30 @@ describe('bodyPose', () => {
     const lifted = bodyPose(input({ sway: { x: 0, y: 0.8 } }));
     expect(Math.abs(lifted.leftUpperArm![2])).toBeLessThan(Math.abs(still.leftUpperArm![2]));
     expect(Math.abs(lifted.rightUpperArm![2])).toBeLessThan(Math.abs(still.rightUpperArm![2]));
+  });
+
+  it('adapts posture to mood and adds subtle speaking rhythm', () => {
+    const neutral = bodyPose(input({ t: 1.2 }));
+    const sad = bodyPose(input({ t: 1.2, mood: 'sad' }));
+    const happy = bodyPose(input({ t: 1.2, mood: 'happy' }));
+    const blush = bodyPose(input({ t: 1.2, mood: 'blush' }));
+    expect(sad.neck![0]).toBeGreaterThan(neutral.neck![0]);
+    expect(Math.abs(sad.leftShoulder![2])).toBeGreaterThan(Math.abs(neutral.leftShoulder![2]));
+    expect(happy.chest![0]).toBeLessThan(neutral.chest![0]);
+    expect(blush.neck![2]).not.toBeCloseTo(neutral.neck![2], 3);
+
+    const quiet = bodyPose(input({ t: 1.0, speaking: false }));
+    const talking = bodyPose(input({ t: 1.0, speaking: true }));
+    expect(talking.neck![0]).not.toBeCloseTo(quiet.neck![0], 3);
+    expect(talking.leftLowerArm![1]).not.toBeCloseTo(quiet.leftLowerArm![1], 3);
+  });
+
+  it('adds gentle breathing while sitting and keeps edge feet relaxed', () => {
+    const stillSit = floorSitPose(1, undefined, false, 0);
+    const breathSit = floorSitPose(1, undefined, false, 1);
+    expect(breathSit.chest![0]).toBeGreaterThan(stillSit.chest![0]);
+    const edgeSit = floorSitPose(1, EDGE_SIT_LEGS, true);
+    expect(edgeSit.leftFoot![0]).toBeCloseTo(0.18, 4);
   });
 });
 

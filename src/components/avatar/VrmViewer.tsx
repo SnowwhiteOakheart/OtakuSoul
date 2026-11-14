@@ -69,12 +69,12 @@ const CALM_BONES = new Set<string>([
 ]);
 
 /** On the ground the hip joint sits this far (share of the model height) below the ankles. */
-const SEAT_BELOW_ANKLES = 0.05;
+const SEAT_BELOW_ANKLES = 0.02;
 /**
- * The ankles aim this far (share of the model height) below their standing height: at exactly
- * that height the shoes still floated a little (legs not quite straight down in the rest pose).
+ * The ankles aim this far (share of the model height) below their standing height: low enough
+ * to keep the heels/soles grounded without cutting shoes below the window edge.
  */
-const FEET_BELOW_ANKLES = 0.04;
+const FEET_BELOW_ANKLES = 0.015;
 const VISEME_KEYS = Object.keys(SILENT_VISEMES) as (keyof Visemes)[];
 const EXPRESSION_WEIGHTS: Record<string, number> = { happy: 0.9, angry: 0.8, sad: 0.7, surprised: 0.8, relaxed: 0.6 };
 
@@ -99,6 +99,7 @@ const ROMANCE_EXPRESSIONS: Record<string, string[]> = {
   ecstasy: ['ecstasy', 'Ecstasy', 'blush', 'Blush', 'heartEyes', 'HeartEyes'],
   afterglow: ['afterglow', 'Afterglow', 'blush', 'Blush', 'cheek', 'Cheek'],
 };
+const ALL_ROMANCE_NAMES = Array.from(new Set(Object.values(ROMANCE_EXPRESSIONS).flat()));
 
 interface MorphBind {
   mesh: THREE.Mesh;
@@ -323,6 +324,16 @@ export const VrmViewer = ({
     let neckY = 0;
     let lookX = 0;
     let lookY = 0;
+    /** Glättung des vertikalen Hüft-Offsets (Roadmap 4.2 HipsAnchor). */
+    let hipsSmoothY: number | null = null;
+    /** Augen-Mikrosakkaden und weiche Blickrichtung. */
+    let nextSaccadeAt = 1.4;
+    let saccadeX = 0;
+    let saccadeY = 0;
+    let eyeYaw = 0;
+    let eyePitch = 0;
+    /** Aktuelle überblendete Gewichte je VRM-Expression. */
+    const exprWeights: Record<string, number> = {};
     const poseEuler = new THREE.Euler();
     const poseQuaternion = new THREE.Quaternion();
     const poseVector = new THREE.Vector3();
@@ -358,11 +369,13 @@ export const VrmViewer = ({
         if (share >= 0.999) bone.quaternion.copy(poseQuaternion);
         else bone.quaternion.slerp(poseQuaternion, share);
       };
-      lookX = THREE.MathUtils.lerp(lookX, stage.mouse.x, 0.05);
-      lookY = THREE.MathUtils.lerp(lookY, stage.mouse.y, 0.05);
+      const headLerp = 1 - Math.exp(-delta * 4.5);
+      const neckLerp = 1 - Math.exp(-delta * 1.8);
+      lookX = THREE.MathUtils.lerp(lookX, stage.mouse.x, headLerp);
+      lookY = THREE.MathUtils.lerp(lookY, stage.mouse.y, headLerp);
       // The look moves in a chain: eyes at once, the head soon, neck and chest last.
-      neckX = THREE.MathUtils.lerp(neckX, stage.mouse.x, 0.02);
-      neckY = THREE.MathUtils.lerp(neckY, stage.mouse.y, 0.02);
+      neckX = THREE.MathUtils.lerp(neckX, stage.mouse.x, neckLerp);
+      neckY = THREE.MathUtils.lerp(neckY, stage.mouse.y, neckLerp);
       // Desktop pet: its window's movement makes arms and hair trail behind.
       const moved = stage.takeWindowMove();
       sway.update(moved.dx, moved.dy, delta);
@@ -376,6 +389,8 @@ export const VrmViewer = ({
         walkPhase: walking ? walkPhase : null,
         sway: sway.offset,
         look: { x: neckX, y: neckY },
+        mood: emotionRef.current,
+        speaking: isSpeakingRef.current,
       });
       for (const [bone, [x, y, z]] of Object.entries(body)) pose(bone as BodyBone, x, y, z);
       // The hips dip between steps (only without a motion, which moves them itself).
@@ -392,28 +407,36 @@ export const VrmViewer = ({
       const wanted = seatRef.current ?? hangRig?.seat(elapsed) ?? null;
       if (wanted) seatKind = wanted;
       seat += ((wanted ? 1 : 0) - seat) * Math.min(1, delta * 2.5);
+      const breath = Math.sin(elapsed * 1.8);
       if (seat > 0.001 && hips && hipsRestY !== null) {
         const edge = seatKind === 'edge';
-        // The hip joint sits on the seat line: on the ground a little below the ankles (with the
-        // knees drawn up the backs of the thighs lift; level with the ankles the seat floated), on
-        // a window's edge the seat's own thickness above it.
+        // The hip joint sits on the seat line: compact enough that folded knees/feet stay inside the window.
         const hipTarget = edge
-          ? (PET_EDGE_SEAT + 0.04) * modelHeight
+          ? (PET_EDGE_SEAT + 0.055) * modelHeight
           : legs
-            ? legs.ankleY - SEAT_BELOW_ANKLES * modelHeight
+            ? Math.max(0.05 * modelHeight, legs.ankleY - SEAT_BELOW_ANKLES * modelHeight)
             : 0.09 * modelHeight;
         const angles = edge
           ? EDGE_SIT_LEGS
           : legs
-            ? legReach(legs, 0.55 * (legs.thigh + legs.shin), hipTarget - (legs.ankleY - FEET_BELOW_ANKLES * modelHeight))
+            ? legReach(legs, 0.48 * (legs.thigh + legs.shin), hipTarget - (legs.ankleY - FEET_BELOW_ANKLES * modelHeight))
             : undefined;
-        for (const [bone, [x, y, z]] of Object.entries(floorSitPose(leftArmDirection, angles, edge))) {
+        for (const [bone, [x, y, z]] of Object.entries(floorSitPose(leftArmDirection, angles, edge, breath))) {
           const node = model.humanoid.getNormalizedBoneNode(bone as BodyBone);
           if (!node) continue;
           node.quaternion.slerp(poseQuaternion.setFromEuler(poseEuler.set(x, y, z)), seat);
         }
         const hipsTarget = legs ? hipsRestY + (hipTarget - legs.hipY) : hipTarget;
         hips.position.y = THREE.MathUtils.lerp(hips.position.y, hipsTarget, seat);
+      }
+      // Roadmap 4.2 (HipsAnchor): vertikale Hüftübergänge bei Sitz-/Clip-Wechseln weich glätten.
+      if (hips) {
+        const hipLerp = 1 - Math.exp(-delta * 16);
+        hipsSmoothY = hipsSmoothY === null ? hips.position.y : THREE.MathUtils.lerp(hipsSmoothY, hips.position.y, hipLerp);
+        hips.position.y = hipsSmoothY;
+      }
+      if (seat > 0.001 && hips && hipsRestY !== null) {
+        const edge = seatKind === 'edge';
         // The hands go where they belong on this body: round the shins below the knees on the
         // ground, on the thighs on an edge (fixed arm angles missed on other proportions).
         hips.updateWorldMatrix(true, true);
@@ -440,6 +463,14 @@ export const VrmViewer = ({
           lower.quaternion.copy(reachLower.slerp(lower.quaternion, seat));
         }
       }
+      // 3D-Schattenhöhe dynamisch an Hängen, Kante oder Boden anpassen.
+      if (hangRef.current) {
+        stage.setShadowFloor?.(null);
+      } else if (seat > 0.1 && seatKind === 'edge') {
+        stage.setShadowFloor?.(PET_EDGE_SEAT * modelHeight * seat);
+      } else {
+        stage.setShadowFloor?.(0);
+      }
       // Held up or getting up: the whole body turns about the grip, limbs hang, a hand rubs.
       hangRig?.apply(delta, elapsed, sway.windowSpeed);
       model.humanoid
@@ -449,10 +480,23 @@ export const VrmViewer = ({
           poseQuaternion.setFromEuler(poseEuler.set(-lookY * 0.12 * leftArmDirection, lookX * 0.2, -lookX * 0.04 * leftArmDirection)),
         );
       if (model.lookAt) {
+        if (elapsed >= nextSaccadeAt) {
+          nextSaccadeAt = elapsed + 1.2 + Math.random() * 1.8;
+          saccadeX = (Math.random() - 0.5) * 2.4;
+          saccadeY = (Math.random() - 0.5) * 1.2;
+        }
+        const saccadeDecay = Math.exp(-delta * 6);
+        saccadeX *= saccadeDecay;
+        saccadeY *= saccadeDecay;
+        const eyeLerp = 1 - Math.exp(-delta * 16);
         // Eyes ahead of the head (degrees).
-        model.lookAt.yaw = THREE.MathUtils.clamp(stage.mouse.x * 18, -18, 18);
+        const targetYaw = THREE.MathUtils.clamp(stage.mouse.x * 18 + saccadeX, -18, 18);
         // three-vrm: a positive pitch looks down (eye bones and lookUp/lookDown alike), the pointer above is +y.
-        model.lookAt.pitch = THREE.MathUtils.clamp(-stage.mouse.y * 10, -10, 10);
+        const targetPitch = THREE.MathUtils.clamp(-stage.mouse.y * 10 + saccadeY, -10, 10);
+        eyeYaw = THREE.MathUtils.lerp(eyeYaw, targetYaw, eyeLerp);
+        eyePitch = THREE.MathUtils.lerp(eyePitch, targetPitch, eyeLerp);
+        model.lookAt.yaw = eyeYaw;
+        model.lookAt.pitch = eyePitch;
       }
       // Hair and cloth: wind against the window's speed (sideways, and up while it drops).
       const speed = sway.windowSpeed;
@@ -475,30 +519,38 @@ export const VrmViewer = ({
       // B. Face: blinking, emotion and mouth shapes from the voice.
       const em = model.expressionManager;
       const currentMood = emotionRef.current;
+      const exprLerp = 1 - Math.exp(-delta * 9);
       if (em) {
-        em.setValue('blink', blink(elapsed));
         const romanceBase = ROMANCE_VRM_BASE[currentMood];
         const activeBaseMood = romanceBase ? romanceBase.baseMood : currentMood;
 
         for (const [expression, weight] of Object.entries(EXPRESSION_WEIGHTS)) {
           const isBase = activeBaseMood === expression;
-          const targetWeight = romanceBase && isBase ? romanceBase.weight : weight;
-          em.setValue(expression, isBase ? targetWeight : 0);
+          const targetWeight = isBase ? (romanceBase ? romanceBase.weight : weight) : 0;
+          const next = THREE.MathUtils.lerp(exprWeights[expression] ?? 0, targetWeight, exprLerp);
+          exprWeights[expression] = next < 0.002 ? 0 : next;
+          em.setValue(expression, exprWeights[expression]);
         }
 
         // Custom romance expressions on VRMExpressionManager (e.g. Blush, Cheek, HeartEyes)
-        for (const [romanceKey, names] of Object.entries(ROMANCE_EXPRESSIONS)) {
-          const isActive = currentMood === romanceKey;
-          for (const name of names) {
-            if (em.getExpression(name)) {
-              em.setValue(name, isActive ? 0.85 : 0);
-            }
-          }
+        const activeRomanceNames = new Set(ROMANCE_EXPRESSIONS[currentMood] ?? []);
+        for (const name of ALL_ROMANCE_NAMES) {
+          if (!em.getExpression(name)) continue;
+          const targetRomance = activeRomanceNames.has(name) ? 0.85 : 0;
+          const key = `romance:${name}`;
+          const next = THREE.MathUtils.lerp(exprWeights[key] ?? 0, targetRomance, exprLerp);
+          exprWeights[key] = next < 0.002 ? 0 : next;
+          em.setValue(name, exprWeights[key]);
         }
 
+        // Lidschlag dämpfen, wenn fröhliche oder entspannte Mimik die Augen bereits verengt.
+        const eyeSquint = Math.max((exprWeights.happy ?? 0) * 0.75, (exprWeights.relaxed ?? 0) * 0.5);
+        em.setValue('blink', blink(elapsed) * (1 - eyeSquint));
+
         const target = mouthTarget(audioPlayer.isPlaying() ? audioVisemes : null, isSpeakingRef.current, elapsed);
+        const mouthLerp = 1 - Math.exp(-delta * 20);
         for (const key of VISEME_KEYS) {
-          mouth[key] = THREE.MathUtils.lerp(mouth[key], target[key], 0.5);
+          mouth[key] = THREE.MathUtils.lerp(mouth[key], target[key], mouthLerp);
           em.setValue(key, mouth[key]);
         }
       }
@@ -516,7 +568,7 @@ export const VrmViewer = ({
         bind.mesh.morphTargetInfluences[bind.index] = THREE.MathUtils.lerp(
           bind.mesh.morphTargetInfluences[bind.index] ?? 0,
           targetVal,
-          0.2
+          exprLerp,
         );
       }
 

@@ -536,6 +536,12 @@ describe('hanging and landing', () => {
     expect(hangAnchor('shoulder', { x: -0.1, y: 0.3 }, 0.2)).toEqual({ x: -0.1, y: 0.3 });
   });
 
+  it('clamps extreme hang anchors so upturned toes and dangling legs stay inside the window', () => {
+    expect(hangAnchor('feet', { x: -0.2, y: 0.9 }, 0.05).y).toBeCloseTo(0.1);
+    expect(hangAnchor('shoulder', { x: -0.8, y: 0.85 }, 0.2)).toEqual({ x: -0.35, y: 0.36 });
+    expect(hangAnchor('hip', { x: 0.4, y: 0.9 }, 0.2)).toEqual({ x: 0, y: 0.55 });
+  });
+
   it('keeps hanging through the fall and lands on the head when held by the feet', () => {
     const pet = hangingPet('feet');
     expect(pet.tick(1100).frame.hang?.grip).toBe('feet');

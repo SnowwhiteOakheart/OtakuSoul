@@ -118,6 +118,12 @@ describe('petPhysics when thrown', () => {
     expect(step.wall).toBe(1);
     expect(step.body.vx).toBeLessThan(0);
   });
+
+  it('clamps upward throws at the top work-area edge so the head stays on screen', () => {
+    const step = stepBody({ ...at(500, 10), vy: -1500 }, size, area, 0.05, 0, 1);
+    expect(step.body.y).toBe(area.y);
+    expect(step.body.vy).toBeGreaterThanOrEqual(0);
+  });
 });
 
 describe('petPhysics on other windows', () => {

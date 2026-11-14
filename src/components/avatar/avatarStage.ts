@@ -92,14 +92,19 @@ export interface AvatarStage {
    * poke elsewhere; `null` stops it. Used by the chat's avatar.
    */
   setTapHandler: (handler: ((touch: FigureTouch) => void) | null) => void;
+  /**
+   * Desktop pet: updates the 3D shadow-catcher floor height (`null` hides the shadow while hanging/falling).
+   */
+  setShadowFloor?: (y: number | null) => void;
   dispose: () => void;
 }
 
 /** What the desktop pet needs of any figure (3D stage or Inochi2D puppet). */
 export type PetFigure = Pick<
   AvatarStage,
-  'mouse' | 'probe' | 'setPaused' | 'setSaver' | 'setFrameRate' | 'addWindowMove' | 'setTurn' | 'setFraming' | 'headLine' | 'handAt'> &
-  Partial<Pick<AvatarStage, 'setAmbientTint' | 'listParts' | 'setHiddenParts'>>;
+  'mouse' | 'probe' | 'setPaused' | 'setSaver' | 'setFrameRate' | 'addWindowMove' | 'setTurn' | 'setFraming' | 'headLine' | 'handAt'
+> &
+  Partial<Pick<AvatarStage, 'setAmbientTint' | 'listParts' | 'setHiddenParts' | 'setShadowFloor'>>;
 
 /** Names of all meshes under `root`, each once, in scene order (empty names left out). */
 export function meshNames(root: THREE.Object3D): string[] {
@@ -150,6 +155,10 @@ export function createAvatarStage(container: HTMLElement, modelPath: string, opt
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
+  if (pet) {
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  }
   container.appendChild(renderer.domElement);
   // Preview pictures for the avatar manager (drawn again in the same call, see avatarSnapshot).
   const stopSnapshots = answerSnapshots(renderer.domElement, () => {
@@ -253,11 +262,39 @@ export function createAvatarStage(container: HTMLElement, modelPath: string, opt
   const ambient = new THREE.AmbientLight(0xffffff, 0.85);
   scene.add(ambient);
   const keyLight = new THREE.DirectionalLight(0xfff5ea, 1.2);
-  keyLight.position.set(1.0, 2.0, 1.5).normalize();
+  if (pet) {
+    keyLight.position.set(1.2, 2.4, 1.8);
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.set(512, 512);
+    keyLight.shadow.camera.near = 0.5;
+    keyLight.shadow.camera.far = 6.0;
+    keyLight.shadow.camera.left = -1.1;
+    keyLight.shadow.camera.right = 1.1;
+    keyLight.shadow.camera.top = 2.2;
+    keyLight.shadow.camera.bottom = -0.5;
+    keyLight.shadow.bias = -0.0005;
+    keyLight.shadow.normalBias = 0.012;
+  } else {
+    keyLight.position.set(1.0, 2.0, 1.5).normalize();
+  }
   scene.add(keyLight);
   const rimLight = new THREE.DirectionalLight(0xccdcff, 0.6);
   rimLight.position.set(-1.0, 1.5, -1.0).normalize();
   scene.add(rimLight);
+  let shadowPlane: THREE.Mesh<THREE.PlaneGeometry, THREE.ShadowMaterial> | null = null;
+  if (pet) {
+    const shadowMat = new THREE.ShadowMaterial({
+      color: 0x000000,
+      opacity: 0.24,
+      transparent: true,
+      depthWrite: false,
+    });
+    shadowPlane = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 3.0), shadowMat);
+    shadowPlane.rotation.x = -Math.PI / 2;
+    shadowPlane.position.y = 0.001;
+    shadowPlane.receiveShadow = true;
+    scene.add(shadowPlane);
+  }
 
   /** Mesh names the user hid; applied again once the model is framed (it loads after the stage is made). */
   let hiddenParts = new Set<string>();
@@ -323,7 +360,9 @@ export function createAvatarStage(container: HTMLElement, modelPath: string, opt
       return;
     }
     gl.readPixels(px, py, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, probePixel);
-    onResult(probePixel[3]! > PROBE_ALPHA);
+    const isShadowOnly =
+      probePixel[0] === 0 && probePixel[1] === 0 && probePixel[2] === 0 && probePixel[3]! <= 75;
+    onResult(probePixel[3]! > PROBE_ALPHA && !isShadowOnly);
   };
   const headLineNow = () => {
     if (modelHead === null) return null;
@@ -384,6 +423,11 @@ export function createAvatarStage(container: HTMLElement, modelPath: string, opt
     headLine: headLineNow,
     setTapHandler: (handler) => {
       tapHandler = handler;
+    },
+    setShadowFloor: (y) => {
+      if (!shadowPlane) return;
+      shadowPlane.visible = y !== null;
+      if (y !== null) shadowPlane.position.y = y + 0.001;
     },
     setFraming: (framing) => {
       petFraming = framing;
@@ -529,6 +573,10 @@ export function createAvatarStage(container: HTMLElement, modelPath: string, opt
       window.removeEventListener('resize', handleResize);
       container.removeEventListener('mouseenter', invalidateRect);
       container.removeEventListener('mousemove', handleMouseMove);
+      if (shadowPlane) {
+        shadowPlane.geometry.dispose();
+        shadowPlane.material.dispose();
+      }
       environment?.dispose();
       renderer.dispose();
       renderer.domElement.remove();
@@ -559,6 +607,9 @@ export function createBlinker() {
  */
 export function neverCull(root: THREE.Object3D) {
   root.traverse((node) => {
-    if ((node as THREE.Mesh).isMesh) node.frustumCulled = false;
+    if ((node as THREE.Mesh).isMesh) {
+      node.frustumCulled = false;
+      node.castShadow = true;
+    }
   });
 }
