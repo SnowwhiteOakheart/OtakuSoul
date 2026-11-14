@@ -71,6 +71,8 @@ export const PROACTIVE_BUBBLE_MS = 12_000;
 export const PROGRAM_DWELL_MS = 120_000;
 /** At least this long between two comments on programs (ms). */
 export const PROGRAM_GAP_MS = 600_000;
+/** The guest pet asks for its figure this often (ms) until it has one. */
+export const GUEST_ASK_MS = 1500;
 /** Peeking in from the side ends by itself after this long (ms). */
 export const PEEK_MS = 90_000;
 /** The desktop's colours beside the pet are read this often (ms) while the lights follow them. */

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type React from 'react';
-import { emitTo, listen } from '@tauri-apps/api/event';
+import { emitTo } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import type { PetFigure } from '../avatar/avatarStage';
 import { StrokeDetector } from './petStroke';
@@ -60,6 +60,7 @@ import {
   PET_SENTENCE_EVENT,
   PET_STATE_EVENT,
   petModelPath,
+  listenOwn,
   loadHiddenParts,
   saveHiddenParts,
   savePetPrefs,
@@ -87,6 +88,7 @@ import {
   REMARK_GAP_MS,
   AMBIENT_POLL_MS,
   PEEK_MS,
+  GUEST_ASK_MS,
   PROGRAM_DWELL_MS,
   PROGRAM_GAP_MS,
   SIT_DROP,
@@ -268,6 +270,11 @@ export const DesktopPet: React.FC = () => {
     lastRemarkAt.current = now;
     void emitTo('main', PET_REMARK_EVENT, { event } satisfies PetRemark).catch(() => {});
   }, []);
+  // `t` is a new function on every render; effects and callbacks that only need the current texts read it here.
+  const tRef = useRef(t);
+  useEffect(() => {
+    tRef.current = t;
+  });
   /** The alarm (timer or pomodoro), kept across restarts of the pet. */
   const [alarm, setAlarm] = useState<PetTimerState | null>(loadTimer);
   const timerRef = useRef(alarm);
@@ -294,10 +301,10 @@ export const DesktopPet: React.FC = () => {
       setAlarm(state);
       behavior.announce(performance.now());
       const key = finished === 'work' ? 'pet.pomodoroBreak' : finished === 'break' ? 'pet.pomodoroWork' : 'pet.timerDone';
-      say(t(key), PROACTIVE_BUBBLE_MS);
+      say(tRef.current(key), PROACTIVE_BUBBLE_MS);
     }, 2000);
     return () => window.clearInterval(check);
-  }, [behavior, say, t]);
+  }, [behavior, say]);
   // The lights take the desktop's colours (only while shown, a second apart; off: studio colours).
   useEffect(() => {
     if (!prefs.ambientLight) {
@@ -326,6 +333,14 @@ export const DesktopPet: React.FC = () => {
       window.clearInterval(timer);
     };
   }, [prefs.ambientLight]);
+  // The guest asks the main window for its figure until it has one (an answer sent while it was
+  // still loading is lost; asking again is cheap, the main window sends the figure each time).
+  const hasFigure = pet !== null;
+  useEffect(() => {
+    if (!IS_GUEST_PET || hasFigure) return undefined;
+    const ask = window.setInterval(() => void emitTo('main', PET_GUEST_READY_EVENT).catch(() => {}), GUEST_ASK_MS);
+    return () => window.clearInterval(ask);
+  }, [hasFigure]);
   /** Peeking: walks to the nearer screen side and slides half out of view until clicked, dragged or `PEEK_MS`. */
   const endPeek = useCallback(() => {
     if (peekRef.current === 0) return;
@@ -387,9 +402,9 @@ export const DesktopPet: React.FC = () => {
     if (!feeding) return;
     stopFeeding();
     behavior.eat(performance.now());
-    if (!IS_GUEST_PET) say(Math.random() < 0.5 ? t('pet.eatReply1') : t('pet.eatReply2'));
+    if (!IS_GUEST_PET) say(tRef.current(Math.random() < 0.5 ? 'pet.eatReply1' : 'pet.eatReply2'));
     void applyHormoneInteraction('feed');
-  }, [behavior, say, stopFeeding, t, applyHormoneInteraction]);
+  }, [behavior, say, stopFeeding, applyHormoneInteraction]);
   const cueTexts = useRef({ doze: '', wake: '' });
   useEffect(() => {
     cueTexts.current = { doze: t('pet.doze'), wake: t('pet.wake') };
@@ -462,7 +477,7 @@ export const DesktopPet: React.FC = () => {
     let isSubscribed = true;
     void useAppStore.getState().refreshLanguages().catch(() => {});
     const unlisteners = [
-      listen<PetState>(PET_STATE_EVENT, ({ payload }) => {
+      listenOwn<PetState>(PET_STATE_EVENT, ({ payload }) => {
         if (!isSubscribed) return;
         // The portrait comes only when it changed.
         setPet((current) => (payload.portrait === undefined ? { ...payload, portrait: current?.portrait ?? '' } : payload));
@@ -472,7 +487,7 @@ export const DesktopPet: React.FC = () => {
         if (payload.theme && payload.theme !== store.theme) store.setTheme(payload.theme);
         if (payload.colorMode !== store.colorMode) store.setColorMode(payload.colorMode);
       }),
-      listen<PetAudioFrame>(PET_AUDIO_EVENT, ({ payload }) => {
+      listenOwn<PetAudioFrame>(PET_AUDIO_EVENT, ({ payload }) => {
         const speaking = payload.visemes !== null;
         audioPlayer.feedRemoteFrame(payload.amplitude, payload.visemes);
         if (speaking !== speakingRef.current) {
@@ -487,7 +502,7 @@ export const DesktopPet: React.FC = () => {
           }
         }
       }),
-      listen<PetSentence>(PET_SENTENCE_EVENT, ({ payload }) => {
+      listenOwn<PetSentence>(PET_SENTENCE_EVENT, ({ payload }) => {
         // Shown a little longer than spoken, so a short sentence can be read.
         const ms = Math.max(1500, payload.ms + 600);
         behavior.say(performance.now(), ms);
@@ -496,7 +511,7 @@ export const DesktopPet: React.FC = () => {
         if (sentenceTimer.current !== null) window.clearTimeout(sentenceTimer.current);
         sentenceTimer.current = window.setTimeout(() => setSentenceFace(null), ms);
       }),
-      listen<PetSay>(PET_SAY_EVENT, ({ payload }) => {
+      listenOwn<PetSay>(PET_SAY_EVENT, ({ payload }) => {
         if (!prefsRef.current.chatBubbles || !payload.text) return;
         const now = performance.now();
         const chat = payload.chat ?? null;
@@ -510,42 +525,42 @@ export const DesktopPet: React.FC = () => {
         behavior.say(now, ms);
         say(payload.text, ms);
       }),
-      listen<Platform[]>(PET_PLATFORMS_EVENT, ({ payload }) => {
+      listenOwn<Platform[]>(PET_PLATFORMS_EVENT, ({ payload }) => {
         setPlatforms(payload);
       }),
-      listen(PET_HELLO_EVENT, () => {
+      listenOwn(PET_HELLO_EVENT, () => {
         void emitTo('main', IS_GUEST_PET ? PET_GUEST_READY_EVENT : PET_READY_EVENT).catch(() => {});
       }),
-      listen<PetScreen>(PET_SCREEN_EVENT, ({ payload }) => {
+      listenOwn<PetScreen>(PET_SCREEN_EVENT, ({ payload }) => {
         setScreen(payload);
         // Another window in front (not the pet, not the shell): glance after it.
         const switched = payload.focus !== 0 && focusRef.current !== 0 && payload.focus !== focusRef.current;
         focusRef.current = payload.focus;
         if (switched && prefsRef.current.reactToDesktop && !speakingRef.current) behavior.windowSwitched(performance.now());
       }),
-      listen<boolean>(PET_MUSIC_EVENT, ({ payload }) => {
+      listenOwn<boolean>(PET_MUSIC_EVENT, ({ payload }) => {
         behavior.setMusic(payload && prefsRef.current.reactToDesktop);
       }),
-      listen(PET_BEAT_EVENT, () => {
+      listenOwn(PET_BEAT_EVENT, () => {
         if (!speakingRef.current) behavior.beat(performance.now());
       }),
-      listen<PetPrefs>(PET_PREFS_EVENT, ({ payload }) => {
+      listenOwn<PetPrefs>(PET_PREFS_EVENT, ({ payload }) => {
         setPrefs((current) => (JSON.stringify(current) === JSON.stringify(payload) ? current : payload));
       }),
       // Adjusted in the avatar manager: the shown model takes it at once.
-      listen<PetFramingChange>(PET_FRAMING_EVENT, ({ payload }) => {
+      listenOwn<PetFramingChange>(PET_FRAMING_EVENT, ({ payload }) => {
         if (payload.modelPath !== modelRef.current) return;
         setFramingOverride({ modelPath: payload.modelPath, framing: payload.framing });
         framingRef.current = payload.framing;
         stageRef.current?.setFraming(payload.framing);
       }),
-      listen<number>(PET_RESIZE_EVENT, ({ payload }) => {
+      listenOwn<number>(PET_RESIZE_EVENT, ({ payload }) => {
         if (typeof payload === 'number') void resizeTo(payload);
       }),
-      listen(PET_COME_EVENT, () => {
+      listenOwn(PET_COME_EVENT, () => {
         void comeHere();
       }),
-      listen<PetCursor>(PET_CURSOR_EVENT, ({ payload: { x, y, inside, button, through, gx, gy, t: polledAt } }) => {
+      listenOwn<PetCursor>(PET_CURSOR_EVENT, ({ payload: { x, y, inside, button, through, gx, gy, t: polledAt } }) => {
         throughRef.current = through !== false;
         recordCursorMove(gx, gy, button, polledAt);
         const stage = stageRef.current;

@@ -1,4 +1,5 @@
-import { emitTo } from '@tauri-apps/api/event';
+import { emitTo, listen } from '@tauri-apps/api/event';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import type { AvatarMotion } from '../types';
 import { bubbleText } from '../components/companion/petBehavior';
 import { DEFAULT_PET_FRAMING, PET_LIFT_RANGE, PET_ZOOM_RANGE, type PetFraming } from './avatarViewState';
@@ -578,3 +579,22 @@ export function onGuestCharacterChange(listener: () => void): () => void {
   guestListeners.add(listener);
   return () => guestListeners.delete(listener);
 }
+
+/**
+ * Listens to events addressed to this pet window only. A listener without target also hears what
+ * is sent to other windows (Tauri hands every `emit_to` to the untargeted listeners of all
+ * webviews), so with two pets each would take the other's state, cursor and music. The target is
+ * the window's own label.
+ */
+export const listenOwn = <T>(event: string, handler: (event: { payload: T }) => void) => {
+  let label: string | undefined;
+  try {
+    label = getCurrentWindow().label;
+  } catch {
+    // Outside a Tauri window (unit tests): no target.
+  }
+  // Only the real pet windows are scoped: a test window showing the pet interface (label `main`) is
+  // fed by plain `emit`, which labelled listeners do not hear.
+  const scoped = label === PET_LABEL || label === GUEST_LABEL;
+  return listen<T>(event, handler, scoped ? { target: label } : undefined);
+};

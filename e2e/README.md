@@ -59,7 +59,7 @@ Die Suite umfasst über 90 spezialisierte Testmodule:
    - `image-loras.mjs`: Modellfamilien-Zuordnung lokaler Bild-LoRAs.
    - `chat-loras.mjs`: LoRA-Adapter fürs Chat-Modell (Katalog je Modell, „Meine Modelle“, Startseite, 18+-Sperre, Stärke).
    - `llm-benchmark.mjs`: Geschwindigkeitstest des Chat-Modells (gespeicherte Ergebnisse, Verlauf, Sperre ohne Modell).
-   - `companion-safety.mjs`, `pet-inochi2d.mjs`: HITL-Bestätigungsbanner bei sensiblen Aktionen und Desktop-Pet-Oberfläche mit Klick-Durchlass.
+   - `companion-safety.mjs`, `pet-inochi2d.mjs`: HITL-Bestätigungsbanner bei sensiblen Aktionen und Desktop-Pet-Oberfläche mit Klick-Durchlass. `pet-guest.mjs`: öffnet Pet und Gast-Pet als echte Fenster (eigene Größe, Figur des Gastes, keine Hormonwirkung, Schließen mit dem Pet).
 
 7. **Oberfläche, Zugänglichkeit & Hub:**
    - `onboarding.mjs`, `home.mjs`, `character-library.mjs`, `character-traits.mjs`, `character-import.mjs`, `startup-character.mjs`, `settings-palette.mjs`, `settings-reset.mjs`, `settings-hints.mjs`, `close-to-tray.mjs`, `background-tasks.mjs`, `ui-layout.mjs`, `hub-updates.mjs`, `hub-collections.mjs`, `hub-nsfw.mjs`, `adult-content-hiding.mjs`, `languages.mjs`, `help.mjs`, `a11y-sweep.mjs`, `dialogs-and-boxes.mjs`, `contrast.mjs`, `keyboard.mjs`, `beginner-journey.mjs`.
