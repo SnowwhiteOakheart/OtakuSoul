@@ -14,8 +14,9 @@
 
 - Überdeckungen und Zuschnitt bei Dialogen, Menüs und der Chat-Werkzeugleiste.
 - Companion-Reiterleiste bricht um; Sprechblase des Pets bleibt beim Ziehen schmal; Companion-Seite lädt schneller.
+- macOS-Build: Linken der ONNX-Runtime (CoreML) schlug seit 0.7.6 fehl.
 
-[Release Notes auf Deutsch, Englisch und Russisch](packaging/release-notes/v0.7.8.md)
+[Release Notes auf Deutsch und Englisch](packaging/release-notes/v0.7.8.md)
 
 ## [0.7.7]
 
