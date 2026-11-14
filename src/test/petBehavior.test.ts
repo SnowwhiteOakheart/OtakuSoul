@@ -4,7 +4,9 @@ import {
   bubbleSide,
   bubbleText,
   DOZE_AFTER_MS,
+  EDGE_SEAT_POSES,
   eyeLine,
+  FLOOR_SEAT_POSES,
   gripAt,
   hangAnchor,
   HEAD_ZONE_END,
@@ -336,6 +338,44 @@ describe('PetBehavior on the desktop floor', () => {
     // Its window goes away: no longer on an edge (on the ground it may sit down anew).
     pet.setOnWindow(false);
     expect(pet.tick(21_100).frame.seat).not.toBe('edge');
+  });
+
+  it('picks random sitting postures for floor and edge and shifts pose on long sits', () => {
+    const seenFloor = new Set<string>();
+    const seenEdge = new Set<string>();
+    for (const roll of [0.05, 0.35, 0.65, 0.92]) {
+      const floorPet = new PetBehavior(0, fixed(roll));
+      floorPet.setFloorSit(true);
+      floorPet.setPose('sit');
+      const floorFrame = floorPet.tick(100).frame;
+      expect(floorFrame.seat).toBe('floor');
+      expect(FLOOR_SEAT_POSES).toContain(floorFrame.seatPose);
+      seenFloor.add(floorFrame.seatPose!);
+
+      const edgePet = new PetBehavior(0, fixed(roll));
+      edgePet.setFloorSit(true);
+      edgePet.setOnWindow(true);
+      edgePet.setPose('sit');
+      const edgeFrame = edgePet.tick(100).frame;
+      expect(edgeFrame.seat).toBe('edge');
+      expect(EDGE_SEAT_POSES).toContain(edgeFrame.seatPose);
+      seenEdge.add(edgeFrame.seatPose!);
+    }
+    expect(seenFloor.size).toBeGreaterThanOrEqual(3);
+    expect(seenEdge.size).toBeGreaterThanOrEqual(2);
+
+    // Langer Dauersitz wechselt irgendwann automatisch in eine andere zufällige Haltung.
+    let step = 0;
+    const shifting = new PetBehavior(0, () => {
+      const vals = [0.05, 0.05, 0.05, 0.05, 0.9, 0.9, 0.9, 0.9];
+      return vals[step++ % vals.length]!;
+    });
+    shifting.setFloorSit(true);
+    shifting.setPose('sit');
+    const first = shifting.tick(100).frame.seatPose;
+    const later = run(shifting, 200, 75_000).frame.seatPose;
+    expect(later).not.toBeNull();
+    expect(later).not.toBe(first);
   });
 
   it('asks for the walking loop while walking', () => {

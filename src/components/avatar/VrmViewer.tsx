@@ -15,7 +15,7 @@ import { loadMotionClip, AvatarMotionPlayer } from './vrmMotions';
 import type { FigureTouch } from './avatarTouch';
 import { createAvatarStage, createBlinker, neverCull, type AvatarStage } from './avatarStage';
 import { AvatarViewerChrome } from './AvatarViewerChrome';
-import { bodyPose, BodySway, EDGE_SIT_LEGS, floorSitPose, legReach, walkBob, WALK_CYCLE_HZ, type BodyBone, type LegLengths } from './proceduralBody';
+import { bodyPose, BodySway, computeSitPose, walkBob, WALK_CYCLE_HZ, type BodyBone, type LegLengths, type SeatPose } from './proceduralBody';
 import { PET_EDGE_SEAT } from '../../services/avatarViewState';
 import { reachWithArm } from './armReach';
 import { HangRig, isSkirtJoint } from './petHang';
@@ -53,6 +53,8 @@ export interface AvatarViewerProps {
    * or on a window's edge (legs hanging; the pet window sinks `PET_EDGE_SINK` for them).
    */
   seat?: 'floor' | 'edge' | null;
+  /** Konkrete zufällig gewählte Sitzvariante (Boden oder Kante). */
+  seatPose?: SeatPose | null;
   /** Desktop pet held up: hangs from where it was grabbed (VRM only; see `petHang.ts`). */
   hang?: Hang | null;
   /** Desktop pet getting up after a hard landing (VRM only). */
@@ -138,6 +140,7 @@ export const VrmViewer = ({
   pet,
   loop = null,
   seat: seatMode = null,
+  seatPose = null,
   hang = null,
   recover = null,
 }: AvatarViewerProps) => {
@@ -167,6 +170,10 @@ export const VrmViewer = ({
   useEffect(() => {
     seatRef.current = seatMode;
   }, [seatMode]);
+  const seatPoseRef = useRef(seatPose);
+  useEffect(() => {
+    seatPoseRef.current = seatPose;
+  }, [seatPose]);
   const hangRef = useRef(hang);
   useEffect(() => {
     hangRef.current = hang;
@@ -310,12 +317,17 @@ export const VrmViewer = ({
     // Scratch values for placing the hands while seated.
     const reachKnee = new THREE.Vector3();
     const reachHip = new THREE.Vector3();
+    const reachHipOther = new THREE.Vector3();
     const reachAnkle = new THREE.Vector3();
-    const reachFront = new THREE.Vector3();
+    const reachLeftAxis = new THREE.Vector3();
+    const reachBodyFront = new THREE.Vector3();
     const reachTarget = new THREE.Vector3();
     const reachUpper = new THREE.Quaternion();
     const reachLower = new THREE.Quaternion();
     const upAxis = new THREE.Vector3(0, 1, 0);
+    /** Weiches Überblenden bei Wechseln zwischen verschiedenen Sitzhaltungen. */
+    const sitBoneQuats = new Map<string, THREE.Quaternion>();
+    const sitHandSmooth = { left: new THREE.Vector3(), right: new THREE.Vector3(), ready: false };
     /** Spring settings of hair and cloth as loaded, to add the window's wind to (and restore). */
     const springRest = new Map<object, { dir: THREE.Vector3; power: number }>();
     const wind = new THREE.Vector3();
@@ -407,24 +419,35 @@ export const VrmViewer = ({
       const wanted = seatRef.current ?? hangRig?.seat(elapsed) ?? null;
       if (wanted) seatKind = wanted;
       seat += ((wanted ? 1 : 0) - seat) * Math.min(1, delta * 2.5);
-      const breath = Math.sin(elapsed * 1.8);
-      if (seat > 0.001 && hips && hipsRestY !== null) {
+      const activeSeatPose: SeatPose =
+        seatRef.current && seatPoseRef.current ? seatPoseRef.current : seatKind === 'edge' ? 'dangle' : 'hugKnees';
+      let sitSpec: ReturnType<typeof computeSitPose> | null = null;
+      if (seat <= 0.001) {
+        sitBoneQuats.clear();
+        sitHandSmooth.ready = false;
+      } else if (hips && hipsRestY !== null) {
         const edge = seatKind === 'edge';
-        // The hip joint sits on the seat line: compact enough that folded knees/feet stay inside the window.
+        // Die Hüfte bleibt auf Sitzhöhe, sodass angezogene oder baumelnde Beine sicher im Fenster bleiben.
         const hipTarget = edge
           ? (PET_EDGE_SEAT + 0.055) * modelHeight
           : legs
             ? Math.max(0.05 * modelHeight, legs.ankleY - SEAT_BELOW_ANKLES * modelHeight)
             : 0.09 * modelHeight;
-        const angles = edge
-          ? EDGE_SIT_LEGS
-          : legs
-            ? legReach(legs, 0.48 * (legs.thigh + legs.shin), hipTarget - (legs.ankleY - FEET_BELOW_ANKLES * modelHeight))
-            : undefined;
-        for (const [bone, [x, y, z]] of Object.entries(floorSitPose(leftArmDirection, angles, edge, breath))) {
+        const hipToAnkleDrop = legs ? hipTarget - (legs.ankleY - FEET_BELOW_ANKLES * modelHeight) : 0;
+        sitSpec = computeSitPose(leftArmDirection, legs, hipToAnkleDrop, activeSeatPose, elapsed);
+        const poseBlend = 1 - Math.exp(-delta * 6.5);
+        for (const [bone, [x, y, z]] of Object.entries(sitSpec.pose)) {
           const node = model.humanoid.getNormalizedBoneNode(bone as BodyBone);
           if (!node) continue;
-          node.quaternion.slerp(poseQuaternion.setFromEuler(poseEuler.set(x, y, z)), seat);
+          poseQuaternion.setFromEuler(poseEuler.set(x, y, z));
+          let smoothed = sitBoneQuats.get(bone);
+          if (!smoothed) {
+            smoothed = poseQuaternion.clone();
+            sitBoneQuats.set(bone, smoothed);
+          } else {
+            smoothed.slerp(poseQuaternion, poseBlend);
+          }
+          node.quaternion.slerp(smoothed, seat);
         }
         const hipsTarget = legs ? hipsRestY + (hipTarget - legs.hipY) : hipTarget;
         hips.position.y = THREE.MathUtils.lerp(hips.position.y, hipsTarget, seat);
@@ -435,33 +458,53 @@ export const VrmViewer = ({
         hipsSmoothY = hipsSmoothY === null ? hips.position.y : THREE.MathUtils.lerp(hipsSmoothY, hips.position.y, hipLerp);
         hips.position.y = hipsSmoothY;
       }
-      if (seat > 0.001 && hips && hipsRestY !== null) {
-        const edge = seatKind === 'edge';
-        // The hands go where they belong on this body: round the shins below the knees on the
-        // ground, on the thighs on an edge (fixed arm angles missed on other proportions).
+      if (sitSpec && seat > 0.001 && hips && hipsRestY !== null) {
+        // Hände per IK an ihre sitzspezifischen Ruhepunkte (Schienbein, Knie, Oberschenkel, Hüfte) führen.
         hips.updateWorldMatrix(true, true);
+        const lHip = model.humanoid.getNormalizedBoneNode('leftUpperLeg');
+        const rHip = model.humanoid.getNormalizedBoneNode('rightUpperLeg');
+        if (lHip && rHip) {
+          lHip.getWorldPosition(reachHip);
+          rHip.getWorldPosition(reachHipOther);
+          reachLeftAxis.subVectors(reachHip, reachHipOther).setY(0);
+        } else {
+          reachLeftAxis.set(0, 0, 0);
+        }
+        if (reachLeftAxis.lengthSq() > 1e-6) {
+          reachLeftAxis.normalize();
+          reachBodyFront.crossVectors(reachLeftAxis, upAxis).normalize();
+        } else {
+          reachLeftAxis.set(1, 0, 0);
+          reachBodyFront.set(0, 0, 1);
+        }
+        const handBlend = 1 - Math.exp(-delta * 6.5);
         for (const side of ['left', 'right'] as const) {
           const node = (bone: string) => model.humanoid.getNormalizedBoneNode(`${side}${bone}` as BodyBone);
           const [upper, lower, hand, hipJoint, knee, ankle] = [
             node('UpperArm'), node('LowerArm'), node('Hand'), node('UpperLeg'), node('LowerLeg'), node('Foot'),
           ];
           if (!upper || !lower || !hand || !hipJoint || !knee || !ankle) continue;
-          const kneeAt = knee.getWorldPosition(reachKnee);
           const hipAt = hipJoint.getWorldPosition(reachHip);
-          // The legs point forwards while seated: that is the body's front.
-          const front = reachFront.subVectors(kneeAt, hipAt).setY(0).normalize();
-          const target = edge
-            ? reachTarget.lerpVectors(hipAt, kneeAt, 0.65).addScaledVector(upAxis, 0.035 * modelHeight)
-            : reachTarget
-                .lerpVectors(kneeAt, ankle.getWorldPosition(reachAnkle), 0.3)
-                .addScaledVector(front, 0.045 * modelHeight);
+          const kneeAt = knee.getWorldPosition(reachKnee);
+          const ankleAt = ankle.getWorldPosition(reachAnkle);
+          const handSpec = side === 'left' ? sitSpec.leftHand : sitSpec.rightHand;
+          const outward = side === 'left' ? 1 : -1;
+          if (handSpec.alongLeg <= 1) reachTarget.lerpVectors(hipAt, kneeAt, handSpec.alongLeg);
+          else reachTarget.lerpVectors(kneeAt, ankleAt, handSpec.alongLeg - 1);
+          reachTarget
+            .addScaledVector(reachBodyFront, handSpec.forwardOffset * modelHeight)
+            .addScaledVector(upAxis, handSpec.upOffset * modelHeight)
+            .addScaledVector(reachLeftAxis, outward * handSpec.sideOffset * modelHeight);
+          const smoothTarget = sitHandSmooth[side];
+          if (!sitHandSmooth.ready) smoothTarget.copy(reachTarget);
+          else smoothTarget.lerp(reachTarget, handBlend);
           reachUpper.copy(upper.quaternion);
           reachLower.copy(lower.quaternion);
-          reachWithArm(upper, lower, hand, target);
-          // Eased in and out with the seat.
+          reachWithArm(upper, lower, hand, smoothTarget);
           upper.quaternion.copy(reachUpper.slerp(upper.quaternion, seat));
           lower.quaternion.copy(reachLower.slerp(lower.quaternion, seat));
         }
+        sitHandSmooth.ready = true;
       }
       // 3D-Schattenhöhe dynamisch an Hängen, Kante oder Boden anpassen.
       if (hangRef.current) {

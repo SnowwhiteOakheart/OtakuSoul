@@ -3,6 +3,13 @@ import type { PetPose } from '../../services/desktopPet';
 import { withoutEmotionTag } from '../../utils/replyTags';
 import type { PetEvent } from '../../types/generated/PetEvent';
 import {
+  EDGE_SEAT_POSES,
+  FLOOR_SEAT_POSES,
+  type EdgeSeatPose,
+  type FloorSeatPose,
+  type SeatPose,
+} from '../avatar/proceduralBody';
+import {
   gripAt,
   hangAnchor,
   landingFor,
@@ -52,6 +59,8 @@ export interface PetFrame {
    * window's edge with the legs hanging down; null when not (or when a sitting motion plays).
    */
   seat: PetSeat | null;
+  /** Konkrete zufällig gewählte Sitzvariante (Boden oder Fensterkante); null wenn nicht sitzend. */
+  seatPose: SeatPose | null;
   /** Held up by the user (VRM pose: hangs from where it was grabbed); also while it falls after that. */
   hang: PetHang | null;
   /** Getting up after a hard landing (VRM pose); a new `id` starts it again. */
@@ -59,6 +68,7 @@ export interface PetFrame {
 }
 
 export type PetSeat = 'floor' | 'edge';
+export { EDGE_SEAT_POSES, FLOOR_SEAT_POSES, type EdgeSeatPose, type FloorSeatPose, type SeatPose };
 
 export type PetGrip = HangGrip;
 export type PetHang = Hang;
@@ -207,6 +217,10 @@ export class PetBehavior {
   private pose: PetPose = 'auto';
   /** Which way it turns while seated (chosen anew each time it sits down). */
   private sitSide: -1 | 1 = 1;
+  /** Zufällig gewählte Boden- und Kanten-Sitzhaltung beim Hinsetzen. */
+  private floorPose: FloorSeatPose = 'hugKnees';
+  private edgePose: EdgeSeatPose = 'dangle';
+  private nextPoseShiftAt = Number.POSITIVE_INFINITY;
   /** A window's edge is within jumping reach. */
   private canJump = false;
   /** In the air by its own jump (a happy leap, not a startled fall). */
@@ -234,6 +248,13 @@ export class PetBehavior {
   private gap() {
     const [min, max] = ACTION_GAP_MS;
     return min + this.random() * (max - min);
+  }
+
+  /** Wählt zufällig eine Boden- und eine Kanten-Sitzhaltung und plant den nächsten Haltungswechsel. */
+  private pickSeatPose(now?: number) {
+    this.floorPose = FLOOR_SEAT_POSES[Math.min(FLOOR_SEAT_POSES.length - 1, Math.floor(this.random() * FLOOR_SEAT_POSES.length))]!;
+    this.edgePose = EDGE_SEAT_POSES[Math.min(EDGE_SEAT_POSES.length - 1, Math.floor(this.random() * EDGE_SEAT_POSES.length))]!;
+    this.nextPoseShiftAt = now !== undefined ? now + 45_000 + this.random() * 25_000 : 0;
   }
 
   private react(now: number, expression: string | null, ms = REACT_MS, gaze: Gaze | null = null) {
@@ -292,6 +313,7 @@ export class PetBehavior {
     this.recoverId += 1;
     this.recovering = { kind, id: this.recoverId, start: now };
     this.sitSide = this.random() < 0.5 ? -1 : 1;
+    this.pickSeatPose(now);
     this.react(now, 'surprised', RECOVER_MS(kind));
     return true;
   }
@@ -471,7 +493,10 @@ export class PetBehavior {
 
   /** Posture from the menu; a chosen one ends what the figure was doing by itself. */
   setPose(pose: PetPose) {
-    if (pose === 'sit' && this.pose !== 'sit') this.sitSide = this.random() < 0.5 ? -1 : 1;
+    if (pose === 'sit' && this.pose !== 'sit') {
+      this.sitSide = this.random() < 0.5 ? -1 : 1;
+      this.pickSeatPose();
+    }
     this.pose = pose;
     const own = this.action?.kind;
     if (pose !== 'auto' && (own === 'walk' || own === 'sit' || own === 'sitFloor') && !this.action?.come) this.action = null;
@@ -566,6 +591,7 @@ export class PetBehavior {
     if (kind === 'sit' || kind === 'sitFloor') {
       action.end = now + SIT_MS[0] + this.random() * (SIT_MS[1] - SIT_MS[0]);
       this.sitSide = this.random() < 0.5 ? -1 : 1;
+      this.pickSeatPose(now);
     }
     if (kind === 'lookAround') {
       const side = this.random() < 0.5 ? -1 : 1;
@@ -661,7 +687,17 @@ export class PetBehavior {
       this.startAction(now);
     }
 
-    const still = { mouth: 0, hop: false, walk: 0 as const, turn: 0, loop: null, seat: null, hang: null, recover: null };
+    const still = {
+      mouth: 0,
+      hop: false,
+      walk: 0 as const,
+      turn: 0,
+      loop: null,
+      seat: null,
+      seatPose: null as SeatPose | null,
+      hang: null,
+      recover: null,
+    };
     const kept = this.keptSeat;
     let frame: PetFrame;
     switch (this.mode) {
@@ -709,6 +745,17 @@ export class PetBehavior {
     }
     this.dancingNow = frame.loop === 'dance';
     frame.hop = now < this.hopUntil && this.mode !== 'dragged';
+    if (frame.seat !== null) {
+      if (this.nextPoseShiftAt === 0 || !Number.isFinite(this.nextPoseShiftAt)) {
+        this.nextPoseShiftAt = now + 45_000 + this.random() * 25_000;
+      } else if (now >= this.nextPoseShiftAt) {
+        this.pickSeatPose(now);
+      }
+      frame.seatPose = frame.seat === 'edge' ? this.edgePose : this.floorPose;
+    } else {
+      this.nextPoseShiftAt = Number.POSITIVE_INFINITY;
+      frame.seatPose = null;
+    }
     const cues = this.cues;
     this.cues = [];
     return { frame, cues };

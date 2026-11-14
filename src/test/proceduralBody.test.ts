@@ -1,5 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { bodyPose, BodySway, drift, EDGE_SIT_LEGS, floorSitPose, legReach, walkBob, WALK_CYCLE_HZ, WALK_STRIDE, type BodyInput } from '../components/avatar/proceduralBody';
+import {
+  bodyPose,
+  BodySway,
+  computeSitPose,
+  drift,
+  EDGE_SEAT_POSES,
+  EDGE_SIT_LEGS,
+  FLOOR_SEAT_POSES,
+  floorSitPose,
+  legReach,
+  walkBob,
+  WALK_CYCLE_HZ,
+  WALK_STRIDE,
+  type BodyInput,
+} from '../components/avatar/proceduralBody';
 import { WALK_PACE } from '../components/companion/petPhysics';
 import { WALK_TURN } from '../components/companion/petBehavior';
 import { frameInterval } from '../components/avatar/avatarStage';
@@ -135,6 +149,59 @@ describe('bodyPose', () => {
     expect(breathSit.chest![0]).toBeGreaterThan(stillSit.chest![0]);
     const edgeSit = floorSitPose(1, EDGE_SIT_LEGS, true);
     expect(edgeSit.leftFoot![0]).toBeCloseTo(0.18, 4);
+  });
+
+  it('animates upperChest, toe push-off, finger micro-wave and standing ankle compensation', () => {
+    const early = bodyPose(input({ t: 1.0 }));
+    const later = bodyPose(input({ t: 4.5 }));
+    expect(early.upperChest).toBeDefined();
+    expect(early.leftToes).toBeDefined();
+    expect(early.leftFoot![0]).toBeLessThan(0);
+    expect(later.leftIndexIntermediate![2]).not.toBeCloseTo(early.leftIndexIntermediate![2], 4);
+
+    // Abstoß-Phase hinten (`walkPhase = 3 * Math.PI / 2` -> rechtes Bein hinten mit `phase = 5*PI/2`): Zehen biegen sich ab.
+    const walking = bodyPose(input({ walkPhase: Math.PI / 2 + 0.25 }));
+    expect(walking.leftToes![0]).toBeGreaterThan(0.05);
+  });
+
+  it('produces distinct realistic sitting poses for floor and edge variants', () => {
+    const legs = { thigh: 0.4, shin: 0.38 };
+    const floorSignatures = new Set(
+      FLOOR_SEAT_POSES.map((pose) => {
+        const spec = computeSitPose(1, legs, 0.005, pose, 1.5);
+        return [
+          spec.pose.leftUpperLeg![0].toFixed(2),
+          spec.pose.leftUpperLeg![1].toFixed(2),
+          spec.pose.rightLowerLeg![0].toFixed(2),
+          spec.rightHand.alongLeg.toFixed(2),
+        ].join(':');
+      }),
+    );
+    expect(floorSignatures.size).toBe(FLOOR_SEAT_POSES.length);
+
+    const edgeSignatures = new Set(
+      EDGE_SEAT_POSES.map((pose) => {
+        const spec = computeSitPose(1, legs, 0.05, pose, 0.4);
+        return [
+          spec.pose.spine![0].toFixed(2),
+          spec.pose.leftUpperLeg![1].toFixed(2),
+          spec.leftHand.alongLeg.toFixed(2),
+        ].join(':');
+      }),
+    );
+    expect(edgeSignatures.size).toBe(EDGE_SEAT_POSES.length);
+
+    // Dangling an der Fensterkante: Unterschenkel pendeln gegenphasig über der Zeit.
+    const t0 = computeSitPose(1, legs, 0.05, 'dangle', 0);
+    const tPeak = computeSitPose(1, legs, 0.05, 'dangle', Math.PI / 4.2);
+    expect(tPeak.pose.leftLowerLeg![0]).toBeGreaterThan(t0.pose.leftLowerLeg![0]);
+    expect(tPeak.pose.rightLowerLeg![0]).toBeLessThan(t0.pose.rightLowerLeg![0]);
+
+    // VRM 0.x Spiegelung kehrt X- und Z-Winkel aller Sitzposen sauber um.
+    const cross1 = computeSitPose(1, legs, 0.005, 'crissCross', 0.5).pose;
+    const cross0 = computeSitPose(-1, legs, 0.005, 'crissCross', 0.5).pose;
+    expect(cross0.leftUpperLeg![0]).toBeCloseTo(-cross1.leftUpperLeg![0], 4);
+    expect(cross0.leftUpperLeg![2]).toBeCloseTo(-cross1.leftUpperLeg![2], 4);
   });
 });
 

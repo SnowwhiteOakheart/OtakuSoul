@@ -34,6 +34,7 @@ import {
   type PetMode,
   type PetRecover,
   type PetSeat,
+  type SeatPose,
   type TouchZone,
 } from './petBehavior';
 import type { GestureRequest, LoopRole } from '../../utils/avatarGestures';
@@ -198,6 +199,7 @@ export const DesktopPet: React.FC = () => {
   const [loop, setLoop] = useState<LoopRole | null>(null);
   /** Sitting on the ground (VRM pose of its own). */
   const [seat, setSeat] = useState<PetSeat | null>(null);
+  const [seatPose, setSeatPose] = useState<SeatPose | null>(null);
   const seatRef = useRef<PetSeat | null>(null);
   const sittingRef = useRef(false);
   /** Held up from where it was grabbed, and getting up after a hard landing (VRM poses). */
@@ -521,6 +523,7 @@ export const DesktopPet: React.FC = () => {
       setWalking(frame.walk !== 0);
       setLoop(frame.loop);
       setSeat(frame.seat);
+      setSeatPose(frame.seatPose);
       setHang(frame.hang);
       setRecover((was) => (was?.id === frame.recover?.id ? was : frame.recover));
       seatRef.current = frame.seat;
@@ -1018,6 +1021,7 @@ export const DesktopPet: React.FC = () => {
         mode={mode}
         loop={loop}
         seat={seat}
+        seatPose={seatPose}
         hang={hang}
         recover={recover}
         hop={hop}

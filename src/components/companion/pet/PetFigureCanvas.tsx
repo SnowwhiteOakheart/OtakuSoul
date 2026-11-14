@@ -5,7 +5,7 @@ import type { PetFigure } from '../../avatar/avatarStage';
 import { PET_FEET_SHARE } from '../../../services/avatarViewState';
 import { isLive2dPath, isPortraitPath, type PetState } from '../../../services/desktopPet';
 import type { GestureRequest, LoopRole } from '../../../utils/avatarGestures';
-import type { PetHang, PetMode, PetRecover, PetSeat } from '../petBehavior';
+import type { PetHang, PetMode, PetRecover, PetSeat, SeatPose } from '../petBehavior';
 import {
   EXPRESSION_EMOTIONS,
   GltfViewer,
@@ -31,6 +31,7 @@ interface PetFigureCanvasProps {
   mode: PetMode;
   loop: LoopRole | null;
   seat: PetSeat | null;
+  seatPose?: SeatPose | null;
   hang: PetHang | null;
   recover: PetRecover | null;
   hop: boolean;
@@ -54,6 +55,7 @@ export const PetFigureCanvas: React.FC<PetFigureCanvasProps> = ({
   mode,
   loop,
   seat,
+  seatPose = null,
   hang,
   recover,
   hop,
@@ -86,6 +88,7 @@ export const PetFigureCanvas: React.FC<PetFigureCanvasProps> = ({
     pet: petLink,
     loop,
     seat,
+    seatPose,
     hang,
     recover,
   };
