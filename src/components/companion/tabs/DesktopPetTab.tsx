@@ -331,6 +331,55 @@ export const DesktopPetTab: React.FC = () => {
             />
           </div>
 
+          <div className="rounded-xl border border-slate-800 bg-app p-1">
+            <p className="px-2 pt-1.5 text-xs font-semibold text-slate-300">{t('pet.groupLife')}</p>
+            <Toggle id="pet-needs" label={t('pet.needsPref')} checked={prefs.needs} onCheckedChange={(needs) => update({ needs })} />
+            <Toggle
+              id="pet-break-reminder"
+              label={t('pet.breakReminder')}
+              checked={prefs.breakReminder}
+              onCheckedChange={(breakReminder) => update({ breakReminder })}
+            />
+            <Toggle id="pet-focus-mode" label={t('pet.focusMode')} checked={prefs.focusMode} onCheckedChange={(focusMode) => update({ focusMode })} />
+            <Toggle
+              id="pet-chase-pointer"
+              label={t('pet.chasePointer')}
+              checked={prefs.chasePointer}
+              disabled={!prefs.physics}
+              onCheckedChange={(chasePointer) => update({ chasePointer })}
+            />
+            <Toggle id="pet-props" label={t('pet.propsPref')} checked={prefs.props} onCheckedChange={(props) => update({ props })} />
+            <Toggle id="pet-traces" label={t('pet.traces')} checked={prefs.traces} onCheckedChange={(traces) => update({ traces })} />
+            <Toggle
+              id="pet-nudge-windows"
+              label={t('pet.nudgeWindows')}
+              description={t('pet.nudgeWindowsHint')}
+              checked={prefs.nudgeWindows}
+              disabled={!prefs.physics}
+              onCheckedChange={(nudgeWindows) => update({ nudgeWindows })}
+            />
+            <Toggle
+              id="pet-weather"
+              label={t('pet.weather')}
+              description={t('pet.weatherHint')}
+              checked={prefs.weather}
+              onCheckedChange={(weather) => update({ weather })}
+            />
+            <label className="block px-2 pb-2 pt-1 text-xs text-slate-400" htmlFor="pet-weather-city">
+              {t('pet.weatherCity')}
+              <input
+                id="pet-weather-city"
+                type="text"
+                maxLength={80}
+                autoComplete="off"
+                value={prefs.weatherCity}
+                placeholder={t('pet.weatherCityPlaceholder')}
+                onChange={(e) => update({ weatherCity: e.target.value })}
+                className="mt-1 block w-full rounded-lg border border-slate-700 bg-app px-2 py-1 text-xs text-slate-200 placeholder:text-slate-500"
+              />
+            </label>
+          </div>
+
           <div className="space-y-1.5">
             <p className="text-xs font-semibold text-slate-300">{t('pet.shortcut')}</p>
             <div className="flex flex-wrap items-center gap-2">

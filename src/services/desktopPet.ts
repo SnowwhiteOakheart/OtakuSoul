@@ -125,6 +125,14 @@ export function smoothColor(
 }
 
 /** Both ways: the pet's switches changed (its menu or the Desktop-Pet tab); payload `PetPrefs`. */
+/** The weather at the place chosen for the pet (`pet_weather`; `modules::pet_weather::PetWeather`). */
+export interface PetWeather {
+  sky: 'clear' | 'cloudy' | 'fog' | 'rain' | 'snow' | 'storm';
+  /** °C. */
+  temperature: number;
+  place: string;
+}
+
 export const PET_PREFS_EVENT = 'pet:prefs';
 /** Main → pet: a model's framing changed in the avatar manager; payload `PetFramingChange`. */
 export const PET_FRAMING_EVENT = 'pet:framing';
@@ -324,6 +332,23 @@ export interface PetPrefs {
   desktopLipSync: boolean;
   /** Programs (file names, e.g. `game.exe`) the pet steps back for while they are in front. */
   ignoredApps: string[];
+  /** Hunger and boredom: now and then it hints at a meal or a game (never sad, nothing lost). */
+  needs: boolean;
+  /** After long uninterrupted work it stretches and suggests a break (only how long, not what is typed). */
+  breakReminder: boolean;
+  /** During a pomodoro's work phase it sits down with a book and keeps quiet. */
+  focusMode: boolean;
+  /** It chases the pointer now and then when it flits past. */
+  chasePointer: boolean;
+  /** Night cap at night, umbrella in the rain (with the weather). */
+  props: boolean;
+  /** Footprints while it walks and sandcastles while it sits. */
+  traces: boolean;
+  /** Shows the weather of `weatherCity` (asks a weather service with only that place; off by default). */
+  weather: boolean;
+  weatherCity: string;
+  /** May give the window it stands on a little kick, moving it (off by default; Windows). */
+  nudgeWindows: boolean;
 }
 
 export type PetPose = 'auto' | 'stand' | 'sit';
@@ -371,6 +396,15 @@ const DEFAULT_PREFS: PetPrefs = {
   ambientLight: false,
   desktopLipSync: false,
   ignoredApps: [],
+  needs: true,
+  breakReminder: true,
+  focusMode: true,
+  chasePointer: true,
+  props: true,
+  traces: true,
+  weather: false,
+  weatherCity: '',
+  nudgeWindows: false,
 };
 
 interface BatteryManagerLike extends EventTarget {
@@ -423,6 +457,15 @@ export function loadPetPrefs(): PetPrefs {
       ignoredApps: Array.isArray(stored?.ignoredApps)
         ? stored.ignoredApps.filter((a): a is string => typeof a === 'string' && a.length > 0 && a.length <= 128).slice(0, 64)
         : [],
+      needs: typeof stored?.needs === 'boolean' ? stored.needs : DEFAULT_PREFS.needs,
+      breakReminder: typeof stored?.breakReminder === 'boolean' ? stored.breakReminder : DEFAULT_PREFS.breakReminder,
+      focusMode: typeof stored?.focusMode === 'boolean' ? stored.focusMode : DEFAULT_PREFS.focusMode,
+      chasePointer: typeof stored?.chasePointer === 'boolean' ? stored.chasePointer : DEFAULT_PREFS.chasePointer,
+      props: typeof stored?.props === 'boolean' ? stored.props : DEFAULT_PREFS.props,
+      traces: typeof stored?.traces === 'boolean' ? stored.traces : DEFAULT_PREFS.traces,
+      weather: typeof stored?.weather === 'boolean' ? stored.weather : DEFAULT_PREFS.weather,
+      weatherCity: typeof stored?.weatherCity === 'string' ? stored.weatherCity.slice(0, 80) : DEFAULT_PREFS.weatherCity,
+      nudgeWindows: typeof stored?.nudgeWindows === 'boolean' ? stored.nudgeWindows : DEFAULT_PREFS.nudgeWindows,
     };
   } catch {
     return { ...DEFAULT_PREFS };

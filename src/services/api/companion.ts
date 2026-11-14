@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import type { PetRemarkRequest } from '../../types/generated/PetRemarkRequest';
-import type { PetAmbient } from '../desktopPet';
+import type { PetAmbient, PetWeather } from '../desktopPet';
 import type {
   CompanionPlugin,
   CompanionSettings,
@@ -164,6 +164,21 @@ export const companionApi = {
   /** Tells the backend the programs the pet steps back for (file names); only a verdict comes back. */
   setPetIgnoredApps: async (apps: string[]): Promise<void> => {
     await invoke('set_pet_ignored_apps', { apps });
+  },
+
+  /** When the user last pressed a key or moved the mouse (system tick, ms; only the time); null where unknown. */
+  petInputStamp: async (): Promise<number | null> => {
+    return await invoke<number | null>('pet_input_stamp');
+  },
+
+  /** Moves the window the pet stands on (platform id) `dx` physical px sideways; whether it moved. */
+  nudgePetWindow: async (id: string, dx: number): Promise<boolean> => {
+    return await invoke<boolean>('nudge_pet_window', { id, dx });
+  },
+
+  /** The weather at the place the user typed for the pet (only when its weather is switched on). */
+  petWeather: async (city: string): Promise<PetWeather> => {
+    return await invoke<PetWeather>('pet_weather', { city });
   },
 
   /** The program that was in front last (not the pet), lower-case file name; '' if unknown. */

@@ -399,6 +399,99 @@
       display: none;
     }
   }
+  /*
+   * The pet's effects and props (`PetProps.tsx`): every animation runs a fixed number of times
+   * and stops (WebKitGTK repaints the window all the time for endless ones).
+   */
+  .pet-fx {
+    position: absolute;
+    pointer-events: none;
+    line-height: 1;
+    transform: translate(-50%, -50%);
+  }
+  .pet-fx-rise {
+    opacity: 0;
+    animation: pet-fx-rise 1.6s ease-out forwards;
+  }
+  @keyframes pet-fx-rise {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+    20% { opacity: 1; transform: translate(-50%, -80%) scale(1); }
+    100% { opacity: 0; transform: translate(calc(-50% + var(--pet-fx-dx, 0px)), -320%) scale(0.9); }
+  }
+  .pet-fx-orbit {
+    animation: pet-fx-orbit 1s linear 3;
+  }
+  @keyframes pet-fx-orbit {
+    from { transform: translate(-50%, -50%) rotate(0deg) translateX(var(--pet-fx-r, 20px)) rotate(0deg); }
+    to { transform: translate(-50%, -50%) rotate(360deg) translateX(var(--pet-fx-r, 20px)) rotate(-360deg); }
+  }
+  .pet-fx-pop {
+    opacity: 0;
+    animation: pet-fx-pop 0.9s ease-out forwards;
+  }
+  @keyframes pet-fx-pop {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.2) rotate(-20deg); }
+    35% { opacity: 1; transform: translate(-50%, -50%) scale(1.15) rotate(0deg); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8) rotate(15deg); }
+  }
+  .pet-fx-fall {
+    opacity: 0;
+    animation: pet-fx-fall 1.8s ease-in forwards;
+  }
+  @keyframes pet-fx-fall {
+    0% { opacity: 1; transform: translate(-50%, -50%) rotate(0deg); }
+    100% { opacity: 0; transform: translate(calc(-50% + var(--pet-fx-dx, 0px)), 220px) rotate(var(--pet-fx-spin, 180deg)); }
+  }
+  .pet-fx-think {
+    opacity: 0;
+    animation: pet-fx-think 3.4s ease-out forwards;
+  }
+  @keyframes pet-fx-think {
+    0% { opacity: 0; transform: translate(-50%, -30%) scale(0.6); }
+    12%, 82% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -70%) scale(1); }
+  }
+  .pet-prop-in {
+    animation: pet-prop-in 0.35s ease-out;
+  }
+  @keyframes pet-prop-in {
+    from { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  }
+  /* A sandcastle grows while it is built (once, as long as building takes), sand puffs at the start. */
+  .pet-build {
+    transform-origin: 50% 100%;
+    animation: pet-build var(--pet-build-ms, 14s) ease-out forwards;
+  }
+  @keyframes pet-build {
+    0% { transform: translate(-50%, -100%) scale(0.15); opacity: 0.6; }
+    15% { transform: translate(-50%, -100%) scale(0.35); opacity: 1; }
+    100% { transform: translate(-50%, -100%) scale(1); opacity: 1; }
+  }
+  .pet-footprint {
+    position: absolute;
+    pointer-events: none;
+    width: 7px;
+    height: 10px;
+    border-radius: 50% 50% 45% 45%;
+    background: rgba(120, 90, 60, 0.45);
+    transition: left 0.1s linear, opacity 1.4s ease-out;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pet-fx-rise,
+    .pet-fx-orbit,
+    .pet-fx-pop,
+    .pet-fx-fall,
+    .pet-fx-think,
+    .pet-prop-in,
+    .pet-build {
+      animation-duration: 1ms;
+      animation-iteration-count: 1;
+    }
+    .pet-footprint {
+      transition: none;
+    }
+  }
   /* The pet's ring menu and settings card unfold once (no endless animation). */
   .pet-radial-in {
     animation: pet-radial-in 0.15s ease-out;

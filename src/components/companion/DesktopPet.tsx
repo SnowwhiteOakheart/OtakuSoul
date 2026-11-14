@@ -5,9 +5,10 @@ import { currentMonitor, getCurrentWindow, LogicalSize, PhysicalPosition } from 
 import type { PetFigure } from '../avatar/avatarStage';
 import type { HangHold } from '../avatar/hangTimeline';
 import { EAT_BITES_S, EAT_TOTAL_S, type PetEat } from '../avatar/eatTimeline';
+import type { PetHands } from '../avatar/handTimeline';
 import { StrokeDetector } from './petStroke';
 import { openGuestMenu } from './pet/PetMenu';
-import { atMouth, EAT_DWELL_MS, FEED_TIMEOUT_MS, type PetFood } from './petFood';
+import { atMouth, EAT_DWELL_MS, FEED_TIMEOUT_MS, PET_FOODS, type PetFood } from './petFood';
 import { advance, loadTimer, saveTimer, startPomodoro, startTimer, type PetTimerState } from './petTimer';
 import type { PetEvent } from '../../types/generated/PetEvent';
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
@@ -41,6 +42,8 @@ import {
   type PetMode,
   type PetRecover,
   type PetBubbleCue,
+  type PetBuild,
+  type PetFx,
   type PetSeat,
   type SeatPose,
   type TouchZone,
@@ -126,6 +129,23 @@ import { MIN_OPEN_SPAN, openArc, radialRings, radialWidth, type VisibleBox } fro
 import { lacksPetMotions, recommendedMotionPack } from '../../utils/motionPacks';
 import { PetFigureCanvas } from './pet/PetFigureCanvas';
 import { usePetWindowPhysics } from './pet/usePetWindowPhysics';
+import { usePetLife } from './pet/usePetLife';
+import { PetProps } from './pet/PetProps';
+
+/** Pointer flitting past faster than this (logical px/s) may start a chase. */
+const CHASE_SPEED = 1800;
+/** At least this long between two chases (ms). */
+const CHASE_GAP_MS = 40_000;
+/** Footprints: one per step (ms) while it walks, each fading over this long (ms). */
+const STEP_MS = 420;
+const FOOTPRINT_MS = 1600;
+
+/** The grip on a hand (dragged from it): the arm stretches up, the body dangles below. */
+function handGrab(press: { cx: number; cy: number }, framing: PetFraming): PetHang {
+  const { innerWidth: width, innerHeight: height } = window;
+  const at = { x: (press.cx - width / 2) / height, y: press.cy / height };
+  return { grip: 'hand', at, anchor: hangAnchor('hand', at, petFigureTop(framing)) };
+}
 
 /** The grip at a press (logical px in the window) and where the grabbed part then hangs (see `HangPoint`). */
 function grabbedAt(press: { cx: number; cy: number }, framing: PetFraming, drop: number): PetHang {
@@ -272,6 +292,15 @@ export const DesktopPet: React.FC = () => {
   const [recover, setRecover] = useState<PetRecover | null>(null);
   /** Eating what it was fed (VRM: the hand brings it to the mouth). */
   const [eat, setEat] = useState<PetEat | null>(null);
+  /** The hands' pose, the effect around the figure and a sandcastle beside it (see `PetProps`). */
+  const [hands, setHands] = useState<PetHands | null>(null);
+  const [fx, setFx] = useState<PetFx | null>(null);
+  const [build, setBuild] = useState<PetBuild | null>(null);
+  /** Where the head ends (share of the window) and the window's height, for the props. */
+  const [headLine, setHeadLine] = useState(0.34);
+  const [winHeight, setWinHeight] = useState(() => window.innerHeight);
+  /** Footprints on the floor (global x, physical px) while it walks. */
+  const [prints, setPrints] = useState<{ id: number; gx: number; born: number; left: number; opacity: number }[]>([]);
   /** The window's width before it widened for hanging (logical px); null when it has its own width. */
   const widenedFrom = useRef<number | null>(null);
   const modelPath = pet ? petModelPath(pet, prefs.figure) : '';
@@ -328,6 +357,10 @@ export const DesktopPet: React.FC = () => {
     holdTimer?: number;
   } | null>(null);
   const bubbleTimer = useRef<number | null>(null);
+  /** A letter (a message from the character) is carried until then. */
+  const letterTimer = useRef<number | null>(null);
+  /** The pointer's last global position and time, and when it last started a chase. */
+  const chaseRef = useRef<{ x: number; y: number; t: number; lastChase: number }>({ x: 0, y: 0, t: 0, lastChase: Number.NEGATIVE_INFINITY });
   const localGestureId = useRef(0);
 
   const {
@@ -346,6 +379,8 @@ export const DesktopPet: React.FC = () => {
     nearestWall,
     startJump,
     comeHere,
+    kickSupport,
+    windowAt,
     resizeTo,
   } = usePetWindowPhysics({
     behavior,
@@ -518,6 +553,7 @@ export const DesktopPet: React.FC = () => {
     behavior.setPose(prefs.pose);
     stageRef.current?.setFrameRate(prefs.frameRate);
     behavior.setPhysics(prefs.physics);
+    behavior.setKicks(prefs.physics && prefs.nudgeWindows);
     if (prefs.physics) void syncWindow().catch(() => {});
     // The guest only reads the switches; saving or announcing them is the pet's job.
     if (IS_GUEST_PET) return;
@@ -530,15 +566,29 @@ export const DesktopPet: React.FC = () => {
   // The cue texts follow the language without restarting the behaviour timer.
   /** Asks the main window for a model line about an event (switch on, not while talking, with a pause between). */
   const askRemark = useCallback((event: PetEvent, now: number) => {
-    if (IS_GUEST_PET || !prefsRef.current.eventRemarks || !prefsRef.current.chatBubbles || speakingRef.current) return;
+    if (IS_GUEST_PET || !prefsRef.current.eventRemarks || !prefsRef.current.chatBubbles || speakingRef.current || behavior.focused) return;
     if (now - lastRemarkAt.current < REMARK_GAP_MS) return;
     lastRemarkAt.current = now;
     void emitTo('main', PET_REMARK_EVENT, { event } satisfies PetRemark).catch(() => {});
-  }, []);
+  }, [behavior]);
   // `t` is a new function on every render; effects and callbacks that only need the current texts read it here.
   const tRef = useRef(t);
   useEffect(() => {
     tRef.current = t;
+  });
+  /** Bond, needs, greetings, the break reminder, the night and the weather (see `usePetLife`). */
+  const life = usePetLife({
+    behavior,
+    prefs,
+    characterKey: pet ? pet.characterId || pet.characterName : '',
+    away,
+    say,
+    tRef,
+    speakingRef,
+  });
+  const lifeRef = useRef(life);
+  useEffect(() => {
+    lifeRef.current = life;
   });
   /** The alarm (timer or pomodoro), kept across restarts of the pet. */
   const [alarm, setAlarm] = useState<PetTimerState | null>(loadTimer);
@@ -564,12 +614,24 @@ export const DesktopPet: React.FC = () => {
       timerRef.current = state;
       saveTimer(state);
       setAlarm(state);
-      behavior.announce(performance.now());
+      // A work phase done: it closes its book and celebrates with the user.
+      if (finished === 'work') {
+        behavior.setFocus(false, performance.now());
+        behavior.celebrate(performance.now());
+        lifeRef.current.care('pomodoro');
+      } else {
+        behavior.announce(performance.now());
+      }
       const key = finished === 'work' ? 'pet.pomodoroBreak' : finished === 'break' ? 'pet.pomodoroWork' : 'pet.timerDone';
       say(tRef.current(key), PROACTIVE_BUBBLE_MS);
     }, 2000);
     return () => window.clearInterval(check);
   }, [behavior, say]);
+  // Focus mode: in a pomodoro's work phase it sits down with a book and keeps quiet.
+  const focus = !IS_GUEST_PET && prefs.focusMode && alarm?.phase === 'work';
+  useEffect(() => {
+    behavior.setFocus(focus, performance.now());
+  }, [behavior, focus]);
   // The lights take the desktop's colours (only while shown, a second apart; off: studio colours).
   useEffect(() => {
     if (!prefs.ambientLight) {
@@ -638,7 +700,7 @@ export const DesktopPet: React.FC = () => {
     }
     const timer = window.setTimeout(() => {
       const now = performance.now();
-      if (awayRef.current || speakingRef.current || now - lastProgramAt.current < PROGRAM_GAP_MS) return;
+      if (awayRef.current || speakingRef.current || behavior.focused || now - lastProgramAt.current < PROGRAM_GAP_MS) return;
       void api
         .getPetLastApp()
         .then((app) => {
@@ -650,7 +712,7 @@ export const DesktopPet: React.FC = () => {
         .catch(() => {});
     }, PROGRAM_DWELL_MS);
     return () => window.clearTimeout(timer);
-  }, [prefs.commentPrograms, prefs.chatBubbles, screen.focus, screen.ignored, screen.locked]);
+  }, [behavior, prefs.commentPrograms, prefs.chatBubbles, screen.focus, screen.ignored, screen.locked]);
   /** The food on the pointer (null: not feeding), when it reached the mouth, and where it is drawn. */
   const feedRef = useRef<{ food: PetFood; until: number; atMouthSince: number | null } | null>(null);
   const [feedView, setFeedView] = useState<{ emoji: string; x: number; y: number } | null>(null);
@@ -675,7 +737,8 @@ export const DesktopPet: React.FC = () => {
     const feeding = feedRef.current;
     if (!feeding) return;
     stopFeeding();
-    behavior.eat(performance.now());
+    const taste = lifeRef.current.meal(feeding.food.id);
+    behavior.eat(performance.now(), taste);
     // At the mouth: just above where the head ends, a little to the figure's right hand (left on screen).
     const { innerWidth: width, innerHeight: height } = window;
     const hand = behavior.canHang;
@@ -694,7 +757,17 @@ export const DesktopPet: React.FC = () => {
     mealTimer.current = window.setTimeout(() => {
       mealTimer.current = null;
       setMeal(null);
-      if (!IS_GUEST_PET && !mealLost.current) say(tRef.current(Math.random() < 0.5 ? 'pet.eatReply1' : 'pet.eatReply2'));
+      if (IS_GUEST_PET || mealLost.current) return;
+      const pick = Math.random() < 0.5;
+      const key: TranslationKey =
+        taste === 'favorite'
+          ? pick ? 'pet.eatFavorite1' : 'pet.eatFavorite2'
+          : taste === 'disliked'
+            ? pick ? 'pet.eatDisliked1' : 'pet.eatDisliked2'
+            : taste === 'again'
+              ? 'pet.eatAgain'
+              : pick ? 'pet.eatReply1' : 'pet.eatReply2';
+      say(tRef.current(key));
     }, EAT_TOTAL_S * 1000);
     void applyHormoneInteraction('feed');
   }, [behavior, say, stopFeeding, applyHormoneInteraction, headEnd]);
@@ -707,13 +780,38 @@ export const DesktopPet: React.FC = () => {
   useEffect(() => {
     if (hang) mealLost.current = true;
   }, [hang]);
-  const cueTexts = useRef<Record<PetBubbleCue, string[]>>({ doze: [], wake: [], scrape: [], upsideDown: [] });
+  const cueTexts = useRef<Record<PetBubbleCue, string[]>>({
+    doze: [],
+    wake: [],
+    scrape: [],
+    upsideDown: [],
+    hungry: [],
+    bored: [],
+    stretch: [],
+    dizzy: [],
+    splat: [],
+    elegant: [],
+    dangle: [],
+    caught: [],
+    climbed: [],
+    kick: [],
+  });
   useEffect(() => {
     cueTexts.current = {
       doze: [t('pet.doze')],
       wake: [t('pet.wake')],
       scrape: [t('pet.scrape1'), t('pet.scrape2'), t('pet.scrape3'), t('pet.scrape4'), t('pet.scrape5')],
       upsideDown: [t('pet.upsideDown1'), t('pet.upsideDown2'), t('pet.upsideDown3')],
+      hungry: [t('pet.hungry1'), t('pet.hungry2'), t('pet.hungry3')],
+      bored: [t('pet.bored1'), t('pet.bored2'), t('pet.bored3')],
+      stretch: [t('pet.stretch1'), t('pet.stretch2')],
+      dizzy: [t('pet.dizzy1'), t('pet.dizzy2'), t('pet.dizzy3')],
+      splat: [t('pet.splat1'), t('pet.splat2')],
+      elegant: [t('pet.elegant1'), t('pet.elegant2')],
+      dangle: [t('pet.dangle1'), t('pet.dangle2'), t('pet.dangle3')],
+      caught: [t('pet.caught1'), t('pet.caught2')],
+      climbed: [t('pet.climbed1'), t('pet.climbed2')],
+      kick: [t('pet.kick1'), t('pet.kick2')],
     };
   });
 
@@ -764,6 +862,31 @@ export const DesktopPet: React.FC = () => {
       setHang(frame.hang);
       setRecover((was) => (was?.id === frame.recover?.id ? was : frame.recover));
       setEat((was) => (was?.id === frame.eat?.id ? was : frame.eat));
+      setHands((was) => (was?.id === frame.hands?.id && was?.kind === frame.hands?.kind ? was : frame.hands));
+      setFx((was) => (was?.id === frame.fx?.id ? was : frame.fx));
+      setBuild((was) => (was?.id === frame.build?.id ? was : frame.build));
+      const headNow = headEnd();
+      setHeadLine((was) => (Math.abs(was - headNow) < 0.004 ? was : headNow));
+      setWinHeight((was) => (was === window.innerHeight ? was : window.innerHeight));
+      // Footprints behind it while it walks on the floor (they stay where they were left).
+      const placedNow = windowAt();
+      setPrints((was) => {
+        if (!placedNow) return was.length ? [] : was;
+        const kept = was.filter((p) => now - p.born < FOOTPRINT_MS);
+        const last = kept[kept.length - 1];
+        const walkingNow = frame.walk !== 0 && frame.mode === 'walking' && prefsRef.current.traces;
+        if (walkingNow && (!last || now - last.born >= STEP_MS)) {
+          const middle = placedNow.x + (window.innerWidth * placedNow.scale) / 2;
+          const id = (last?.id ?? 0) + 1;
+          kept.push({ id, gx: middle + (id % 2 ? -5 : 5) * placedNow.scale, born: now, left: 0, opacity: 1 });
+        }
+        if (!kept.length) return was.length ? kept : was;
+        return kept.map((p) => ({
+          ...p,
+          left: (p.gx - placedNow.x) / placedNow.scale,
+          opacity: Math.max(0, 1 - (now - p.born) / FOOTPRINT_MS),
+        }));
+      });
       seatRef.current = frame.seat;
       sittingRef.current = frame.loop === 'sit';
       setWalkDirection(frame.walk);
@@ -790,16 +913,19 @@ export const DesktopPet: React.FC = () => {
         if (cue.kind === 'gesture') playLocalGesture(cue.role);
         else if (cue.kind === 'jump') startJump(now);
         else if (cue.kind === 'event') askRemark(cue.event, now);
+        else if (cue.kind === 'visit') void comeHere();
+        else if (cue.kind === 'kick') void kickSupport(cue.direction);
+        else if (cue.kind === 'play') lifeRef.current.care('play');
         else {
           const lines = cueTexts.current[cue.text];
           const line = lines[Math.floor(Math.random() * lines.length)];
-          // The guest only decorates: it keeps quiet.
-          if (line && !IS_GUEST_PET) say(line);
+          // The guest only decorates: it keeps quiet; in focus it reads quietly.
+          if (line && !IS_GUEST_PET && !behavior.focused) say(line);
         }
       }
     }, BEHAVIOR_TICK_MS);
     return () => window.clearInterval(timer);
-  }, [behavior, say, playLocalGesture, startJump, settleDrag, setWalkDirection, askRemark]);
+  }, [behavior, say, playLocalGesture, startJump, settleDrag, setWalkDirection, askRemark, comeHere, kickSupport, headEnd, windowAt]);
 
   // State, voice and pointer from the main window and the backend.
   useEffect(() => {
@@ -855,6 +981,14 @@ export const DesktopPet: React.FC = () => {
           setActiveSpeechTimeline(payload.text, Math.min(ms, 4500), now);
           behavior.announce(now);
           say(payload.text, ms, chat);
+          // It brings the message over like a letter, held out until it is read or the bubble goes.
+          behavior.setCarry(true);
+          if (letterTimer.current !== null) window.clearTimeout(letterTimer.current);
+          letterTimer.current = window.setTimeout(() => {
+            letterTimer.current = null;
+            behavior.setCarry(false);
+          }, ms);
+          void comeHere();
           return;
         }
         const ms = bubbleMs(payload.text);
@@ -936,7 +1070,29 @@ export const DesktopPet: React.FC = () => {
       listenOwn<PetCursor>(PET_CURSOR_EVENT, ({ payload: { x, y, inside, button, through, gx, gy, t: polledAt } }) => {
         throughRef.current = through !== false;
         recordCursorMove(gx, gy, button, polledAt);
+        const lastCursor = lastCursorRef.current;
+        if (!lastCursor || lastCursor.x !== gx || lastCursor.y !== gy) lifeRef.current.pointerMoved();
         lastCursorRef.current = { x: gx, y: gy };
+        // The pointer flits past nearby: now and then it chases it (a game; more often when bored).
+        const chase = chaseRef.current;
+        const dt = (polledAt - chase.t) / 1000;
+        const placedNow = windowAt();
+        if (dt > 0 && dt < 0.2 && placedNow && prefsRef.current.chasePointer && prefsRef.current.physics && !feedRef.current) {
+          const speed = Math.hypot(gx - chase.x, gy - chase.y) / dt / placedNow.scale;
+          const { innerWidth: w, innerHeight: h } = window;
+          const near =
+            Math.abs(gx - (placedNow.x + (w * placedNow.scale) / 2)) < w * 3 * placedNow.scale &&
+            gy > placedNow.y - h * 0.5 * placedNow.scale &&
+            gy < placedNow.y + h * 1.2 * placedNow.scale;
+          const at = performance.now();
+          if (speed > CHASE_SPEED && near && !inside && at - chase.lastChase > CHASE_GAP_MS && !overlayRef.current) {
+            chase.lastChase = at;
+            if (Math.random() < 0.35 + lifeRef.current.boredom * 0.4) void comeHere(true);
+          }
+        }
+        chase.x = gx;
+        chase.y = gy;
+        chase.t = polledAt;
         // Held by a foot: the window follows the pointer until the button is let go.
         if (footDragRef.current) {
           if (button === false || !isDragging()) footDragRef.current = null;
@@ -1016,6 +1172,7 @@ export const DesktopPet: React.FC = () => {
       void stopMoved.then((stop) => stop());
       if (bubbleTimer.current !== null) window.clearTimeout(bubbleTimer.current);
       if (sentenceTimer.current !== null) window.clearTimeout(sentenceTimer.current);
+      if (letterTimer.current !== null) window.clearTimeout(letterTimer.current);
     };
   }, [
     setIgnore,
@@ -1032,6 +1189,7 @@ export const DesktopPet: React.FC = () => {
     closeMenu,
     isDragging,
     placeFoot,
+    windowAt,
   ]);
 
   // A new bubble leans away from the nearer screen edge (where the figure stands right now).
@@ -1055,6 +1213,7 @@ export const DesktopPet: React.FC = () => {
     const chat = bubble?.chat;
     if (!chat) return;
     setBubble(null);
+    behavior.setCarry(false);
     void emitTo('main', NOTIFICATION_OPEN_CHAT_EVENT, chat).catch(() => {});
     void api.showMainWindow().catch(() => {});
   };
@@ -1087,6 +1246,7 @@ export const DesktopPet: React.FC = () => {
     const replies =
       zone === 'head' ? [t('pet.headpatReply1'), t('pet.headpatReply2')] : [t('pet.pokeReply1'), t('pet.pokeReply2')];
     if (!IS_GUEST_PET) say(replies[Math.floor(Math.random() * replies.length)]!);
+    life.care(zone === 'head' ? 'pat' : 'play');
     await applyHormoneInteraction(zone === 'head' ? 'headpat' : 'poke');
   };
 
@@ -1260,6 +1420,7 @@ export const DesktopPet: React.FC = () => {
   const highFive = async () => {
     behavior.highFive(performance.now());
     if (!IS_GUEST_PET) say(Math.random() < 0.5 ? t('pet.highFiveReply1') : t('pet.highFiveReply2'));
+    life.care('highFive');
     await applyHormoneInteraction('high_five');
   };
 
@@ -1290,6 +1451,7 @@ export const DesktopPet: React.FC = () => {
         press.holding = true;
         behavior.holdHand(performance.now());
         if (!IS_GUEST_PET) say(Math.random() < 0.5 ? t('pet.holdHandReply1') : t('pet.holdHandReply2'));
+        lifeRef.current.care('holdHand');
         void applyHormoneInteraction('hold_hand');
       }, HOLD_HAND_MS);
     }
@@ -1356,7 +1518,13 @@ export const DesktopPet: React.FC = () => {
     endPeek();
     // Where it was grabbed decides how it hangs (VRM pose): the window moves so the grabbed
     // part (drawn at `anchor`) is under the pointer before the system drag keeps that offset.
-    const held = behavior.canHang && !sittingRef.current ? grabbedAt(press, framingRef.current, seatDrop(seatRef.current)) : null;
+    // Pulled by a hand it dangles from the raised arm; elsewhere the height decides the grip.
+    const held =
+      behavior.canHang && !sittingRef.current
+        ? press.hand
+          ? handGrab(press, framingRef.current)
+          : grabbedAt(press, framingRef.current, seatDrop(seatRef.current))
+        : null;
     behavior.dragStart(now, held);
     if (held?.grip === 'feet') {
       // The pet moves the window itself; the press keeps its pointer until it is let go.
@@ -1475,6 +1643,7 @@ export const DesktopPet: React.FC = () => {
     startPeek: () => afterMenu(startPeek),
     endPeek: () => afterMenu(endPeek),
     feeding: isFeeding,
+    favoriteFood: life.favorite,
     startFeeding: (food) => afterMenu(() => startFeeding(food)),
     stopFeeding: () => afterMenu(stopFeeding),
     timer: alarm,
@@ -1489,8 +1658,30 @@ export const DesktopPet: React.FC = () => {
     askTool: (tool) => afterMenu(() => void askTool(tool)),
     openSettings: () => void openSettings(),
     openApp: () => afterMenu(() => void api.showMainWindow().catch(() => {})),
-    hide: () => void toggleDesktopPet(false),
+    hide: () =>
+      afterMenu(() => {
+        // A wave goodbye before it goes.
+        behavior.farewell(performance.now());
+        say(t(Math.random() < 0.5 ? 'pet.farewell1' : 'pet.farewell2'), 2000);
+        window.setTimeout(() => void toggleDesktopPet(false), 1400);
+      }),
   };
+  const favoriteGlyph = PET_FOODS.find((food) => food.id === life.favorite)?.emoji ?? '🍙';
+  const upright = !hang && mode !== 'dragged' && mode !== 'falling';
+  const propsLayer = pet && modelPath && (
+    <PetProps
+      headTop={petFigureTop(framing) + seatDrop(seat)}
+      headEnd={headLine}
+      feetLine={1 - PET_FEET_SHARE - framing.lift}
+      height={winHeight}
+      fx={fx}
+      hands={upright ? hands : null}
+      build={upright ? build : null}
+      nightCap={prefs.props && life.night && upright && !recover}
+      sky={prefs.props && upright ? life.sky : null}
+      foodGlyph={favoriteGlyph}
+    />
+  );
 
   return (
     <div
@@ -1519,6 +1710,8 @@ export const DesktopPet: React.FC = () => {
         hang={hang}
         recover={recover}
         eat={eat}
+        hands={hands}
+        overlay={propsLayer}
         hop={hop}
         walking={walking}
         lift={framing.lift}
@@ -1577,6 +1770,19 @@ export const DesktopPet: React.FC = () => {
         </div>
       )}
 
+      {prints.map((print) => (
+        <span
+          key={print.id}
+          aria-hidden
+          className="pet-footprint"
+          style={{
+            left: print.left - 3.5,
+            top: `calc(${(1 - PET_FEET_SHARE - framing.lift) * 100}% - 6px)`,
+            opacity: print.opacity,
+          }}
+        />
+      ))}
+
       {feedView && (
         <div
           aria-hidden
@@ -1625,6 +1831,7 @@ export const DesktopPet: React.FC = () => {
           bubble={bubble?.text ?? null}
           thought={companionState?.scratchpad?.[0]?.thought}
           hormones={companionState?.hormones}
+          bond={IS_GUEST_PET ? null : { points: life.bond.points, days: life.bond.days, hunger: life.hunger, boredom: life.boredom }}
           onClose={() => setStatusOpen(false)}
           onCompose={openCompose}
           onPat={() => void pat()}

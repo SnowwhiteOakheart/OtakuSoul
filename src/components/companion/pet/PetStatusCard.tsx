@@ -2,6 +2,7 @@ import type React from 'react';
 import { Brain, Camera, Clipboard, Flame, Heart, MessageCircle, Moon, Smile, X, Zap } from 'lucide-react';
 import type { TranslationKey } from '../../../i18n';
 import type { CompanionState } from '../../../types/generated/CompanionState';
+import { bondProgress } from '../petBond';
 
 interface PetStatusCardProps {
   characterName?: string;
@@ -9,11 +10,13 @@ interface PetStatusCardProps {
   bubble: string | null;
   thought?: string;
   hormones?: CompanionState['hormones'];
+  /** The bond with the user and its needs right now (null for the guest). */
+  bond?: { points: number; days: number; hunger: number; boredom: number } | null;
   onClose: () => void;
   onCompose: () => void;
   onPat: () => void;
   onAskTool: (tool: 'take_screenshot' | 'read_clipboard') => void;
-  t: (key: TranslationKey) => string;
+  t: (key: TranslationKey, vars?: Record<string, string | number>) => string;
   tEmotion: (emotion: string) => string;
   tOptional: (key: string, fallback: string) => string;
 }
@@ -24,6 +27,7 @@ export const PetStatusCard: React.FC<PetStatusCardProps> = ({
   bubble,
   thought,
   hormones,
+  bond = null,
   onClose,
   onCompose,
   onPat,
@@ -53,6 +57,7 @@ export const PetStatusCard: React.FC<PetStatusCardProps> = ({
       {hormones?.mood_label ? ` • ${tOptional(`mood.${hormones.mood_label}`, hormones.mood_label)}` : ''}
     </p>
     {bubble && <p className="italic text-slate-200">{bubble}</p>}
+    {bond && <BondView bond={bond} t={t} />}
     {thought && (
       <p className="flex items-start gap-1.5 text-slate-400">
         <Brain className="mt-0.5 w-3 h-3 shrink-0" aria-hidden />
@@ -114,3 +119,40 @@ export const PetStatusCard: React.FC<PetStatusCardProps> = ({
     </div>
   </div>
 );
+
+/** The bond's level with a bar to the next one, the days together, and hunger and boredom. */
+function BondView({
+  bond,
+  t,
+}: {
+  bond: { points: number; days: number; hunger: number; boredom: number };
+  t: (key: TranslationKey, vars?: Record<string, string | number>) => string;
+}) {
+  const { level, share } = bondProgress(bond.points);
+  const bar = (value: number, color: string, label: string) => (
+    <div className="flex items-center gap-1.5">
+      <span className="w-20 shrink-0 text-slate-400">{label}</span>
+      <div
+        className="h-1.5 flex-1 rounded-full bg-slate-800"
+        role="meter"
+        aria-label={label}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(value * 100)}
+      >
+        <div className={`h-full rounded-full ${color}`} style={{ width: `${Math.round(value * 100)}%` }} />
+      </div>
+    </div>
+  );
+  return (
+    <div className="space-y-1" data-pet-bond={level}>
+      <p className="text-slate-300">
+        <Heart className="mr-1 inline w-3 h-3 text-pink-400" aria-hidden />
+        {t(`pet.bondTitle${level}` as TranslationKey)} • {t('pet.bondDays', { days: bond.days })}
+      </p>
+      {bar(share, 'bg-pink-400', t('pet.bondLevel', { level }))}
+      {bar(bond.hunger, 'bg-amber-400', t('pet.needHunger'))}
+      {bar(bond.boredom, 'bg-sky-400', t('pet.needBoredom'))}
+    </div>
+  );
+}

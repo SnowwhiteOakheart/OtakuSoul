@@ -10,6 +10,7 @@ import {
   PhysicalPosition,
 } from '@tauri-apps/api/window';
 import type { PetFigure } from '../../avatar/avatarStage';
+import { api } from '../../../services/api';
 import { PET_EDGE_SINK } from '../../../services/avatarViewState';
 import {
   clampPetHeight,
@@ -39,6 +40,8 @@ import {
 
 /** A title bar this far above the pointer (physical px) still holds the dragged foot's body. */
 const FLOOR_SLACK_PX = 10;
+/** A kick moves the window it stands on this far (logical px). */
+const KICK_PX = 24;
 
 export interface DragState {
   startedAt: number;
@@ -217,9 +220,18 @@ export function usePetWindowPhysics({
         monitorScale.current,
         platforms.current,
         prefsRef.current.rideWindows,
-        { keepInside: peekRef.current === 0, peek: peekRef.current },
+        { keepInside: peekRef.current === 0, peek: peekRef.current, ledges: true },
       );
-      behavior.setGrounded(result.grounded, now);
+      // Caught a window's edge in the air: it hangs, then climbs up (before the landing logic).
+      if (result.caught) behavior.setLedge(true, now);
+      if (result.climbed) behavior.setLedge(false, now);
+      const scale = monitorScale.current;
+      if (result.wallSpeed) behavior.wallHit(now, result.wallSpeed / scale);
+      behavior.setGrounded(
+        result.grounded,
+        now,
+        result.impact ? { down: result.impact.down / scale, side: result.impact.side / scale } : null,
+      );
       behavior.setOnWindow(result.body.support !== null);
       // About once a second: is a window's edge within jumping reach?
       if (++jumpCheck % JUMP_CHECK_TICKS === 0 && result.grounded) {
@@ -287,22 +299,24 @@ export function usePetWindowPhysics({
    * its floor below the pointer; without, or when it cannot walk now, it jumps there with its
    * feet at the pointer, inside the monitor's work area.
    */
-  const comeHere = useCallback(async () => {
+  const comeHere = useCallback(async (chase = false) => {
     const cursor = lastCursor.current;
     if (!cursor || awayRef.current || drag.current || held.current) return;
     const now = performance.now();
     if (prefsRef.current.physics && body.current) {
       const dx = cursor.x - (body.current.x + windowSize.current.width / 2);
       if (Math.abs(dx) < COME_NEAR_PX * monitorScale.current) {
-        behavior.arrived(now);
+        if (!chase) behavior.arrived(now);
         return;
       }
       const direction = dx < 0 ? -1 : 1;
-      if (behavior.come(now, direction)) {
+      if (behavior.come(now, direction, chase)) {
         comeTarget.current = { x: cursor.x, direction };
         return;
       }
     }
+    // A game is only played walking.
+    if (chase) return;
     await syncWindow().catch(() => {});
     const { width, height } = windowSize.current;
     const under =
@@ -473,6 +487,30 @@ export function usePetWindowPhysics({
     held.current = on;
   }, []);
 
+  /**
+   * Gives the window it stands on a little kick (`direction` -1 left, 1 right): the backend moves
+   * that window (only when the user allowed it); the figure moves along, standing where it stood.
+   */
+  const kickSupport = useCallback(async (direction: -1 | 1): Promise<boolean> => {
+    const current = body.current;
+    const id = current?.support;
+    if (!current || !id || !prefsRef.current.nudgeWindows) return false;
+    const dx = Math.round(direction * KICK_PX * monitorScale.current);
+    const moved = await api.nudgePetWindow(id, dx).catch(() => false);
+    if (!moved || body.current !== current || current.support !== id) return moved;
+    // The scan of the windows comes later: move the edge and the figure now, so it stays on it.
+    current.x += dx;
+    if (current.edge) current.edge = { ...current.edge, left: current.edge.left + dx, right: current.edge.right + dx };
+    platforms.current = platforms.current.map((p) => (p.id === id ? { ...p, left: p.left + dx, right: p.right + dx } : p));
+    return true;
+  }, [prefsRef]);
+
+  /** Where the window stands now (physical px) and the monitor's scale; null before the physics knows. */
+  const windowAt = useCallback(
+    () => (Number.isFinite(placed.current.x) ? { x: placed.current.x, y: placed.current.y, scale: monitorScale.current } : null),
+    [],
+  );
+
   /** The side wall nearer to the figure (-1 left, 1 right); null while the physics does not know the floor. */
   const nearestWall = useCallback((): -1 | 1 | null => {
     const current = body.current;
@@ -498,6 +536,8 @@ export function usePetWindowPhysics({
     nearestWall,
     startJump,
     comeHere,
+    kickSupport,
+    windowAt,
     resizeTo,
   };
 }

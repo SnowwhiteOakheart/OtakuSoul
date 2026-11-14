@@ -4,6 +4,7 @@ import { reachWithArm } from './armReach';
 import { forFacing, type BodyPose } from './proceduralBody';
 import {
   groundAngle,
+  kittenKick,
   RECOVER_PHASES,
   swingStep,
   TOPPLE_KICK,
@@ -79,6 +80,10 @@ interface Grabbed {
   pivot: VRMHumanBoneName;
   /** The leg held by the feet ('left'/'right'), else null. */
   heldLeg: 'left' | 'right' | null;
+  /** The arm held by its hand, else null. */
+  heldArm: 'left' | 'right' | null;
+  /** Held by the collar (the neck): it curls up and kicks like a kitten. */
+  kitten: boolean;
   /** Turn on the screen that brings the body under the grip. */
   roll: number;
   /** Pendulum length, grip to the body's middle (window heights). */
@@ -216,7 +221,13 @@ export class HangRig {
     scene.quaternion.copy(this.restTurn);
     scene.updateMatrixWorld(true);
     const candidates: VRMHumanBoneName[] =
-      hang.grip === 'shoulder' ? ['neck', 'leftUpperArm', 'rightUpperArm'] : hang.grip === 'hip' ? ['hips'] : ['leftFoot', 'rightFoot'];
+      hang.grip === 'shoulder'
+        ? ['neck', 'leftUpperArm', 'rightUpperArm']
+        : hang.grip === 'hip'
+          ? ['hips']
+          : hang.grip === 'hand'
+            ? ['leftHand', 'rightHand']
+            : ['leftFoot', 'rightFoot'];
     let pivot = candidates[0]!;
     let nearest = Infinity;
     for (const name of candidates) {
@@ -229,6 +240,9 @@ export class HangRig {
         pivot = name;
       }
     }
+    // By a hand the body turns about that arm's shoulder (the arm stretched up to the hand).
+    const heldArm = pivot === 'leftHand' ? 'left' : pivot === 'rightHand' ? 'right' : null;
+    if (heldArm) pivot = `${heldArm}UpperArm`;
     // The body's middle, seen from the camera: the turn brings it straight below the grip.
     let roll = 0;
     let length = 0.25;
@@ -241,12 +255,15 @@ export class HangRig {
       const grip = pivotNode.getWorldPosition(this.c).applyMatrix4(this.camera.matrixWorldInverse);
       roll = -Math.atan2(middle.x - grip.x, grip.y - middle.y);
       length = (middle.distanceTo(grip) / this.height) * 0.8;
+      // Hanging from the hand, the arm makes the pendulum longer.
+      if (heldArm) length += (this.armLength / this.height) * 0.8;
     }
     scene.position.copy(keepPosition);
     scene.quaternion.copy(keepTurn);
     scene.updateMatrixWorld(true);
     const heldLeg = pivot === 'leftFoot' ? 'left' : pivot === 'rightFoot' ? 'right' : null;
-    return { hang, pivot, heldLeg, roll, length: Math.max(0.2, length), at: elapsed };
+    const kitten = hang.grip === 'shoulder' && pivot === 'neck';
+    return { hang, pivot, heldLeg, heldArm, kitten, roll, length: Math.max(0.2, length), at: elapsed };
   }
 
   /** Width by height of the view (the pet window widens while it hangs). */
@@ -432,7 +449,10 @@ export class HangRig {
     const kind = (hang ?? grabbed?.hang)?.grip;
     this.curl = 0;
     if (this.weight > 0.001 && kind) {
-      if (kind === 'shoulder') {
+      if (kind === 'shoulder' && grabbed?.kitten) {
+        // By the collar: curled up a little like a kitten, head down, toes pointed.
+        this.pose({ spine: [0.22, 0, 0], chest: [0.12, 0, 0], neck: [0.3, 0, 0], leftFoot: [0.5, 0, 0], rightFoot: [0.5, 0, 0] }, this.weight);
+      } else if (kind === 'shoulder' || kind === 'hand') {
         this.pose({ spine: [0.05, 0, 0], neck: [0.22, 0, 0], leftFoot: [0.45, 0, 0], rightFoot: [0.45, 0, 0] }, this.weight);
       } else if (kind === 'hip') {
         this.pose(
@@ -500,7 +520,7 @@ export class HangRig {
     this.trunkRoll += (this.roll - this.trunkRoll) * Math.min(1, dt * TRUNK_FOLLOW);
     const trail = THREE.MathUtils.clamp(this.trunkRoll - this.roll, -TRUNK_BEND, TRUNK_BEND) * this.weight;
     // Head down the head is the far end; held by the collar the hips are (bending the other way).
-    const bendSide = kind === 'feet' ? 1 : kind === 'shoulder' ? -1 : 0;
+    const bendSide = kind === 'feet' ? 1 : kind === 'shoulder' || kind === 'hand' ? -1 : 0;
     if (bendSide && Math.abs(trail) > 1e-4) {
       for (const [name, share] of TRUNK_JOINTS) {
         const node = this.bone(name);
@@ -514,7 +534,10 @@ export class HangRig {
       const pivot = this.bone(grabbed.pivot);
       if (pivot) {
         const anchor = hang.grip === 'feet' && this.hold ? this.hold.anchor : hang.anchor;
-        const wanted = this.anchorInWorld(anchor, this.c).sub(pivot.getWorldPosition(this.b));
+        const wanted = this.anchorInWorld(anchor, this.c);
+        // By a hand: the shoulder hangs an arm's length below it.
+        if (grabbed.heldArm) wanted.addScaledVector(DOWN, this.armLength * 0.95);
+        wanted.sub(pivot.getWorldPosition(this.b));
         this.offset.lerp(wanted, Math.min(1, dt * 14));
       }
     } else if (recover) {
@@ -537,9 +560,22 @@ export class HangRig {
       // Head down it paddles with its arms (and reaches up while curling); otherwise they drift.
       const since = grabbed ? elapsed - grabbed.at : 0;
       const paddle = kind === 'feet' && hang ? 0.18 * (1 - 0.6 * ramp(since, 0, TIRE_S)) : 0.04;
+      const kitten = !!grabbed?.kitten && !!hang;
+      const kick = kitten && grabbed ? kittenKick(elapsed - grabbed.at) : 0;
       for (const side of ['left', 'right'] as const) {
         const shoulder = this.bone(`${side}UpperArm`);
-        if (shoulder) {
+        if (shoulder && hang && grabbed?.heldArm === side) {
+          // The held arm reaches straight up to the hand holding it.
+          this.reach(side, 'Arm', this.anchorInWorld(hang.anchor, this.a), this.weight);
+        } else if (shoulder && kitten) {
+          // By the collar: paws held in front, batting a little while it kicks.
+          const bat = kick * 0.15 * Math.sin(elapsed * 10 + (side === 'left' ? 0 : 1.7));
+          const target = shoulder
+            .getWorldPosition(this.a)
+            .addScaledVector(this.limbDown, this.armLength * (0.55 + bat))
+            .addScaledVector(front, this.armLength * 0.5);
+          this.reach(side, 'Arm', target, this.weight);
+        } else if (shoulder) {
           const phase = side === 'left' ? 0 : 2.1;
           const forward = paddle * Math.sin(elapsed * (kind === 'feet' ? 2.7 : 1.7) + phase) + struggle * 0.1 * Math.sin(elapsed * 7 + phase);
           const target = shoulder
@@ -557,9 +593,13 @@ export class HangRig {
           const away = held ? this.b.subVectors(target, held.getWorldPosition(this.b)).setY(0).normalize() : this.b.set(0, 0, 0);
           const drop = this.d.copy(this.limbDown).addScaledVector(away, 0.6).addScaledVector(front, -0.1).normalize();
           target.addScaledVector(drop, this.legLength * 0.85);
+        } else if (kitten) {
+          // Knees drawn up, the legs pedalling in bursts.
+          const pedal = kick * 0.28 * Math.sin(elapsed * 12 + (side === 'left' ? 0 : Math.PI));
+          target.addScaledVector(this.limbDown, this.legLength * (0.66 + pedal * 0.4)).addScaledVector(front, this.legLength * (0.32 + pedal));
         } else {
-          const kick = struggle * 0.22 * Math.sin(elapsed * 9 + (side === 'left' ? 0 : Math.PI));
-          target.addScaledVector(this.limbDown, this.legLength * (0.96 - Math.abs(kick) * 0.3)).addScaledVector(front, this.legLength * kick);
+          const swingLeg = struggle * 0.22 * Math.sin(elapsed * 9 + (side === 'left' ? 0 : Math.PI));
+          target.addScaledVector(this.limbDown, this.legLength * (0.96 - Math.abs(swingLeg) * 0.3)).addScaledVector(front, this.legLength * swingLeg);
         }
         this.reach(side, 'Leg', target, this.weight);
       }

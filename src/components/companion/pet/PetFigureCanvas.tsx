@@ -7,6 +7,7 @@ import { isLive2dPath, isPortraitPath, type PetState } from '../../../services/d
 import type { GestureRequest, LoopRole } from '../../../utils/avatarGestures';
 import type { PetHang, PetMode, PetRecover, PetSeat, SeatPose } from '../petBehavior';
 import type { PetEat } from '../../avatar/eatTimeline';
+import type { PetHands } from '../../avatar/handTimeline';
 import {
   EXPRESSION_EMOTIONS,
   GltfViewer,
@@ -37,6 +38,10 @@ interface PetFigureCanvasProps {
   recover: PetRecover | null;
   /** Eating (VRM: the hand brings the food to the mouth; the others only chew). */
   eat?: PetEat | null;
+  /** What the hands do (VRM; the props layer draws what they hold for every figure). */
+  hands?: PetHands | null;
+  /** Drawn over the figure in its box (effects and props), moving with hops and the sitting drop. */
+  overlay?: React.ReactNode;
   hop: boolean;
   walking: boolean;
   lift: number;
@@ -62,6 +67,8 @@ export const PetFigureCanvas: React.FC<PetFigureCanvasProps> = ({
   hang,
   recover,
   eat = null,
+  hands = null,
+  overlay = null,
   hop,
   walking,
   lift,
@@ -162,7 +169,7 @@ export const PetFigureCanvas: React.FC<PetFigureCanvasProps> = ({
             ) : isGltfModel(modelPath) ? (
               <GltfViewer key={modelPath} {...viewerProps} />
             ) : (
-              <VrmViewer key={modelPath} {...viewerProps} eat={eat} />
+              <VrmViewer key={modelPath} {...viewerProps} eat={eat} hands={hands} />
             )}
           </Suspense>
         ) : pet ? (
@@ -174,6 +181,7 @@ export const PetFigureCanvas: React.FC<PetFigureCanvasProps> = ({
             <p className="mt-1">{noModelLabel}</p>
           </div>
         ) : null}
+        {overlay}
       </div>
     </>
   );

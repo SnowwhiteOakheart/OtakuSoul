@@ -123,6 +123,8 @@ export interface PetMenuArgs {
   startPeek: () => void;
   endPeek: () => void;
   feeding: boolean;
+  /** Its favourite food once the user found it out (marked with a heart). */
+  favoriteFood?: PetFood['id'] | null;
   startFeeding: (food: PetFood) => void;
   stopFeeding: () => void;
   timer: PetTimerState | null;
@@ -195,7 +197,10 @@ export function buildPetMenu(a: PetMenuArgs): PetMenuModel {
       children: [
         ...PET_FOODS.map((food) => ({
           id: `feed-${food.id}`,
-          label: t(`pet.food.${food.id}` as TranslationKey),
+          label:
+            food.id === a.favoriteFood
+              ? t('pet.foodFavorite', { food: t(`pet.food.${food.id}` as TranslationKey) })
+              : t(`pet.food.${food.id}` as TranslationKey),
           glyph: food.emoji,
           action: () => a.startFeeding(food),
         })),
@@ -322,6 +327,21 @@ export function buildPetMenu(a: PetMenuArgs): PetMenuModel {
         toggle('eventRemarks', 'pet.eventRemarks'),
         toggle('commentPrograms', 'pet.commentPrograms'),
         toggle('desktopLipSync', 'pet.desktopLipSync'),
+      ],
+    },
+    {
+      id: 'life',
+      title: t('pet.groupLife'),
+      items: [
+        toggle('needs', 'pet.needsPref'),
+        toggle('breakReminder', 'pet.breakReminder'),
+        toggle('focusMode', 'pet.focusMode'),
+        toggle('chasePointer', 'pet.chasePointer', prefs.physics),
+        toggle('props', 'pet.propsPref'),
+        toggle('traces', 'pet.traces'),
+        // The place for the weather is typed in the app's Desktop-Pet tab.
+        toggle('weather', 'pet.weather', prefs.weatherCity.trim().length > 0),
+        toggle('nudgeWindows', 'pet.nudgeWindows', prefs.physics),
       ],
     },
     {

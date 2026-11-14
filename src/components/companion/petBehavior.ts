@@ -3,6 +3,7 @@ import type { PetPose } from '../../services/desktopPet';
 import { withoutEmotionTag } from '../../utils/replyTags';
 import type { PetEvent } from '../../types/generated/PetEvent';
 import { EAT_TOTAL_S, eatMouth, type PetEat } from '../avatar/eatTimeline';
+import { HAND_POSE_S, type HandPoseKind, type PetHands } from '../avatar/handTimeline';
 import {
   EDGE_SEAT_POSES,
   FLOOR_SEAT_POSES,
@@ -32,7 +33,19 @@ import {
  */
 export type PetMode = 'idle' | 'walking' | 'sitting' | 'falling' | 'dozing' | 'reacting' | 'dragged' | 'talking';
 
-export type PetAction = 'lookAround' | 'yawn' | 'hop' | 'wave' | 'think' | 'nod' | 'walk' | 'sit' | 'sitFloor' | 'jump';
+export type PetAction =
+  | 'lookAround'
+  | 'yawn'
+  | 'hop'
+  | 'wave'
+  | 'think'
+  | 'nod'
+  | 'walk'
+  | 'sit'
+  | 'sitFloor'
+  | 'jump'
+  | 'visit'
+  | 'kick';
 
 export interface Gaze {
   x: number;
@@ -68,6 +81,24 @@ export interface PetFrame {
   recover: PetRecover | null;
   /** Eating what it was fed (see `eatTimeline.ts`); a new `id` starts it again. */
   eat: PetEat | null;
+  /** What the hands do (VRM; see `handTimeline.ts`); the pet window draws what they hold. */
+  hands: PetHands | null;
+  /** A small effect around the figure (hearts, stars, a thought …); a new `id` starts it again. */
+  fx: PetFx | null;
+  /** Building a sandcastle beside itself while it sits on the ground; a new `id` starts one. */
+  build: PetBuild | null;
+}
+
+/** Effects drawn around the figure by the pet window (every model format). */
+export type PetFxKind = 'hearts' | 'dizzy' | 'sparkle' | 'confetti' | 'thinkFood' | 'thinkPlay';
+export interface PetFx {
+  kind: PetFxKind;
+  id: number;
+}
+export interface PetBuild {
+  id: number;
+  /** Which side of the figure (-1 left, 1 right on screen). */
+  side: -1 | 1;
 }
 
 export type PetSeat = 'floor' | 'edge';
@@ -121,7 +152,21 @@ export const HOLD_HAND_MS = 450;
  * Lines the behaviour asks for (the caller picks the words): dozing off, waking up, being dragged
  * over the floor by a foot, hanging head down for a while.
  */
-export type PetBubbleCue = 'doze' | 'wake' | 'scrape' | 'upsideDown';
+export type PetBubbleCue =
+  | 'doze'
+  | 'wake'
+  | 'scrape'
+  | 'upsideDown'
+  | 'hungry'
+  | 'bored'
+  | 'stretch'
+  | 'dizzy'
+  | 'splat'
+  | 'elegant'
+  | 'dangle'
+  | 'caught'
+  | 'climbed'
+  | 'kick';
 
 /** Dragged over the floor it complains again after this long (ms, random within). */
 export const SCRAPE_GAP_MS: [number, number] = [3500, 6500];
@@ -134,7 +179,30 @@ export type PetCue =
   /** Jump to a nearby window's edge; the caller plans it and reports back with `jumped`. */
   | { kind: 'jump' }
   /** Something happened to the figure that it may comment on (the caller decides whether and how often). */
-  | { kind: 'event'; event: PetEvent };
+  | { kind: 'event'; event: PetEvent }
+  /** Fond of the user: it walks over to the pointer by itself (the caller walks it, see `come`). */
+  | { kind: 'visit' }
+  /** Standing on a window it gives it a little kick (the caller moves that window, if allowed). */
+  | { kind: 'kick'; direction: -1 | 1 }
+  /** It played with the user (caught the pointer): counts for the bond. */
+  | { kind: 'play' };
+
+/** Landing this fast (logical px/s, down) it is dazed: stars over the head, sitting a while. */
+export const HARD_LANDING = 1700;
+/** Hitting a screen side this fast in the air (logical px/s) it squashes against it. */
+export const WALL_SPLAT = 1300;
+/** Thrown sideways at least this fast and landing softly, it lands with a flourish. */
+export const ELEGANT_SIDE = 350;
+/** How long the stars circle after a hard hit (ms). */
+const DIZZY_MS = 3200;
+/** Held by the collar or a hand this long, it says something about it (once per grab). */
+export const DANGLE_SAY_MS = 2000;
+/** Chasing the pointer gives up after this long. */
+const CHASE_MS = 4500;
+/** How a meal went down (see `petBond.ts`): its favourite, not its thing, the same again, fine. */
+export type MealTaste = 'favorite' | 'disliked' | 'again' | 'fine';
+/** A sandcastle takes this long (it sits at least this long when it builds one). */
+export const BUILD_MS = 14_000;
 
 /** Without pointer movement this long, the figure dozes off (shorter when tired or at night). */
 export const DOZE_AFTER_MS = 3 * 60_000;
@@ -158,6 +226,8 @@ export { isNightHour } from '../../utils/dayTime';
 const above = (value: number) => Math.min(1, Math.max(0, (value - 50) / 50));
 /** 0.2 at the bottom of the scale, 1 at neutral, 1.8 at the top. */
 const lift = (value: number) => Math.min(1.8, Math.max(0.2, 1 + ((value - 50) / 50) * 0.8));
+/** From this bond level on it comes over by itself now and then (see `petBond.ts`). */
+const VISIT_AFFECTION = 3;
 /** Without pointer movement this long, the figure looks around on its own. */
 const LOOK_AROUND_AFTER_MS = 4000;
 /** Pause between two actions. */
@@ -189,6 +259,8 @@ const DURATION: Record<PetAction, number> = {
   sit: SIT_MS[0],
   sitFloor: SIT_MS[0],
   jump: 400,
+  visit: 400,
+  kick: 900,
 };
 
 interface RunningAction {
@@ -201,6 +273,10 @@ interface RunningAction {
   direction?: -1 | 1;
   /** A walk to the pointer ("Komm her"), ended by `arrived`. */
   come?: boolean;
+  /** That walk is chasing the pointer (a game): caught at the end. */
+  chase?: boolean;
+  /** Sitting on the ground it builds a sandcastle. */
+  build?: PetBuild;
 }
 
 export class PetBehavior {
@@ -252,7 +328,7 @@ export class PetBehavior {
   private fallStart = 0;
   private recovering: (PetRecover & { start: number }) | null = null;
   /** Eating right now (since `start`), and the last meal's number. */
-  private eating: (PetEat & { start: number }) | null = null;
+  private eating: (PetEat & { start: number; taste: MealTaste }) | null = null;
   private eatId = 0;
   /** Held by a foot near the floor (lying or at an angle) and when it last moved along it. */
   private groundDrag = false;
@@ -262,6 +338,31 @@ export class PetBehavior {
   private upsideSince: number | null = null;
   private upsideSaid = false;
   private recoverId = 0;
+  /** Since when it is held up (for saying something while dangling), and whether it said it. */
+  private dragSince = 0;
+  private dangleSaid = false;
+  /** A timed hand pose (stretch, belly, ledge) and the held ones (letter, book) with their ids. */
+  private handPose: (PetHands & { start: number }) | null = null;
+  private handId = 0;
+  private carryId: number | null = null;
+  private readId: number | null = null;
+  /** The effect showing, until when. */
+  private fx: (PetFx & { until: number }) | null = null;
+  private fxId = 0;
+  private buildId = 0;
+  /** Bond level with the user (0…5, see `petBond.ts`): fonder figures wave, visit and glow more. */
+  private affection = 0;
+  /** Pomodoro focus: it sits down with a book, no other idle actions, no dozing. */
+  private focus = false;
+  /** May kick the window it stands on (the user allowed moving windows). */
+  private kicks = false;
+  /** Sandcastles allowed, and how bored it is (0…1): bored, it builds more often. */
+  private builds = true;
+  private boredom = 0;
+  /** Hit hard: the stars circle until then. */
+  private dizzyUntil = 0;
+  /** Hanging from a window's edge it caught (then pulling itself up). */
+  private onLedge = false;
 
   constructor(
     now: number,
@@ -292,6 +393,174 @@ export class PetBehavior {
     this.nextActionAt = Math.max(this.nextActionAt, now + ms + this.gap());
   }
 
+  /** Starts a hand pose with an end (stretching, the belly, the ledge). */
+  private startHands(now: number, kind: HandPoseKind) {
+    this.handId += 1;
+    this.handPose = { kind, id: this.handId, start: now };
+  }
+
+  /** Shows an effect for `ms`. */
+  private showFx(now: number, kind: PetFxKind, ms: number) {
+    this.fxId += 1;
+    this.fx = { kind, id: this.fxId, until: now + ms };
+  }
+
+  /** Bond level with the user (see `petBond.ts`). */
+  setAffection(level: number) {
+    this.affection = Math.max(0, Math.min(5, level));
+  }
+
+  /** The bond grew a level: delighted, a hop, hearts. */
+  levelUp(now: number) {
+    if (this.mode === 'dozing') this.mode = 'idle';
+    if (this.mode === 'dragged' || this.mode === 'falling') return;
+    this.react(now, 'happy', 1800, { x: 0, y: 0.1 });
+    this.hopUntil = now + HOP_MS;
+    this.showFx(now, 'hearts', 2600);
+    this.cues.push({ kind: 'gesture', role: 'happy' });
+  }
+
+  /**
+   * The user is (back) here: it wakes, waves and hops; fond of the user (`warm`) hearts go up.
+   * The caller says the words (morning, back after a while …).
+   */
+  greet(now: number, warm: boolean) {
+    this.lastPointer = now;
+    if (this.mode === 'dozing') this.mode = 'idle';
+    if (this.mode === 'dragged' || this.mode === 'falling' || this.onLedge) return;
+    this.react(now, 'happy', 1800, { x: 0, y: 0.1 });
+    this.hopUntil = now + HOP_MS;
+    this.cues.push({ kind: 'gesture', role: 'greeting' });
+    if (warm) this.showFx(now, 'hearts', 2400);
+  }
+
+  /** Going away (the pet is hidden): a wave goodbye. */
+  farewell(now: number) {
+    if (this.mode === 'dozing') this.mode = 'idle';
+    this.react(now, 'happy', 1500, { x: 0, y: 0.1 });
+    this.cues.push({ kind: 'gesture', role: 'greeting' });
+  }
+
+  /** A pomodoro phase or timer is done: delighted, a hop and confetti. */
+  celebrate(now: number) {
+    this.lastPointer = now;
+    if (this.mode === 'dozing') this.mode = 'idle';
+    if (this.mode === 'dragged' || this.mode === 'falling' || this.onLedge) return;
+    this.react(now, 'happy', 1800, { x: 0, y: 0.1 });
+    this.hopUntil = now + HOP_MS;
+    this.showFx(now, 'confetti', 2400);
+    this.cues.push({ kind: 'gesture', role: 'happy' });
+  }
+
+  /**
+   * Hungry or bored: a hint now and then – it looks over, rubs its belly or thinks of playing
+   * (never sad, nothing is taken away). Only when it is idle; false when it could not now.
+   */
+  hint(now: number, need: 'hunger' | 'boredom'): boolean {
+    if (this.mode !== 'idle' || this.attending || this.focus || this.peeking || this.action?.come) return false;
+    this.react(now, need === 'hunger' ? 'relaxed' : 'neutral', 3200, { x: 0, y: 0.15 });
+    if (need === 'hunger') this.startHands(now, 'belly');
+    else this.hopUntil = now + HOP_MS;
+    this.showFx(now, need === 'hunger' ? 'thinkFood' : 'thinkPlay', 3600);
+    this.cues.push({ kind: 'bubble', text: need === 'hunger' ? 'hungry' : 'bored' });
+    return true;
+  }
+
+  /** Long at the computer: it stretches demonstratively (the caller suggests a break). */
+  stretch(now: number): boolean {
+    if ((this.mode !== 'idle' && this.mode !== 'dozing') || this.attending || this.focus) return false;
+    this.mode = 'idle';
+    this.lastPointer = now;
+    this.react(now, 'relaxed', HAND_POSE_S.stretch * 1000, { x: 0, y: 0.45 });
+    this.startHands(now, 'stretch');
+    this.cues.push({ kind: 'bubble', text: 'stretch' });
+    return true;
+  }
+
+  /**
+   * Pomodoro focus on or off: it sits down (on the ground or an edge, when it can) and reads,
+   * starts nothing else and does not doze off; standing figures just hold the book.
+   */
+  setFocus(on: boolean, now = 0) {
+    if (on === this.focus) return;
+    this.focus = on;
+    if (on) {
+      this.handId += 1;
+      this.readId = this.handId;
+      if (!this.action?.come) this.action = null;
+      this.nextActionAt = now;
+    } else {
+      this.readId = null;
+      if (this.action?.kind === 'sitFloor' || this.action?.kind === 'sit') this.action = null;
+      this.nextActionAt = Math.max(this.nextActionAt, now + this.gap());
+    }
+  }
+
+  /** In focus right now (the caller keeps quiet then). */
+  get focused() {
+    return this.focus;
+  }
+
+  /** Carrying a letter (a message from the character): holds it out until the caller is done. */
+  setCarry(on: boolean) {
+    if (on && this.carryId === null) {
+      this.handId += 1;
+      this.carryId = this.handId;
+    } else if (!on) {
+      this.carryId = null;
+    }
+  }
+
+  /** Whether it may kick the window it stands on (the user allowed moving windows). */
+  setKicks(on: boolean) {
+    this.kicks = on;
+  }
+
+  /** Traces on (sandcastles), and how bored it is (0…1): bored, it builds more often. */
+  setTraces(on: boolean, boredom = 0) {
+    this.builds = on;
+    this.boredom = boredom;
+  }
+
+  /**
+   * Hit a screen side flying (thrown): squashed, stars circle. `speed`: logical px/s sideways.
+   * Still in the air afterwards, it lands dazed.
+   */
+  wallHit(now: number, speed: number) {
+    if (speed < WALL_SPLAT || this.mode !== 'falling' || this.leaping) return;
+    this.dizzyUntil = now + DIZZY_MS;
+    this.showFx(now, 'dizzy', DIZZY_MS);
+    this.cues.push({ kind: 'bubble', text: 'splat' });
+  }
+
+  /**
+   * Caught a window's edge in the air: it hangs by its hands, then pulls itself up (the physics
+   * moves the window, see `petPhysics.ts`); `false` once it stands on the edge.
+   */
+  setLedge(on: boolean, now: number) {
+    if (on === this.onLedge) return;
+    this.onLedge = on;
+    if (on) {
+      this.leaping = false;
+      this.mode = 'reacting';
+      this.modeUntil = Number.POSITIVE_INFINITY;
+      this.reactExpression = 'surprised';
+      this.reactGaze = { x: 0, y: 0.5 };
+      this.action = null;
+      this.startHands(now, 'ledge');
+    } else {
+      this.handPose = null;
+      this.react(now, 'happy', 1200, { x: 0, y: 0.1 });
+      this.cues.push({ kind: 'bubble', text: 'climbed' });
+      this.cues.push({ kind: 'gesture', role: 'happy' });
+    }
+  }
+
+  /** On a window's edge it caught right now. */
+  get ledge() {
+    return this.onLedge;
+  }
+
   /** The pointer moved somewhere on the desktop. */
   pointer(now: number) {
     this.lastPointer = now;
@@ -319,6 +588,10 @@ export class PetBehavior {
     this.nextScrapeAt = 0;
     this.upsideSince = null;
     this.upsideSaid = false;
+    this.dragSince = now;
+    this.dangleSaid = false;
+    this.onLedge = false;
+    this.handPose = null;
   }
 
   /**
@@ -388,6 +661,8 @@ export class PetBehavior {
     if (zone === 'head') {
       this.react(now, 'blush', 2200, { x: 0, y: -0.35 });
       this.cues.push({ kind: 'gesture', role: 'happy' });
+      // Fond of the user, little hearts go up.
+      if (this.affection >= 4) this.showFx(now, 'hearts', 2000);
     } else {
       this.react(now, 'surprised', 900);
       this.hopUntil = now + HOP_MS;
@@ -416,11 +691,11 @@ export class PetBehavior {
    * Fed something: it brings it to its mouth, takes three bites and chews (`eatTimeline.ts`),
    * looking at it contentedly; when it is finished it is delighted (a hop and a happy gesture).
    */
-  eat(now: number) {
+  eat(now: number, taste: MealTaste = 'fine') {
     this.lastPointer = now;
     if (this.mode === 'dozing') this.mode = 'idle';
     this.eatId += 1;
-    this.eating = { id: this.eatId, start: now };
+    this.eating = { id: this.eatId, start: now, taste };
     this.react(now, 'relaxed', EAT_TOTAL_S * 1000, { x: 0, y: -0.25 });
   }
 
@@ -503,8 +778,12 @@ export class PetBehavior {
     }
   }
 
-  /** Floor contact from the physics: leaving it starts a fall, touching it again is a landing. */
-  setGrounded(grounded: boolean, now: number) {
+  /**
+   * Floor contact from the physics: leaving it starts a fall, touching it again is a landing.
+   * `impact`: the speeds it came down with (logical px/s; `down` falling, `side` sideways): hard
+   * it is dazed, thrown sideways and soft it lands with a flourish.
+   */
+  setGrounded(grounded: boolean, now: number, impact: { down: number; side: number } | null = null) {
     if (!this.physics) return;
     const was = this.grounded;
     this.grounded = grounded;
@@ -519,13 +798,42 @@ export class PetBehavior {
       } else if (this.landFromHang(now, now - this.fallStart)) {
         // The landing is the pose's (no hop, no landing motion over it).
         this.cues.push({ kind: 'event', event: 'landed' });
+        if ((impact && impact.down >= HARD_LANDING) || now < this.dizzyUntil) this.showFx(now, 'dizzy', DIZZY_MS);
         return;
+      } else if ((impact && impact.down >= HARD_LANDING) || now < this.dizzyUntil) {
+        // Dazed: it sits where it landed rubbing its head (VRM), stars circling.
+        this.landDazed(now);
+        this.cues.push({ kind: 'event', event: 'landed' });
+        return;
+      } else if (impact && impact.side >= ELEGANT_SIDE) {
+        // Thrown and landed softly: a little flourish, as if it meant to.
+        this.react(now, 'happy', 1100, { x: 0, y: 0.1 });
+        this.showFx(now, 'sparkle', 1400);
+        if (this.random() < 0.5) this.cues.push({ kind: 'bubble', text: 'elegant' });
       } else {
         this.react(now, 'surprised', 700);
         this.hopUntil = now + HOP_MS;
         this.cues.push({ kind: 'event', event: 'landed' });
       }
       this.cues.push({ kind: 'gesture', role: 'land' });
+    }
+  }
+
+  /** A hard landing: stars, and (VRM) sitting up rubbing its head; others look miserable a moment. */
+  private landDazed(now: number) {
+    this.hang = null;
+    this.releasedAt = null;
+    this.dizzyUntil = Math.max(this.dizzyUntil, now + DIZZY_MS);
+    this.showFx(now, 'dizzy', DIZZY_MS);
+    this.cues.push({ kind: 'bubble', text: 'dizzy' });
+    if (this.floorSit) {
+      this.recoverId += 1;
+      this.recovering = { kind: 'back', id: this.recoverId, start: now };
+      this.sitSide = this.random() < 0.5 ? -1 : 1;
+      this.pickSeatPose(now);
+      this.react(now, 'sad', RECOVER_MS('back'));
+    } else {
+      this.react(now, 'sad', DIZZY_MS);
     }
   }
 
@@ -598,12 +906,14 @@ export class PetBehavior {
    * "Komm her": walks that way until `arrived` (with physics, standing). Returns false when it
    * cannot walk now (dragged, falling, physics off); the caller then moves it otherwise.
    */
-  come(now: number, direction: -1 | 1): boolean {
+  come(now: number, direction: -1 | 1, chase = false): boolean {
+    if (!this.physics || !this.grounded || this.mode === 'dragged' || this.mode === 'falling' || this.onLedge) return false;
+    // A game needs a free figure: not while it eats, gets up, reads or is busy otherwise.
+    if (chase && (this.mode !== 'idle' || this.focus || this.peeking || this.attending || this.action?.come)) return false;
     this.lastPointer = now;
-    if (!this.physics || !this.grounded || this.mode === 'dragged' || this.mode === 'falling') return false;
     this.mode = 'idle';
     this.talkUntil = 0;
-    this.action = { kind: 'walk', start: now, end: now + COME_MS, direction, come: true };
+    this.action = { kind: 'walk', start: now, end: now + (chase ? CHASE_MS : COME_MS), direction, come: true, chase };
     return true;
   }
 
@@ -612,9 +922,19 @@ export class PetBehavior {
     return !!this.action?.come;
   }
 
-  /** At the pointer (or there by a jump): ends the walk with a hop and a wave. */
+  /** At the pointer (or there by a jump): ends the walk with a hop and a wave (caught it, in a chase). */
   arrived(now: number) {
     this.lastPointer = now;
+    if (this.action?.chase) {
+      this.action = null;
+      this.react(now, 'happy', 1300, { x: 0, y: 0.2 });
+      this.hopUntil = now + HOP_MS;
+      this.cues.push({ kind: 'bubble', text: 'caught' });
+      this.cues.push({ kind: 'gesture', role: 'happy' });
+      this.cues.push({ kind: 'play' });
+      this.nextActionAt = now + this.gap();
+      return;
+    }
     if (this.action?.come) this.action = null;
     if (this.mode === 'dozing') this.mode = 'idle';
     this.nextActionAt = now + this.gap();
@@ -628,14 +948,15 @@ export class PetBehavior {
     // Tiredness yawns more, dopamine hops and walks more, cortisol looks around restlessly; at
     // night the figure yawns more and stays calm (few hops, waves and walks).
     const { fatigue, dopamine, cortisol, night } = this.drive;
-    const lively = lift(dopamine) * (night ? 0.4 : 1);
+    // Fond of the user it is livelier and waves more.
+    const lively = lift(dopamine) * (night ? 0.4 : 1) * (1 + this.affection * 0.08);
     // A posture chosen in the menu: no walking or sitting by itself.
     const free = this.pose === 'auto' && !this.peeking;
     const weights: [PetAction, number][] = [
       ['lookAround', pointerIdle ? 35 * (1 + above(cortisol) * 1.5) : 0],
       ['yawn', (now - this.lastPointer > 60_000 ? 25 : 10) * (1 + above(fatigue) * 2 + (night ? 1 : 0))],
       ['hop', 15 * lively],
-      ['wave', 10 * (night ? 0.4 : 1)],
+      ['wave', 10 * (night ? 0.4 : 1) * (1 + this.affection * 0.15)],
       ['think', 15],
       ['nod', 10],
       ['walk', free && this.physics && this.grounded ? 30 * lively : 0],
@@ -644,6 +965,9 @@ export class PetBehavior {
       // … on the ground with the knees drawn up (own pose), more often when tired.
       ['sitFloor', free && this.grounded && this.floorSit && !this.onWindow ? 14 * (1 + above(fatigue)) : 0],
       ['jump', free && this.physics && this.grounded && this.canJump ? 18 : 0],
+      // Fond of the user, it now and then comes over by itself.
+      ['visit', free && this.physics && this.grounded && this.affection >= VISIT_AFFECTION ? 4 + (this.affection - VISIT_AFFECTION) * 3 : 0],
+      ['kick', free && this.physics && this.onWindow && this.kicks ? 6 : 0],
     ];
     const total = weights.reduce((sum, [, w]) => sum + w, 0);
     let pick = this.random() * total;
@@ -657,6 +981,18 @@ export class PetBehavior {
       action.end = now + SIT_MS[0] + this.random() * (SIT_MS[1] - SIT_MS[0]);
       this.sitSide = this.random() < 0.5 ? -1 : 1;
       this.pickSeatPose(now);
+    }
+    // Sitting on the ground it sometimes builds a sandcastle (more often when it is bored).
+    if (kind === 'sitFloor' && this.builds && this.random() < 0.35 + this.boredom * 0.4) {
+      this.buildId += 1;
+      action.build = { id: this.buildId, side: this.sitSide === 1 ? -1 : 1 };
+      action.end = Math.max(action.end, now + BUILD_MS + 6000);
+    }
+    if (kind === 'visit') this.cues.push({ kind: 'visit' });
+    if (kind === 'kick') {
+      this.hopUntil = now + HOP_MS;
+      this.cues.push({ kind: 'kick', direction: this.random() < 0.5 ? -1 : 1 });
+      this.cues.push({ kind: 'bubble', text: 'kick' });
     }
     if (kind === 'lookAround') {
       const side = this.random() < 0.5 ? -1 : 1;
@@ -677,7 +1013,10 @@ export class PetBehavior {
   private actionFrame(now: number): Pick<PetFrame, 'expression' | 'gaze' | 'mouth'> {
     const action = this.action;
     if (!action) return { expression: null, gaze: null, mouth: 0 };
-    if (action.kind === 'walk') return { expression: null, gaze: { x: action.direction! * 0.5, y: -0.1 }, mouth: 0 };
+    if (action.kind === 'walk') {
+      // Chasing the pointer it is having fun.
+      return { expression: action.chase ? 'happy' : null, gaze: { x: action.direction! * 0.5, y: -0.1 }, mouth: 0 };
+    }
     const t = Math.min(1, (now - action.start) / (action.end - action.start));
     switch (action.kind) {
       case 'lookAround':
@@ -688,6 +1027,8 @@ export class PetBehavior {
         return { expression: 'neutral', gaze: { x: 0.45, y: 0.55 }, mouth: 0 };
       case 'wave':
         return { expression: 'happy', gaze: null, mouth: 0 };
+      case 'kick':
+        return { expression: 'happy', gaze: { x: 0, y: -0.5 }, mouth: 0 };
       default:
         return { expression: null, gaze: null, mouth: 0 };
     }
@@ -745,6 +1086,27 @@ export class PetBehavior {
     return { expression: 'relaxed', gaze: null, recover, turn };
   }
 
+  /** Focus started (or it got up): sit down where it stands to read, if it can sit there. */
+  private sitToRead(now: number) {
+    const canEdge = this.physics && this.onWindow && (this.sitMotion || this.floorSit);
+    const canFloor = this.grounded && this.floorSit && !this.onWindow;
+    if (!canEdge && !canFloor) return;
+    this.sitSide = this.random() < 0.5 ? -1 : 1;
+    this.pickSeatPose(now);
+    this.action = { kind: canEdge ? 'sit' : 'sitFloor', start: now, end: Number.POSITIVE_INFINITY };
+  }
+
+  /** The hands: a timed pose first, else a letter held out, else the book in focus. */
+  private handsFrame(frame: PetFrame): PetHands | null {
+    if (frame.hang || frame.recover || frame.eat) return null;
+    if (this.handPose) return { kind: this.handPose.kind, id: this.handPose.id };
+    if (this.carryId !== null && frame.mode !== 'dragged' && frame.mode !== 'falling') return { kind: 'carry', id: this.carryId };
+    if (this.readId !== null && frame.mode !== 'dragged' && frame.mode !== 'falling' && frame.mode !== 'walking') {
+      return { kind: 'read', id: this.readId };
+    }
+    return null;
+  }
+
   /** Advances to `now` and returns the frame plus the one-time cues since the last tick. */
   tick(now: number): { frame: PetFrame; cues: PetCue[] } {
     // Let go near the ground (no fall): it still drops out of the hanging pose.
@@ -757,15 +1119,23 @@ export class PetBehavior {
     if (eating && now >= eating.start + EAT_TOTAL_S * 1000) {
       this.eating = null;
       if (this.mode === 'reacting') {
-        this.react(now, 'happy', 1200, { x: 0, y: 0.1 });
-        this.hopUntil = now + HOP_MS;
-        this.cues.push({ kind: 'gesture', role: 'happy' });
+        if (eating.taste === 'disliked') {
+          // Not its thing: a pulled face, no hop.
+          this.react(now, 'sad', 1300, { x: 0, y: -0.1 });
+        } else if (eating.taste === 'again') {
+          this.react(now, 'relaxed', 1000, { x: 0, y: 0.1 });
+        } else {
+          this.react(now, 'happy', eating.taste === 'favorite' ? 1800 : 1200, { x: 0, y: 0.1 });
+          this.hopUntil = now + HOP_MS;
+          this.cues.push({ kind: 'gesture', role: 'happy' });
+          if (eating.taste === 'favorite') this.showFx(now, 'hearts', 2400);
+        }
       }
     }
     if (this.mode === 'reacting' && now >= this.modeUntil) this.mode = 'idle';
     const talking = this.speaking || now < this.talkUntil;
     if (this.mode === 'idle' || this.mode === 'talking') this.mode = talking ? 'talking' : 'idle';
-    if (this.mode === 'idle' && now - this.lastPointer > this.dozeAfter()) {
+    if (this.mode === 'idle' && !this.focus && now - this.lastPointer > this.dozeAfter()) {
       this.mode = 'dozing';
       this.action = null;
       this.cues.push({ kind: 'bubble', text: 'doze' });
@@ -777,9 +1147,21 @@ export class PetBehavior {
     }
     if (this.mode !== 'idle') {
       this.action = null;
+    } else if (this.focus) {
+      // Focus: it sits down to read (where it can) and starts nothing else.
+      if (!this.action && !this.attending) this.sitToRead(now);
     } else if (!this.action && this.idleActions && !this.saving && !this.attending && now >= this.nextActionAt) {
       this.startAction(now);
     }
+    // Held by the collar or a hand a while: it says so (once per grab).
+    if (this.mode === 'dragged' && !this.dangleSaid && (this.hang?.grip === 'shoulder' || this.hang?.grip === 'hand')) {
+      if (now - this.dragSince >= DANGLE_SAY_MS) {
+        this.dangleSaid = true;
+        this.cues.push({ kind: 'bubble', text: 'dangle' });
+      }
+    }
+    if (this.handPose && now >= this.handPose.start + HAND_POSE_S[this.handPose.kind] * 1000) this.handPose = null;
+    if (this.fx && now >= this.fx.until) this.fx = null;
 
     const still = {
       mouth: 0,
@@ -792,6 +1174,9 @@ export class PetBehavior {
       hang: null,
       recover: null,
       eat: null,
+      hands: null,
+      fx: null,
+      build: null,
     };
     const kept = this.keptSeat;
     let frame: PetFrame;
@@ -852,6 +1237,13 @@ export class PetBehavior {
       }
     }
     this.dancingNow = frame.loop === 'dance';
+    // Hanging from a ledge the legs dangle (the falling loop, where the figure has one).
+    if (this.onLedge) frame.loop = 'fall';
+    frame.hands = this.handsFrame(frame);
+    frame.fx = this.fx ? { kind: this.fx.kind, id: this.fx.id } : null;
+    frame.build = this.mode === 'idle' && this.action?.kind === 'sitFloor' ? (this.action.build ?? null) : null;
+    // Dazed in the air (squashed against a side): it looks miserable while it falls.
+    if (this.mode === 'falling' && now < this.dizzyUntil) frame.expression = 'sad';
     // Eating: the same mouth path as a yawn chews; the viewer brings the food to the mouth.
     if (this.eating && this.mode === 'reacting') {
       frame.eat = this.eating;

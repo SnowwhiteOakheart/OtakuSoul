@@ -114,6 +114,15 @@ describe('pet menu model', () => {
     ambientLight: false,
     desktopLipSync: false,
     ignoredApps: ['game.exe'],
+    needs: true,
+    breakReminder: true,
+    focusMode: true,
+    chasePointer: true,
+    props: true,
+    traces: true,
+    weather: false,
+    weatherCity: '',
+    nudgeWindows: false,
   } satisfies PetPrefs;
   const args = (setPrefs = vi.fn()): PetMenuArgs => ({
     pet: null,

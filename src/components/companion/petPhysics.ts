@@ -6,6 +6,8 @@
  * closes or gets covered there, the pet falls – or, with `ride`, moves along with the window.
  * Speeds are logical pixels, scaled to the monitor.
  */
+import { climbLift, CLIMB_TOTAL_S } from '../avatar/handTimeline';
+
 export interface Rect {
   x: number;
   y: number;
@@ -32,6 +34,8 @@ export interface Body {
   support: string | null;
   /** That window's edge as last seen, to follow it when it moves (riding). */
   edge: { left: number; right: number; y: number } | null;
+  /** Hanging from a window's edge it caught in the air, and since when (s); then it climbs up. */
+  ledge?: { id: string; t: number } | null;
 }
 
 export interface StepResult {
@@ -42,7 +46,23 @@ export interface StepResult {
   landed: boolean;
   /** Ran into a wall or the end of a window: -1 left, 1 right, 0 none. */
   wall: -1 | 0 | 1;
+  /** Landed in this step with these speeds (physical px/s; `down` falling, `side` sideways). */
+  impact?: { down: number; side: number } | null;
+  /** Hit a side in the air this fast (physical px/s), 0 otherwise. */
+  wallSpeed?: number;
+  /** Caught a window's edge in this step / hangs or climbs there / stood up on it. */
+  caught?: boolean;
+  onLedge?: boolean;
+  climbed?: boolean;
 }
+
+/**
+ * Where the raised hands are (share of the window's height from its top): a window's edge
+ * passing there while it falls is caught (the figure hangs from it, then climbs up).
+ */
+export const LEDGE_GRIP = 0.12;
+/** It catches an edge only this far inside its ends (share of the window's width). */
+const LEDGE_INSET = 0.15;
 
 type Size = { width: number; height: number };
 
@@ -125,6 +145,8 @@ const GLIDE_MIN = 8;
 export interface StepOptions {
   keepInside?: boolean;
   peek?: -1 | 0 | 1;
+  /** Falling past a window's edge, the hands catch it (thrown up there, or a jump fell short). */
+  ledges?: boolean;
 }
 
 /** While dancing the figure glides back inside the screen at this speed (window heights per second). */
@@ -266,7 +288,7 @@ export function stepBody(
   ride = false,
   options: StepOptions = {},
 ): StepResult {
-  const { keepInside = false, peek = 0 } = options;
+  const { keepInside = false, peek = 0, ledges = false } = options;
   const { floor, minX, maxX } = bounds(size, area, keepInside, peek);
   const usable = usablePlatforms(platforms, size, area);
   let { x, y, vy, support } = body;
@@ -275,6 +297,35 @@ export function stepBody(
   const feetX = () => x + size.width / 2;
   const feetY = y + size.height;
   let landed = false;
+  let impact: StepResult['impact'] = null;
+
+  // Hanging from a caught edge: it hangs a moment, then pulls itself up and stands on it.
+  if (body.ledge) {
+    const held = usable.find((p) => p.id === body.ledge!.id && feetX() >= p.left && feetX() <= p.right);
+    if (held) {
+      const t = body.ledge.t + dt;
+      const hangY = held.y - size.height * LEDGE_GRIP;
+      const standY = held.y - size.height;
+      const edgeNow = { left: held.left, right: held.right, y: held.y };
+      if (t >= CLIMB_TOTAL_S) {
+        return {
+          body: { x, y: standY, vy: 0, vx: 0, support: held.id, edge: edgeNow, ledge: null },
+          grounded: true,
+          landed: true,
+          wall: 0,
+          climbed: true,
+        };
+      }
+      return {
+        body: { x, y: hangY + (standY - hangY) * climbLift(t), vy: 0, vx: 0, support: null, edge: null, ledge: { id: held.id, t } },
+        grounded: true,
+        landed: false,
+        wall: 0,
+        onLedge: true,
+      };
+    }
+    // The window went away under the hands: it falls.
+  }
 
   // Still standing where it stood? A window that moved, closed or got covered there is gone.
   let standing: Platform | undefined;
@@ -306,10 +357,31 @@ export function stepBody(
     const hit = usable
       .filter((p) => p.y >= feetY - grace && p.y <= nextFeet && feetX() >= p.left && feetX() <= p.right)
       .sort((a, b) => a.y - b.y)[0];
+    // Falling with the feet already below an edge: the raised hands may catch it as they pass.
+    const grip = y + size.height * LEDGE_GRIP;
+    const inset = size.width * LEDGE_INSET;
+    const caught =
+      ledges && vy > 0 && !hit
+        ? usable
+            .filter((p) => p.y > grip && p.y <= grip + vy * dt && p.y < feetY && feetX() >= p.left + inset && feetX() <= p.right - inset)
+            .sort((a, b) => a.y - b.y)[0]
+        : undefined;
+    if (caught) {
+      return {
+        body: { x, y: caught.y - size.height * LEDGE_GRIP, vy: 0, vx: 0, support: null, edge: null, ledge: { id: caught.id, t: 0 } },
+        grounded: true,
+        landed: false,
+        wall: 0,
+        caught: true,
+        onLedge: true,
+      };
+    }
+    const fall = { down: vy, side: Math.abs(vx) };
     if (hit) {
       y = hit.y - size.height;
       support = hit.id;
       standing = hit;
+      impact = fall;
       vy = 0;
       vx = 0;
       landed = true;
@@ -321,6 +393,7 @@ export function stepBody(
       }
       if (y >= floor) {
         y = floor;
+        impact = fall;
         vy = 0;
         vx = 0;
         landed = true;
@@ -336,6 +409,7 @@ export function stepBody(
 
   if (grounded && walk !== 0) x += walk * WALK_PACE * size.height * dt;
   let wall: -1 | 0 | 1 = 0;
+  let wallSpeed = 0;
   // On a window its ends are walls too: the figure walks back instead of off it.
   const left = standing ? Math.max(minX, standing.left - size.width / 2) : minX;
   const right = standing ? Math.min(maxX, standing.right - size.width / 2) : maxX;
@@ -351,12 +425,14 @@ export function stepBody(
   } else if (x < left) {
     x = left;
     wall = -1;
+    if (!grounded) wallSpeed = Math.abs(vx);
     vx = Math.abs(vx) * WALL_BOUNCE;
   } else if (x > right) {
     x = right;
     wall = 1;
+    if (!grounded) wallSpeed = Math.abs(vx);
     vx = -Math.abs(vx) * WALL_BOUNCE;
   }
   const nextEdge = standing ? { left: standing.left, right: standing.right, y: standing.y } : null;
-  return { body: { x, y, vy, vx, support, edge: nextEdge }, grounded, landed, wall };
+  return { body: { x, y, vy, vx, support, edge: nextEdge, ledge: null }, grounded, landed, wall, impact, wallSpeed };
 }

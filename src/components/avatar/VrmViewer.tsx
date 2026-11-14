@@ -19,6 +19,7 @@ import { bodyPose, BodySway, computeSitPose, walkBob, WALK_CYCLE_HZ, type BodyBo
 import { PET_EDGE_SEAT } from '../../services/avatarViewState';
 import { reachWithArm } from './armReach';
 import { eatReach, type PetEat } from './eatTimeline';
+import { climbLift, handWeight, stretchArch, type PetHands } from './handTimeline';
 import { HangRig, isSkirtJoint } from './petHang';
 import type { Hang, Recover } from './hangTimeline';
 import { useAvatarMotions } from './useAvatarMotions';
@@ -62,6 +63,8 @@ export interface AvatarViewerProps {
   recover?: Recover | null;
   /** Desktop pet eating what it was fed: the right hand brings it to the mouth (VRM only). */
   eat?: PetEat | null;
+  /** Desktop pet's hands: stretching, rubbing the belly, holding a letter or book, on a ledge (VRM only). */
+  hands?: PetHands | null;
 }
 
 /**
@@ -147,6 +150,7 @@ export const VrmViewer = ({
   hang = null,
   recover = null,
   eat = null,
+  hands = null,
 }: AvatarViewerProps) => {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -190,6 +194,10 @@ export const VrmViewer = ({
   useEffect(() => {
     recoverRef.current = recover;
   }, [recover]);
+  const handsRef = useRef(hands);
+  useEffect(() => {
+    handsRef.current = hands;
+  }, [hands]);
 
   useEffect(() => {
     emotionRef.current = emotion;
@@ -342,6 +350,10 @@ export const VrmViewer = ({
     const eatFront = new THREE.Vector3();
     const eatUpper = new THREE.Quaternion();
     const eatLower = new THREE.Quaternion();
+    // Other hand poses (`handTimeline.ts`): which one and since when (own clock).
+    let handsSeen: number | null = null;
+    let handsStart = 0;
+    const handTarget = new THREE.Vector3();
     /** Weiches Überblenden bei Wechseln zwischen verschiedenen Sitzhaltungen. */
     const sitBoneQuats = new Map<string, THREE.Quaternion>();
     const sitHandSmooth = { left: new THREE.Vector3(), right: new THREE.Vector3(), ready: false };
@@ -555,6 +567,65 @@ export const VrmViewer = ({
           reachWithArm(upper, lower, hand, eatHead);
           upper.quaternion.copy(eatUpper.slerp(upper.quaternion, toMouth));
           lower.quaternion.copy(eatLower.slerp(lower.quaternion, toMouth));
+        }
+      }
+      // Hand poses: stretching, the belly, a letter or a book held out, hands on a ledge.
+      const handPose = handsRef.current;
+      if (handPose && handPose.id !== handsSeen) {
+        handsSeen = handPose.id;
+        handsStart = elapsed;
+      }
+      const handT = elapsed - handsStart;
+      const handShare = handPose && !hangRef.current && !toMouth ? handWeight(handPose.kind, handT) : 0;
+      if (handPose && handShare > 0.001) {
+        const node = (bone: string) => model.humanoid.getNormalizedBoneNode(bone as BodyBone);
+        const [head, hipsNode, leftHip, rightHip, spine] = [
+          node('head'), node('hips'), node('leftUpperLeg'), node('rightUpperLeg'), node('spine'),
+        ];
+        if (head && hipsNode && leftHip && rightHip) {
+          // Stretching, the back arches a little at the top.
+          if (handPose.kind === 'stretch' && spine) {
+            spine.quaternion.multiply(poseQuaternion.setFromEuler(poseEuler.set(-0.18 * stretchArch(handT) * leftArmDirection, 0, 0)));
+          }
+          model.scene.updateMatrixWorld(true);
+          eatLeft.subVectors(leftHip.getWorldPosition(eatLeft), rightHip.getWorldPosition(eatOther)).setY(0);
+          if (eatLeft.lengthSq() < 1e-8) eatLeft.set(1, 0, 0);
+          eatLeft.normalize();
+          eatFront.crossVectors(eatLeft, upAxis).normalize();
+          const sides: ('left' | 'right')[] = handPose.kind === 'belly' || handPose.kind === 'carry' ? ['right'] : ['left', 'right'];
+          for (const side of sides) {
+            const [upper, lower, hand] = [node(`${side}UpperArm`), node(`${side}LowerArm`), node(`${side}Hand`)];
+            if (!upper || !lower || !hand) continue;
+            const out = side === 'left' ? 1 : -1;
+            if (handPose.kind === 'stretch') {
+              head.getWorldPosition(handTarget).addScaledVector(upAxis, 0.24 * modelHeight).addScaledVector(eatLeft, out * 0.06 * modelHeight);
+            } else if (handPose.kind === 'ledge') {
+              // On the edge above the head; pulling up, the edge sinks to the hips (it pushes itself up).
+              const lift = climbLift(handT);
+              head
+                .getWorldPosition(handTarget)
+                .addScaledVector(upAxis, (0.2 - 0.55 * lift) * modelHeight)
+                .addScaledVector(eatLeft, out * 0.11 * modelHeight)
+                .addScaledVector(eatFront, 0.06 * lift * modelHeight);
+            } else if (handPose.kind === 'belly') {
+              const circle = elapsed * 6;
+              hipsNode
+                .getWorldPosition(handTarget)
+                .addScaledVector(upAxis, (0.11 + 0.012 * Math.sin(circle)) * modelHeight)
+                .addScaledVector(eatFront, 0.085 * modelHeight)
+                .addScaledVector(eatLeft, (0.012 * Math.cos(circle) - 0.01) * modelHeight);
+            } else if (handPose.kind === 'carry') {
+              hipsNode.getWorldPosition(handTarget).addScaledVector(upAxis, 0.27 * modelHeight).addScaledVector(eatFront, 0.16 * modelHeight).addScaledVector(eatLeft, -0.04 * modelHeight);
+            } else {
+              hipsNode.getWorldPosition(handTarget).addScaledVector(upAxis, 0.24 * modelHeight).addScaledVector(eatFront, 0.15 * modelHeight).addScaledVector(eatLeft, out * 0.07 * modelHeight);
+            }
+            eatUpper.copy(upper.quaternion);
+            eatLower.copy(lower.quaternion);
+            reachWithArm(upper, lower, hand, handTarget);
+            upper.quaternion.copy(eatUpper.slerp(upper.quaternion, handShare));
+            lower.quaternion.copy(eatLower.slerp(lower.quaternion, handShare));
+            upper.updateWorldMatrix(false, true);
+          }
         }
       }
       // 3D-Schattenhöhe dynamisch an Hängen, Kante oder Boden anpassen.

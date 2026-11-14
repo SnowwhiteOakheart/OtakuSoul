@@ -4,10 +4,11 @@
  */
 
 /**
- * Where the figure was grabbed: by the shoulders/neck (hangs upright, legs dangling), the hips
- * (folds over the hand) or the feet (head down).
+ * Where the figure was grabbed: by the shoulders/neck (hangs upright, legs dangling; by the
+ * collar like a kitten), the hips (folds over the hand), the feet (head down) or a hand (dangles
+ * sideways from the raised arm).
  */
-export type HangGrip = 'shoulder' | 'hip' | 'feet';
+export type HangGrip = 'shoulder' | 'hip' | 'feet' | 'hand';
 
 /**
  * A point in the pet window: `x` sideways from its middle in window heights (negative is left),
@@ -86,6 +87,8 @@ export function gripAt(y: number, top: number, feet: number): HangGrip {
  * the feet at the figure's top, so the head ends at the floor line.
  */
 export function hangAnchor(grip: HangGrip, at: HangPoint, top: number): HangPoint {
+  // By a hand: the hand at the top, the body dangling an arm's length below it.
+  if (grip === 'hand') return { x: Math.max(-0.2, Math.min(0.2, at.x * 0.5)), y: Math.max(0.06, top - 0.12) };
   if (grip === 'shoulder') {
     return {
       x: Math.max(-0.35, Math.min(0.35, at.x)),
@@ -98,6 +101,18 @@ export function hangAnchor(grip: HangGrip, at: HangPoint, top: number): HangPoin
 
 /** How it lands after hanging like this: on the head from the feet, on the backside from the hips. */
 export const landingFor = (grip: HangGrip): Landing => (grip === 'feet' ? 'head' : grip === 'hip' ? 'back' : 'feet');
+
+/**
+ * Held by the collar the legs kick in bursts like a kitten's, tiring over time (0…1 per moment,
+ * `since`: seconds since grabbed): a first long burst, then one every few seconds.
+ */
+export function kittenKick(since: number): number {
+  if (since < 0) return 0;
+  const tired = 1 - 0.65 * Math.min(1, since / 15);
+  if (since < 1.4) return tired;
+  const phase = (since - 1.4) % 3.4;
+  return phase < 0.9 ? tired * Math.sin((phase / 0.9) * Math.PI) : 0;
+}
 
 /**
  * Gravity in window heights per second² (the figure is about 0.8 window heights tall; for a
