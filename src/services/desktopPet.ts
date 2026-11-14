@@ -47,7 +47,10 @@ export const PET_COME_EVENT = 'pet:come';
 export const PET_TEST_HANG_EVENT = 'pet:test-hang';
 export interface PetTestHang {
   grip?: 'shoulder' | 'hip' | 'feet';
-  at: { x: number; y: number };
+  at?: { x: number; y: number };
+  /** Instead: the window "moves" sideways at this speed (window heights/s, + right) for `ms`. */
+  move?: number;
+  ms?: number;
 }
 
 /** Backend → pet: a fullscreen window or the lock screen is in front (Windows only). */

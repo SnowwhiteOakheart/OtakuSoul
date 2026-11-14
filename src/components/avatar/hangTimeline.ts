@@ -86,6 +86,11 @@ export const SWING_LIMIT = Math.PI / 4;
 const SWING_BOUNCE = 0.3;
 /** The hand's acceleration is cut beyond this (window heights/s²): jolts of the pointer data. */
 const MAX_ACCEL = 60;
+/**
+ * Air resistance on the body (1/s): carried along steadily it trails behind (about 25° at two
+ * window heights per second), instead of swinging freely to both sides.
+ */
+const AIR_DRAG = 1.2;
 /** Grabbed head down from standing, it starts toppling with this speed (radians/s). */
 export const TOPPLE_KICK = 2.5;
 
@@ -100,15 +105,25 @@ export interface Swing {
 /**
  * Advances the pendulum by `dt` seconds. Gravity pulls it below the grip; the hand's
  * acceleration (`accel`, window heights/s², y down) pushes the other way (moved right, the body
- * swings out left), lifting fast weighs it down more, dropping makes it nearly weightless.
- * `length`: grip to the body's middle (window heights).
+ * swings out left), lifting fast weighs it down more, dropping makes it nearly weightless. The
+ * air holds the body back against the hand's speed (`velocity`, window heights/s), so carried
+ * along it trails behind. `length`: grip to the body's middle (window heights).
  */
-export function swingStep(swing: Swing, accel: { x: number; y: number }, length: number, dt: number) {
+export function swingStep(
+  swing: Swing,
+  accel: { x: number; y: number },
+  velocity: { x: number },
+  length: number,
+  dt: number,
+) {
   const ax = Math.max(-MAX_ACCEL, Math.min(MAX_ACCEL, accel.x));
   const ay = Math.max(-MAX_ACCEL, Math.min(MAX_ACCEL, accel.y));
   const gravity = Math.max(GRAVITY * 0.2, Math.min(GRAVITY * 3, GRAVITY - ay));
   const friction = Math.abs(swing.angle) > SWING_LIMIT ? SWING_DAMPING_FAR : SWING_DAMPING;
-  const angular = (-gravity * Math.sin(swing.angle) - ax * Math.cos(swing.angle)) / length - friction * swing.speed;
+  // The body's middle moves sideways with the hand plus its own swing; the air pushes against that.
+  const sideways = velocity.x + length * swing.speed * Math.cos(swing.angle);
+  const air = -AIR_DRAG * sideways;
+  const angular = (-gravity * Math.sin(swing.angle) + (air - ax) * Math.cos(swing.angle)) / length - friction * swing.speed;
   swing.speed += angular * dt;
   swing.angle += swing.speed * dt;
   if (Math.abs(swing.angle) <= SWING_LIMIT) swing.hanging = true;

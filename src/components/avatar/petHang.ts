@@ -20,6 +20,22 @@ import { RECOVER_PHASES, swingStep, TOPPLE_KICK, type Hang, type HangPoint, type
 
 /** Folded over the hand: the pelvis tips forwards this far (radians), the spine bends the rest. */
 const HIP_PITCH = 1.25;
+/** How fast the trunk follows the swing (1/s): slower bends it more like a whip, the head last. */
+const TRUNK_FOLLOW = 6;
+/** How far the trailing trunk bends at most (radians, all its joints together). */
+const TRUNK_BEND = 0.6;
+/** Share of that bend per joint, from the hips up. */
+const TRUNK_JOINTS: [VRMHumanBoneName, number][] = [
+  ['spine', 0.2],
+  ['chest', 0.2],
+  ['upperChest', 0.15],
+  ['neck', 0.25],
+  ['head', 0.2],
+];
+/** Head down it tries to curl up towards its legs every this many seconds, for about a third of it. */
+const CURL_EVERY_S = 4.5;
+/** Its struggling tires: after this long it only does a little of it. */
+const TIRE_S = 15;
 /** How fast arms and legs follow the swinging body (1/s): slower trails behind. */
 const LIMB_FOLLOW = 6;
 /** Tipping over into sitting after the landing: a quick, barely overshooting turn. */
@@ -73,6 +89,14 @@ export class HangRig {
   private readonly limbDown = new THREE.Vector3();
   /** Has hung within the swing limit since grabbed (turning head down may go further once). */
   private hanging = false;
+  /** How far it curls up right now (head down, 0…1). */
+  private curl = 0;
+  /** The trunk's own turn, trailing the body's (radians). */
+  private trunkRoll = 0;
+  private readonly viewAxis = new THREE.Vector3();
+  private readonly q3 = new THREE.Quaternion();
+  private readonly q4 = new THREE.Quaternion();
+  private readonly q5 = new THREE.Quaternion();
   private readonly restPosition: THREE.Vector3;
   private readonly restTurn: THREE.Quaternion;
   private readonly armLength: number;
@@ -125,6 +149,7 @@ export class HangRig {
         this.recover = null;
         this.grabbed = this.pick(hang, elapsed);
         this.hanging = false;
+        this.trunkRoll = this.roll;
         // Grabbed head down from standing: it starts to topple at once (not balanced on the grip).
         const off = this.roll - this.grabbed.roll;
         if (Math.abs(off) > 2.5) this.rollSpeed = -Math.sign(off) * TOPPLE_KICK;
@@ -254,6 +279,17 @@ export class HangRig {
     }
   }
 
+  /** Turns a bone by `angle` about a world axis (whatever way the rig's own axes point). */
+  private bendInWorld(node: THREE.Object3D, axis: THREE.Vector3, angle: number) {
+    const parent = node.parent;
+    if (parent) parent.getWorldQuaternion(this.q3);
+    else this.q3.identity();
+    // In the parent's space: parent⁻¹ · turn · parent, applied before the bone's own turn.
+    this.q4.setFromAxisAngle(axis, angle);
+    const inParent = this.q5.copy(this.q3).invert().multiply(this.q4).multiply(this.q3);
+    node.quaternion.premultiply(inParent);
+  }
+
   /** Turns a limb (upper, lower, end) so its end hangs at `target`, mixed in by `weight`. */
   private reach(side: 'left' | 'right', limb: 'Arm' | 'Leg', target: THREE.Vector3, weight: number) {
     const upper = this.bone(`${side}Upper${limb}` as VRMHumanBoneName);
@@ -304,7 +340,7 @@ export class HangRig {
     if (hang && grabbed) {
       // A pendulum about the grip (see `swingStep`), measured from hanging still.
       const swing: Swing = { angle: this.roll - rollTarget, speed: this.rollSpeed, hanging: this.hanging };
-      swingStep(swing, accel, grabbed.length, dt);
+      swingStep(swing, accel, sway, grabbed.length, dt);
       this.roll = rollTarget + swing.angle;
       this.rollSpeed = swing.speed;
       this.hanging = swing.hanging;
@@ -342,6 +378,7 @@ export class HangRig {
 
     // 1. The body's own pose while hanging (and lying as it fell).
     const kind = (hang ?? grabbed?.hang)?.grip;
+    this.curl = 0;
     if (this.weight > 0.001 && kind) {
       if (kind === 'shoulder') {
         this.pose({ spine: [-0.05, 0, 0], neck: [-0.22, 0, 0], leftFoot: [0.45, 0, 0], rightFoot: [0.45, 0, 0] }, this.weight);
@@ -360,16 +397,23 @@ export class HangRig {
         );
       } else {
         const held = grabbed?.heldLeg ?? 'left';
+        // Now and then it tries to curl up towards its legs (less as it tires).
+        const since = hang && grabbed ? elapsed - grabbed.at : 0;
+        const tired = 1 - 0.6 * ramp(since, 0, TIRE_S);
+        const curl = hang ? tired * Math.max(0, Math.sin(((since - 1) / CURL_EVERY_S) * 2 * Math.PI)) ** 3 : 0;
         this.pose(
           {
-            spine: [0.08, 0, 0],
-            neck: [0.25, 0, 0],
+            spine: [0.08 - 0.5 * curl, 0, 0],
+            chest: [-0.35 * curl, 0, 0],
+            neck: [0.25 - 0.6 * curl, 0, 0],
             [`${held}UpperLeg` as const]: [0, 0, 0],
-            [`${held}LowerLeg` as const]: [0, 0, 0],
+            // The held leg is not a rod: the knee gives a little.
+            [`${held}LowerLeg` as const]: [0.12, 0, 0],
             [`${held}Foot` as const]: [0.3, 0, 0],
           } as BodyPose,
           this.weight,
         );
+        this.curl = curl;
       }
     }
     // Landing on the feet: a deep crouch that springs back.
@@ -392,13 +436,25 @@ export class HangRig {
     }
 
     // 2. The whole body turned: on the screen (roll about the view axis), forwards over the hand (pitch).
-    const towardsCamera = this.camera.getWorldDirection(this.a).negate();
+    const towardsCamera = this.camera.getWorldDirection(this.viewAxis).negate();
     this.limbDown.copy(DOWN).applyAxisAngle(towardsCamera, this.limbAngle);
     // Forwards is a turn about -X: the figure faces the camera (+Z), its top goes towards it.
     this.turn.setFromAxisAngle(towardsCamera, this.roll).multiply(this.q.setFromAxisAngle(AXIS_X, -this.pitch));
     scene.quaternion.copy(this.turn).multiply(this.restTurn);
     scene.position.copy(this.restPosition);
     scene.updateMatrixWorld(true);
+    // The trunk is no rod: it trails the swing, joint by joint, the end away from the grip last.
+    this.trunkRoll += (this.roll - this.trunkRoll) * Math.min(1, dt * TRUNK_FOLLOW);
+    const trail = THREE.MathUtils.clamp(this.trunkRoll - this.roll, -TRUNK_BEND, TRUNK_BEND) * this.weight;
+    // Head down the head is the far end; held by the collar the hips are (bending the other way).
+    const bendSide = kind === 'feet' ? 1 : kind === 'shoulder' ? -1 : 0;
+    if (bendSide && Math.abs(trail) > 1e-4) {
+      for (const [name, share] of TRUNK_JOINTS) {
+        const node = this.bone(name);
+        if (node) this.bendInWorld(node, towardsCamera, bendSide * trail * share);
+      }
+      scene.updateMatrixWorld(true);
+    }
 
     // 3. Where it is: the grabbed part under the pointer; after the landing its lowest point on the floor.
     if (hang && grabbed) {
@@ -424,14 +480,18 @@ export class HangRig {
     if (this.weight > 0.001 && kind) {
       const struggle = hang && grabbed ? 1 - ramp(elapsed - grabbed.at, STRUGGLE_S * 0.6, STRUGGLE_S) : 0;
       const front = this.c.set(0, 0, 1).applyQuaternion(this.turn);
+      // Head down it paddles with its arms (and reaches up while curling); otherwise they drift.
+      const since = grabbed ? elapsed - grabbed.at : 0;
+      const paddle = kind === 'feet' && hang ? 0.18 * (1 - 0.6 * ramp(since, 0, TIRE_S)) : 0.04;
       for (const side of ['left', 'right'] as const) {
         const shoulder = this.bone(`${side}UpperArm`);
         if (shoulder) {
-          const sway = 0.04 * Math.sin(elapsed * 1.7 + (side === 'left' ? 0 : 2));
+          const phase = side === 'left' ? 0 : 2.1;
+          const forward = paddle * Math.sin(elapsed * (kind === 'feet' ? 2.7 : 1.7) + phase) + struggle * 0.1 * Math.sin(elapsed * 7 + phase);
           const target = shoulder
             .getWorldPosition(this.a)
-            .addScaledVector(this.limbDown, this.armLength * 0.97)
-            .addScaledVector(front, this.armLength * sway);
+            .addScaledVector(this.limbDown, this.armLength * (0.97 - 0.45 * this.curl))
+            .addScaledVector(front, this.armLength * (forward + 0.35 * this.curl));
           this.reach(side, 'Arm', target, this.weight);
         }
         const hip = this.bone(`${side}UpperLeg`);

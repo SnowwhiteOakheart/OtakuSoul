@@ -67,6 +67,14 @@ for (const withPack of [true, false]) {
           await emit('pet:test-hang', { grip, at });
           await browser.pause(1800);
           await browser.saveScreenshot(path.join(out, `${tag}-haengt-${grip}.png`));
+          // Carried to the right (after it swung out): the body must trail behind on the left.
+          await browser.pause(4000);
+          await emit('pet:test-hang', { move: 1.5, ms: 3000 });
+          for (const at of [1200, 2400]) {
+            await browser.pause(1200);
+            await browser.saveScreenshot(path.join(out, `${tag}-haengt-${grip}-nach-rechts-${at}.png`));
+          }
+          await browser.pause(3000);
           await emit('pet:test-hang', { at });
           for (const [label, wait] of [['aufprall', 350], ['sitzt', 1400], ['steht', 3500]]) {
             await browser.pause(wait);

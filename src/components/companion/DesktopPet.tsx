@@ -632,7 +632,18 @@ export const DesktopPet: React.FC = () => {
       listen<PetTestHang>(PET_TEST_HANG_EVENT, ({ payload }) => {
         if (getCurrentWindow().label === PET_LABEL || getCurrentWindow().label === GUEST_LABEL) return;
         const now = performance.now();
-        if (payload.grip) {
+        if (payload.move) {
+          // Fed like the real drag's pointer moves (physical px), so the swing sees a moving hand.
+          // By the time passed (timers run late in a headless test), so the speed is what was asked for.
+          const perMs = (payload.move * window.innerHeight * (window.devicePixelRatio || 1)) / 1000;
+          let last = performance.now();
+          const timer = window.setInterval(() => {
+            const at = performance.now();
+            stageRef.current?.addWindowMove(perMs * (at - last), 0);
+            last = at;
+          }, 16);
+          window.setTimeout(() => window.clearInterval(timer), payload.ms ?? 1000);
+        } else if (payload.grip && payload.at) {
           const top = petFigureTop(framingRef.current);
           behavior.dragStart(now, { grip: payload.grip, at: payload.at, anchor: hangAnchor(payload.grip, payload.at, top) });
         } else {

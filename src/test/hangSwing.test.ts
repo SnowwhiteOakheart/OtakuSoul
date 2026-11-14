@@ -3,10 +3,16 @@ import { swingStep, SWING_LIMIT, TOPPLE_KICK, type Swing } from '../components/a
 
 const DT = 1 / 60;
 /** Runs the pendulum for `seconds` with the hand's acceleration from `accel(t)`; returns the angles. */
-function run(swing: Swing, seconds: number, accel: (t: number) => { x: number; y: number } = () => ({ x: 0, y: 0 }), length = 0.4) {
+function run(
+  swing: Swing,
+  seconds: number,
+  accel: (t: number) => { x: number; y: number } = () => ({ x: 0, y: 0 }),
+  length = 0.4,
+  velocity: (t: number) => number = () => 0,
+) {
   const angles: number[] = [];
   for (let t = 0; t < seconds; t += DT) {
-    swingStep(swing, accel(t), length, DT);
+    swingStep(swing, accel(t), { x: velocity(t) }, length, DT);
     angles.push(swing.angle);
   }
   return angles;
@@ -29,6 +35,18 @@ describe('hanging pendulum', () => {
     expect(angles[5]!).toBeLessThan(0);
     expect(Math.max(...angles.map(Math.abs))).toBeLessThanOrEqual(SWING_LIMIT + 1e-9);
     expect(Math.max(...angles.map(Math.abs))).toBeGreaterThan(0.3);
+  });
+
+  it('carried steadily to the right, the body trails behind on the left', () => {
+    const swing: Swing = { angle: 0, speed: 0, hanging: true };
+    // Speeds up to 2 window heights/s within a quarter second, then keeps going.
+    const accel = (t: number) => ({ x: t < 0.25 ? 8 : 0, y: 0 });
+    const velocity = (t: number) => Math.min(2, t * 8);
+    const angles = run(swing, 4, accel, 0.4, velocity);
+    // Counter-clockwise is positive: the body's bottom is to the right; trailing left is negative.
+    expect(angles[10]!).toBeLessThan(0);
+    expect(swing.angle).toBeLessThan(-0.25);
+    expect(swing.angle).toBeGreaterThan(-SWING_LIMIT - 1e-9);
   });
 
   it('swings slower on a longer pendulum (held by the feet) than a short one (by the collar)', () => {
