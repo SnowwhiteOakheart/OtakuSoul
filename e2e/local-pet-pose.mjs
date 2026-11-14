@@ -58,7 +58,15 @@ for (const withPack of [true, false]) {
         const tag = `${name}-${withPack ? 'mit-paket' : 'ohne-paket'}-${pose}`;
         await browser.saveScreenshot(path.join(out, `${tag}.png`));
         console.log(`${tag}: ${motions.length} Bewegungen`);
-        if (pose !== 'stand' || process.env.OTAKUSOUL_HANG === '0') continue;
+        if (pose !== 'stand') continue;
+        // Gaze: pointer far above the head, then far below (the head and eyes must follow both ways).
+        const { width: w, height: h } = await browser.getWindowSize();
+        for (const [label, y] of [['oben', -h], ['unten', 2 * h]]) {
+          await emit('pet:cursor', { x: w / 2, y, inside: false, button: null, through: true, gx: 0, gy: 0, t: 0 });
+          await browser.pause(2500);
+          await browser.saveScreenshot(path.join(out, `${tag}-blick-${label}.png`));
+        }
+        if (process.env.OTAKUSOUL_HANG === '0') continue;
         // Lifted by shoulders, hips and feet (`pet:test-hang`, no real drag), then let go: the
         // landing (head, backside) with sitting, rubbing and standing up again.
         // Sideways from the middle in window heights, height as share (`HangPoint`).

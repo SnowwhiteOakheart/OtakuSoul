@@ -448,7 +448,8 @@ export const VrmViewer = ({
       if (model.lookAt) {
         // Eyes ahead of the head (degrees).
         model.lookAt.yaw = THREE.MathUtils.clamp(stage.mouse.x * 18, -18, 18);
-        model.lookAt.pitch = THREE.MathUtils.clamp(stage.mouse.y * 10, -10, 10);
+        // three-vrm: a positive pitch looks down (eye bones and lookUp/lookDown alike), the pointer above is +y.
+        model.lookAt.pitch = THREE.MathUtils.clamp(-stage.mouse.y * 10, -10, 10);
       }
       // Hair and cloth: wind against the window's speed (sideways, and up while it drops).
       const speed = sway.windowSpeed;
