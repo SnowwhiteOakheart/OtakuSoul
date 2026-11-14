@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { VRM, VRMHumanBoneName } from '@pixiv/three-vrm';
 import { reachWithArm } from './armReach';
 import { forFacing, type BodyPose } from './proceduralBody';
-import { RECOVER_PHASES, type Hang, type HangPoint, type Recover } from './hangTimeline';
+import { RECOVER_PHASES, swingStep, TOPPLE_KICK, type Hang, type HangPoint, type Recover, type Swing } from './hangTimeline';
 
 /**
  * Desktop pet (VRM): hanging from where the user grabbed it and getting up after a hard landing.
@@ -10,8 +10,9 @@ import { RECOVER_PHASES, type Hang, type HangPoint, type Recover } from './hangT
  * The body turns as a whole about the grabbed part (the model's scene, in world space, so VRM
  * 0.x and 1.0 rigs turn alike): upright from the shoulders, head down from the feet, folded over
  * the hand from the hips. Arms and free legs hang straight down in the world (`reachWithArm`),
- * so they stay limp however the body swings. The swing is a damped pendulum pushed by the
- * window's acceleration (like the hip lean of desktop mascots, but about the grip).
+ * so they stay limp, trailing the body's swing. The swing is a gravity pendulum about the grip,
+ * driven by the window's acceleration (the hand moving it), so held by the feet it swings slowly
+ * and far, by the collar quick and short.
  *
  * After landing it keeps how it fell, the lowest body point on the floor; then it tips or plops
  * into sitting (the viewer's floor seat), rubs its head or back with one hand and stands up.
@@ -19,13 +20,8 @@ import { RECOVER_PHASES, type Hang, type HangPoint, type Recover } from './hangT
 
 /** Folded over the hand: the pelvis tips forwards this far (radians), the spine bends the rest. */
 const HIP_PITCH = 1.25;
-/** Pendulum while hanging: stiffness and damping (about 1.5 swings per second, slowly fading). */
-const SWING_STIFFNESS = 90;
-const SWING_DAMPING = 4.5;
-/** How much the window's acceleration (window heights/s²) pushes the swing. */
-const SWING_PUSH = 0.1;
-/** The swing never goes further than this from hanging still (radians). */
-const SWING_LIMIT = 1;
+/** How fast arms and legs follow the swinging body (1/s): slower trails behind. */
+const LIMB_FOLLOW = 6;
 /** Tipping over into sitting after the landing: a quick, barely overshooting turn. */
 const TIP_STIFFNESS = 45;
 const TIP_DAMPING = 11;
@@ -54,6 +50,8 @@ interface Grabbed {
   heldLeg: 'left' | 'right' | null;
   /** Turn on the screen that brings the body under the grip. */
   roll: number;
+  /** Pendulum length, grip to the body's middle (window heights). */
+  length: number;
   at: number;
 }
 
@@ -69,7 +67,12 @@ export class HangRig {
   private grabbed: Grabbed | null = null;
   private recover: (Recover & { start: number; tipTo: number; rubSide: 'left' | 'right' }) | null = null;
   private lastRecoverId = -1;
-  private lastSpeed = 0;
+  private readonly lastSpeed = { x: 0, y: 0 };
+  /** Swing of arms and legs about the view axis (radians), trailing the body's. */
+  private limbAngle = 0;
+  private readonly limbDown = new THREE.Vector3();
+  /** Has hung within the swing limit since grabbed (turning head down may go further once). */
+  private hanging = false;
   private readonly restPosition: THREE.Vector3;
   private readonly restTurn: THREE.Quaternion;
   private readonly armLength: number;
@@ -121,6 +124,10 @@ export class HangRig {
       if (hang) {
         this.recover = null;
         this.grabbed = this.pick(hang, elapsed);
+        this.hanging = false;
+        // Grabbed head down from standing: it starts to topple at once (not balanced on the grip).
+        const off = this.roll - this.grabbed.roll;
+        if (Math.abs(off) > 2.5) this.rollSpeed = -Math.sign(off) * TOPPLE_KICK;
       }
     }
     if (recover && recover.id !== this.lastRecoverId) {
@@ -169,7 +176,7 @@ export class HangRig {
       const node = this.bone(name);
       if (!node) continue;
       const p = node.getWorldPosition(this.a).project(this.camera);
-      const distance = Math.hypot((p.x + 1) / 2 - hang.at.x, (1 - p.y) / 2 - hang.at.y);
+      const distance = Math.hypot((p.x / 2) * this.aspect() - hang.at.x, (1 - p.y) / 2 - hang.at.y);
       if (distance < nearest) {
         nearest = distance;
         pivot = name;
@@ -177,6 +184,7 @@ export class HangRig {
     }
     // The body's middle, seen from the camera: the turn brings it straight below the grip.
     let roll = 0;
+    let length = 0.25;
     const pivotNode = this.bone(pivot);
     const hips = this.bone('hips');
     const chest = this.bone('chest') ?? this.bone('spine');
@@ -185,19 +193,25 @@ export class HangRig {
       middle.applyMatrix4(this.camera.matrixWorldInverse);
       const grip = pivotNode.getWorldPosition(this.c).applyMatrix4(this.camera.matrixWorldInverse);
       roll = -Math.atan2(middle.x - grip.x, grip.y - middle.y);
+      length = (middle.distanceTo(grip) / this.height) * 0.8;
     }
     scene.position.copy(keepPosition);
     scene.quaternion.copy(keepTurn);
     scene.updateMatrixWorld(true);
     const heldLeg = pivot === 'leftFoot' ? 'left' : pivot === 'rightFoot' ? 'right' : null;
-    return { hang, pivot, heldLeg, roll, at: elapsed };
+    return { hang, pivot, heldLeg, roll, length: Math.max(0.2, length), at: elapsed };
   }
 
-  /** The point of the viewer at `point` (shares) on the plane through the figure, facing the camera. */
+  /** Width by height of the view (the pet window widens while it hangs). */
+  private aspect() {
+    return (this.camera as THREE.PerspectiveCamera).aspect || 1;
+  }
+
+  /** The point of the viewer at `point` (see `HangPoint`) on the plane through the figure, facing the camera. */
   private anchorInWorld(point: HangPoint, out: THREE.Vector3) {
     const camera = this.camera;
     const origin = camera.getWorldPosition(this.d);
-    const ray = out.set(point.x * 2 - 1, 1 - point.y * 2, 0.5).unproject(camera).sub(origin).normalize();
+    const ray = out.set((point.x * 2) / this.aspect(), 1 - point.y * 2, 0.5).unproject(camera).sub(origin).normalize();
     const normal = camera.getWorldDirection(this.e);
     const along = this.f.copy(this.restPosition).addScaledVector(UP, this.height * 0.5).sub(origin).dot(normal);
     return out.multiplyScalar(along / Math.max(1e-6, ray.dot(normal))).add(origin);
@@ -256,10 +270,10 @@ export class HangRig {
   }
 
   /**
-   * Applies hanging and getting up over the pose so far (motion, procedural body, seat). `swayX`
-   * is the window's sideways speed (window heights per second, from `BodySway`).
+   * Applies hanging and getting up over the pose so far (motion, procedural body, seat). `sway`
+   * is the window's speed (window heights per second, y down, from `BodySway`).
    */
-  apply(delta: number, elapsed: number, swayX: number) {
+  apply(delta: number, elapsed: number, sway: { x: number; y: number }) {
     const dt = Math.min(0.05, Math.max(1e-3, delta));
     const hang = this.hang;
     const grabbed = this.grabbed;
@@ -284,16 +298,23 @@ export class HangRig {
       rollTarget = recover.tipTo;
     }
 
-    const accel = THREE.MathUtils.clamp((swayX - this.lastSpeed) / dt, -80, 80);
-    this.lastSpeed = swayX;
-    // Far from hanging still (just grabbed, turning head down) it turns over calmly; near it, it swings.
-    const settling = Math.abs(rollTarget - this.roll) > 0.6;
-    const [stiffness, damping] = hang && !settling ? [SWING_STIFFNESS, SWING_DAMPING] : [TIP_STIFFNESS, TIP_DAMPING];
-    // A push to the right swings the hanging body out to the left (clockwise on the screen).
-    const push = hang ? -accel * SWING_PUSH : 0;
-    this.rollSpeed += (stiffness * (rollTarget - this.roll) - damping * this.rollSpeed + push) * dt;
-    this.roll += this.rollSpeed * dt;
-    if (hang && !settling) this.roll = THREE.MathUtils.clamp(this.roll, rollTarget - SWING_LIMIT, rollTarget + SWING_LIMIT);
+    const accel = { x: (sway.x - this.lastSpeed.x) / dt, y: (sway.y - this.lastSpeed.y) / dt };
+    this.lastSpeed.x = sway.x;
+    this.lastSpeed.y = sway.y;
+    if (hang && grabbed) {
+      // A pendulum about the grip (see `swingStep`), measured from hanging still.
+      const swing: Swing = { angle: this.roll - rollTarget, speed: this.rollSpeed, hanging: this.hanging };
+      swingStep(swing, accel, grabbed.length, dt);
+      this.roll = rollTarget + swing.angle;
+      this.rollSpeed = swing.speed;
+      this.hanging = swing.hanging;
+    } else {
+      this.rollSpeed += (TIP_STIFFNESS * (rollTarget - this.roll) - TIP_DAMPING * this.rollSpeed) * dt;
+      this.roll += this.rollSpeed * dt;
+    }
+    // Arms and legs swing with the body, a little behind it.
+    const limbTarget = hang && grabbed ? this.roll - rollTarget : 0;
+    this.limbAngle += (limbTarget - this.limbAngle) * Math.min(1, dt * LIMB_FOLLOW);
     this.pitchSpeed += (TIP_STIFFNESS * (pitchTarget - this.pitch) - TIP_DAMPING * this.pitchSpeed) * dt;
     this.pitch += this.pitchSpeed * dt;
     // Tipped a whole turn round: that is upright again.
@@ -372,6 +393,7 @@ export class HangRig {
 
     // 2. The whole body turned: on the screen (roll about the view axis), forwards over the hand (pitch).
     const towardsCamera = this.camera.getWorldDirection(this.a).negate();
+    this.limbDown.copy(DOWN).applyAxisAngle(towardsCamera, this.limbAngle);
     // Forwards is a turn about -X: the figure faces the camera (+Z), its top goes towards it.
     this.turn.setFromAxisAngle(towardsCamera, this.roll).multiply(this.q.setFromAxisAngle(AXIS_X, -this.pitch));
     scene.quaternion.copy(this.turn).multiply(this.restTurn);
@@ -408,7 +430,7 @@ export class HangRig {
           const sway = 0.04 * Math.sin(elapsed * 1.7 + (side === 'left' ? 0 : 2));
           const target = shoulder
             .getWorldPosition(this.a)
-            .addScaledVector(DOWN, this.armLength * 0.97)
+            .addScaledVector(this.limbDown, this.armLength * 0.97)
             .addScaledVector(front, this.armLength * sway);
           this.reach(side, 'Arm', target, this.weight);
         }
@@ -416,14 +438,14 @@ export class HangRig {
         if (!hip || grabbed?.heldLeg === side) continue;
         const target = hip.getWorldPosition(this.a);
         if (kind === 'feet') {
-          // The free leg sinks towards the floor, a little aside and forwards, the knee bent.
+          // The free leg sinks towards the floor and falls aside (not across the body), the knee bent.
           const held = this.bone(`${grabbed?.heldLeg ?? 'left'}UpperLeg`);
           const away = held ? this.b.subVectors(target, held.getWorldPosition(this.b)).setY(0).normalize() : this.b.set(0, 0, 0);
-          const drop = this.d.copy(DOWN).addScaledVector(away, 0.3).addScaledVector(front, 0.35).normalize();
-          target.addScaledVector(drop, this.legLength * 0.8);
+          const drop = this.d.copy(this.limbDown).addScaledVector(away, 0.6).addScaledVector(front, -0.1).normalize();
+          target.addScaledVector(drop, this.legLength * 0.85);
         } else {
           const kick = struggle * 0.22 * Math.sin(elapsed * 9 + (side === 'left' ? 0 : Math.PI));
-          target.addScaledVector(DOWN, this.legLength * (0.96 - Math.abs(kick) * 0.3)).addScaledVector(front, this.legLength * kick);
+          target.addScaledVector(this.limbDown, this.legLength * (0.96 - Math.abs(kick) * 0.3)).addScaledVector(front, this.legLength * kick);
         }
         this.reach(side, 'Leg', target, this.weight);
       }

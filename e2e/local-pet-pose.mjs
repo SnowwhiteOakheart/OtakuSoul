@@ -61,7 +61,8 @@ for (const withPack of [true, false]) {
         if (pose !== 'stand' || process.env.OTAKUSOUL_HANG === '0') continue;
         // Lifted by shoulders, hips and feet (`pet:test-hang`, no real drag), then let go: the
         // landing (head, backside) with sitting, rubbing and standing up again.
-        const grips = { shoulder: { x: 0.45, y: 0.32 }, hip: { x: 0.45, y: 0.6 }, feet: { x: 0.45, y: 0.93 } };
+        // Sideways from the middle in window heights, height as share (`HangPoint`).
+        const grips = { shoulder: { x: -0.03, y: 0.32 }, hip: { x: -0.03, y: 0.6 }, feet: { x: -0.03, y: 0.93 } };
         for (const [grip, at] of Object.entries(grips)) {
           await emit('pet:test-hang', { grip, at });
           await browser.pause(1800);

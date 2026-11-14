@@ -515,7 +515,7 @@ describe('bubbleText', () => {
 });
 
 describe('hanging and landing', () => {
-  const hang = (grip: 'shoulder' | 'hip' | 'feet') => ({ grip, at: { x: 0.4, y: 0.5 }, anchor: { x: 0.5, y: 0.5 } });
+  const hang = (grip: 'shoulder' | 'hip' | 'feet') => ({ grip, at: { x: -0.05, y: 0.5 }, anchor: { x: 0, y: 0.5 } });
   const hangingPet = (grip: 'shoulder' | 'hip' | 'feet') => {
     const pet = new PetBehavior(0, fixed(0.5));
     pet.setFloorSit(true);
@@ -530,10 +530,10 @@ describe('hanging and landing', () => {
   });
 
   it('hangs the feet at the top, so the head ends near the floor line', () => {
-    const feet = hangAnchor('feet', { x: 0.3, y: 0.9 }, 0.2);
-    expect(feet.x).toBe(0.5);
-    expect(feet.y).toBeCloseTo(0.18);
-    expect(hangAnchor('shoulder', { x: 0.3, y: 0.3 }, 0.2)).toEqual({ x: 0.3, y: 0.3 });
+    const feet = hangAnchor('feet', { x: -0.1, y: 0.9 }, 0.2);
+    expect(feet.x).toBe(0);
+    expect(feet.y).toBeCloseTo(0.12);
+    expect(hangAnchor('shoulder', { x: -0.1, y: 0.3 }, 0.2)).toEqual({ x: -0.1, y: 0.3 });
   });
 
   it('keeps hanging through the fall and lands on the head when held by the feet', () => {

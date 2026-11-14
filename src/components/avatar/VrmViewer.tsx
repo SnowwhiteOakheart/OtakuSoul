@@ -438,7 +438,7 @@ export const VrmViewer = ({
         }
       }
       // Held up or getting up: the whole body turns about the grip, limbs hang, a hand rubs.
-      hangRig?.apply(delta, elapsed, sway.windowSpeed.x);
+      hangRig?.apply(delta, elapsed, sway.windowSpeed);
       model.humanoid
         .getNormalizedBoneNode('head')
         // Up and down turn the other way on VRM 0.x rigs (see `forFacing` in proceduralBody).

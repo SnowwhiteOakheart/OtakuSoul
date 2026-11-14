@@ -616,7 +616,7 @@ export class PetBehavior {
   /** Hanging: the grip, and folded over the hand it turns sideways (seen in profile). */
   private hangFrame(): Pick<PetFrame, 'hang' | 'turn'> {
     const hang = this.hang;
-    return { hang, turn: hang?.grip === 'hip' ? (hang.at.x < 0.5 ? -HANG_HIP_TURN : HANG_HIP_TURN) : 0 };
+    return { hang, turn: hang?.grip === 'hip' ? (hang.at.x < 0 ? -HANG_HIP_TURN : HANG_HIP_TURN) : 0 };
   }
 
   /**

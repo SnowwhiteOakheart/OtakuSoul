@@ -42,7 +42,7 @@ export const PET_TOGGLE_EVENT = 'pet:toggle';
 export const PET_COME_EVENT = 'pet:come';
 /**
  * Test → pet interface in a test window (`?pet=true`, not the real pet): lift it by a grip
- * (`grip`, `at` as shares of the window) or let it go (no `grip`). Pose checks without a real drag.
+ * (`grip`, `at` as a `HangPoint`) or let it go (no `grip`). Pose checks without a real drag.
  */
 export const PET_TEST_HANG_EVENT = 'pet:test-hang';
 export interface PetTestHang {

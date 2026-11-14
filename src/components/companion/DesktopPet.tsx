@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type React from 'react';
 import { emitTo, listen } from '@tauri-apps/api/event';
-import { getCurrentWindow, PhysicalPosition } from '@tauri-apps/api/window';
+import { getCurrentWindow, LogicalSize, PhysicalPosition } from '@tauri-apps/api/window';
 import type { PetFigure } from '../avatar/avatarStage';
 import { StrokeDetector } from './petStroke';
 import { openGuestMenu } from './pet/PetMenu';
@@ -99,6 +99,7 @@ import {
   GUEST_ASK_MS,
   PROGRAM_DWELL_MS,
   PROGRAM_GAP_MS,
+  HANG_ASPECT,
   SIT_DROP,
   STATUS_POLL_MS,
   clamp,
@@ -111,24 +112,41 @@ import { openPetContextMenu } from './pet/PetMenu';
 import { PetFigureCanvas } from './pet/PetFigureCanvas';
 import { usePetWindowPhysics } from './pet/usePetWindowPhysics';
 
-/** The grip at a press (logical px in the window) and where the grabbed part then hangs. */
+/** The grip at a press (logical px in the window) and where the grabbed part then hangs (see `HangPoint`). */
 function grabbedAt(press: { cx: number; cy: number }, framing: PetFraming, drop: number): PetHang {
-  const at = { x: press.cx / window.innerWidth, y: press.cy / window.innerHeight };
+  const { innerWidth: width, innerHeight: height } = window;
+  const at = { x: (press.cx - width / 2) / height, y: press.cy / height };
   const top = petFigureTop(framing);
   // Seated, the figure is drawn lower (and squatter): the grip is read as if it stood.
   const grip = gripAt(at.y - drop, top, 1 - PET_FEET_SHARE - framing.lift - drop);
   return { grip, at, anchor: hangAnchor(grip, at, top) };
 }
 
-/** Moves the window by the way from the grabbed point to where that part is drawn while hanging. */
-async function shiftForHang(held: PetHang | null) {
-  if (!held) return;
-  const dx = (held.at.x - held.anchor.x) * window.innerWidth;
-  const dy = (held.at.y - held.anchor.y) * window.innerHeight;
-  if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+/**
+ * Makes room for the hanging figure and puts the grabbed part under the pointer: the window
+ * widens to `HANG_ASPECT` (same height, so the figure keeps its size and stays in the middle;
+ * it swings and turns over sideways) and moves by the way from the grip to where that part is
+ * drawn. Returns the width it had (logical px) when it widened, to go back to it later.
+ */
+async function openForHang(held: PetHang | null): Promise<number | null> {
+  if (!held) return null;
+  const { innerWidth: width, innerHeight: height } = window;
+  const wide = Math.max(width, Math.round(height * HANG_ASPECT));
   const win = getCurrentWindow();
   const [position, factor] = await within(Promise.all([win.outerPosition(), win.scaleFactor()]));
+  if (wide > width) await within(win.setSize(new LogicalSize(wide, height)));
+  const dx = width / 2 + held.at.x * height - (wide / 2 + held.anchor.x * height);
+  const dy = (held.at.y - held.anchor.y) * height;
   await within(win.setPosition(new PhysicalPosition(Math.round(position.x + dx * factor), Math.round(position.y + dy * factor))));
+  return wide > width ? width : null;
+}
+
+/** Back to the width before hanging, keeping the middle where it is. */
+async function closeAfterHang(width: number) {
+  const win = getCurrentWindow();
+  const [position, size, factor] = await within(Promise.all([win.outerPosition(), win.innerSize(), win.scaleFactor()]));
+  await within(win.setSize(new LogicalSize(width, size.height / factor)));
+  await within(win.setPosition(new PhysicalPosition(Math.round(position.x + (size.width - width * factor) / 2), position.y)));
 }
 
 /**
@@ -174,6 +192,8 @@ export const DesktopPet: React.FC = () => {
   /** Held up from where it was grabbed, and getting up after a hard landing (VRM poses). */
   const [hang, setHang] = useState<PetHang | null>(null);
   const [recover, setRecover] = useState<PetRecover | null>(null);
+  /** The window's width before it widened for hanging (logical px); null when it has its own width. */
+  const widenedFrom = useRef<number | null>(null);
   const modelPath = pet ? petModelPath(pet, prefs.figure) : '';
   /** The shown model, whose size a resize remembers. */
   const modelRef = useRef(modelPath);
@@ -253,6 +273,16 @@ export const DesktopPet: React.FC = () => {
     modelRef,
     peekRef,
   });
+
+  // Hanging and getting up are over: the window goes back to its own width (the physics re-reads it).
+  useEffect(() => {
+    const width = widenedFrom.current;
+    if (width === null || hang || recover || mode === 'dragged' || mode === 'falling') return;
+    widenedFrom.current = null;
+    void closeAfterHang(width)
+      .catch(() => {})
+      .finally(() => void syncWindow().catch(() => {}));
+  }, [hang, recover, mode, syncWindow]);
 
   /** Where the head ends in the window now: from the figure, lower while it sits. */
   const headEnd = useCallback(
@@ -858,7 +888,10 @@ export const DesktopPet: React.FC = () => {
     const held = behavior.canHang && !sittingRef.current ? grabbedAt(press, framingRef.current, seatDrop(seatRef.current)) : null;
     behavior.dragStart(now, held);
     const win = getCurrentWindow();
-    void shiftForHang(held)
+    void openForHang(held)
+      .then((width) => {
+        if (width !== null && widenedFrom.current === null) widenedFrom.current = width;
+      })
       .catch(() => {})
       // The system moves the window from here and keeps the button release (on Windows the
       // call returns at once; the drag ends when the moves stop).

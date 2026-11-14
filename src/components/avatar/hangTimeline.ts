@@ -9,7 +9,11 @@
  */
 export type HangGrip = 'shoulder' | 'hip' | 'feet';
 
-/** A point in the viewer as shares of its size, from the top left. */
+/**
+ * A point in the pet window: `x` sideways from its middle in window heights (negative is left),
+ * `y` as share of its height from the top. The figure stands in the middle at the same size when
+ * the window widens (it does while hanging), so such a point stays on the same body part.
+ */
 export interface HangPoint {
   x: number;
   y: number;
@@ -60,9 +64,59 @@ export function gripAt(y: number, top: number, feet: number): HangGrip {
  */
 export function hangAnchor(grip: HangGrip, at: HangPoint, top: number): HangPoint {
   if (grip === 'shoulder') return at;
-  if (grip === 'hip') return { x: 0.5, y: at.y };
-  return { x: 0.5, y: Math.max(0.03, top - 0.02) };
+  if (grip === 'hip') return { x: 0, y: at.y };
+  return { x: 0, y: Math.max(0.03, top - 0.08) };
 }
 
 /** How it lands after hanging like this: on the head from the feet, on the backside from the hips. */
 export const landingFor = (grip: HangGrip): Landing => (grip === 'feet' ? 'head' : grip === 'hip' ? 'back' : 'feet');
+
+/**
+ * Gravity in window heights per second² (the figure is about 0.8 window heights tall; for a
+ * 1.6 m person that is 9.81 m/s² scaled down): the hanging body swings as a real pendulum.
+ */
+const GRAVITY = 4.9;
+/** Air and joint friction of the swing (1/s): a few swings, then it hangs still. */
+const SWING_DAMPING = 0.9;
+/** Beyond the limit (just grabbed head down, toppling over) it moves much more sluggishly. */
+const SWING_DAMPING_FAR = 2;
+/** Hanging, it swings at most this far to either side (45°); at the limit it bounces back softly. */
+export const SWING_LIMIT = Math.PI / 4;
+/** Share of the speed kept (reversed) when the swing hits its limit. */
+const SWING_BOUNCE = 0.3;
+/** The hand's acceleration is cut beyond this (window heights/s²): jolts of the pointer data. */
+const MAX_ACCEL = 60;
+/** Grabbed head down from standing, it starts toppling with this speed (radians/s). */
+export const TOPPLE_KICK = 2.5;
+
+/** The swing of the hanging body about the grip: angle from hanging still (radians, counter-clockwise on screen). */
+export interface Swing {
+  angle: number;
+  speed: number;
+  /** Has been within `SWING_LIMIT` since grabbed (from then on the limit holds). */
+  hanging: boolean;
+}
+
+/**
+ * Advances the pendulum by `dt` seconds. Gravity pulls it below the grip; the hand's
+ * acceleration (`accel`, window heights/s², y down) pushes the other way (moved right, the body
+ * swings out left), lifting fast weighs it down more, dropping makes it nearly weightless.
+ * `length`: grip to the body's middle (window heights).
+ */
+export function swingStep(swing: Swing, accel: { x: number; y: number }, length: number, dt: number) {
+  const ax = Math.max(-MAX_ACCEL, Math.min(MAX_ACCEL, accel.x));
+  const ay = Math.max(-MAX_ACCEL, Math.min(MAX_ACCEL, accel.y));
+  const gravity = Math.max(GRAVITY * 0.2, Math.min(GRAVITY * 3, GRAVITY - ay));
+  const friction = Math.abs(swing.angle) > SWING_LIMIT ? SWING_DAMPING_FAR : SWING_DAMPING;
+  const angular = (-gravity * Math.sin(swing.angle) - ax * Math.cos(swing.angle)) / length - friction * swing.speed;
+  swing.speed += angular * dt;
+  swing.angle += swing.speed * dt;
+  if (Math.abs(swing.angle) <= SWING_LIMIT) swing.hanging = true;
+  else if (swing.hanging) {
+    // At the limit: held there, the outward speed turns into a small swing back.
+    const side = Math.sign(swing.angle);
+    swing.angle = side * SWING_LIMIT;
+    if (Math.sign(swing.speed) === side) swing.speed *= -SWING_BOUNCE;
+  }
+  return swing;
+}
