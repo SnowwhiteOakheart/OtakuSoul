@@ -1,16 +1,18 @@
-// Image Studio: model choice (none → hint, one → its name, several → a choice that is kept),
+// Image Studio: the system's pictures folder as default, model choice (none → hint, one → its
+// name, several → a choice that is kept),
 // the image folder can be changed, images in it show up in the gallery with their request,
 // the preview loads the settings back and deletes with confirmation.
 import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, truncateSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { launch, screenshotDir } from './harness.mjs';
+import { launch, screenshotDir, studioDefaultDir } from './harness.mjs';
 
 const { browser, home, close } = await launch();
 const invoke = (command, args = {}) => browser.execute((cmd, payload) => window.__TAURI_INTERNALS__.invoke(cmd, payload), command, args);
 const jsClick = (element) => browser.execute((el) => el.click(), element);
 const text = (element) => browser.execute((el) => el.textContent, element);
 const modelText = () => browser.execute(() => document.querySelector('[data-testid="image-model"]')?.textContent ?? '');
+const folderText = () => browser.execute(() => document.querySelector('[data-testid="studio-folder"]')?.textContent ?? '');
 const value = (selector) => browser.execute((sel) => document.querySelector(sel)?.value, selector);
 const sparse = (dir, name, size) => {
   mkdirSync(dir, { recursive: true });
@@ -31,8 +33,16 @@ try {
   await browser.$('button=Bild-Studio').waitForExist({ timeout: 20_000 });
   const models = path.join(home, 'data', 'image-models');
 
+  // By default the images go to the system's pictures folder plus OtakuSoul, shown as default.
+  const defaultDir = studioDefaultDir('images');
+  assert.deepEqual(await invoke('get_studio_folder', { kind: 'images' }), { path: defaultDir, is_default: true });
+
   // No model: a hint that leads to the downloads.
   await openStudio();
+  await browser.waitUntil(async () => {
+    const shown = await folderText();
+    return shown.includes(defaultDir) && shown.includes('(Standard)');
+  }, { timeout: 5000, timeoutMsg: `Standard-Bilderordner ${defaultDir} wird nicht angezeigt` });
   await browser.waitUntil(async () => (await modelText()).includes('Noch kein lokales Bildmodell'), { timeout: 5000, timeoutMsg: 'Hinweis ohne Modell fehlt' });
   assert.equal(await browser.$('[data-testid="image-generate"]').isEnabled(), false);
 
@@ -69,7 +79,7 @@ try {
     }),
   );
   await openStudio();
-  await browser.waitUntil(async () => (await text(await browser.$('[data-testid="studio-folder"]'))).includes('meine-bilder'), { timeout: 5000, timeoutMsg: 'Bildordner fehlt' });
+  await browser.waitUntil(async () => (await folderText()).includes('meine-bilder'), { timeout: 5000, timeoutMsg: 'Bildordner fehlt' });
   const gallery = await browser.$('[data-testid="image-gallery"]');
   await gallery.waitForDisplayed({ timeout: 5000 });
   // The thumbnail loads once it is in view (blob URL: the folder is outside the asset scope).
@@ -99,7 +109,10 @@ try {
   assert.equal(existsSync(path.join(folder, 'Abendrot.png')), false);
   assert.equal(existsSync(path.join(folder, 'Abendrot.png.json')), false);
 
-  assert.equal((await invoke('set_studio_folder', { kind: 'images', path: null })).is_default, true);
+  assert.deepEqual(await invoke('set_studio_folder', { kind: 'images', path: null }), { path: defaultDir, is_default: true });
+  // Back in the studio the default is selected again.
+  await openStudio();
+  await browser.waitUntil(async () => (await folderText()).includes(defaultDir), { timeout: 5000, timeoutMsg: 'Standardordner nach dem Zurücksetzen fehlt' });
   console.log('Bild-Studio: Modellwahl (keins/eins/mehrere), Ordner, Galerie, Vorschau, Übernehmen und Löschen bestanden.');
 } finally {
   await close();

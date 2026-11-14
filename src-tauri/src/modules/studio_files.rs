@@ -28,13 +28,23 @@ impl StudioKind {
         }
     }
 
-    /// The system's music or pictures folder plus `OtakuSoul`; without one (Linux without XDG
-    /// folders) a folder in the app data.
+    /// The system's music or pictures folder plus `OtakuSoul`. Without one (Linux without
+    /// `user-dirs.dirs`, e.g. WSL or a minimal desktop) `~/Music` / `~/Pictures`, the names
+    /// `xdg-user-dirs` would create; without a home folder a folder in the app data.
     pub fn default_dir(self) -> PathBuf {
         let user = directories::UserDirs::new();
-        let system = user.as_ref().and_then(|dirs| match self {
-            Self::Songs => dirs.audio_dir(),
-            Self::Images => dirs.picture_dir(),
+        let system = user.as_ref().and_then(|dirs| {
+            let known = match self {
+                Self::Songs => dirs.audio_dir(),
+                Self::Images => dirs.picture_dir(),
+            };
+            known.map(PathBuf::from).or_else(|| {
+                let fallback = match self {
+                    Self::Songs => "Music",
+                    Self::Images => "Pictures",
+                };
+                Some(dirs.home_dir().join(fallback))
+            })
         });
         system.map(|d| d.join("OtakuSoul")).unwrap_or_else(|| {
             PathBuf::from(resolve_app_paths().data_dir).join(match self {
@@ -288,14 +298,23 @@ mod tests {
     }
 
     #[test]
-    fn default_folders_differ_per_studio() {
-        assert_ne!(
-            StudioKind::Songs.default_dir(),
-            StudioKind::Images.default_dir()
-        );
-        assert!(
-            StudioKind::Images.default_dir().ends_with("OtakuSoul")
-                || StudioKind::Images.default_dir().ends_with("pictures")
-        );
+    fn default_folders_are_the_systems_music_and_pictures_folders() {
+        let songs = StudioKind::Songs.default_dir();
+        let images = StudioKind::Images.default_dir();
+        println!("Standardordner Songs: {}", songs.display());
+        println!("Standardordner Bilder: {}", images.display());
+        assert_ne!(songs, images);
+        let Some(user) = directories::UserDirs::new() else {
+            return;
+        };
+        let home = user.home_dir().to_path_buf();
+        let expected = |known: Option<&Path>, fallback: &str| {
+            known
+                .map(Path::to_path_buf)
+                .unwrap_or_else(|| home.join(fallback))
+                .join("OtakuSoul")
+        };
+        assert_eq!(songs, expected(user.audio_dir(), "Music"));
+        assert_eq!(images, expected(user.picture_dir(), "Pictures"));
     }
 }

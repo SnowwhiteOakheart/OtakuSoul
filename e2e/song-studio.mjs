@@ -1,17 +1,31 @@
-// Song Studio: the tab opens with the form, the song folder can be changed, songs in it are listed
+// Song Studio: the tab opens with the form and the system's music folder as default, the song
+// folder can be changed (and reset), songs in it are listed
 // with their request, "Load settings" fills the form, deleting removes the song and its origin.
 import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { launch, screenshotDir } from './harness.mjs';
+import { launch, screenshotDir, studioDefaultDir } from './harness.mjs';
 
 const { browser, home, close } = await launch();
 const invoke = (command, args = {}) => browser.execute((cmd, payload) => window.__TAURI_INTERNALS__.invoke(cmd, payload), command, args);
 const jsClick = (element) => browser.execute((el) => el.click(), element);
+const folderText = () => browser.execute(() => document.querySelector('[data-testid="studio-folder"]')?.textContent ?? '');
 const value = (selector) => browser.execute((sel) => document.querySelector(sel)?.value, selector);
 
 try {
   await browser.$('button=Song-Studio').waitForExist({ timeout: 20_000 });
+
+  // By default the songs go to the system's music folder plus OtakuSoul, shown as default.
+  const defaultDir = studioDefaultDir('songs');
+  assert.deepEqual(await invoke('get_studio_folder', { kind: 'songs' }), { path: defaultDir, is_default: true });
+  await jsClick(await browser.$('button=Song-Studio'));
+  await browser.$('[data-testid="song-studio"]').waitForDisplayed({ timeout: 15_000 });
+  await browser.waitUntil(async () => {
+    const shown = await folderText();
+    return shown.includes(defaultDir) && shown.includes('(Standard)');
+  }, { timeout: 5000, timeoutMsg: `Standard-Musikordner ${defaultDir} wird nicht angezeigt` });
+  // Leave the tab, so it reads the folder again when it opens next.
+  await jsClick(await browser.$('button=Chat'));
 
   // A folder of the test instead of the real music folder.
   const folder = path.join(home, 'meine-songs');
@@ -31,7 +45,7 @@ try {
 
   await jsClick(await browser.$('button=Song-Studio'));
   await browser.$('[data-testid="song-studio"]').waitForDisplayed({ timeout: 15_000 });
-  await browser.waitUntil(async () => (await browser.$('[data-testid="studio-folder"]').getText()).includes('meine-songs'), {
+  await browser.waitUntil(async () => (await folderText()).includes('meine-songs'), {
     timeout: 5000,
     timeoutMsg: 'Songordner wird nicht angezeigt',
   });
@@ -65,7 +79,7 @@ try {
 
   // Back to the default folder.
   const reset = await invoke('set_studio_folder', { kind: 'songs', path: null });
-  assert.equal(reset.is_default, true);
+  assert.deepEqual(reset, { path: defaultDir, is_default: true });
   console.log('Song-Studio: Ordner, Songliste, Einstellungen übernehmen und Löschen bestanden.');
 } finally {
   await close();

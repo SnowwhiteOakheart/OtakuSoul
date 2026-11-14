@@ -408,7 +408,8 @@ const Thumbnail = ({ image, onOpen }: { image: StudioImage; onOpen: () => void }
       ) : (
         <ImageIcon className="absolute inset-0 m-auto w-6 h-6 text-slate-600" />
       )}
-      <span className="absolute inset-x-0 bottom-0 truncate bg-black/60 px-2 py-1 text-left text-[11px] text-slate-100">{image.title}</span>
+      {/* Fixed white on dark like CoverCard: slate tones turn dark in the light themes. */}
+      <span className="absolute inset-x-0 bottom-0 truncate bg-black/75 px-2 py-1 text-left text-[11px] font-medium text-white">{image.title}</span>
     </button>
   );
 };

@@ -1,9 +1,9 @@
 // Starts the debug build of the app under tauri-driver with a throwaway profile
 // (OTAKUSOUL_HOME) and the mock LLM, so a test never touches the real data.
-import { spawn } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import net from 'node:net';
-import { tmpdir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { remote } from 'webdriverio';
@@ -135,6 +135,31 @@ export async function launch(settings = {}, { hubFiles, homeFiles = {} } = {}) {
     removeHome(home);
     throw e;
   }
+}
+
+/**
+ * The folder a studio saves to by default, asked from the system itself (not from the app):
+ * Windows' known folders (they follow a OneDrive redirect), on Linux `xdg-user-dir`; when that
+ * is not set up it answers with the home folder, and the app uses `~/Music` / `~/Pictures`.
+ */
+export function studioDefaultDir(kind) {
+  let dir;
+  if (process.platform === 'win32') {
+    const folder = kind === 'songs' ? 'MyMusic' : 'MyPictures';
+    dir = execFileSync('powershell', ['-NoProfile', '-Command', `[Environment]::GetFolderPath('${folder}')`], { encoding: 'utf8' }).trim();
+  } else if (process.platform === 'linux') {
+    const home = homedir();
+    let xdg = '';
+    try {
+      xdg = execFileSync('xdg-user-dir', [kind === 'songs' ? 'MUSIC' : 'PICTURES'], { encoding: 'utf8' }).trim().replace(/\/$/, '');
+    } catch {
+      // Without xdg-user-dirs the app falls back to the home folder's names as well.
+    }
+    dir = xdg && xdg !== home ? xdg : path.join(home, kind === 'songs' ? 'Music' : 'Pictures');
+  } else {
+    dir = path.join(homedir(), kind === 'songs' ? 'Music' : 'Pictures');
+  }
+  return path.join(dir, 'OtakuSoul');
 }
 
 /** Clicks „Senden“ once it is enabled: it stays locked until the chat of the character is open. */
