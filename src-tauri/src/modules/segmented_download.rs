@@ -433,6 +433,7 @@ pub async fn download(
 mod tests {
     use super::*;
     use crate::modules::model_files::{noise, serve_flaky, serve_without_ranges};
+    use crate::modules::test_dir::TestDir;
 
     fn sha(data: &[u8]) -> String {
         Sha256::digest(data)
@@ -441,11 +442,11 @@ mod tests {
             .collect()
     }
 
-    fn temp_part(name: &str) -> PathBuf {
-        let dir = std::env::temp_dir().join(format!("otakusoul-seg-{name}-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(&dir).unwrap();
-        dir.join("model.gguf.part")
+    /// The folder (removed when it drops: keep it bound) and the part file inside.
+    fn temp_part(name: &str) -> (TestDir, PathBuf) {
+        let dir = TestDir::new(&format!("seg-{name}"));
+        let part = dir.join("model.gguf.part");
+        (dir, part)
     }
 
     #[test]
@@ -463,7 +464,7 @@ mod tests {
     async fn ranges_survive_dropped_connections() {
         let data = noise(3 << 20);
         let url = serve_flaky(data, 100 * 1024).await;
-        let part = temp_part("drops");
+        let (_dir, part) = temp_part("drops");
         let outcome = download(
             &reqwest::Client::new(),
             &url,
@@ -484,7 +485,7 @@ mod tests {
         let data = noise(2 << 20);
         let url = serve_flaky(data, data.len()).await;
         // An older single-connection download left the first 100 KiB behind.
-        let part = temp_part("cancel");
+        let (_dir, part) = temp_part("cancel");
         std::fs::write(&part, &data[..100 * 1024]).unwrap();
         let client = reqwest::Client::new();
         // Cancel after about a third of the chunks (the check runs once per chunk).
@@ -514,7 +515,7 @@ mod tests {
     async fn servers_without_ranges_are_reported() {
         let data = noise(1 << 20);
         let url = serve_without_ranges(data).await;
-        let part = temp_part("plain");
+        let (_dir, part) = temp_part("plain");
         let outcome = download(
             &reqwest::Client::new(),
             &url,
@@ -531,7 +532,7 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn a_missing_file_is_a_status_error() {
-        let part = temp_part("missing");
+        let (_dir, part) = temp_part("missing");
         let app = axum::Router::new().route(
             "/file",
             axum::routing::get(|| async { axum::http::StatusCode::NOT_FOUND }),

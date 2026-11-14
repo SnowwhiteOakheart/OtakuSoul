@@ -3,8 +3,7 @@
 // summary in the chat sidebar. Run with `npm run e2e` (needs a debug build, tauri-driver and
 // WebKitWebDriver; see e2e/README.md).
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { clickSend, launch, screenshotDir } from './harness.mjs';
 import { STAGE_NARRATION, SUMMARY, TRANSLATION } from './mock-llm.mjs';
@@ -13,7 +12,7 @@ const step = (name) => console.log(`• ${name}`);
 const shot = (browser, name) => browser.saveScreenshot(path.join(screenshotDir, `${name}.png`));
 
 // A small window (cloud setting) so a dozen turns are enough to overflow it.
-const { browser, mock, close } = await launch({ cloud_context_tokens: 4096 });
+const { browser, mock, home, close } = await launch({ cloud_context_tokens: 4096 });
 let failed = false;
 try {
   step('App startet im Chat');
@@ -93,7 +92,9 @@ try {
   );
 
   step('Bild und Textdatei anhängen, das Modell bekommt beides');
-  const dir = mkdtempSync(path.join(tmpdir(), 'otakusoul-e2e-files-'));
+  // Inside the test profile: removed with it at the end.
+  const dir = path.join(home, 'attachments-source');
+  mkdirSync(dir, { recursive: true });
   const png = path.join(dir, 'pixel.png');
   // 2×2 red PNG.
   writeFileSync(png, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGP8z8DAwMDAxMDAwMDAAAANHQEDasKb6QAAAABJRU5ErkJggg==', 'base64'));

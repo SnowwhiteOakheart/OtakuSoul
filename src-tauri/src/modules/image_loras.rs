@@ -491,13 +491,10 @@ pub fn with_triggers(prompt: &str, triggers: &[String]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::modules::test_dir::TestDir;
 
-    fn temp_dir(name: &str) -> PathBuf {
-        let dir =
-            std::env::temp_dir().join(format!("otakusoul-loras-{name}-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(&dir).unwrap();
-        dir
+    fn temp_dir(name: &str) -> TestDir {
+        TestDir::new(&format!("loras-{name}"))
     }
 
     fn pick(file: &str, weight: f32) -> LoraSelection {
@@ -597,7 +594,8 @@ mod tests {
     #[test]
     fn own_loras_keep_family_trigger_and_hide_adult_content() {
         let dir = temp_dir("own");
-        let source = temp_dir("own-source").join("Flux Uncensored V2.safetensors");
+        let sources = temp_dir("own-source");
+        let source = sources.join("Flux Uncensored V2.safetensors");
         std::fs::write(&source, vec![0u8; 1024 * 1024]).unwrap();
         let adult = OwnLoraMeta {
             name: "Flux Uncensored".into(),
@@ -677,7 +675,8 @@ mod tests {
     #[test]
     fn imports_never_take_a_catalog_name() {
         let dir = temp_dir("catalog-name");
-        let source = temp_dir("catalog-name-source").join("x.safetensors");
+        let sources = temp_dir("catalog-name-source");
+        let source = sources.join("x.safetensors");
         std::fs::write(&source, b"x").unwrap();
         let meta = OwnLoraMeta {
             name: "anime-detailer-xl".into(),

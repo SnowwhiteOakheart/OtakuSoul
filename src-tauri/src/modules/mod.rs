@@ -66,6 +66,8 @@ pub mod stage_music;
 pub mod story_music;
 pub mod studio_files;
 pub mod talking_portrait;
+#[cfg(test)]
+pub mod test_dir;
 pub mod vad;
 pub use hub as soul_hub;
 pub use memory_pipeline as soul_memory_pipeline;

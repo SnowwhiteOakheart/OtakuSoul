@@ -704,13 +704,11 @@ mod tests {
         assert!(!sel.stage);
     }
 
-    fn temp_locations(name: &str) -> (PathBuf, BackupLocations) {
-        let root = std::env::temp_dir().join(format!(
-            "otakusoul-backup-test-{}-{}",
-            name,
-            std::process::id()
-        ));
-        let _ = fs::remove_dir_all(&root);
+    use crate::modules::test_dir::TestDir;
+
+    /// The profile folder (removed when it drops: keep it bound) and its locations.
+    fn temp_locations(name: &str) -> (TestDir, BackupLocations) {
+        let root = TestDir::new(&format!("backup-test-{name}"));
         let dir = |sub: &str| {
             let path = root.join(sub);
             fs::create_dir_all(&path).unwrap();
@@ -740,7 +738,7 @@ mod tests {
 
     #[test]
     fn backup_round_trip_restores_files_settings_and_database() {
-        let (root, loc) = temp_locations("roundtrip");
+        let (_root, loc) = temp_locations("roundtrip");
         let character = PathBuf::from(&loc.paths.characters_dir).join("ayu/card.json");
         fs::create_dir_all(character.parent().unwrap()).unwrap();
         fs::write(&character, r#"{"name":"Ayu"}"#).unwrap();
@@ -788,13 +786,11 @@ mod tests {
                 .flatten()
                 .any(|e| e.file_name().to_string_lossy().starts_with("pre_restore_"))
         );
-
-        let _ = fs::remove_dir_all(root);
     }
 
     #[test]
     fn cloned_voices_are_backed_up_without_model_files() {
-        let (root, loc) = temp_locations("voices");
+        let (_root, loc) = temp_locations("voices");
         let voices = PathBuf::from(&loc.paths.data_dir).join("voices");
         fs::create_dir_all(&voices).unwrap();
         for name in ["stimme-1.wav", "stimme-1.txt", "stimme-1.json"] {
@@ -819,13 +815,11 @@ mod tests {
         );
         assert!(voices.join("stimme-1.wav").exists() && voices.join("stimme-1.json").exists());
         assert!(!voices.join("kokoro-voice-df_eva.gguf").exists());
-
-        let _ = fs::remove_dir_all(root);
     }
 
     #[test]
     fn restore_respects_group_selection() {
-        let (root, loc) = temp_locations("groups");
+        let (_root, loc) = temp_locations("groups");
         let lorebook = PathBuf::from(&loc.paths.lorebooks_dir).join("welt.json");
         let persona = PathBuf::from(&loc.paths.personas_dir).join("ich.json");
         fs::write(&lorebook, "lore").unwrap();
@@ -854,12 +848,11 @@ mod tests {
 
         assert!(lorebook.exists());
         assert!(!persona.exists());
-        let _ = fs::remove_dir_all(root);
     }
 
     #[test]
     fn safety_snapshots_are_rotated() {
-        let (root, loc) = temp_locations("rotation");
+        let (_root, loc) = temp_locations("rotation");
         for i in 0..(SAFETY_ROTATION_KEEP + 3) {
             fs::write(loc.backups_dir.join(format!("pre_restore_{i:02}.zip")), b"").unwrap();
         }
@@ -880,13 +873,11 @@ mod tests {
             SAFETY_ROTATION_KEEP
         );
         assert!(names.contains(&"otakusoul_backup_keep.zip".to_string()));
-        let _ = fs::remove_dir_all(root);
     }
 
     #[test]
     fn restore_of_missing_backup_fails() {
-        let (root, loc) = temp_locations("missing");
+        let (_root, loc) = temp_locations("missing");
         assert!(ProfileBackupManager::restore_backup_at(&loc, "gibt-es-nicht.zip", None).is_err());
-        let _ = fs::remove_dir_all(root);
     }
 }
