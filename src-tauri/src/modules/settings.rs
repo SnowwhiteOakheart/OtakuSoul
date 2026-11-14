@@ -204,9 +204,6 @@ pub struct AppSettings {
     /// Default Inochi2D puppet (file path).
     #[serde(default)]
     pub active_inochi2d_path: Option<String>,
-    /// Default mesh avatar (Mesh Avatar Studio, `.mavatar` file path).
-    #[serde(default)]
-    pub active_mesh_avatar_path: Option<String>,
     #[serde(default)]
     pub global_lorebooks: Vec<String>,
     #[serde(default = "default_true")]
@@ -351,7 +348,6 @@ impl Default for AppSettings {
             active_inochi2d_path: crate::modules::inochi2d::scan_inochi2d_models()
                 .first()
                 .map(|p| p.model_path.clone()),
-            active_mesh_avatar_path: None,
             global_lorebooks: Vec::new(),
             scene_tension_enabled: true,
             hidden_character_ids: Vec::new(),

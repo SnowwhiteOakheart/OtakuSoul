@@ -155,7 +155,7 @@ export interface PetState {
   characterId: string;
   /**
    * The figure's 3D model (VRM, glTF or MMD; "" if none). The pet shows only real 3D figures:
-   * Live2D, Inochi2D, mesh avatars and portraits stay in the chat.
+   * Live2D, Inochi2D and portraits stay in the chat.
    */
   modelPath: string;
   /** GoEmotions name (shown in the status panel). */

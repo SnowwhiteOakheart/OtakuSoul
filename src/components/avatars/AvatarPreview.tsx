@@ -11,21 +11,18 @@ import type { PuppetInfo } from '../../services/inochi2d/controls';
 const MmdViewer = lazy(() => import('../avatar/MmdViewer'));
 const Inochi2dViewer = lazy(() => import('../avatar/Inochi2dViewer'));
 const GltfViewer = lazy(() => import('../avatar/GltfViewer'));
-const MeshAvatarViewer = lazy(() => import('../avatar/MeshAvatarViewer'));
 const Live2DViewer = lazy(() =>
   loadCubismCore()
     .then(() => import('../avatar/Live2DViewer'))
     .then((module) => ({ default: module.Live2DViewer })),
 );
 
-/** Feelings to try on a Live2D model, Inochi2D puppet or mesh avatar (3D viewers bring their own menu). */
+/** Feelings to try on a Live2D model or Inochi2D puppet (3D viewers bring their own menu). */
 const LIVE2D_EMOTIONS = ['neutral', 'joy', 'anger', 'sadness', 'surprise', 'relief'] as const;
-/** The same feelings as the expression tags a mesh avatar knows. */
-const MESH_TAGS: Record<string, string> = { neutral: 'neutral', joy: 'happy', anger: 'angry', sadness: 'sad', surprise: 'surprised', relief: 'relaxed' };
 
 interface AvatarPreviewProps {
   kind: AvatarKind;
-  /** Model file (3D, Inochi2D, mesh) or model JSON (Live2D). */
+  /** Model file (3D, Inochi2D) or model JSON (Live2D). */
   path: string;
   /** Set to a function that takes a picture of the current view (null while there is none). */
   captureRef?: MutableRefObject<(() => string | null) | null>;
@@ -79,17 +76,13 @@ export function AvatarPreview({ kind, path, captureRef, onAutoSnapshot, onInochi
   const [expression, setExpression] = useState('neutral');
   const [emotion, setEmotion] = useState<string>('neutral');
 
-  if (kind === 'live2d' || kind === 'inochi2d' || kind === 'mesh') {
+  if (kind === 'live2d' || kind === 'inochi2d') {
     return (
       <div className="flex h-full flex-col" data-avatar-preview={kind}>
         <div ref={containerRef} className="min-h-0 flex-1">
           {kind === 'live2d' ? (
             <Suspense fallback={<AvatarSkeleton label={t('avatar.live2dLoading')} />}>
               <Live2DViewer key={path} modelPath={path} emotion={emotion} />
-            </Suspense>
-          ) : kind === 'mesh' ? (
-            <Suspense fallback={<AvatarSkeleton label={t('avatar.meshLoading')} />}>
-              <MeshAvatarViewer key={path} modelPath={path} emotion={MESH_TAGS[emotion] ?? 'neutral'} />
             </Suspense>
           ) : (
             <Suspense fallback={<AvatarSkeleton label={t('avatar.inochi2dLoading')} />}>

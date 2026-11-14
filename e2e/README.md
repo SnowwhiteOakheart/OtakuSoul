@@ -52,7 +52,7 @@ Die Suite umfasst über 90 spezialisierte Testmodule:
 
 5. **Avatare, 3D-Bühne & Inochi2D:**
    - `avatar-motions.mjs`, `avatar-mmd.mjs`, `avatar-gltf.mjs`, `avatar-gltf-clips.mjs`, `avatar-gltf-folder.mjs`, `avatar-gltf-face.mjs`, `avatar-portraits.mjs`: VRM-, MMD-, glTF-Animationen, Morph-/Knochen-Gesichter und 15 Emotionsporträts.
-   - `avatar-library.mjs`, `avatar-manager.mjs`, `avatar-inochi2d.mjs`: Avatar-Bibliothek, Manager, WebGL2-Inochi2D-Puppen samt Animationen, Parameter-Zuordnung und Hub-Katalog. `avatar-mesh.mjs`: Mesh-Avatare (Mesh Avatar Studio) aus `.mavatar` und Projektordner (`tools/make-mavatar.mjs`), Chat-Ansicht, Bibliothek und Zuweisung.
+   - `avatar-library.mjs`, `avatar-manager.mjs`, `avatar-inochi2d.mjs`: Avatar-Bibliothek, Manager, WebGL2-Inochi2D-Puppen samt Animationen, Parameter-Zuordnung und Hub-Katalog.
 
 6. **Stimme, Bildgenerierung, Modelle & Begleiter:**
    - `voice-effects.mjs`, `voice-clone-trim.mjs`, `voice-mic-check.mjs`, `voice-barge-in.mjs`, `voice-gallery.mjs`: Audioeffekte, Wellenform-Zuschnitt für Stimmklone, Audio-Prüfstand, Ins-Wort-Fallen im Sprachanruf und Stimmgalerie.

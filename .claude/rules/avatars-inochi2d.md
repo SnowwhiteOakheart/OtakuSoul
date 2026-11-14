@@ -3,7 +3,6 @@ paths:
   - "src-tauri/src/modules/avatar_*.rs"
   - "src-tauri/src/modules/live2d.rs"
   - "src-tauri/src/modules/inochi2d.rs"
-  - "src-tauri/src/modules/mesh_avatar.rs"
   - "src-tauri/src/modules/vroid_hub.rs"
   - "src/components/avatar/**"
   - "src/services/inochi2d/**"

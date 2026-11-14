@@ -574,8 +574,6 @@ pub fn run() {
             commands::avatar::inspect_live2d_zip,
             commands::avatar::import_live2d_model,
             commands::avatar::scan_inochi2d_models,
-            commands::avatar::scan_mesh_avatars,
-            commands::avatar::import_mesh_avatar,
             commands::avatar::get_inochi2d_catalog,
             commands::avatar::download_inochi2d_model,
             commands::avatar::talking_portrait_status,

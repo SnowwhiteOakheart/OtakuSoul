@@ -53,27 +53,6 @@ export async function importInochi2dFromDialog(): Promise<string | null> {
   }
 }
 
-/**
- * Picks a mesh avatar (Mesh Avatar Studio): a `.mavatar` file or, with `folder`, a project folder
- * (packed into a `.mavatar`); imports it and reloads the list. The new path or null.
- */
-export async function importMeshAvatarFromDialog(folder = false): Promise<string | null> {
-  try {
-    const selected = folder
-      ? await open({ multiple: false, directory: true })
-      : await open({ multiple: false, filters: [{ name: translate('settings.fileFilterMesh'), extensions: ['mavatar'] }] });
-    if (!selected || typeof selected !== 'string') return null;
-    const imported = await api.importMeshAvatar(selected);
-    await useAppStore.getState().refreshMeshAvatars();
-    toast.success(translate('settings.meshImported', { name: imported.name }));
-    return imported.model_path;
-  } catch (e) {
-    console.error('Failed to import mesh avatar:', e);
-    toast.error(translate('settings.importFailed', { error: errorMessage(e) }));
-    return null;
-  }
-}
-
 /** Imports a Live2D path (asking which variant to extract when a ZIP holds several) and reloads the list. */
 export async function importLive2dPath(selected: string): Promise<string | null> {
   try {

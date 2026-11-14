@@ -44,7 +44,7 @@ type StoreState = ReturnType<typeof useAppStore.getState>;
 
 /**
  * The figure's model for the pet (also the Desktop-Pet tab's preview): only a real 3D model
- * (VRM, glTF, MMD). Live2D, Inochi2D, mesh avatars and portraits stay in the chat; without a 3D
+ * (VRM, glTF, MMD). Live2D, Inochi2D and portraits stay in the chat; without a 3D
  * model the pet shows a note instead of a figure.
  */
 export function petModels(

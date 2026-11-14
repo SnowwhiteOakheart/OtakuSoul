@@ -20,7 +20,7 @@ describe('desktop pet figure', () => {
     for (const path of ['C:/m/Girl.vrm', 'C:/m/Boy.glb', 'C:/m/Rig.gltf', 'C:/m/Miku.pmx', 'C:/m/Old.pmd', 'vroid:123']) {
       expect(isPet3dModel(path)).toBe(true);
     }
-    for (const path of ['C:/m/Aka.inx', 'C:/m/Aka.inp', 'C:/m/Hiyori.model3.json', 'C:/m/Shiro.mavatar', 'portrait:abc', '']) {
+    for (const path of ['C:/m/Aka.inx', 'C:/m/Aka.inp', 'C:/m/Hiyori.model3.json', 'portrait:abc', '']) {
       expect(isPet3dModel(path)).toBe(false);
     }
   });

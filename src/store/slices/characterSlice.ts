@@ -159,13 +159,7 @@ export const createCharacterSlice: SliceCreator<CharacterSlice> = (set, get) => 
     const extensions = { ...(char.card.data.extensions || {}) };
     // The old Soul of Waifu keys would win over an emptied custom key.
     const [key, legacy] =
-      kind === 'vrm'
-        ? ['custom_vrm', 'sow_vrm']
-        : kind === 'live2d'
-          ? ['custom_live2d', 'sow_live2d']
-          : kind === 'mesh'
-            ? ['custom_mesh_avatar', '']
-            : ['custom_inochi2d', ''];
+      kind === 'vrm' ? ['custom_vrm', 'sow_vrm'] : kind === 'live2d' ? ['custom_live2d', 'sow_live2d'] : ['custom_inochi2d', ''];
     if (legacy) delete extensions[legacy];
     if (model) extensions[key] = model;
     else delete extensions[key];

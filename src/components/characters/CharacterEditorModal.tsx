@@ -35,8 +35,8 @@ export const CharacterEditorModal = ({
 }: CharacterEditorModalProps) => {
   const { t, tOptional } = useTranslation();
   const fieldId = useId();
-  const { refreshCharacters, allLorebooks, scannedVrms, scannedLive2ds, scannedInochi2ds, scannedMeshAvatars } = useStoreFields(
-    'refreshCharacters', 'allLorebooks', 'scannedVrms', 'scannedLive2ds', 'scannedInochi2ds', 'scannedMeshAvatars',
+  const { refreshCharacters, allLorebooks, scannedVrms, scannedLive2ds, scannedInochi2ds } = useStoreFields(
+    'refreshCharacters', 'allLorebooks', 'scannedVrms', 'scannedLive2ds', 'scannedInochi2ds',
   );
 
   const [activeTab, setActiveTab] = useState<'basics' | 'expressions' | 'prompts' | 'greetings' | 'lorebooks' | 'i18n' | 'raw'>('basics');
@@ -54,7 +54,6 @@ export const CharacterEditorModal = ({
     ''
   );
   const [inochi2dModel, setInochi2dModel] = useState<string>((character?.card.data.extensions?.custom_inochi2d as string) || '');
-  const [meshAvatar, setMeshAvatar] = useState<string>((character?.card.data.extensions?.custom_mesh_avatar as string) || '');
   // Official download pages: kept as written (also unsafe ones, so nothing typed gets lost); the
   // preview only offers https pages.
   const [modelLinks, setModelLinks] = useState<ModelLink[]>(() => {
@@ -202,7 +201,6 @@ export const CharacterEditorModal = ({
             custom_vrm: vrmPath || undefined,
             custom_live2d: live2dModel || undefined,
             custom_inochi2d: inochi2dModel || undefined,
-            custom_mesh_avatar: meshAvatar || undefined,
             [MODEL_LINKS_KEY]: cleanModelLinks(modelLinks),
             expressions: Object.keys(cleanedExpressionImages).length > 0
               ? cleanedExpressionImages
@@ -462,23 +460,6 @@ export const CharacterEditorModal = ({
                   >
                     <option value="">{t('editor.noInochi2d')}</option>
                     {scannedInochi2ds.map((m) => (
-                      <option key={m.model_path} value={m.id}>
-                        {m.name} ({m.id})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="w-full mt-2 space-y-1.5 px-2">
-                  <label className="text-xs font-semibold text-slate-400" htmlFor={`${fieldId}-mesh`}>{t('editor.meshAvatar')}</label>
-                  <select
-                    id={`${fieldId}-mesh`}
-                    value={meshAvatar}
-                    onChange={(e) => setMeshAvatar(e.target.value)}
-                    className="w-full bg-app border border-slate-700/80 rounded-lg px-2 py-1.5 text-xs text-slate-100 focus:outline-hidden focus:border-accent-500 transition-colors"
-                  >
-                    <option value="">{t('editor.noMeshAvatar')}</option>
-                    {scannedMeshAvatars.map((m) => (
                       <option key={m.model_path} value={m.id}>
                         {m.name} ({m.id})
                       </option>
@@ -964,7 +945,6 @@ export const CharacterEditorModal = ({
                         custom_vrm: vrmPath || undefined,
                         custom_live2d: live2dModel || undefined,
                         custom_inochi2d: inochi2dModel || undefined,
-                        custom_mesh_avatar: meshAvatar || undefined,
                         [MODEL_LINKS_KEY]: cleanModelLinks(modelLinks),
                         expressions: Object.keys(expressionImages).length > 0
                           ? expressionImages
