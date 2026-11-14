@@ -56,6 +56,8 @@ const BOUNCE = 0.12;
 /** Point radius on the floor (share of the model height); the head is larger. */
 const RADIUS = 0.025;
 const HEAD_RADIUS = 0.07;
+/** The trunk is thick: lying, its points stay this far above the floor (it does not sink into it). */
+const TRUNK_RADIUS = 0.06;
 /** The body stays this close to its starting depth (share of the height): it lies facing the camera. */
 const DEPTH = 0.22;
 
@@ -179,7 +181,8 @@ export class Ragdoll {
     for (const name of JOINTS) {
       const p = this.pos[name];
       const q = this.prev[name];
-      const radius = (name === 'headTop' || name === 'neck' ? HEAD_RADIUS : RADIUS) * height;
+      const radius =
+        (name === 'headTop' || name === 'neck' ? HEAD_RADIUS : TRUNK.includes(name) ? TRUNK_RADIUS : RADIUS) * height;
       if (p.y < floor + radius) {
         // On the floor: pushed up, a small bounce, friction against sliding.
         const vy = p.y - q.y;
