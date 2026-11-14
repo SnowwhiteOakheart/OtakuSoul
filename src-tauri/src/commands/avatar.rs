@@ -37,6 +37,23 @@ pub fn import_live2d_model(
 }
 
 #[tauri::command(async)]
+pub fn scan_mesh_avatars() -> Vec<crate::modules::mesh_avatar::ScannedMeshAvatar> {
+    crate::modules::mesh_avatar::scan_mesh_avatars()
+}
+
+/// Imports a mesh avatar (`.mavatar` or a Mesh Avatar Studio project folder); off the main thread.
+#[tauri::command]
+pub async fn import_mesh_avatar(
+    source_path: String,
+) -> Result<crate::modules::mesh_avatar::ScannedMeshAvatar, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::modules::mesh_avatar::import_mesh_avatar(&source_path)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command(async)]
 pub fn scan_inochi2d_models() -> Vec<crate::modules::inochi2d::ScannedInochi2d> {
     crate::modules::inochi2d::scan_inochi2d_models()
 }
@@ -284,10 +301,11 @@ fn avatar_key(kind: crate::modules::avatar_library::AvatarKind, path: &str) -> S
             .map(|n| n.to_string_lossy().into_owned())
             .unwrap_or_default(),
         AvatarKind::Inochi2d => key_for(path, &crate::modules::inochi2d::inochi2d_roots()),
+        AvatarKind::Mesh => key_for(path, &crate::modules::mesh_avatar::mesh_avatar_roots()),
     }
 }
 
-/// Gives an avatar (`kind` = `vrm`, `live2d` or `inochi2d`) an own name; an empty name restores the original.
+/// Gives an avatar (`kind` = `vrm`, `live2d`, `inochi2d` or `mesh`) an own name; an empty name restores the original.
 #[tauri::command]
 pub fn rename_avatar(kind: String, path: String, name: String) -> Result<(), String> {
     let kind = crate::modules::avatar_library::AvatarKind::parse(&kind)?;

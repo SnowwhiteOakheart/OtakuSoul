@@ -117,6 +117,7 @@ import type { ImageStudioRequest } from './generated/ImageStudioRequest';
 import type { ImageStudioProgress } from './generated/ImageStudioProgress';
 import type { ImageStudioModel } from './generated/ImageStudioModel';
 import type { ScannedInochi2d } from './generated/ScannedInochi2d';
+import type { ScannedMeshAvatar } from './generated/ScannedMeshAvatar';
 import type { Inochi2dMapping } from './generated/Inochi2dMapping';
 import type { Inochi2dChannel } from './generated/Inochi2dChannel';
 import type { LlmProviderType } from './generated/LlmProviderType';
@@ -280,6 +281,7 @@ export type {
   ImageStudioProgress,
   ImageStudioModel,
   ScannedInochi2d,
+  ScannedMeshAvatar,
   Inochi2dMapping,
   Inochi2dChannel,
   LlmProviderType,
@@ -397,6 +399,8 @@ export interface CharacterData {
     custom_live2d?: string;
     /** Inochi2D puppet: file name (or path) of the `.inp`/`.inx`. */
     custom_inochi2d?: string;
+    /** Mesh avatar (Mesh Avatar Studio): file name (or path) of the `.mavatar`. */
+    custom_mesh_avatar?: string;
     custom_vrm?: string;
     custom_expressions?: Record<string, string>;
     custom_i18n?: {
@@ -952,6 +956,7 @@ export interface AppSettings {
   active_vrm_path: string | null;
   active_live2d_path?: string | null;
   active_inochi2d_path?: string | null;
+  active_mesh_avatar_path?: string | null;
   global_lorebooks?: string[];
   scene_tension_enabled?: boolean;
   avatar_mode?: AvatarMode;
@@ -985,11 +990,11 @@ export interface AppSettings {
   model_profiles?: Record<string, ModelProfile>;
 }
 
-/** How the avatar is shown: 3D model, Live2D, Inochi2D puppet or picture. */
-export type AvatarMode = '3d' | 'live2d' | 'inochi2d' | '2d';
+/** How the avatar is shown: 3D model, Live2D, Inochi2D puppet, mesh avatar or picture. */
+export type AvatarMode = '3d' | 'live2d' | 'inochi2d' | 'mesh' | '2d';
 
-/** Kinds of avatar models in the library: 3D (VRM, glTF, MMD), Live2D, Inochi2D. */
-export type AvatarKind = 'vrm' | 'live2d' | 'inochi2d';
+/** Kinds of avatar models in the library: 3D (VRM, glTF, MMD), Live2D, Inochi2D, mesh avatars. */
+export type AvatarKind = 'vrm' | 'live2d' | 'inochi2d' | 'mesh';
 
 // Phase 14: Live2D & Emotion Classification
 export interface ScannedLive2d {

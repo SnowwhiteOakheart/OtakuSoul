@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { convertFileSrc } from '@tauri-apps/api/core';
-import { Box, Camera, Check, Download, Feather, Loader2, Search, Sparkles, Star, Upload, UserRound, Wand2 } from 'lucide-react';
+import { Box, Camera, Check, Download, Feather, FolderOpen, Layers, Loader2, Search, Sparkles, Star, Upload, UserRound, Wand2 } from 'lucide-react';
 import { api } from '../../services/api';
 import { translate, useTranslation, type TranslationKey } from '../../i18n';
 import { useStoreFields } from '../../store/useAppStore';
@@ -14,36 +14,38 @@ import { AvatarPreview } from './AvatarPreview';
 import { Inochi2dMappingSettings } from './Inochi2dMappingSettings';
 import { PetFramingSettings } from './PetFramingSettings';
 import type { PuppetInfo } from '../../services/inochi2d/controls';
-import { importInochi2dFromDialog, importLive2dFromDialog, importVrmFromDialog } from './avatarImport';
-import { isVroidPath, usesInochi2d, usesLive2d, usesVrm, vroidAllowedFor, vroidId } from './avatarMatch';
+import { importInochi2dFromDialog, importLive2dFromDialog, importMeshAvatarFromDialog, importVrmFromDialog } from './avatarImport';
+import { isVroidPath, usesInochi2d, usesLive2d, usesMeshAvatar, usesVrm, vroidAllowedFor, vroidId } from './avatarMatch';
 import { VroidConditions, VroidHubPanel } from './VroidHubPanel';
 import { MotionPackOffer } from './MotionPackOffer';
 import type { VroidModel } from '../../types/generated/VroidModel';
 import type { AvatarKind, AvatarMode, CharacterProfile, Inochi2dCatalogItem } from '../../types';
 
 type Filter = 'all' | AvatarKind;
-const FILTERS: readonly Filter[] = ['all', 'vrm', 'live2d', 'inochi2d'];
+const FILTERS: readonly Filter[] = ['all', 'vrm', 'live2d', 'inochi2d', 'mesh'];
 const FILTER_LABELS: Record<Filter, TranslationKey> = {
   all: 'avatars.filterAll', vrm: 'avatars.filter3d', live2d: 'avatars.filterLive2d', inochi2d: 'avatars.filterInochi2d',
+  mesh: 'avatars.filterMesh',
 };
 /** The chat's avatar mode that shows a model of each kind. */
-const MODE_FOR: Record<AvatarKind, AvatarMode> = { vrm: '3d', live2d: 'live2d', inochi2d: 'inochi2d' };
+const MODE_FOR: Record<AvatarKind, AvatarMode> = { vrm: '3d', live2d: 'live2d', inochi2d: 'inochi2d', mesh: 'mesh' };
 const MODE_HINTS: Record<AvatarKind, [TranslationKey, TranslationKey]> = {
   vrm: ['avatars.modeHint3d', 'avatars.switchTo3d'],
   live2d: ['avatars.modeHintLive2d', 'avatars.switchToLive2d'],
   inochi2d: ['avatars.modeHintInochi2d', 'avatars.switchToInochi2d'],
+  mesh: ['avatars.modeHintMesh', 'avatars.switchToMesh'],
 };
 
 /** One model of either kind, as the manager lists it. */
 interface ManagedAvatar {
   kind: AvatarKind;
-  /** Model file (3D, Inochi2D) or model JSON (Live2D); also the list key. */
+  /** Model file (3D, Inochi2D, mesh) or model JSON (Live2D); also the list key. */
   path: string;
   name: string;
   /** Format and size, shown under the name. */
   detail: string;
   removable: boolean;
-  /** What a character card stores: the path (3D), the folder id (Live2D) or the file name (Inochi2D). */
+  /** What a character card stores: the path (3D), the folder id (Live2D) or the file name (Inochi2D, mesh). */
   cardValue: string;
   /** The model's own preview picture (Live2D) or one taken here. */
   previewImage: string | null;
@@ -73,7 +75,7 @@ function Thumbnail({ avatar, fresh }: { avatar: ManagedAvatar; fresh?: string })
   }, [avatar.previewImage, fresh]);
   const shown = fresh ?? src;
   if (shown) return <img src={shown} alt="" className="h-full w-full object-cover object-top" data-avatar-thumbnail />;
-  const Icon = avatar.kind === 'vrm' ? Box : avatar.kind === 'inochi2d' ? Feather : Sparkles;
+  const Icon = avatar.kind === 'vrm' ? Box : avatar.kind === 'inochi2d' ? Feather : avatar.kind === 'mesh' ? Layers : Sparkles;
   return <Icon className="h-10 w-10 text-accent-300/70" aria-hidden />;
 }
 
@@ -117,10 +119,12 @@ export function AvatarManagerView() {
     scannedVrms, scannedLive2ds, activeVrmPath, setActiveVrmPath, activeLive2dPath, setActiveLive2dPath,
     refreshVrmModels, refreshLive2dModels, availableCharacters, assignCharacterAvatar, avatarMode, setAvatarMode,
     openSettingsSection, scannedInochi2ds, activeInochi2dPath, setActiveInochi2dPath, refreshInochi2dModels,
+    scannedMeshAvatars, activeMeshAvatarPath, setActiveMeshAvatarPath, refreshMeshAvatars,
   } = useStoreFields(
     'scannedVrms', 'scannedLive2ds', 'activeVrmPath', 'setActiveVrmPath', 'activeLive2dPath', 'setActiveLive2dPath',
     'refreshVrmModels', 'refreshLive2dModels', 'availableCharacters', 'assignCharacterAvatar', 'avatarMode', 'setAvatarMode',
     'openSettingsSection', 'scannedInochi2ds', 'activeInochi2dPath', 'setActiveInochi2dPath', 'refreshInochi2dModels',
+    'scannedMeshAvatars', 'activeMeshAvatarPath', 'setActiveMeshAvatarPath', 'refreshMeshAvatars',
   );
   const [catalog, setCatalog] = useState<Inochi2dCatalogItem[]>([]);
   const [downloading, setDownloading] = useState<string | null>(null);
@@ -143,8 +147,9 @@ export function AvatarManagerView() {
     void refreshVrmModels();
     void refreshLive2dModels();
     void refreshInochi2dModels();
+    void refreshMeshAvatars();
     api.getInochi2dCatalog(currentLanguage).then(setCatalog).catch((e) => console.warn('Inochi2D-Katalog nicht lesbar:', e));
-  }, [refreshVrmModels, refreshLive2dModels, refreshInochi2dModels, currentLanguage]);
+  }, [refreshVrmModels, refreshLive2dModels, refreshInochi2dModels, refreshMeshAvatars, currentLanguage]);
 
   const avatars = useMemo<ManagedAvatar[]>(() => [
     ...scannedVrms.map((vrm) => ({
@@ -180,27 +185,46 @@ export function AvatarManagerView() {
       ownPicture: !model.preview_image,
       uses: (c: CharacterProfile) => usesInochi2d(c, model),
     })),
-  ], [scannedVrms, scannedLive2ds, scannedInochi2ds]);
+    ...scannedMeshAvatars.map((model) => ({
+      kind: 'mesh' as const,
+      path: model.model_path,
+      name: model.name,
+      detail: `Mesh Avatar · ${model.size_mb.toFixed(1)} MB${model.author ? ` · ${model.author}` : ''}`,
+      removable: model.removable,
+      cardValue: model.id,
+      previewImage: model.thumbnail ?? model.preview_image ?? null,
+      ownPicture: true,
+      uses: (c: CharacterProfile) => usesMeshAvatar(c, model),
+    })),
+  ], [scannedVrms, scannedLive2ds, scannedInochi2ds, scannedMeshAvatars]);
 
   const needle = query.trim().toLowerCase();
   const shown = avatars.filter(
     (a) => !hidden.includes(a.path) && (filter === 'all' || a.kind === filter) && (!needle || a.name.toLowerCase().includes(needle)),
   );
   const selected = avatars.find((a) => a.path === selectedPath && !hidden.includes(a.path)) ?? shown[0];
-  const defaults: Record<AvatarKind, string | null> = { vrm: activeVrmPath, live2d: activeLive2dPath, inochi2d: activeInochi2dPath };
+  const defaults: Record<AvatarKind, string | null> = {
+    vrm: activeVrmPath, live2d: activeLive2dPath, inochi2d: activeInochi2dPath, mesh: activeMeshAvatarPath,
+  };
   const setDefault: Record<AvatarKind, (path: string | null) => void> = {
-    vrm: setActiveVrmPath, live2d: setActiveLive2dPath, inochi2d: setActiveInochi2dPath,
+    vrm: setActiveVrmPath, live2d: setActiveLive2dPath, inochi2d: setActiveInochi2dPath, mesh: setActiveMeshAvatarPath,
   };
   const refreshKind: Record<AvatarKind, () => Promise<void>> = {
-    vrm: refreshVrmModels, live2d: refreshLive2dModels, inochi2d: refreshInochi2dModels,
+    vrm: refreshVrmModels, live2d: refreshLive2dModels, inochi2d: refreshInochi2dModels, mesh: refreshMeshAvatars,
   };
   const isDefault = (a: ManagedAvatar) => defaults[a.kind] === a.path;
   const makeDefault = (a: ManagedAvatar) => setDefault[a.kind](a.path);
   const charName = (c: CharacterProfile) => localizeCard(c.card.data, currentLanguage).name;
 
-  const importModel = async (kind: AvatarKind) => {
+  const importModel = async (kind: AvatarKind, folder = false) => {
     const path =
-      kind === 'vrm' ? await importVrmFromDialog() : kind === 'live2d' ? await importLive2dFromDialog() : await importInochi2dFromDialog();
+      kind === 'vrm'
+        ? await importVrmFromDialog()
+        : kind === 'live2d'
+          ? await importLive2dFromDialog()
+          : kind === 'mesh'
+            ? await importMeshAvatarFromDialog(folder)
+            : await importInochi2dFromDialog();
     if (!path) return;
     setFilter((f) => (f === 'all' || f === kind ? f : kind));
     setQuery('');
@@ -312,6 +336,26 @@ export function AvatarManagerView() {
           >
             <Upload className="h-4 w-4" />
             {t('avatars.importInochi2d')}
+          </button>
+          <button
+            type="button"
+            onClick={() => void importModel('mesh')}
+            className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/60 px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800"
+            title={t('avatars.importMeshHint')}
+            data-avatar-import="mesh"
+          >
+            <Upload className="h-4 w-4" />
+            {t('avatars.importMesh')}
+          </button>
+          <button
+            type="button"
+            onClick={() => void importModel('mesh', true)}
+            className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/60 px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800"
+            title={t('avatars.importMeshFolderHint')}
+            data-avatar-import="mesh-folder"
+          >
+            <FolderOpen className="h-4 w-4" />
+            {t('avatars.importMeshFolder')}
           </button>
         </div>
       </header>
@@ -559,8 +603,8 @@ export function AvatarManagerView() {
                 />
               )}
 
-              {/* Desktop pet: 3D models and Inochi2D puppets (Live2D is no pet figure). */}
-              {selected.kind !== 'live2d' && <PetFramingSettings key={`framing:${selected.path}`} path={selected.path} />}
+              {/* Desktop pet: only real 3D models. */}
+              {selected.kind === 'vrm' && <PetFramingSettings key={`framing:${selected.path}`} path={selected.path} />}
 
               {selected.kind === 'vrm' && (
                 <button

@@ -5,6 +5,7 @@ import type {
   AvatarMotion,
   ScannedLive2d,
   ScannedInochi2d,
+  ScannedMeshAvatar,
   EmotionResult,
   AvatarMode,
 } from '../../types';
@@ -35,6 +36,11 @@ export interface AvatarSlice {
   activeInochi2dPath: string | null;
   setActiveInochi2dPath: (path: string | null) => void;
   refreshInochi2dModels: () => Promise<void>;
+  /** Mesh avatars (Mesh Avatar Studio, .mavatar) and the default one. */
+  scannedMeshAvatars: ScannedMeshAvatar[];
+  activeMeshAvatarPath: string | null;
+  setActiveMeshAvatarPath: (path: string | null) => void;
+  refreshMeshAvatars: () => Promise<void>;
   /** Counts saved puppet settings (channels, emotion clips); viewers apply them again on it. */
   inochi2dMappingRevision: number;
   bumpInochi2dMappingRevision: () => void;
@@ -129,6 +135,26 @@ export const createAvatarSlice: SliceCreator<AvatarSlice> = (set, get) => ({
       if (!get().activeInochi2dPath && first) set({ activeInochi2dPath: first.model_path });
     } catch (e) {
       console.error('Failed to scan Inochi2D models:', e);
+    }
+  },
+
+  scannedMeshAvatars: [],
+
+  activeMeshAvatarPath: null,
+
+  setActiveMeshAvatarPath: (activeMeshAvatarPath) => {
+    set({ activeMeshAvatarPath });
+    get().saveCurrentSettings();
+  },
+
+  refreshMeshAvatars: async () => {
+    try {
+      const models = await api.scanMeshAvatars();
+      set({ scannedMeshAvatars: models });
+      const first = models[0];
+      if (!get().activeMeshAvatarPath && first) set({ activeMeshAvatarPath: first.model_path });
+    } catch (e) {
+      console.error('Failed to scan mesh avatars:', e);
     }
   },
 

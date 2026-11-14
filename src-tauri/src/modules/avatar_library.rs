@@ -8,12 +8,13 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Component, Path, PathBuf};
 
-/// `vrm` (3D: VRM, glTF, MMD), `live2d` or `inochi2d`.
+/// `vrm` (3D: VRM, glTF, MMD), `live2d`, `inochi2d` or `mesh` (Mesh Avatar Studio).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AvatarKind {
     Vrm,
     Live2d,
     Inochi2d,
+    Mesh,
 }
 
 impl AvatarKind {
@@ -22,6 +23,7 @@ impl AvatarKind {
             "vrm" => Ok(Self::Vrm),
             "live2d" => Ok(Self::Live2d),
             "inochi2d" => Ok(Self::Inochi2d),
+            "mesh" => Ok(Self::Mesh),
             _ => Err(crate::err!("backend.avatar.unknownKind", kind = kind)),
         }
     }
@@ -32,6 +34,7 @@ impl AvatarKind {
             Self::Vrm => "avatars",
             Self::Live2d => "live2d",
             Self::Inochi2d => "inochi2d",
+            Self::Mesh => "mesh_avatars",
         })
     }
 }
@@ -44,6 +47,8 @@ struct Names {
     live2d: BTreeMap<String, String>,
     #[serde(default)]
     inochi2d: BTreeMap<String, String>,
+    #[serde(default)]
+    mesh: BTreeMap<String, String>,
 }
 
 impl Names {
@@ -52,6 +57,7 @@ impl Names {
             AvatarKind::Vrm => &mut self.vrm,
             AvatarKind::Live2d => &mut self.live2d,
             AvatarKind::Inochi2d => &mut self.inochi2d,
+            AvatarKind::Mesh => &mut self.mesh,
         }
     }
 }
@@ -86,6 +92,7 @@ impl AvatarKind {
             Self::Vrm => "vrm",
             Self::Live2d => "live2d",
             Self::Inochi2d => "inochi2d",
+            Self::Mesh => "mesh",
         }
     }
 }

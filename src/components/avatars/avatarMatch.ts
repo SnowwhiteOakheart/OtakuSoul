@@ -1,4 +1,4 @@
-import type { CharacterProfile, EmotionResult, ScannedInochi2d, ScannedLive2d, ScannedVrm } from '../../types';
+import type { CharacterProfile, EmotionResult, ScannedInochi2d, ScannedLive2d, ScannedMeshAvatar, ScannedVrm } from '../../types';
 import { isAdultMarked } from '../../utils/adultContent';
 
 /** Path prefix of a model from VRoid Hub (as `vroid_hub::PATH_PREFIX`). */
@@ -71,6 +71,30 @@ export const resolveInochi2dPath = (
 ): string => {
   const own = character && characterInochi2d(character) ? scanned.find((m) => usesInochi2d(character, m)) : undefined;
   const fallback = scanned.find((m) => m.model_path === activeInochi2dPath) ?? scanned[0];
+  return own?.model_path || fallback?.model_path || '';
+};
+
+/** The mesh avatar a character card names (file name or path; empty = the default). */
+export const characterMeshAvatar = (character: CharacterProfile): string =>
+  (character.card.data.extensions?.custom_mesh_avatar as string) || '';
+
+/** The card may hold the file name ("Shiro.mavatar") or a path ending in it. */
+export const usesMeshAvatar = (character: CharacterProfile, model: Pick<ScannedMeshAvatar, 'id' | 'model_path'>): boolean => {
+  const own = normalize(characterMeshAvatar(character));
+  return !!own && (model.id.toLowerCase() === own || normalize(model.model_path).endsWith(own));
+};
+
+/**
+ * The mesh avatar shown for a character: its own (while it is still there), else the chosen
+ * default, else the first one; empty = none to show.
+ */
+export const resolveMeshAvatarPath = (
+  character: CharacterProfile | null,
+  scanned: Pick<ScannedMeshAvatar, 'id' | 'model_path'>[],
+  activeMeshAvatarPath: string | null,
+): string => {
+  const own = character && characterMeshAvatar(character) ? scanned.find((m) => usesMeshAvatar(character, m)) : undefined;
+  const fallback = scanned.find((m) => m.model_path === activeMeshAvatarPath) ?? scanned[0];
   return own?.model_path || fallback?.model_path || '';
 };
 

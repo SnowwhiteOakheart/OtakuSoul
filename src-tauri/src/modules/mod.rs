@@ -42,6 +42,7 @@ pub mod macros;
 pub mod mcp_client;
 pub mod memory;
 pub mod memory_pipeline;
+pub mod mesh_avatar;
 pub mod model_catalog;
 pub mod model_files;
 pub mod models_hub;

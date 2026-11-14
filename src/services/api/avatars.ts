@@ -20,6 +20,7 @@ import type {
   ModelFace,
   ModelFaceInfo,
   ScannedInochi2d,
+  ScannedMeshAvatar,
   ScannedLive2d,
   ScannedVrm,
 } from '../../types';
@@ -208,6 +209,13 @@ export const avatarsApi = {
   importLive2dModel: async (sourcePath: string, entryPath?: string): Promise<ScannedLive2d> => {
     return await invoke<ScannedLive2d>('import_live2d_model', { sourcePath, entryPath: entryPath ?? null });
   },
+
+  // Mesh avatars (Mesh Avatar Studio, .mavatar), rendered by the `mesh-avatar` runtime.
+  scanMeshAvatars: async (): Promise<ScannedMeshAvatar[]> => await invoke<ScannedMeshAvatar[]>('scan_mesh_avatars'),
+
+  /** Imports a `.mavatar` or a Studio project folder (packed into a `.mavatar`). */
+  importMeshAvatar: async (sourcePath: string): Promise<ScannedMeshAvatar> =>
+    await invoke<ScannedMeshAvatar>('import_mesh_avatar', { sourcePath }),
 
   // Inochi2D puppets (.inp/.inx), rendered by `services/inochi2d`.
   scanInochi2dModels: async (): Promise<ScannedInochi2d[]> => await invoke<ScannedInochi2d[]>('scan_inochi2d_models'),

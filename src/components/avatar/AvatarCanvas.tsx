@@ -3,13 +3,13 @@ import { TalkingOverlay, useTalkingSet } from './TalkingPortrait';
 import { TalkingPortraitDialog } from './TalkingPortraitDialog';
 import { VrmViewer } from './VrmViewer';
 import { loadCubismCore } from '../../services/live2dRuntime';
-import { Box, Feather, Image, MessageCircle, Sparkles, Smile, ChevronDown, Wind } from 'lucide-react';
+import { Box, Feather, Image, Layers, MessageCircle, Sparkles, Smile, ChevronDown, Wind } from 'lucide-react';
 import { CharacterProfile } from '../../types';
 import { PORTRAIT_MOODS, assetAsBlobUrl, getPortraitExpressions, loadDisplayableImage, selectCharacterPortrait } from '../../utils/characterPortraits';
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { translate, useTranslation, type TranslationKey } from '../../i18n';
 import { DropdownMenu } from '../ui/DropdownMenu';
-import { characterInochi2d, manualEmotion, resolveInochi2dPath, resolveLive2dPath, resolveVrmPath, usesInochi2d } from '../avatars/avatarMatch';
+import { characterInochi2d, manualEmotion, resolveInochi2dPath, resolveLive2dPath, resolveMeshAvatarPath, resolveVrmPath, usesInochi2d } from '../avatars/avatarMatch';
 import { MissingPuppetHint } from '../avatars/MissingPuppetHint';
 import { AvatarSkeleton, ScrollText } from '../ui';
 import { languageCode, localizeCard } from '../../utils/cardI18n';
@@ -32,6 +32,8 @@ const Live2DViewer = lazy(() =>
 
 // The Inochi2D runtime (parser, physics, WebGL renderer) only loads for Inochi2D avatars.
 const Inochi2dViewer = lazy(() => import('./Inochi2dViewer'));
+// Mesh avatars (Mesh Avatar Studio) bring the `mesh-avatar` runtime; only loaded for them.
+const MeshAvatarViewer = lazy(() => import('./MeshAvatarViewer'));
 
 const ALL_GO_EMOTIONS = [
   'admiration', 'amusement', 'anger', 'annoyance', 'approval', 'caring',
@@ -235,6 +237,8 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
     activeLive2dPath,
     activeInochi2dPath,
     scannedInochi2ds,
+    activeMeshAvatarPath,
+    scannedMeshAvatars,
     avatarMode,
     portraitMotion,
     setPortraitMotion,
@@ -247,7 +251,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
     replyLanguage,
     scannedVrms,
   } = useStoreFields(
-    'activeVrmPath', 'activeLive2dPath', 'activeInochi2dPath', 'scannedInochi2ds', 'avatarMode', 'setAvatarMode', 'scannedLive2ds', 'portraitMotion', 'setPortraitMotion',
+    'activeVrmPath', 'activeLive2dPath', 'activeInochi2dPath', 'scannedInochi2ds', 'activeMeshAvatarPath', 'scannedMeshAvatars', 'avatarMode', 'setAvatarMode', 'scannedLive2ds', 'portraitMotion', 'setPortraitMotion',
     'currentEmotion', 'setCurrentEmotion', 'avatarMotions', 'avatarGesture', 'replyLanguage', 'scannedVrms',
   );
   const { t, tEmotion } = useTranslation();
@@ -264,6 +268,8 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
 
   // 2b. Inochi2D puppet (Character override or global setting)
   const inochi2dPath = resolveInochi2dPath(character, scannedInochi2ds, activeInochi2dPath);
+  // 2c. Mesh avatar (Character override or global setting)
+  const meshAvatarPath = resolveMeshAvatarPath(character, scannedMeshAvatars, activeMeshAvatarPath);
   // The card names a puppet that is not here: it may be loadable from the registry.
   const ownPuppet = character ? characterInochi2d(character) : '';
   const missingPuppet = ownPuppet && !scannedInochi2ds.some((m) => usesInochi2d(character!, m)) ? ownPuppet : '';
@@ -338,7 +344,7 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
         />
 
 
-        {/* 3-way Avatar Mode Selector */}
+        {/* Avatar mode selector (3D, Live2D, Inochi2D, mesh, picture) */}
         <div
           role="group"
           aria-label={t('avatar.modeLabel')}
@@ -387,6 +393,21 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
           >
             <Feather className="w-3 h-3" />
             <span className="hidden @sm:inline">{t('avatar.modeInochi2d')}</span>
+          </button>
+
+          <button
+            onClick={() => setAvatarMode('mesh')}
+            aria-pressed={avatarMode === 'mesh'}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-all outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400 ${
+              avatarMode === 'mesh'
+                ? 'bg-accent-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title={t('avatar.modeMeshHint')}
+            aria-label={t('avatar.modeMesh')}
+          >
+            <Layers className="w-3 h-3" />
+            <span className="hidden @sm:inline">{t('avatar.modeMesh')}</span>
           </button>
 
           <button
@@ -512,6 +533,25 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({
           </div>
         )}
         </>
+      ) : avatarMode === 'mesh' ? (
+        meshAvatarPath ? (
+          <Suspense fallback={<AvatarSkeleton label={t('avatar.meshLoading')} />}>
+            <MeshAvatarViewer
+              key={meshAvatarPath}
+              modelPath={meshAvatarPath}
+              emotion={currentEmotion.vrm_expression}
+              isSpeaking={isSpeaking}
+              gesture={avatarGesture}
+              onTouch={onTouch}
+            />
+          </Suspense>
+        ) : (
+          <div className="flex flex-col items-center justify-center p-6 text-center text-slate-400" data-mesh-empty>
+            <Layers className="w-12 h-12 text-accent-400/50 mb-2" />
+            <p className="text-sm font-semibold text-slate-200">{t('avatar.noMeshTitle')}</p>
+            <p className="text-xs text-slate-400 mt-1 max-w-xs">{t('avatar.noMeshText')}</p>
+          </div>
+        )
       ) : (
         /* 2D Portrait / Expression Sprite Mode */
         <div

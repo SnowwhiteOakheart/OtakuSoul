@@ -47,13 +47,19 @@ try {
   }, { timeout: 60_000, interval: 1000, timeoutMsg: 'GLB im Pet lädt nicht' });
   assert.equal(await browser.$('[data-pet-solid]').isExisting(), false, 'Hinweis bleibt trotz 3D-Modell');
 
+  await browser.saveScreenshot(path.join(screenshotDir, '113-pet-only-3d.png'));
   const size = await browser.execute(() => [window.innerWidth, window.innerHeight]);
   const cursor = (x, y) => emit('pet:cursor', { x, y, inside: true, button: null, through: true, gx: x, gy: y, t: Date.now() });
   // On the figure (middle, lower half) the pet takes the click …
+  // (several points down the middle: the test rig is slim)
   await browser.waitUntil(async () => {
-    await cursor(size[0] / 2, size[1] * 0.6);
-    return (await clickThrough()) === 'false';
-  }, { timeout: 15_000, interval: 300, timeoutMsg: 'Figur fängt den Klick nicht' });
+    for (const share of [0.35, 0.5, 0.6, 0.7, 0.8, 0.9]) {
+      await cursor(size[0] / 2, size[1] * share);
+      await browser.pause(150);
+      if ((await clickThrough()) === 'false') return true;
+    }
+    return false;
+  }, { timeout: 20_000, interval: 300, timeoutMsg: 'Figur fängt den Klick nicht' });
   // … beside it the click goes through to the desktop.
   await browser.waitUntil(async () => {
     await cursor(4, size[1] * 0.5);

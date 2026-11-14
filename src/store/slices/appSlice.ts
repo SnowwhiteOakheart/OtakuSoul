@@ -217,6 +217,7 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         activeVrmPath: vrmPath,
         activeLive2dPath: settings.active_live2d_path || null,
         activeInochi2dPath: settings.active_inochi2d_path || null,
+        activeMeshAvatarPath: settings.active_mesh_avatar_path || null,
         globalLorebookIds: settings.global_lorebooks || [],
         sceneTensionEnabled: settings.scene_tension_enabled !== false,
         avatarMode: settings.avatar_mode || '2d',
@@ -307,6 +308,7 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
       await get().refreshLorebooks();
       await get().refreshLive2dModels();
       await get().refreshInochi2dModels();
+      await get().refreshMeshAvatars();
 
       // 6. Initialize Companion State & MCP Ecosystem
       await get().fetchCompanionState();
@@ -350,6 +352,7 @@ export const createAppSlice: SliceCreator<AppSlice> = (set, get) => ({
         active_vrm_path: state.activeVrmPath,
         active_live2d_path: state.activeLive2dPath,
         active_inochi2d_path: state.activeInochi2dPath,
+        active_mesh_avatar_path: state.activeMeshAvatarPath,
         global_lorebooks: state.globalLorebookIds,
         scene_tension_enabled: state.sceneTensionEnabled,
         avatar_mode: state.avatarMode,

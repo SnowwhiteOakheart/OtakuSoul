@@ -16,7 +16,11 @@ cloud_context_tokens: number, active_preset_id: string | null, reply_language: s
 /**
  * Default Inochi2D puppet (file path).
  */
-active_inochi2d_path: string | null, global_lorebooks: Array<string>, scene_tension_enabled: boolean, hidden_character_ids: Array<string>, avatar_mode: string, app_language: string, theme: string, color_mode: string, 
+active_inochi2d_path: string | null, 
+/**
+ * Default mesh avatar (Mesh Avatar Studio, `.mavatar` file path).
+ */
+active_mesh_avatar_path: string | null, global_lorebooks: Array<string>, scene_tension_enabled: boolean, hidden_character_ids: Array<string>, avatar_mode: string, app_language: string, theme: string, color_mode: string, 
 /**
  * False only on a fresh install, so the first-run wizard shows once. Settings files
  * from before the wizard existed count as already set up.
