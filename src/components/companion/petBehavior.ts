@@ -16,6 +16,8 @@ import {
   hangAnchor,
   landingFor,
   RECOVER_PHASES,
+  recoverClock,
+  recoverTotal,
   type Hang,
   type HangGrip,
   type Landing,
@@ -112,6 +114,15 @@ export { gripAt, hangAnchor };
 
 /** How long getting up takes after landing on this (the viewer's pose follows the same timeline). */
 export const RECOVER_MS = (kind: Landing) => RECOVER_PHASES[kind].total * 1000;
+/** How long this getting up takes (a ragdoll fall first makes it longer). */
+const recoverMs = (recover: Pick<PetRecover, 'kind' | 'ragdoll'>) => recoverTotal(recover) * 1000;
+
+/** The landing's speeds (logical px/s; `side` signed) and the window's height (logical px). */
+export interface PetImpact {
+  down: number;
+  side: number;
+  height?: number;
+}
 
 /** A drop shorter than this (ms in the air) from the shoulders is landed on the feet without a stumble. */
 const SOFT_FALL_MS = 450;
@@ -361,6 +372,8 @@ export class PetBehavior {
   private boredom = 0;
   /** Hit hard: the stars circle until then. */
   private dizzyUntil = 0;
+  /** Falls as a ragdoll first (see `setRagdoll`). */
+  private ragdollOn = false;
   /** Hanging from a window's edge it caught (then pulling itself up). */
   private onLedge = false;
 
@@ -645,19 +658,34 @@ export class PetBehavior {
   }
 
   /** Lands after hanging: what it hits depends on how it hung; a short drop from the shoulders is nothing. */
-  private landFromHang(now: number, airborne: number) {
+  private landFromHang(now: number, airborne: number, impact: PetImpact | null = null) {
     const grip = this.hang?.grip;
     this.hang = null;
     this.releasedAt = null;
     if (!grip || !this.floorSit) return false;
     const kind = landingFor(grip);
     if (kind === 'feet' && airborne < SOFT_FALL_MS) return false;
+    this.startRecover(now, kind, impact);
+    this.react(now, 'surprised', recoverMs(this.recovering!));
+    return true;
+  }
+
+  /** Getting up after a landing: as a ragdoll first when switched on (with the landing's speed). */
+  private startRecover(now: number, kind: Landing, impact: PetImpact | null) {
     this.recoverId += 1;
-    this.recovering = { kind, id: this.recoverId, start: now };
+    const height = impact?.height && impact.height > 0 ? impact.height : 0;
+    const ragdoll =
+      this.ragdollOn && kind !== 'feet'
+        ? { down: height ? (impact?.down ?? 0) / height : 0, side: height ? (impact?.side ?? 0) / height : 0 }
+        : null;
+    this.recovering = { kind, id: this.recoverId, start: now, ragdoll };
     this.sitSide = this.random() < 0.5 ? -1 : 1;
     this.pickSeatPose(now);
-    this.react(now, 'surprised', RECOVER_MS(kind));
-    return true;
+  }
+
+  /** Falls as a ragdoll before getting up (switch `PetPrefs.ragdoll`, VRM only). */
+  setRagdoll(on: boolean) {
+    this.ragdollOn = on;
   }
 
   /**
@@ -793,7 +821,7 @@ export class PetBehavior {
    * `impact`: the speeds it came down with (logical px/s; `down` falling, `side` sideways): hard
    * it is dazed, thrown sideways and soft it lands with a flourish.
    */
-  setGrounded(grounded: boolean, now: number, impact: { down: number; side: number } | null = null) {
+  setGrounded(grounded: boolean, now: number, impact: PetImpact | null = null) {
     if (!this.physics) return;
     const was = this.grounded;
     this.grounded = grounded;
@@ -805,17 +833,17 @@ export class PetBehavior {
       if (this.leaping) {
         this.leaping = false;
         this.react(now, 'happy', 700);
-      } else if (this.landFromHang(now, now - this.fallStart)) {
+      } else if (this.landFromHang(now, now - this.fallStart, impact)) {
         // The landing is the pose's (no hop, no landing motion over it).
         this.cues.push({ kind: 'event', event: 'landed' });
         if ((impact && impact.down >= HARD_LANDING) || now < this.dizzyUntil) this.showFx(now, 'dizzy', DIZZY_MS);
         return;
       } else if ((impact && impact.down >= HARD_LANDING) || now < this.dizzyUntil) {
         // Dazed: it sits where it landed rubbing its head (VRM), stars circling.
-        this.landDazed(now);
+        this.landDazed(now, impact);
         this.cues.push({ kind: 'event', event: 'landed' });
         return;
-      } else if (impact && impact.side >= ELEGANT_SIDE) {
+      } else if (impact && Math.abs(impact.side) >= ELEGANT_SIDE) {
         // Thrown and landed softly: a little flourish, as if it meant to.
         this.react(now, 'happy', 1100, { x: 0, y: 0.1 });
         this.showFx(now, 'sparkle', 1400);
@@ -830,18 +858,15 @@ export class PetBehavior {
   }
 
   /** A hard landing: stars, and (VRM) sitting up rubbing its head; others look miserable a moment. */
-  private landDazed(now: number) {
+  private landDazed(now: number, impact: PetImpact | null = null) {
     this.hang = null;
     this.releasedAt = null;
     this.dizzyUntil = Math.max(this.dizzyUntil, now + DIZZY_MS);
     this.showFx(now, 'dizzy', DIZZY_MS);
     this.cues.push({ kind: 'bubble', text: 'dizzy' });
     if (this.floorSit) {
-      this.recoverId += 1;
-      this.recovering = { kind: 'back', id: this.recoverId, start: now };
-      this.sitSide = this.random() < 0.5 ? -1 : 1;
-      this.pickSeatPose(now);
-      this.react(now, 'sad', RECOVER_MS('back'));
+      this.startRecover(now, 'back', impact);
+      this.react(now, 'sad', recoverMs(this.recovering!));
     } else {
       this.react(now, 'sad', DIZZY_MS);
     }
@@ -1085,8 +1110,9 @@ export class PetBehavior {
    * down), relieved at the end. Landing on the feet is only a startled crouch.
    */
   private recoverFrame(now: number, recovering: PetRecover & { start: number }): Pick<PetFrame, 'expression' | 'gaze' | 'recover' | 'turn'> {
-    const elapsed = now - recovering.start;
-    const recover = { kind: recovering.kind, id: recovering.id };
+    // On the scripted timeline (a ragdoll fall first keeps it lying meanwhile).
+    const elapsed = recoverClock(recovering, (now - recovering.start) / 1000) * 1000;
+    const recover = { kind: recovering.kind, id: recovering.id, ragdoll: recovering.ragdoll ?? null };
     if (recovering.kind === 'feet') return { expression: elapsed < 500 ? 'surprised' : 'relaxed', gaze: null, recover, turn: 0 };
     const phases = RECOVER_PHASES[recovering.kind];
     // Sitting up it turns to the side like any floor seat (the knees do not point at the camera);
@@ -1124,7 +1150,7 @@ export class PetBehavior {
     if (this.hang && this.releasedAt !== null && this.mode !== 'falling' && now - this.releasedAt > HANG_RELEASE_MS) {
       this.landFromHang(now, 0);
     }
-    if (this.recovering && now >= this.recovering.start + RECOVER_MS(this.recovering.kind)) this.recovering = null;
+    if (this.recovering && now >= this.recovering.start + recoverMs(this.recovering)) this.recovering = null;
     // The meal is over: delighted, a hop and a happy gesture.
     const eating = this.eating;
     if (eating && now >= eating.start + EAT_TOTAL_S * 1000) {

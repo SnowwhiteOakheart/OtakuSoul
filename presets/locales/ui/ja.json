@@ -4363,6 +4363,8 @@
   "pet.chatBubbles": "チャットの返事を吹き出しで表示",
   "pet.physics": "重力と歩行",
   "pet.rideWindows": "ウィンドウと一緒に移動",
+  "pet.ragdoll": "転倒時のラグドール物理",
+  "pet.ragdollHint": "倒れると、起き上がる前に頭・腕・脚が物理的に自由に落ちます。3Dフィギュア（VRM）のみ。",
   "pet.hideInFullscreen": "全画面表示中は隠す",
   "pet.guestDismiss": "ゲストを見送る",
   "pet.guest": "ゲストペット",

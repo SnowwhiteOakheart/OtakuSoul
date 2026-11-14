@@ -294,6 +294,8 @@ export function buildPetMenu(a: PetMenuArgs): PetMenuModel {
       items: [
         toggle('physics', 'pet.physics'),
         toggle('rideWindows', 'pet.rideWindows', prefs.physics),
+        // Free, physical falls need the VRM figure's own poses.
+        toggle('ragdoll', 'pet.ragdoll', a.canSit),
         toggle('idleActions', 'pet.idleActions'),
         {
           kind: 'choice',

@@ -2,9 +2,14 @@ import * as THREE from 'three';
 import type { VRM, VRMHumanBoneName } from '@pixiv/three-vrm';
 import { reachWithArm } from './armReach';
 import { forFacing, type BodyPose } from './proceduralBody';
+import { Ragdoll, type JointName, type V3 } from './ragdoll';
 import {
   groundAngle,
   kittenKick,
+  RAGDOLL_S,
+  recoverClock,
+  recoverTotal,
+  usesRagdoll,
   RECOVER_PHASES,
   recoverLean,
   recoverPush,
@@ -70,6 +75,23 @@ const DOWN = new THREE.Vector3(0, -1, 0);
 const UP = new THREE.Vector3(0, 1, 0);
 const AXIS_X = new THREE.Vector3(1, 0, 0);
 
+/** The figure fills about this share of the pet window (`petFigureTop`): window heights to world units. */
+const FIGURE_SHARE = 0.78;
+/** Bones the ragdoll turns; getting up blends in from their last turns over `DOLL_BLEND_S`. */
+const DOLL_BONES: VRMHumanBoneName[] = [
+  'hips',
+  'neck',
+  'leftUpperArm',
+  'leftLowerArm',
+  'rightUpperArm',
+  'rightLowerArm',
+  'leftUpperLeg',
+  'leftLowerLeg',
+  'rightUpperLeg',
+  'rightLowerLeg',
+];
+const DOLL_BLEND_S = 0.5;
+
 /** Whether a spring joint belongs to a skirt or dress (stays hanging along the legs). */
 export const isSkirtJoint = (name: string) => SKIRT.test(name);
 
@@ -130,6 +152,16 @@ export class HangRig {
   private readonly restTurn: THREE.Quaternion;
   private readonly armLength: number;
   private readonly legLength: number;
+  /** Upper and lower arm and leg (world units), for the ragdoll's elbows and knees. */
+  private readonly armParts: [number, number];
+  private readonly legParts: [number, number];
+  /** Falling freely as a ragdoll right now (the first `RAGDOLL_S` of getting up). */
+  private doll: Ragdoll | null = null;
+  /** The ragdoll's last bone turns, and when it handed over: getting up blends in from them. */
+  private readonly dollPose = new Map<VRMHumanBoneName, THREE.Quaternion>();
+  private dollEndAt: number | null = null;
+  private readonly basis = new THREE.Matrix4();
+  private readonly q6 = new THREE.Quaternion();
   /** The body's current turn in the world (identity when standing): skirts' gravity turns with it. */
   readonly turn = new THREE.Quaternion();
   // Scratch values.
@@ -164,6 +196,8 @@ export class HangRig {
     };
     this.armLength = length('leftUpperArm', 'leftLowerArm', 'leftHand') || 0.45 * height;
     this.legLength = length('leftUpperLeg', 'leftLowerLeg', 'leftFoot') || 0.5 * height;
+    this.armParts = [length('leftUpperArm', 'leftLowerArm') || 0.23 * height, length('leftLowerArm', 'leftHand') || 0.22 * height];
+    this.legParts = [length('leftUpperLeg', 'leftLowerLeg') || 0.26 * height, length('leftLowerLeg', 'leftFoot') || 0.24 * height];
   }
 
   private bone(name: VRMHumanBoneName) {
@@ -197,8 +231,13 @@ export class HangRig {
         rubSide: this.grabbed?.heldLeg ?? 'right',
         springsReset: false,
       };
+      this.dollEndAt = null;
+      this.doll = usesRagdoll(recover) ? this.startRagdoll(recover.ragdoll!) : null;
     }
-    if (this.recover && elapsed - this.recover.start > RECOVER_PHASES[this.recover.kind].total) this.recover = null;
+    if (this.recover && elapsed - this.recover.start > recoverTotal(this.recover)) {
+      this.recover = null;
+      this.doll = null;
+    }
   }
 
   /** The held foot's place and the floor while the user drags it (null: the hang's own anchor). */
@@ -213,7 +252,7 @@ export class HangRig {
   seatShare(elapsed: number): number | null {
     const recover = this.recover;
     if (!recover) return null;
-    return recoverSeat(recover.kind, elapsed - recover.start);
+    return recoverSeat(recover.kind, recoverClock(recover, elapsed - recover.start), usesRagdoll(recover));
   }
 
   /** Back to standing as loaded (the cached model is shown again later). */
@@ -336,6 +375,126 @@ export class HangRig {
     }
   }
 
+  /** Turns a bone by a turn given in the world (whatever way the rig's own axes point). */
+  private turnInWorld(node: THREE.Object3D, turn: THREE.Quaternion) {
+    const parent = node.parent;
+    if (parent) parent.getWorldQuaternion(this.q3);
+    else this.q3.identity();
+    const inParent = this.q5.copy(this.q3).invert().multiply(turn).multiply(this.q3);
+    node.quaternion.premultiply(inParent);
+    node.updateWorldMatrix(false, true);
+  }
+
+  /** Turns `node` so the way to `child` points along `direction` (world). */
+  private aim(node: THREE.Object3D | null, child: THREE.Object3D | null, direction: V3) {
+    if (!node || !child) return;
+    const now = child.getWorldPosition(this.a).sub(node.getWorldPosition(this.b));
+    const want = this.c.set(direction.x, direction.y, direction.z);
+    if (now.lengthSq() < 1e-10 || want.lengthSq() < 1e-10) return;
+    this.turnInWorld(node, this.q6.setFromUnitVectors(now.normalize(), want.normalize()));
+  }
+
+  /** The body's points now (world), for a ragdoll to start from. */
+  private startRagdoll(speed: { down: number; side: number }): Ragdoll {
+    const scene = this.vrm.scene;
+    scene.updateMatrixWorld(true);
+    const at = (name: VRMHumanBoneName, fallback: VRMHumanBoneName = 'hips'): V3 => {
+      const p = (this.bone(name) ?? this.bone(fallback))!.getWorldPosition(new THREE.Vector3());
+      return { x: p.x, y: p.y, z: p.z };
+    };
+    const hips = at('hips');
+    const neck = at('neck', 'chest');
+    const head = at('head', 'neck');
+    const up = new THREE.Vector3(neck.x - hips.x, neck.y - hips.y, neck.z - hips.z).normalize();
+    const joints: Record<JointName, V3> = {
+      hips,
+      chest: at('chest', 'spine'),
+      neck,
+      headTop: { x: head.x + up.x * 0.13 * this.height, y: head.y + up.y * 0.13 * this.height, z: head.z + up.z * 0.13 * this.height },
+      lShoulder: at('leftUpperArm'),
+      rShoulder: at('rightUpperArm'),
+      lHip: at('leftUpperLeg'),
+      rHip: at('rightUpperLeg'),
+      lHand: at('leftHand'),
+      rHand: at('rightHand'),
+      lFoot: at('leftFoot'),
+      rFoot: at('rightFoot'),
+    };
+    // Window heights per second to world units: the figure fills about this share of the window.
+    const perHeight = this.height / FIGURE_SHARE;
+    return new Ragdoll({
+      joints,
+      velocity: { x: speed.side * perHeight, y: -speed.down * perHeight, z: 0 },
+      floor: this.restPosition.y,
+      height: this.height,
+      arm: this.armParts,
+      leg: this.legParts,
+    });
+  }
+
+  /**
+   * One ragdoll frame: the points fall on, the body turns on the screen as the trunk lies, the
+   * hips take the trunk's tilt, head and limbs point along their points, and the hips are put
+   * where their point is.
+   */
+  private poseRagdoll(doll: Ragdoll, dt: number) {
+    doll.step(dt);
+    const scene = this.vrm.scene;
+    const { up, left } = doll.frame();
+    // The turn on the screen that stands the trunk where it lies (as `turn` for skirts and hair).
+    const onScreen = this.a.set(up.x, up.y, up.z).transformDirection(this.camera.matrixWorldInverse);
+    this.roll = Math.atan2(-onScreen.x, onScreen.y);
+    this.rollSpeed = this.pitch = this.pitchSpeed = 0;
+    this.weight = 0;
+    const towardsCamera = this.camera.getWorldDirection(this.viewAxis).negate();
+    this.turn.setFromAxisAngle(towardsCamera, this.roll);
+    scene.quaternion.copy(this.turn).multiply(this.restTurn);
+    scene.position.copy(this.restPosition).add(this.offset);
+    scene.updateMatrixWorld(true);
+    const hips = this.bone('hips');
+    const neck = this.bone('neck');
+    const lHip = this.bone('leftUpperLeg');
+    const rHip = this.bone('rightUpperLeg');
+    if (!hips || !neck || !lHip || !rHip) return;
+    // The trunk's tilt and twist (front or back to the camera) from the hips.
+    const nowUp = this.b.subVectors(neck.getWorldPosition(this.b), hips.getWorldPosition(this.c)).normalize();
+    const nowLeftRaw = this.d.subVectors(lHip.getWorldPosition(this.d), rHip.getWorldPosition(this.e));
+    const nowLeft = nowLeftRaw.addScaledVector(nowUp, -nowLeftRaw.dot(nowUp)).normalize();
+    const nowFront = this.e.crossVectors(nowLeft, nowUp);
+    const nowTurn = this.q.setFromRotationMatrix(this.basis.makeBasis(nowLeft, nowUp, nowFront));
+    const wantUp = this.c.set(up.x, up.y, up.z);
+    const wantLeft = this.f.set(left.x, left.y, left.z);
+    const wantFront = this.a.crossVectors(wantLeft, wantUp);
+    const wantTurn = this.q4.setFromRotationMatrix(this.basis.makeBasis(wantLeft, wantUp, wantFront));
+    this.turnInWorld(hips, this.q6.copy(wantTurn).multiply(nowTurn.invert()));
+    // Head, arms and legs along their points (elbows and knees bent like hinges).
+    const p = doll.pos;
+    const towards = (from: V3, to: V3): V3 => ({ x: to.x - from.x, y: to.y - from.y, z: to.z - from.z });
+    this.aim(neck, this.bone('head'), towards(p.neck, p.headTop));
+    for (const [side, s] of [['left', 'l'], ['right', 'r']] as const) {
+      const elbow = doll.elbow(s);
+      const knee = doll.knee(s);
+      this.aim(this.bone(`${side}UpperArm`), this.bone(`${side}LowerArm`), towards(p[`${s}Shoulder`], elbow));
+      this.aim(this.bone(`${side}LowerArm`), this.bone(`${side}Hand`), towards(elbow, p[`${s}Hand`]));
+      this.aim(this.bone(`${side}UpperLeg`), this.bone(`${side}LowerLeg`), towards(p[`${s}Hip`], knee));
+      this.aim(this.bone(`${side}LowerLeg`), this.bone(`${side}Foot`), towards(knee, p[`${s}Foot`]));
+    }
+    // The hips where their point is.
+    const hipsAt = hips.getWorldPosition(this.a);
+    this.offset.x += p.hips.x - hipsAt.x;
+    this.offset.y += p.hips.y - hipsAt.y;
+    this.offset.z += p.hips.z - hipsAt.z;
+    scene.position.copy(this.restPosition).add(this.offset);
+    scene.updateMatrixWorld(true);
+    for (const name of DOLL_BONES) {
+      const node = this.bone(name);
+      if (!node) continue;
+      const kept = this.dollPose.get(name);
+      if (kept) kept.copy(node.quaternion);
+      else this.dollPose.set(name, node.quaternion.clone());
+    }
+  }
+
   /** Turns a bone by `angle` about a world axis (whatever way the rig's own axes point). */
   private bendInWorld(node: THREE.Object3D, axis: THREE.Vector3, angle: number) {
     const parent = node.parent;
@@ -375,10 +534,23 @@ export class HangRig {
     const hang = this.hang;
     const grabbed = this.grabbed;
     const recover = this.recover;
-    const t = recover ? elapsed - recover.start : 0;
+    // Falling as a ragdoll: the points move the body; getting up takes over afterwards.
+    if (recover && this.doll) {
+      if (elapsed - recover.start < RAGDOLL_S) {
+        this.lastSpeed.x = sway.x;
+        this.lastSpeed.y = sway.y;
+        this.poseRagdoll(this.doll, dt);
+        return;
+      }
+      recover.from = this.roll;
+      this.doll = null;
+      this.dollEndAt = elapsed;
+    }
+    const ragdolled = !!recover && usesRagdoll(recover);
+    const t = recover ? recoverClock(recover, elapsed - recover.start) : 0;
     const phases = recover ? RECOVER_PHASES[recover.kind] : null;
     // Lying as it fell until the impact is over; then tipping into the seat.
-    const lying = !!recover && !!phases && t < phases.impact;
+    const lying = !!recover && !!phases && t < phases.impact && !ragdolled;
 
     let rollTarget = 0;
     let pitchTarget = 0;
@@ -416,7 +588,7 @@ export class HangRig {
       this.hanging = swing.hanging;
     } else if (recover && !lying) {
       // Getting up follows its timeline: falls over flat, pushes itself up, sits (see `recoverRoll`).
-      this.roll = recoverRoll(recover.kind, t, recover.from);
+      this.roll = recoverRoll(recover.kind, t, recover.from, ragdolled);
       this.rollSpeed = 0;
     } else {
       for (let i = 0; i < steps; i++) {
@@ -631,7 +803,7 @@ export class HangRig {
     // 5. Sitting after the landing: one hand rubs the head (or the lower back).
     if (recover && phases && recover.kind !== 'feet') {
       // Pushing itself up: the hand on the floor side leans on the ground beside the hips.
-      const push = recoverPush(recover.kind, t);
+      const push = recoverPush(recover.kind, t, ragdolled);
       const hipsAt = this.bone('hips');
       if (push > 0.001 && hipsAt) {
         const left = this.bone('leftUpperArm');
@@ -678,6 +850,21 @@ export class HangRig {
           scene.updateMatrixWorld(true);
           this.reach(side, 'Arm', target, rub);
         }
+      }
+    }
+
+    // Just handed over from the ragdoll: the bones blend from how it lay into getting up.
+    if (this.dollEndAt !== null) {
+      const share = (elapsed - this.dollEndAt) / DOLL_BLEND_S;
+      if (share >= 1 || !recover) {
+        this.dollEndAt = null;
+      } else {
+        const ease = share * share * (3 - 2 * share);
+        for (const [name, kept] of this.dollPose) {
+          const node = this.bone(name);
+          if (node) node.quaternion.copy(this.q6.copy(kept).slerp(node.quaternion, ease));
+        }
+        scene.updateMatrixWorld(true);
       }
     }
   }

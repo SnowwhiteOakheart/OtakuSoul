@@ -557,6 +557,7 @@ export const DesktopPet: React.FC = () => {
     stageRef.current?.setFrameRate(prefs.frameRate);
     behavior.setPhysics(prefs.physics);
     behavior.setKicks(prefs.physics && prefs.nudgeWindows);
+    behavior.setRagdoll(prefs.ragdoll);
     if (prefs.physics) void syncWindow().catch(() => {});
     // The guest only reads the switches; saving or announcing them is the pet's job.
     if (IS_GUEST_PET) return;

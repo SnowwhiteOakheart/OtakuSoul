@@ -123,6 +123,7 @@ describe('pet menu model', () => {
     weather: false,
     weatherCity: '',
     nudgeWindows: false,
+    ragdoll: false,
   } satisfies PetPrefs;
   const args = (setPrefs = vi.fn()): PetMenuArgs => ({
     pet: null,

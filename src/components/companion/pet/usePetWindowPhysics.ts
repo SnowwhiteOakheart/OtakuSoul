@@ -232,7 +232,9 @@ export function usePetWindowPhysics({
       behavior.setGrounded(
         result.grounded,
         now,
-        result.impact ? { down: result.impact.down / scale, side: result.impact.side / scale } : null,
+        result.impact
+          ? { down: result.impact.down / scale, side: result.impact.side / scale, height: windowSize.current.height / scale }
+          : null,
       );
       behavior.setOnWindow(result.body.support !== null);
       // About once a second: is a window's edge within jumping reach?

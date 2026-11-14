@@ -58,6 +58,34 @@ export interface Recover {
   kind: Landing;
   /** A new id starts getting up again. */
   id: number;
+  /**
+   * Fallen as a ragdoll first (switch `PetPrefs.ragdoll`): the speed it came down with (window
+   * heights/s; `side` signed, positive to the right). Null: the scripted fall only.
+   */
+  ragdoll?: { down: number; side: number } | null;
+}
+
+/** How long the ragdoll falls freely before it gets up (s). */
+export const RAGDOLL_S = 1.6;
+
+/** Whether a landing is played as a ragdoll (on the feet it never is). */
+export const usesRagdoll = (recover: Pick<Recover, 'kind' | 'ragdoll'>) => !!recover.ragdoll && recover.kind !== 'feet';
+
+/**
+ * The getting-up clock: seconds since the landing on the scripted timeline. With a ragdoll that
+ * one waits in its lying phase while the body falls freely (`RAGDOLL_S`), then goes on from
+ * `settle` (pushing itself up from however it came to lie).
+ */
+export function recoverClock(recover: Pick<Recover, 'kind' | 'ragdoll'>, t: number): number {
+  if (!usesRagdoll(recover)) return t;
+  const p = RECOVER_PHASES[recover.kind];
+  return t < RAGDOLL_S ? p.impact * Math.min(0.999, t / RAGDOLL_S) : p.settle + (t - RAGDOLL_S);
+}
+
+/** How long getting up takes in all (s). */
+export function recoverTotal(recover: Pick<Recover, 'kind' | 'ragdoll'>): number {
+  const p = RECOVER_PHASES[recover.kind];
+  return usesRagdoll(recover) ? RAGDOLL_S + p.total - p.settle : p.total;
 }
 
 /**
@@ -91,10 +119,11 @@ const smooth01 = (x: number) => {
  * pushes itself up (landing on the backside from the impact on: it plops down), held while it
  * rubs, given up while it stands. Null when it does not sit at all (on the feet).
  */
-export function recoverSeat(kind: Landing, t: number): number | null {
+export function recoverSeat(kind: Landing, t: number, ragdoll = false): number | null {
   if (kind === 'feet') return null;
   const p = RECOVER_PHASES[kind];
-  const from = kind === 'back' ? p.impact : p.settle;
+  // After a ragdoll fall it lies however it came down: it sits up from there.
+  const from = kind === 'back' && !ragdoll ? p.impact : p.settle;
   if (t < from) return 0;
   if (t < p.rise) return smooth01((t - from) / (p.rise - from));
   if (t < p.rub) return 1;
@@ -106,10 +135,11 @@ export function recoverSeat(kind: Landing, t: number): number | null {
  * landing (`from`) it falls over to lie flat on that side (gravity: slow, then faster), then
  * turns upright as it pushes itself up. Landing on the backside it only straightens.
  */
-export function recoverRoll(kind: Landing, t: number, from: number): number {
+export function recoverRoll(kind: Landing, t: number, from: number, ragdoll = false): number {
   const p = RECOVER_PHASES[kind];
   if (kind === 'feet' || t < p.impact) return kind === 'feet' ? 0 : from;
-  const flat = kind === 'head' ? (Math.sign(from) || 1) * (Math.PI / 2) : 0;
+  // After a ragdoll fall it pushes itself up from where it lies (`from`).
+  const flat = ragdoll ? from : kind === 'head' ? (Math.sign(from) || 1) * (Math.PI / 2) : 0;
   if (t < p.settle) {
     const x = (t - p.impact) / Math.max(1e-3, p.settle - p.impact);
     return from + (flat - from) * x * x;
@@ -119,8 +149,8 @@ export function recoverRoll(kind: Landing, t: number, from: number): number {
 }
 
 /** Pushing itself up: how much one hand leans on the floor (0…1, most halfway up). */
-export function recoverPush(kind: Landing, t: number): number {
-  if (kind !== 'head') return 0;
+export function recoverPush(kind: Landing, t: number, ragdoll = false): number {
+  if (kind === 'feet' || (kind !== 'head' && !ragdoll)) return 0;
   const p = RECOVER_PHASES[kind];
   if (t <= p.settle - 0.1 || t >= p.rise) return 0;
   return Math.sin(Math.PI * Math.min(1, (t - (p.settle - 0.1)) / (p.rise - p.settle + 0.1)));

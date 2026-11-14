@@ -349,6 +349,8 @@ export interface PetPrefs {
   weatherCity: string;
   /** May give the window it stands on a little kick, moving it (off by default; Windows). */
   nudgeWindows: boolean;
+  /** Falls as a ragdoll (free, physical limbs) before getting up (VRM figures; off by default). */
+  ragdoll: boolean;
 }
 
 export type PetPose = 'auto' | 'stand' | 'sit';
@@ -405,6 +407,7 @@ const DEFAULT_PREFS: PetPrefs = {
   weather: false,
   weatherCity: '',
   nudgeWindows: false,
+  ragdoll: false,
 };
 
 interface BatteryManagerLike extends EventTarget {
@@ -466,6 +469,7 @@ export function loadPetPrefs(): PetPrefs {
       weather: typeof stored?.weather === 'boolean' ? stored.weather : DEFAULT_PREFS.weather,
       weatherCity: typeof stored?.weatherCity === 'string' ? stored.weatherCity.slice(0, 80) : DEFAULT_PREFS.weatherCity,
       nudgeWindows: typeof stored?.nudgeWindows === 'boolean' ? stored.nudgeWindows : DEFAULT_PREFS.nudgeWindows,
+      ragdoll: typeof stored?.ragdoll === 'boolean' ? stored.ragdoll : DEFAULT_PREFS.ragdoll,
     };
   } catch {
     return { ...DEFAULT_PREFS };

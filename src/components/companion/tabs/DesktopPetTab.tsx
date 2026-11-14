@@ -324,6 +324,13 @@ export const DesktopPetTab: React.FC = () => {
               onCheckedChange={(rideWindows) => update({ rideWindows })}
             />
             <Toggle
+              id="pet-ragdoll"
+              label={t('pet.ragdoll')}
+              description={t('pet.ragdollHint')}
+              checked={prefs.ragdoll}
+              onCheckedChange={(ragdoll) => update({ ragdoll })}
+            />
+            <Toggle
               id="pet-hide-fullscreen"
               label={t('pet.hideInFullscreen')}
               checked={prefs.hideInFullscreen}

@@ -4362,6 +4362,8 @@
   "pet.chatBubbles": "Chat replies as speech bubble",
   "pet.physics": "Gravity and walking",
   "pet.rideWindows": "Ride along on windows",
+  "pet.ragdoll": "Ragdoll physics when falling",
+  "pet.ragdollHint": "When she falls, head, arms and legs drop freely and physically before she gets up. 3D figures (VRM) only.",
   "pet.hideInFullscreen": "Hide during fullscreen",
   "pet.guestDismiss": "Send the guest away",
   "pet.guest": "Guest pet",

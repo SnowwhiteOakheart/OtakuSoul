@@ -46,7 +46,7 @@ export interface StepResult {
   landed: boolean;
   /** Ran into a wall or the end of a window: -1 left, 1 right, 0 none. */
   wall: -1 | 0 | 1;
-  /** Landed in this step with these speeds (physical px/s; `down` falling, `side` sideways). */
+  /** Landed in this step with these speeds (physical px/s; `down` falling, `side` sideways, signed). */
   impact?: { down: number; side: number } | null;
   /** Hit a side in the air this fast (physical px/s), 0 otherwise. */
   wallSpeed?: number;
@@ -376,7 +376,7 @@ export function stepBody(
         onLedge: true,
       };
     }
-    const fall = { down: vy, side: Math.abs(vx) };
+    const fall = { down: vy, side: vx };
     if (hit) {
       y = hit.y - size.height;
       support = hit.id;

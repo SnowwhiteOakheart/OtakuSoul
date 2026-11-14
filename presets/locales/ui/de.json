@@ -4362,6 +4362,8 @@
   "pet.chatBubbles": "Chat-Antworten als Sprechblase",
   "pet.physics": "Schwerkraft und Laufen",
   "pet.rideWindows": "Auf Fenstern mitfahren",
+  "pet.ragdoll": "Ragdoll-Physik bei Stürzen",
+  "pet.ragdollHint": "Fällt sie hin, fallen Kopf, Arme und Beine frei und physikalisch, bevor sie sich aufrappelt. Nur bei 3D-Figuren (VRM).",
   "pet.hideInFullscreen": "Bei Vollbild ausblenden",
   "pet.guestDismiss": "Gast verabschieden",
   "pet.guest": "Gast-Pet",
