@@ -4350,6 +4350,7 @@
   "pet.frameRateValue": "{{fps}} fps",
   "pet.frameRateHint": "フレーム数が多いほど動きは滑らかになりますが、ローカルモデルと並行してGPU負荷が増えます。バッテリー省電力モードでは常に12です。",
   "pet.reactToDesktop": "デスクトップに反応する(ウィンドウ切替・音楽)",
+  "pet.desktopLipSync": "デスクトップ音声で口パク",
   "pet.quietAtNight": "夜は声を小さくする",
   "pet.shortcut": "表示・非表示のショートカット",
   "pet.shortcutPress": "キーを押してください …",

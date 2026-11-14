@@ -69,6 +69,8 @@ export interface PetScreen {
 export const PET_MUSIC_EVENT = 'pet:music';
 /** Backend → pet: a beat of that music. */
 export const PET_BEAT_EVENT = 'pet:beat';
+/** Backend → pet: smoothed system output loudness (`0…1`) for live desktop lip-sync (Windows only). */
+export const PET_DESKTOP_AUDIO_EVENT = 'pet:audio-level';
 
 /** Backend → pet: walkable top edges of the other windows (Windows only). */
 export const PET_PLATFORMS_EVENT = 'pet:platforms';
@@ -318,6 +320,8 @@ export interface PetPrefs {
   commentPrograms: boolean;
   /** The figure's lights take the colours of the desktop beside it (Windows; only two averages are read, nothing kept). */
   ambientLight: boolean;
+  /** Mirrors live desktop output loudness into lip-sync while the pet itself is not speaking (Windows). */
+  desktopLipSync: boolean;
   /** Programs (file names, e.g. `game.exe`) the pet steps back for while they are in front. */
   ignoredApps: string[];
 }
@@ -365,6 +369,7 @@ const DEFAULT_PREFS: PetPrefs = {
   eventRemarks: false,
   commentPrograms: false,
   ambientLight: false,
+  desktopLipSync: false,
   ignoredApps: [],
 };
 
@@ -414,6 +419,7 @@ export function loadPetPrefs(): PetPrefs {
       eventRemarks: typeof stored?.eventRemarks === 'boolean' ? stored.eventRemarks : DEFAULT_PREFS.eventRemarks,
       commentPrograms: typeof stored?.commentPrograms === 'boolean' ? stored.commentPrograms : DEFAULT_PREFS.commentPrograms,
       ambientLight: typeof stored?.ambientLight === 'boolean' ? stored.ambientLight : DEFAULT_PREFS.ambientLight,
+      desktopLipSync: typeof stored?.desktopLipSync === 'boolean' ? stored.desktopLipSync : DEFAULT_PREFS.desktopLipSync,
       ignoredApps: Array.isArray(stored?.ignoredApps)
         ? stored.ignoredApps.filter((a): a is string => typeof a === 'string' && a.length > 0 && a.length <= 128).slice(0, 64)
         : [],

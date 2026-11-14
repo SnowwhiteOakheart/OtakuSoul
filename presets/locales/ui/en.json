@@ -4349,6 +4349,7 @@
   "pet.frameRateValue": "{{fps}} fps",
   "pet.frameRateHint": "More frames per second move the figure more smoothly but cost more graphics power next to a local model. On battery saving it is always 12.",
   "pet.reactToDesktop": "React to the desktop (window switches, music)",
+  "pet.desktopLipSync": "Lip-sync to desktop audio",
   "pet.quietAtNight": "Quieter voice at night",
   "pet.shortcut": "Shortcut to show and hide",
   "pet.shortcutPress": "Press a key …",

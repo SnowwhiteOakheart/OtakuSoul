@@ -882,7 +882,9 @@ impl CompanionEngine {
                 }
             }
             "take_screenshot" => {
-                let res = Self::run_async(CompanionTools::take_screenshot());
+                let res = Self::run_async(CompanionTools::take_screenshot_with_options(Some(
+                    arguments,
+                )));
                 ToolExecutionResult {
                     call_id: call_id.to_string(),
                     tool_name: tool_name.to_string(),

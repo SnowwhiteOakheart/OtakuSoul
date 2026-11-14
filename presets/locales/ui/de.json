@@ -4349,6 +4349,7 @@
   "pet.frameRateValue": "{{fps}} Bilder/s",
   "pet.frameRateHint": "Mehr Bilder pro Sekunde bewegen die Figur flüssiger, kosten aber mehr Grafikleistung neben einem lokalen Modell. Im Sparmodus auf Akku sind es immer 12.",
   "pet.reactToDesktop": "Auf den Desktop reagieren (Fensterwechsel, Musik)",
+  "pet.desktopLipSync": "Lippensynchron zu Desktop-Audio",
   "pet.quietAtNight": "Nachts leiser sprechen",
   "pet.shortcut": "Tastenkürzel zum Ein- und Ausblenden",
   "pet.shortcutPress": "Taste drücken …",

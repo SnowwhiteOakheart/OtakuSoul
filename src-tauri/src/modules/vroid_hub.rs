@@ -43,6 +43,10 @@ const MAGIC: &[u8] = b"OSVROID1";
 const LOGIN_TIMEOUT: Duration = Duration::from_secs(5 * 60);
 /// Largest model accepted from VRoid Hub.
 const MAX_MODEL_BYTES: u64 = 512 * 1024 * 1024;
+/// Attempts for transient `GET` requests (502/503/504 or network glitches).
+const API_GET_ATTEMPTS: usize = 3;
+/// Base delay between transient retries (multiplied by attempt index).
+const API_RETRY_BACKOFF: Duration = Duration::from_millis(350);
 /// Pages read per list (100 models each).
 const MAX_PAGES: usize = 5;
 
@@ -370,37 +374,104 @@ async fn access_token() -> Result<String, String> {
     }
 }
 
+enum ApiFailure {
+    Permanent(String),
+    Transient(String),
+}
+
+impl ApiFailure {
+    fn into_message(self) -> String {
+        match self {
+            Self::Permanent(msg) | Self::Transient(msg) => msg,
+        }
+    }
+}
+
+fn is_transient_status(status: u16) -> bool {
+    matches!(status, 502..=504)
+}
+
+fn check_model_size(character_model: &Value) -> Result<(), String> {
+    let version = &character_model["latest_character_model_version"];
+    let size = version["original_file_size"]
+        .as_u64()
+        .or_else(|| version["file_size"].as_u64());
+    if size.is_some_and(|bytes| bytes > MAX_MODEL_BYTES) {
+        return Err(crate::err!("backend.vroid.tooLarge"));
+    }
+    Ok(())
+}
+
 /// An API answer's `data`; a 401 signs out, a 429 asks to wait.
-async fn send_api(request: reqwest::RequestBuilder) -> Result<Value, String> {
-    let token = access_token().await?;
+async fn send_api_once(request: reqwest::RequestBuilder) -> Result<Value, ApiFailure> {
+    let token = access_token().await.map_err(ApiFailure::Permanent)?;
     let response = request
         .header("X-Api-Version", API_VERSION)
         .bearer_auth(token)
         .send()
         .await
-        .map_err(|e| crate::err!("backend.vroid.request", error = e))?;
-    match response.status().as_u16() {
+        .map_err(|e| ApiFailure::Transient(crate::err!("backend.vroid.request", error = e)))?;
+    let status = response.status().as_u16();
+    match status {
         200..=299 => {}
         401 => {
             sign_out_locally();
-            return Err(crate::err!("backend.vroid.signedOut"));
+            return Err(ApiFailure::Permanent(crate::err!(
+                "backend.vroid.signedOut"
+            )));
         }
-        429 => return Err(crate::err!("backend.vroid.rateLimited")),
-        _ => {
-            return Err(crate::err!(
+        429 => {
+            return Err(ApiFailure::Permanent(crate::err!(
+                "backend.vroid.rateLimited"
+            )));
+        }
+        _ if is_transient_status(status) => {
+            return Err(ApiFailure::Transient(crate::err!(
                 "backend.vroid.request",
                 error = failure(response).await
-            ));
+            )));
+        }
+        _ => {
+            return Err(ApiFailure::Permanent(crate::err!(
+                "backend.vroid.request",
+                error = failure(response).await
+            )));
         }
     }
     response
         .json()
         .await
-        .map_err(|e| crate::err!("backend.vroid.request", error = e))
+        .map_err(|e| ApiFailure::Permanent(crate::err!("backend.vroid.request", error = e)))
+}
+
+/// An API answer's `data`; a 401 signs out, a 429 asks to wait.
+async fn send_api(request: reqwest::RequestBuilder) -> Result<Value, String> {
+    send_api_once(request)
+        .await
+        .map_err(ApiFailure::into_message)
 }
 
 async fn api_get(url: &str) -> Result<Value, String> {
-    send_api(client(Duration::from_secs(30))?.get(url)).await
+    let http = client(Duration::from_secs(30))?;
+    for attempt in 0..API_GET_ATTEMPTS {
+        match send_api_once(http.get(url)).await {
+            Ok(value) => return Ok(value),
+            Err(ApiFailure::Permanent(msg)) => return Err(msg),
+            Err(ApiFailure::Transient(msg)) => {
+                if attempt + 1 >= API_GET_ATTEMPTS {
+                    return Err(msg);
+                }
+                let backoff = API_RETRY_BACKOFF * (attempt as u32 + 1);
+                warn!(
+                    "VRoid-Hub-Anfrage vorübergehend fehlgeschlagen ({}), erneuter Versuch in {} ms",
+                    msg,
+                    backoff.as_millis()
+                );
+                tokio::time::sleep(backoff).await;
+            }
+        }
+    }
+    unreachable!("API_GET_ATTEMPTS >= 1")
 }
 
 /// All models of a paged list (`_links.next.href`), up to `MAX_PAGES`.
@@ -940,8 +1011,10 @@ pub async fn add(id: &str) -> Result<crate::modules::paths::ScannedVrm, String> 
     let account = load_account().ok_or_else(|| crate::err!("backend.vroid.signedOut"))?;
     let dir = models_dir(&account).ok_or_else(|| crate::err!("backend.vroid.signedOut"))?;
     let detail = api_get(&format!("{HUB}/api/character_models/{id}")).await?;
-    let mut model = to_model(&detail["data"]["character_model"], &account.id)
-        .ok_or_else(|| crate::err!("backend.vroid.notFound"))?;
+    let raw_model = &detail["data"]["character_model"];
+    check_model_size(raw_model)?;
+    let mut model =
+        to_model(raw_model, &account.id).ok_or_else(|| crate::err!("backend.vroid.notFound"))?;
     model.added = true;
     std::fs::create_dir_all(&dir)
         .map_err(|e| crate::err!("backend.common.dirCreate", error = e))?;
@@ -1178,5 +1251,37 @@ mod tests {
     #[test]
     fn foreign_ids_are_skipped() {
         assert!(to_model(&json!({ "id": "../../etc" }), "1").is_none());
+    }
+
+    #[test]
+    fn oversized_models_are_rejected_before_license() {
+        let ok = json!({
+            "latest_character_model_version": { "original_file_size": MAX_MODEL_BYTES }
+        });
+        assert!(check_model_size(&ok).is_ok());
+
+        let unknown = json!({ "latest_character_model_version": {} });
+        assert!(check_model_size(&unknown).is_ok());
+
+        let too_big = json!({
+            "latest_character_model_version": { "original_file_size": MAX_MODEL_BYTES + 1 }
+        });
+        assert!(check_model_size(&too_big).is_err());
+
+        let too_big_alt = json!({
+            "latest_character_model_version": { "file_size": MAX_MODEL_BYTES + 1024 }
+        });
+        assert!(check_model_size(&too_big_alt).is_err());
+    }
+
+    #[test]
+    fn transient_http_statuses_trigger_retries() {
+        assert!(is_transient_status(502));
+        assert!(is_transient_status(503));
+        assert!(is_transient_status(504));
+        assert!(!is_transient_status(401));
+        assert!(!is_transient_status(404));
+        assert!(!is_transient_status(429));
+        assert!(!is_transient_status(500));
     }
 }

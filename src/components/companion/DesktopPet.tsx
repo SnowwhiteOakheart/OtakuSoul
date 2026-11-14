@@ -14,7 +14,12 @@ import { api } from '../../services/api';
 import { errorMessage } from '../../utils/errors';
 import { NOTIFICATION_OPEN_CHAT_EVENT } from '../../services/notifications';
 import { audioPlayer } from '../../services/audioPlayer';
-import { SILENT_VISEMES } from '../../services/lipSync';
+import {
+  clearActiveSpeechTimeline,
+  setActiveSpeechTimeline,
+  SILENT_VISEMES,
+  visemesFromDesktopLevel,
+} from '../../services/lipSync';
 import { PetBubble } from './PetBubble';
 import {
   bubbleMs,
@@ -48,6 +53,7 @@ import {
   PET_BEAT_EVENT,
   PET_COME_EVENT,
   PET_CURSOR_EVENT,
+  PET_DESKTOP_AUDIO_EVENT,
   PET_LABEL,
   GUEST_LABEL,
   PET_TEST_HANG_EVENT,
@@ -229,6 +235,7 @@ export const DesktopPet: React.FC = () => {
   const gazeOverride = useRef<Gaze | null>(null);
   const speakingRef = useRef(false);
   const mouthOpen = useRef(false);
+  const desktopLipActive = useRef(false);
   const prefsRef = useRef(prefs);
   /** Fullscreen window or lock screen in front: the pet steps back (not drawn, no clicks, no moves). */
   const [screen, setScreen] = useState<PetScreen>({ fullscreen: false, locked: false, focus: 0, ignored: false });
@@ -499,6 +506,14 @@ export const DesktopPet: React.FC = () => {
     savingRef.current = prefs.batterySaver && onBattery;
     behavior.setSaving(savingRef.current);
   }, [behavior, prefs.batterySaver, onBattery]);
+  useEffect(() => {
+    if (!prefs.desktopLipSync && desktopLipActive.current) {
+      desktopLipActive.current = false;
+      if (!speakingRef.current && !mouthOpen.current) {
+        audioPlayer.feedRemoteFrame(0, null);
+      }
+    }
+  }, [prefs.desktopLipSync]);
 
   // Hormones steer the idle behaviour only while the companion simulates them.
   const driveRef = useRef<PetDrive>(NEUTRAL_DRIVE);
@@ -533,6 +548,11 @@ export const DesktopPet: React.FC = () => {
       const stage = stageRef.current;
       stage?.setTurn(frame.turn);
       stage?.setSaver(savingRef.current && (frame.mode === 'idle' || frame.mode === 'dozing'));
+      stage?.setActivity?.(
+        speakingRef.current ||
+          frame.loop === 'dance' ||
+          (frame.mode !== 'idle' && frame.mode !== 'sitting' && frame.mode !== 'dozing'),
+      );
       if (stage) {
         const gaze = frame.gaze ?? pointerGaze.current;
         stage.mouse.x = gaze.x;
@@ -570,6 +590,7 @@ export const DesktopPet: React.FC = () => {
       }),
       listenOwn<PetAudioFrame>(PET_AUDIO_EVENT, ({ payload }) => {
         const speaking = payload.visemes !== null;
+        if (speaking) desktopLipActive.current = false;
         audioPlayer.feedRemoteFrame(payload.amplitude, payload.visemes);
         if (speaking !== speakingRef.current) {
           speakingRef.current = speaking;
@@ -577,15 +598,19 @@ export const DesktopPet: React.FC = () => {
           behavior.setSpeaking(speaking);
           setIsSpeaking(speaking);
           // The bubble of the reply stays a moment after the voice ends.
-          if (!speaking && bubbleTimer.current !== null) {
-            window.clearTimeout(bubbleTimer.current);
-            bubbleTimer.current = window.setTimeout(() => setBubble(null), BUBBLE_AFTER_VOICE_MS);
+          if (!speaking) {
+            clearActiveSpeechTimeline();
+            if (bubbleTimer.current !== null) {
+              window.clearTimeout(bubbleTimer.current);
+              bubbleTimer.current = window.setTimeout(() => setBubble(null), BUBBLE_AFTER_VOICE_MS);
+            }
           }
         }
       }),
       listenOwn<PetSentence>(PET_SENTENCE_EVENT, ({ payload }) => {
         // Shown a little longer than spoken, so a short sentence can be read.
         const ms = Math.max(1500, payload.ms + 600);
+        setActiveSpeechTimeline(payload.text, Math.max(400, payload.ms));
         behavior.say(performance.now(), ms);
         if (prefsRef.current.chatBubbles) say(payload.text, ms);
         setSentenceFace(payload.expression);
@@ -598,11 +623,14 @@ export const DesktopPet: React.FC = () => {
         const chat = payload.chat ?? null;
         if (chat) {
           // A message of their own stays longer, so the click on it can still be made.
+          const ms = Math.max(bubbleMs(payload.text), PROACTIVE_BUBBLE_MS);
+          setActiveSpeechTimeline(payload.text, Math.min(ms, 4500), now);
           behavior.announce(now);
-          say(payload.text, Math.max(bubbleMs(payload.text), PROACTIVE_BUBBLE_MS), chat);
+          say(payload.text, ms, chat);
           return;
         }
         const ms = bubbleMs(payload.text);
+        setActiveSpeechTimeline(payload.text, ms, now);
         behavior.say(now, ms);
         say(payload.text, ms);
       }),
@@ -624,6 +652,19 @@ export const DesktopPet: React.FC = () => {
       }),
       listenOwn(PET_BEAT_EVENT, () => {
         if (!speakingRef.current) behavior.beat(performance.now());
+      }),
+      listenOwn<number>(PET_DESKTOP_AUDIO_EVENT, ({ payload }) => {
+        if (IS_GUEST_PET || !prefsRef.current.desktopLipSync || speakingRef.current || mouthOpen.current) return;
+        if (typeof payload !== 'number' || !Number.isFinite(payload)) return;
+        if (payload < 0.02) {
+          if (desktopLipActive.current) {
+            desktopLipActive.current = false;
+            audioPlayer.feedRemoteFrame(0, null);
+          }
+          return;
+        }
+        desktopLipActive.current = true;
+        audioPlayer.feedRemoteFrame(payload, visemesFromDesktopLevel(payload));
       }),
       listenOwn<PetPrefs>(PET_PREFS_EVENT, ({ payload }) => {
         setPrefs((current) => (JSON.stringify(current) === JSON.stringify(payload) ? current : payload));
@@ -1027,7 +1068,7 @@ export const DesktopPet: React.FC = () => {
         hop={hop}
         walking={walking}
         lift={framing.lift}
-        isSpeaking={isSpeaking}
+        isSpeaking={isSpeaking || mode === 'talking'}
         faceOverride={faceOverride}
         sentenceFace={sentenceFace}
         gesture={gesture}

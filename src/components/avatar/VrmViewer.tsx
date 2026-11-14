@@ -644,7 +644,7 @@ export const VrmViewer = ({
     loop,
     onLoops: pet?.onLoops,
     model: loadedVrm,
-    motions: motions.filter((m) => m.kind === 'vrma' || m.kind === 'fbx'),
+    motions: motions.filter((m) => m.kind === 'vrma' || m.kind === 'fbx' || m.kind === 'vmd'),
     player: motionPlayerRef,
     load: (motion, model) => loadMotionClip(motion, model),
     gesture,

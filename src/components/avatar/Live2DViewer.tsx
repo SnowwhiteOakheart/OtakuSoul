@@ -9,11 +9,19 @@ import { useAppStore } from '../../store/useAppStore';
 import { audioPlayer } from '../../services/audioPlayer';
 import { DEFAULT_PET_FRAMING, loadLive2DViewState, PET_FEET_SHARE, saveLive2DViewState, type PetFraming } from '../../services/avatarViewState';
 import { DEFAULT_PET_FRAME_RATE, type PetFigure } from './avatarStage';
+import {
+  emotionMotionCandidates,
+  expressionCandidates,
+  installPixiUrlPatch,
+  tapMotionCandidates,
+} from './live2dFallbacks';
 import { type FigureTouch } from './avatarTouch';
 import { touchZoneAt } from '../companion/petBehavior';
 import { Loader2, Sparkles, RefreshCw } from 'lucide-react';
 import { translate, useTranslation } from '../../i18n';
 import { errorMessage } from '../../utils/errors';
+
+installPixiUrlPatch();
 
 // The Live2D render pipe must be registered before any renderer is created.
 extensions.add(Live2DPlugin);
@@ -118,19 +126,6 @@ ModelSettings.prototype.resolveURL = function (targetPath: string): string {
   return convertFileSrc(resolved);
 };
 
-/** GoEmotions fallback for romance / extra emotions on Live2D models without dedicated expressions. */
-const ROMANCE_FALLBACK: Record<string, string> = {
-  blush: 'embarrassment',
-  aroused: 'desire',
-  seductive: 'desire',
-  ecstasy: 'excitement',
-  afterglow: 'relief',
-  teasing: 'amusement',
-  crying: 'sadness',
-  fear: 'fear',
-  disgust: 'disgust',
-};
-
 /** Cheek blush intensity for romance/extra emotions on Live2D models. */
 const CHEEK_EMOTIONS: Record<string, number> = {
   blush: 0.9,
@@ -141,28 +136,28 @@ const CHEEK_EMOTIONS: Record<string, number> = {
 };
 
 /**
- * Applies a GoEmotions label. Imported Soul-of-Waifu models name their expressions after the
- * emotion ("joy"), older exports use "joy_animation"; a motion group of the same name is the fallback.
+ * Applies a GoEmotions label using ordered fallbacks: exact emotion name, `_animation`,
+ * romance fallback, Cubism numbered IDs (`exp_01`..`exp_08` / `f01`..`f08`), then motion groups.
  */
 const applyEmotion = async (model: Live2DModel, emotion: string) => {
   try {
-    if (await model.expression(emotion)) return;
-    if (await model.expression(`${emotion}_animation`)) return;
-    const fallback = ROMANCE_FALLBACK[emotion];
-    if (fallback) {
-      if (await model.expression(fallback)) return;
-      if (await model.expression(`${fallback}_animation`)) return;
+    for (const candidate of expressionCandidates(emotion)) {
+      if (await model.expression(candidate)) return;
     }
-    await model.motion(emotion);
+    for (const motionGroup of emotionMotionCandidates(emotion)) {
+      if (await model.motion(motionGroup)) return;
+    }
   } catch (err) {
     console.warn('Could not set expression on Live2D model:', err);
   }
 };
 
-/** Plays the "Tap" motion group, or "Idle" for models without one. */
-const playTapMotion = async (model: Live2DModel) => {
+/** Plays an ordered tap motion group for the touched zone, falling back to `mtn_*`/`Idle`. */
+const playTapMotion = async (model: Live2DModel, zone: 'head' | 'body' = 'body') => {
   try {
-    if (!(await model.motion('Tap'))) await model.motion('Idle');
+    for (const motionGroup of tapMotionCandidates(zone)) {
+      if (await model.motion(motionGroup)) return;
+    }
   } catch (e) {
     console.warn('Motion error:', e);
   }
@@ -474,10 +469,10 @@ export const Live2DViewer: React.FC<Live2DViewerProps> = ({
           x >= bounds.x && x <= bounds.x + bounds.width && y >= bounds.y && y <= bounds.y + bounds.height;
         const areas = model.hitTest(x, y);
         if (areas.length > 0 || insideBounds) {
-          void playTapMotion(model);
           // The model's own hit areas say "head" or "face"; without them the top third of the figure is the head.
           const headArea = areas.some((area) => /head|face|hair|kao|atama/i.test(area));
           const zone = areas.length > 0 && !headArea ? 'body' : headArea ? 'head' : touchZoneAt((y - bounds.y) / Math.max(1, bounds.height), 0.33);
+          void playTapMotion(model, zone);
           onTouchRef.current?.({ zone, x, y });
         }
       } catch {}

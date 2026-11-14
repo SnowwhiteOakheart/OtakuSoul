@@ -197,6 +197,11 @@ export async function openPetContextMenu({
         action: () => setPrefs((p) => ({ ...p, reactToDesktop: !p.reactToDesktop })),
       },
       {
+        text: t('pet.desktopLipSync'),
+        checked: prefs.desktopLipSync,
+        action: () => setPrefs((p) => ({ ...p, desktopLipSync: !p.desktopLipSync })),
+      },
+      {
         text: t('pet.chatBubbles'),
         checked: prefs.chatBubbles,
         action: () => setPrefs((p) => ({ ...p, chatBubbles: !p.chatBubbles })),

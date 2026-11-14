@@ -1,6 +1,13 @@
 import React, { useEffect, useLayoutEffect, useRef } from 'react';
 import type { PetFigure } from './avatarStage';
 import { TalkingOverlay, useTalkingSet } from './TalkingPortrait';
+import { audioPlayer } from '../../services/audioPlayer';
+import { mouthTarget, type Visemes } from '../../services/lipSync';
+import {
+  createPortraitPendulum,
+  drawDeformedPortrait,
+  stepPortraitPendulum,
+} from './portraitMesh';
 import type { LoopRole } from '../../utils/avatarGestures';
 import { DEFAULT_PET_FRAMING, PET_FEET_SHARE, type PetFraming } from '../../services/avatarViewState';
 
@@ -33,6 +40,47 @@ export const PortraitPet: React.FC<PortraitPetProps> = ({ src, characterId, isSp
   const talking = useTalkingSet(characterId, src);
   const containerRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const speakingRef = useRef(isSpeaking);
+  const loopRef = useRef(loop);
+  const hasTalkingSpritesRef = useRef(Boolean(talking));
+  const audioVoiceRef = useRef<Visemes | null>(null);
+  const motionRef = useRef({
+    paused: false,
+    saver: false,
+    active: false,
+    lastActive: 0,
+    frameMs: 31,
+    pendulum: createPortraitPendulum(),
+    moveDx: 0,
+    moveDy: 0,
+    mouse: { x: 0, y: 0 },
+  });
+
+  useEffect(() => {
+    speakingRef.current = isSpeaking;
+  }, [isSpeaking]);
+
+  useEffect(() => {
+    loopRef.current = loop;
+  }, [loop]);
+
+  useEffect(() => {
+    hasTalkingSpritesRef.current = Boolean(talking);
+  }, [talking]);
+
+  useEffect(() => {
+    return audioPlayer.onAudioFrame((amplitude, visemes) => {
+      if (visemes) {
+        audioVoiceRef.current = visemes;
+      } else if (amplitude > 0.02) {
+        audioVoiceRef.current = { aa: amplitude, ih: 0, ou: 0, ee: 0, oh: amplitude * 0.4 };
+      } else {
+        audioVoiceRef.current = null;
+      }
+    });
+  }, []);
   const petRef = useRef(pet);
   useLayoutEffect(() => {
     petRef.current = pet;
@@ -59,14 +107,24 @@ export const PortraitPet: React.FC<PortraitPetProps> = ({ src, characterId, isSp
       frame.style.height = `${size}px`;
       frame.style.left = `calc(50% - ${size / 2}px)`;
       frame.style.top = `${top}px`;
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const px = Math.max(1, Math.round(size * dpr));
+        if (canvas.width !== px || canvas.height !== px) {
+          canvas.width = px;
+          canvas.height = px;
+        }
+      }
     };
     place();
     const resize = new ResizeObserver(place);
     resize.observe(container);
 
+    const state = motionRef.current;
+    state.lastActive = performance.now();
     const figure: PetFigure = {
-      // Nothing to look with; the pet window still writes to it.
-      mouse: { x: 0, y: 0 },
+      mouse: state.mouse,
       probe: (x, y, onResult) => {
         const { size, centreX, top } = geometry();
         const radius = size / 2;
@@ -74,15 +132,26 @@ export const PortraitPet: React.FC<PortraitPetProps> = ({ src, characterId, isSp
       },
       setPaused: (next) => {
         paused = next;
+        state.paused = next;
         frame.style.visibility = next ? 'hidden' : 'visible';
       },
-      // Breathing is a CSS animation of the compositor; there is no frame rate to lower.
       setSaver: (saver) => {
+        state.saver = saver;
         frame.style.animationPlayState = saver ? 'paused' : 'running';
       },
-      // Only CSS animations: nothing drawn per frame, nothing to swing.
-      setFrameRate: () => {},
-      addWindowMove: () => {},
+      setFrameRate: (fps) => {
+        state.frameMs = fps >= 60 ? 15 : fps <= 20 ? 48 : 31;
+      },
+      setActivity: (active) => {
+        state.active = active;
+        if (active) state.lastActive = performance.now();
+      },
+      addWindowMove: (dx, dy) => {
+        const h = Math.max(1, container.clientHeight * (window.devicePixelRatio || 1));
+        state.moveDx += dx / h;
+        state.moveDy += dy / h;
+        state.lastActive = performance.now();
+      },
       setTurn: (yaw) => {
         frame.style.rotate = `${yaw * TILT}rad`;
       },
@@ -97,8 +166,72 @@ export const PortraitPet: React.FC<PortraitPetProps> = ({ src, characterId, isSp
       // A picture has no hands.
       handAt: () => false,
     };
+
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d') ?? null;
+    let rafId = 0;
+    let lastTime = performance.now();
+    const startTime = lastTime;
+
+    const tick = () => {
+      rafId = requestAnimationFrame(tick);
+      const now = performance.now();
+      if (state.paused || (typeof document !== 'undefined' && document.hidden)) {
+        lastTime = now;
+        return;
+      }
+      const targetMs = state.saver
+        ? 80
+        : state.active || now - state.lastActive <= 2500
+          ? state.frameMs
+          : Math.max(state.frameMs, 31);
+      if (now - lastTime < targetMs) return;
+
+      const dt = Math.min(0.1, (now - lastTime) / 1000);
+      lastTime = now;
+      const elapsed = (now - startTime) / 1000;
+
+      const mdx = state.moveDx;
+      const mdy = state.moveDy;
+      state.moveDx = 0;
+      state.moveDy = 0;
+      stepPortraitPendulum(state.pendulum, mdx, mdy, dt);
+
+      const img = imgRef.current;
+      if (ctx && canvas && img && img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
+        const mouth = hasTalkingSpritesRef.current
+          ? 0
+          : (() => {
+              const target = mouthTarget(audioVoiceRef.current, speakingRef.current, elapsed);
+              return Math.max(target.aa, target.oh, target.ee, target.ih, target.ou);
+            })();
+        drawDeformedPortrait(
+          ctx,
+          img,
+          img.naturalWidth,
+          img.naturalHeight,
+          canvas.width,
+          canvas.height,
+          10,
+          10,
+          {
+            breathPhase: elapsed * (loopRef.current === 'sit' ? 1.55 : 2.15),
+            gazeX: state.mouse.x,
+            gazeY: state.mouse.y,
+            mouthOpen: mouth,
+            swayX: state.pendulum.swayX,
+            swayY: state.pendulum.swayY,
+            sitting: loopRef.current === 'sit',
+          },
+        );
+        if (img.style.opacity !== '0') img.style.opacity = '0';
+      }
+    };
+    rafId = requestAnimationFrame(tick);
+
     petRef.current.onStage(figure);
     return () => {
+      cancelAnimationFrame(rafId);
       resize.disconnect();
       petRef.current.onStage(null);
     };
@@ -112,7 +245,8 @@ export const PortraitPet: React.FC<PortraitPetProps> = ({ src, characterId, isSp
           isSpeaking ? 'pet-portrait-talk' : loop === 'sit' ? '' : 'pet-portrait-breath'
         }`}
       >
-        <img src={src} alt="" draggable={false} className="h-full w-full object-cover" />
+        <img ref={imgRef} src={src} alt="" draggable={false} className="h-full w-full object-cover" />
+        <canvas ref={canvasRef} className="pointer-events-none absolute inset-0 h-full w-full" />
         {talking && <TalkingOverlay set={talking} isSpeaking={isSpeaking} />}
       </div>
     </div>

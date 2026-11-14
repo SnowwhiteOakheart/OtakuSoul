@@ -18,20 +18,31 @@ const BEAT_MIN: f32 = 0.06;
 const BEAT_GAP: Duration = Duration::from_millis(280);
 /// Weight of the newest peak in the running average.
 const AVERAGE_WEIGHT: f32 = 0.08;
+/// Smoothing factors for the lip-sync loudness envelope (fast attack, smooth release).
+const LEVEL_ATTACK: f32 = 0.55;
+const LEVEL_RELEASE: f32 = 0.25;
+/// Smallest envelope value emitted before snapping back to silence (`0.0`).
+const LEVEL_FLOOR: f32 = 0.008;
+/// Minimum change in envelope before another `pet:audio-level` event is emitted.
+const LEVEL_DELTA: f32 = 0.03;
 
 /// What a peak sample changed.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct Sample {
     /// Music starts (`Some(true)`) or ends (`Some(false)`) with this sample.
     pub music: Option<bool>,
     /// This sample is a beat.
     pub beat: bool,
+    /// Smoothed loudness level (`0…1`) when it changed meaningfully or returned to silence.
+    pub level: Option<f32>,
 }
 
-/// Turns the loudness over time into "music is playing" and beats.
+/// Turns the loudness over time into "music is playing", beats and lip-sync levels.
 #[derive(Debug, Default)]
 pub struct BeatDetector {
     average: f32,
+    envelope: f32,
+    emitted_level: f32,
     loud_since: Option<Instant>,
     quiet_since: Option<Instant>,
     last_beat: Option<Instant>,
@@ -40,6 +51,11 @@ pub struct BeatDetector {
 
 impl BeatDetector {
     pub fn push(&mut self, peak: f32, now: Instant) -> Sample {
+        let peak = if peak.is_finite() {
+            peak.clamp(0.0, 1.0)
+        } else {
+            0.0
+        };
         let mut out = Sample::default();
         if peak >= AUDIBLE {
             self.quiet_since = None;
@@ -66,6 +82,24 @@ impl BeatDetector {
         {
             self.last_beat = Some(now);
             out.beat = true;
+        }
+        let weight = if peak >= self.envelope {
+            LEVEL_ATTACK
+        } else {
+            LEVEL_RELEASE
+        };
+        self.envelope += (peak - self.envelope) * weight;
+        let level = if self.envelope < LEVEL_FLOOR && peak < AUDIBLE {
+            self.envelope = 0.0;
+            0.0
+        } else {
+            self.envelope
+        };
+        if (level - self.emitted_level).abs() >= LEVEL_DELTA
+            || (level == 0.0 && self.emitted_level > 0.0)
+        {
+            self.emitted_level = level;
+            out.level = Some(level);
         }
         self.average += (peak - self.average) * AVERAGE_WEIGHT;
         out
@@ -151,5 +185,25 @@ mod tests {
         assert_eq!(beats, 4);
         // A sustained loud level is no beat.
         assert!(samples[100..160].iter().all(|s| !s.beat));
+    }
+
+    #[test]
+    fn loudness_envelope_emits_changes_and_returns_to_zero() {
+        let mut detector = BeatDetector::default();
+        let start = Instant::now();
+        // Pure silence does not spam updates.
+        let silent = feed(&mut detector, start, &[0.0; 10]);
+        assert!(silent.iter().all(|s| s.level.is_none()));
+
+        let rising = feed(&mut detector, start, &[0.5; 6]);
+        let last_level = rising.iter().filter_map(|s| s.level).next_back();
+        assert!(last_level.is_some_and(|v| v > 0.3 && v <= 1.0));
+
+        let quiet = feed(
+            &mut detector,
+            start + Duration::from_millis(200),
+            &[0.0; 40],
+        );
+        assert_eq!(quiet.iter().filter_map(|s| s.level).next_back(), Some(0.0));
     }
 }

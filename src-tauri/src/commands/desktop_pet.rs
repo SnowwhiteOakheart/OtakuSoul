@@ -228,6 +228,11 @@ fn spawn_music_watch(app: AppHandle) {
                     let _ = app.emit_to(label, "pet:beat", ());
                 }
             }
+            if let Some(level) = sample.level {
+                for label in PET_LABELS {
+                    let _ = app.emit_to(label, "pet:audio-level", level);
+                }
+            }
         }
     });
 }

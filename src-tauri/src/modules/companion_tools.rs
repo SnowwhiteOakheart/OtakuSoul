@@ -358,21 +358,132 @@ impl CompanionTools {
         Ok("(Die Zwischenablage ist aktuell leer)".to_string())
     }
 
-    /// Take screenshot of primary screen and return base64 PNG data URL
-    pub async fn take_screenshot() -> Result<String, String> {
-        // Run blocking capture on dedicated thread
-        tokio::task::spawn_blocking(|| {
-            let monitors = xcap::Monitor::all()
-                .map_err(|e| format!("Monitore konnten nicht abgefragt werden: {}", e))?;
-            let monitor = monitors
-                .into_iter()
-                .find(|m| m.is_primary().unwrap_or(false))
-                .or_else(|| xcap::Monitor::all().ok()?.into_iter().next())
-                .ok_or_else(|| "Kein aktiver Monitor für Screenshot gefunden.".to_string())?;
+    /// Crops a pixel or normalized (`0..=1`) rectangle from an RGBA screenshot.
+    pub fn crop_image_region(
+        img: &image::RgbaImage,
+        x: f64,
+        y: f64,
+        width: f64,
+        height: f64,
+    ) -> Result<image::RgbaImage, String> {
+        if !x.is_finite()
+            || !y.is_finite()
+            || !width.is_finite()
+            || !height.is_finite()
+            || x < 0.0
+            || y < 0.0
+            || width <= 0.0
+            || height <= 0.0
+        {
+            return Err("Ungültiger Screenshot-Bereich.".to_string());
+        }
+        let img_w = img.width();
+        let img_h = img.height();
+        if img_w == 0 || img_h == 0 {
+            return Err("Leeres Screenshot-Bild.".to_string());
+        }
+        let normalized = x <= 1.0 && y <= 1.0 && width <= 1.0 && height <= 1.0;
+        let (rx, ry, rw, rh) = if normalized {
+            (
+                x * img_w as f64,
+                y * img_h as f64,
+                width * img_w as f64,
+                height * img_h as f64,
+            )
+        } else {
+            (x, y, width, height)
+        };
+        let px_f = rx.floor();
+        let py_f = ry.floor();
+        if px_f >= img_w as f64 || py_f >= img_h as f64 {
+            return Err("Screenshot-Bereich liegt außerhalb des Bildes.".to_string());
+        }
+        let px = px_f as u32;
+        let py = py_f as u32;
+        let pw = (rw.round().max(0.0) as u32).min(img_w - px);
+        let ph = (rh.round().max(0.0) as u32).min(img_h - py);
+        if pw == 0 || ph == 0 {
+            return Err("Screenshot-Bereich ist leer.".to_string());
+        }
+        Ok(image::imageops::crop_imm(img, px, py, pw, ph).to_image())
+    }
 
-            let img = monitor
-                .capture_image()
-                .map_err(|e| format!("Bildschirmaufnahme fehlgeschlagen: {}", e))?;
+    /// Take screenshot of primary screen or optional `window_title` / `region` crop as PNG data URL.
+    pub async fn take_screenshot_with_options(
+        args: Option<&serde_json::Value>,
+    ) -> Result<String, String> {
+        let window_title = args
+            .and_then(|v| v.get("window_title"))
+            .and_then(|v| v.as_str())
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(str::to_lowercase);
+        let region = match args.and_then(|v| v.get("region")) {
+            Some(r) if !r.is_null() => {
+                let x = r.get("x").and_then(|v| v.as_f64()).unwrap_or(0.0);
+                let y = r.get("y").and_then(|v| v.as_f64()).unwrap_or(0.0);
+                let w = r
+                    .get("width")
+                    .or_else(|| r.get("w"))
+                    .and_then(|v| v.as_f64())
+                    .ok_or_else(|| "Screenshot-Region benötigt 'width'.".to_string())?;
+                let h = r
+                    .get("height")
+                    .or_else(|| r.get("h"))
+                    .and_then(|v| v.as_f64())
+                    .ok_or_else(|| "Screenshot-Region benötigt 'height'.".to_string())?;
+                Some((x, y, w, h))
+            }
+            _ => None,
+        };
+
+        // Run blocking WGC/platform capture on dedicated thread
+        tokio::task::spawn_blocking(move || {
+            let captured_window = window_title.as_deref().and_then(|query| {
+                let windows = xcap::Window::all().ok()?;
+                windows.into_iter().find_map(|w| {
+                    if w.is_minimized().unwrap_or(false) {
+                        return None;
+                    }
+                    let title_match = w
+                        .title()
+                        .ok()
+                        .is_some_and(|t| t.to_lowercase().contains(query));
+                    let app_match = w
+                        .app_name()
+                        .ok()
+                        .is_some_and(|a| a.to_lowercase().contains(query));
+                    if title_match || app_match {
+                        w.capture_image().ok()
+                    } else {
+                        None
+                    }
+                })
+            });
+
+            let raw_img = match captured_window {
+                Some(img) => img,
+                None => {
+                    let monitors = xcap::Monitor::all()
+                        .map_err(|e| format!("Monitore konnten nicht abgefragt werden: {}", e))?;
+                    let monitor = monitors
+                        .into_iter()
+                        .find(|m| m.is_primary().unwrap_or(false))
+                        .or_else(|| xcap::Monitor::all().ok()?.into_iter().next())
+                        .ok_or_else(|| {
+                            "Kein aktiver Monitor für Screenshot gefunden.".to_string()
+                        })?;
+
+                    monitor
+                        .capture_image()
+                        .map_err(|e| format!("Bildschirmaufnahme fehlgeschlagen: {}", e))?
+                }
+            };
+
+            let img = match region {
+                Some((x, y, w, h)) => Self::crop_image_region(&raw_img, x, y, w, h)?,
+                None => raw_img,
+            };
 
             // Encode as PNG in memory
             let mut png_bytes: Vec<u8> = Vec::new();
@@ -386,6 +497,11 @@ impl CompanionTools {
         })
         .await
         .map_err(|e| format!("Tokio-Task fehlgeschlagen: {}", e))?
+    }
+
+    /// Take screenshot of primary screen and return base64 PNG data URL
+    pub async fn take_screenshot() -> Result<String, String> {
+        Self::take_screenshot_with_options(None).await
     }
 
     /// Media playback control via MPRIS (playerctl on Linux)
@@ -1251,7 +1367,7 @@ impl CompanionTools {
 
 #[cfg(test)]
 mod tests {
-    use super::html_to_text;
+    use super::{CompanionTools, html_to_text};
 
     #[test]
     fn html_to_text_strips_blocks_tags_and_whitespace() {
@@ -1269,5 +1385,23 @@ mod tests {
         let (title, text) = html_to_text("<p>nur Text</p>");
         assert!(title.is_none());
         assert_eq!(text, "nur Text");
+    }
+
+    #[test]
+    fn crop_image_region_handles_normalized_pixel_and_invalid_bounds() {
+        let img =
+            image::RgbaImage::from_fn(200, 100, |x, y| image::Rgba([x as u8, y as u8, 255, 255]));
+
+        let norm = CompanionTools::crop_image_region(&img, 0.25, 0.5, 0.5, 0.5).unwrap();
+        assert_eq!(norm.dimensions(), (100, 50));
+        assert_eq!(norm.get_pixel(0, 0).0, [50, 50, 255, 255]);
+
+        let px = CompanionTools::crop_image_region(&img, 10.0, 20.0, 400.0, 30.0).unwrap();
+        assert_eq!(px.dimensions(), (190, 30));
+        assert_eq!(px.get_pixel(0, 0).0, [10, 20, 255, 255]);
+
+        assert!(CompanionTools::crop_image_region(&img, -1.0, 0.0, 10.0, 10.0).is_err());
+        assert!(CompanionTools::crop_image_region(&img, 0.0, 0.0, 0.0, 10.0).is_err());
+        assert!(CompanionTools::crop_image_region(&img, 200.0, 0.0, 10.0, 10.0).is_err());
     }
 }

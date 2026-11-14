@@ -96,6 +96,11 @@ export interface AvatarStage {
    * Desktop pet: updates the 3D shadow-catcher floor height (`null` hides the shadow while hanging/falling).
    */
   setShadowFloor?: (y: number | null) => void;
+  /**
+   * Desktop pet: marks high-activity states (walking, falling, dragged, talking, dancing) so
+   * full configured frame rate runs while calm idling throttles to ~30 FPS.
+   */
+  setActivity?: (active: boolean) => void;
   dispose: () => void;
 }
 
@@ -104,7 +109,7 @@ export type PetFigure = Pick<
   AvatarStage,
   'mouse' | 'probe' | 'setPaused' | 'setSaver' | 'setFrameRate' | 'addWindowMove' | 'setTurn' | 'setFraming' | 'headLine' | 'handAt'
 > &
-  Partial<Pick<AvatarStage, 'setAmbientTint' | 'listParts' | 'setHiddenParts' | 'setShadowFloor'>>;
+  Partial<Pick<AvatarStage, 'setAmbientTint' | 'listParts' | 'setHiddenParts' | 'setShadowFloor' | 'setActivity'>>;
 
 /** Names of all meshes under `root`, each once, in scene order (empty names left out). */
 export function meshNames(root: THREE.Object3D): string[] {
@@ -140,6 +145,7 @@ export function createAvatarStage(container: HTMLElement, modelPath: string, opt
   const idleFrameMs = 31;
   let paused = false;
   let saver = false;
+  let petActive = false;
   // The pet moves all the time (breathing, drifting arms): it draws at its own steady rate.
   let petFrameMs = frameInterval(DEFAULT_PET_FRAME_RATE);
   let windowMove = { dx: 0, dy: 0 };
@@ -478,6 +484,10 @@ export function createAvatarStage(container: HTMLElement, modelPath: string, opt
     setSaver: (next) => {
       saver = next;
     },
+    setActivity: (active) => {
+      petActive = active;
+      if (active) markActive();
+    },
     listParts: () => meshNames(scene),
     setHiddenParts: (names) => {
       hiddenParts = new Set(names);
@@ -500,6 +510,7 @@ export function createAvatarStage(container: HTMLElement, modelPath: string, opt
     addWindowMove: (dx, dy) => {
       windowMove.dx += dx;
       windowMove.dy += dy;
+      markActive();
     },
     takeWindowMove: () => {
       // Physical px over the viewer's height in physical px.
@@ -529,9 +540,17 @@ export function createAvatarStage(container: HTMLElement, modelPath: string, opt
             lastTime = now;
             return;
           }
-          // Throttle idle breathing/blinking to ~30 FPS after 2s of no pointer/camera interaction
+          // Throttle idle breathing/blinking to ~30 FPS after 2s (chat) or 2.5s (calm desktop pet)
           // so local LLM/SD GPU workloads aren't starved by 60-144 Hz WebGL redraws.
-          const frameMs = saver ? SAVER_FRAME_MS : pet ? petFrameMs : now - lastActiveTime > 2000 ? idleFrameMs : 0;
+          const petTargetMs =
+            petActive || now - lastActiveTime <= 2500 ? petFrameMs : Math.max(petFrameMs, idleFrameMs);
+          const frameMs = saver
+            ? SAVER_FRAME_MS
+            : pet
+              ? petTargetMs
+              : now - lastActiveTime > 2000
+                ? idleFrameMs
+                : 0;
           if (now - lastTime < frameMs) {
             return;
           }

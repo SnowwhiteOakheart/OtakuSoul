@@ -29,6 +29,12 @@ export async function loadMotionClip(motion: AvatarMotion, vrm: VRM): Promise<TH
     clip.name = motion.file;
     return clip.tracks.length ? clip : null;
   }
+  if (motion.kind === 'vmd') {
+    const { retargetVmdToVrm } = await import('./vmdRetarget');
+    const clip = retargetVmdToVrm(bytes.buffer, vrm);
+    clip.name = motion.file;
+    return clip.tracks.length ? clip : null;
+  }
   const loader = new GLTFLoader();
   loader.register((parser) => new VRMAnimationLoaderPlugin(parser));
   const gltf = await loader.parseAsync(bytes.buffer as ArrayBuffer, '');

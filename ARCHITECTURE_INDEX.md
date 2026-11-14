@@ -73,7 +73,7 @@
 |---|---|---|
 | **Chat** | `chat/` (`ChatView.tsx`, `MessageList.tsx`, `ChatComposer.tsx`, `ChatSidebar.tsx`, `PromptHitsView.tsx`) | Haupt-Chatansicht, virtualisierte Nachrichtenliste, Eingabefeld, Modell-Auswahl, Swipes. |
 | **Stage (Rollenspiel)** | `stage/` (`StageView.tsx`, `Combat5ePanel.tsx`, `StageBattleMap.tsx`, `Explore5ePanel.tsx`, `StoryGallery.tsx`) | Rollenspiel-Interface, interaktives Spielbrett (Battlemap), 5e-Kampfpanel, Erkundungs-HUD. |
-| **Avatare & 3D** | `avatar/` (`AvatarCanvas.tsx`, `VrmViewer.tsx`, `GltfViewer.tsx`, `MmdViewer.tsx`) & `avatars/` (`AvatarManagerView.tsx`) | 3D-Bühne (`avatar/avatarStage.ts`), VRM, GLB/glTF, MMD (PMX/VMD), Gesten, Gesichts-Morphs & Knochen. |
+| **Avatare & 3D** | `avatar/` (`AvatarCanvas.tsx`, `VrmViewer.tsx`, `GltfViewer.tsx`, `MmdViewer.tsx`, `vmdRetarget.ts`, `live2dFallbacks.ts`, `portraitMesh.ts`) & `avatars/` (`AvatarManagerView.tsx`) | 3D-Bühne (`avatar/avatarStage.ts` inkl. Aktivitäts-Drosselung), VRM (`.vrma`/`.fbx`/`.vmd`), GLB/glTF, MMD, Live2D-Fallbacks, 2D-Porträt-Mesh, Gesten & Morphs. |
 | **Inochi2D-Laufzeit** | `services/inochi2d/` (`inp.ts`, `puppet.ts`, `renderer.ts`, `controls.ts`), `avatar/Inochi2dViewer.tsx` | Eigene WebGL2-Laufzeit für Inochi2D-Puppen: Masken, Composites, Mesh-Gruppen, Physik, Lippen/Blick/Emotionen über Parameternamen. |
 | **Charaktere** | `characters/` (`CharacterPreviewModal.tsx`, `CharacterVoiceModal.tsx`, `Character5eSheet.tsx`) | Charakterkarten-Vorschau, Stimmzuweisung, 5e-Charakterbogen. |
 | **Einstellungen & Hub** | `settings/` (`sections/*`), `hub/` (`HubView.tsx`), `onboarding/` (`OnboardingParts.tsx`) | Expertenmodus, Server- & Provider-Tuning, Hub-Katalog, Ersteinrichtungs-Assistent. |

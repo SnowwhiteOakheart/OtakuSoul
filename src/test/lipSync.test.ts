@@ -1,5 +1,14 @@
-import { describe, expect, it } from 'vitest';
-import { estimateVisemes, type Visemes } from '../services/lipSync';
+import { afterEach, describe, expect, it } from 'vitest';
+import {
+  buildMoraTimeline,
+  clearActiveSpeechTimeline,
+  estimateVisemes,
+  mouthTarget,
+  sampleMoraTimeline,
+  setActiveSpeechTimeline,
+  visemesFromDesktopLevel,
+  type Visemes,
+} from '../services/lipSync';
 
 /** A voiced vowel: harmonics of 200 Hz under formant peaks at f1 and f2 (48 kHz, 1024 FFT). */
 const vowel = (f1: number, f2: number) => {
@@ -32,5 +41,42 @@ describe('estimateVisemes', () => {
     const sum = Object.values(estimateVisemes(data, binHz, 0.5)).reduce((a, b) => a + b, 0);
     expect(sum).toBeCloseTo(0.5);
     expect(Object.values(estimateVisemes(data, binHz, 0)).every((v) => v === 0)).toBe(true);
+  });
+});
+
+describe('mora timeline lip-sync', () => {
+  afterEach(() => {
+    clearActiveSpeechTimeline();
+  });
+
+  it('builds Japanese & German vowel cues with pauses and samples matching visemes', () => {
+    const timeline = buildMoraTimeline('Hallo, ありがとう.', 1200, 100);
+    expect(timeline.cues.length).toBeGreaterThanOrEqual(6);
+    const firstVowel = timeline.cues.find((c) => c.viseme === 'aa');
+    expect(firstVowel).toBeDefined();
+    const mid = (firstVowel!.startMs + firstVowel!.endMs) / 2;
+    const sampled = sampleMoraTimeline(timeline, 100 + mid)!;
+    expect(sampled.aa).toBeGreaterThan(0.4);
+    expect(sampleMoraTimeline(timeline, 1301)).toBeNull();
+  });
+
+  it('activates mora timelines inside mouthTarget and clears on command', () => {
+    setActiveSpeechTimeline('oooo', 1000, performance.now());
+    const v = mouthTarget(null, true, 0);
+    expect(v.oh).toBeGreaterThan(0);
+    clearActiveSpeechTimeline();
+    expect(mouthTarget(null, false, 1).aa).toBe(0);
+  });
+});
+
+describe('visemesFromDesktopLevel', () => {
+  it('closes the mouth below threshold and scales weights smoothly with level', () => {
+    const silent = visemesFromDesktopLevel(0.01, 1);
+    expect(Object.values(silent).every((v) => v === 0)).toBe(true);
+
+    const loud = visemesFromDesktopLevel(0.7, 2.5);
+    const sum = Object.values(loud).reduce((a, b) => a + b, 0);
+    expect(sum).toBeGreaterThan(0.5);
+    expect(sum).toBeLessThanOrEqual(1);
   });
 });
