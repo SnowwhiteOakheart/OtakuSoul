@@ -608,3 +608,35 @@ pub fn sample_pet_ambient(app: AppHandle) -> Option<crate::modules::desktop_wind
         size.height as i32,
     )
 }
+
+/// When the user last pressed a key or moved the mouse (system tick, ms; only the time), for the
+/// pet's break reminder; `None` where the system cannot say.
+#[tauri::command]
+pub fn pet_input_stamp() -> Option<u32> {
+    crate::modules::desktop_windows::last_input_tick()
+}
+
+/// The pet kicks the window it stands on: moves it `dx` physical px sideways (only when the user
+/// allowed it in the pet's settings; at most 64 px; never maximised or fullscreen windows).
+#[tauri::command]
+pub fn nudge_pet_window(app: AppHandle, id: String, dx: i32) -> bool {
+    #[cfg(windows)]
+    let own = app
+        .get_webview_window(PET_LABEL)
+        .and_then(|window| window.hwnd().ok())
+        .map(|h| h.0 as isize)
+        .unwrap_or_default();
+    #[cfg(not(windows))]
+    let own = {
+        let _ = &app;
+        0
+    };
+    crate::modules::desktop_windows::nudge_window(&id, dx, own)
+}
+
+/// The weather at the place the user typed for the pet (umbrella, snow); only asked when the
+/// user switched the pet's weather on.
+#[tauri::command]
+pub async fn pet_weather(city: String) -> Result<crate::modules::pet_weather::PetWeather, String> {
+    crate::modules::pet_weather::weather(&city).await
+}

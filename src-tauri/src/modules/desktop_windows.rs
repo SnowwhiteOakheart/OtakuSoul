@@ -236,6 +236,40 @@ pub fn primary_button_down() -> Option<bool> {
     None
 }
 
+/// When the user last pressed a key or moved the mouse: the system's tick count (ms) at that
+/// moment, only the time and nothing about what. The pet sees from it how long the user has been
+/// at the computer without a pause. `None` where that cannot be read.
+#[cfg(windows)]
+pub fn last_input_tick() -> Option<u32> {
+    use windows::Win32::UI::Input::KeyboardAndMouse::{GetLastInputInfo, LASTINPUTINFO};
+    let mut info = LASTINPUTINFO {
+        cbSize: std::mem::size_of::<LASTINPUTINFO>() as u32,
+        dwTime: 0,
+    };
+    // SAFETY: `info` is a LASTINPUTINFO with its size set, as the call requires.
+    unsafe { GetLastInputInfo(&mut info) }
+        .as_bool()
+        .then_some(info.dwTime)
+}
+
+#[cfg(not(windows))]
+pub fn last_input_tick() -> Option<u32> {
+    None
+}
+
+/// Moves the window with this platform id (see `scan`) `dx` physical px sideways (at most 64),
+/// when it is one the pet could stand on: visible, not minimised, maximised or fullscreen.
+/// Whether it moved.
+#[cfg(windows)]
+pub fn nudge_window(id: &str, dx: i32, exclude: isize) -> bool {
+    win::nudge(id, dx.clamp(-64, 64), exclude)
+}
+
+#[cfg(not(windows))]
+pub fn nudge_window(_id: &str, _dx: i32, _exclude: isize) -> bool {
+    false
+}
+
 /// The platforms of all visible windows except `exclude` (the pet's own window handle).
 #[cfg(windows)]
 pub fn scan(exclude: isize) -> Vec<Platform> {
@@ -656,6 +690,68 @@ mod win {
         {
             return false;
         }
+        let Some(rect) = frame(hwnd) else {
+            return false;
+        };
+        let mut info = MONITORINFO {
+            cbSize: std::mem::size_of::<MONITORINFO>() as u32,
+            ..Default::default()
+        };
+        // SAFETY: `info` is a MONITORINFO with its size set, as the call requires.
+        let found = unsafe {
+            let monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+            GetMonitorInfoW(monitor, &mut info).as_bool()
+        };
+        let screen = info.rcMonitor;
+        found
+            && rect.left <= screen.left
+            && rect.top <= screen.top
+            && rect.right >= screen.right
+            && rect.bottom >= screen.bottom
+    }
+
+    /// Moves a window the pet stands on a little sideways, without activating or resizing it.
+    pub fn nudge(id: &str, dx: i32, exclude: isize) -> bool {
+        use windows::Win32::UI::WindowsAndMessaging::{
+            IsZoomed, SWP_NOACTIVATE, SWP_NOOWNERZORDER, SWP_NOSIZE, SWP_NOZORDER, SetWindowPos,
+        };
+        // Only a window the scan would offer as a platform (not the shell, no tool window …).
+        if dx == 0 || !visible_windows(exclude).iter().any(|(seen, _)| seen == id) {
+            return false;
+        }
+        let Ok(raw) = usize::from_str_radix(id, 16) else {
+            return false;
+        };
+        let hwnd = HWND(raw as *mut core::ffi::c_void);
+        // SAFETY: plain queries on a window handle; a window closed meanwhile only fails them.
+        if unsafe { IsZoomed(hwnd).as_bool() } || covers_monitor(hwnd) {
+            return false;
+        }
+        let mut rect = RECT::default();
+        // SAFETY: `rect` is a valid RECT to write into.
+        if unsafe { GetWindowRect(hwnd, &mut rect) }.is_err() {
+            return false;
+        }
+        // SAFETY: moves the window only (no size, no z-order change, no activation).
+        unsafe {
+            SetWindowPos(
+                hwnd,
+                None,
+                rect.left + dx,
+                rect.top,
+                0,
+                0,
+                SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_NOSIZE,
+            )
+        }
+        .is_ok()
+    }
+
+    /// Whether a window covers its whole monitor (fullscreen).
+    fn covers_monitor(hwnd: HWND) -> bool {
+        use windows::Win32::Graphics::Gdi::{
+            GetMonitorInfoW, MONITOR_DEFAULTTONEAREST, MONITORINFO, MonitorFromWindow,
+        };
         let Some(rect) = frame(hwnd) else {
             return false;
         };

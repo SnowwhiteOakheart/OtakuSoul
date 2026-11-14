@@ -70,6 +70,7 @@ pub mod contribution;
 pub mod mobile;
 pub mod overlay;
 pub mod pet_remark;
+pub mod pet_weather;
 pub mod replay_export;
 pub mod reply_ideas;
 pub mod translate;
