@@ -12,6 +12,14 @@ import type { PetEvent } from '../types/generated/PetEvent';
  * has its own JavaScript and store, so the main window sends it what to show.
  */
 export const PET_LABEL = 'desktop_pet';
+/** The guest pet's window: a second, decorative figure next to the pet. */
+export const GUEST_LABEL = 'desktop_pet_guest';
+/** Guest → main: the guest's webview listens, send it its figure. */
+export const PET_GUEST_READY_EVENT = 'pet:guest-ready';
+/** Backend → main: the guest window opened (true) or closed (false). */
+export const PET_GUEST_VISIBILITY_EVENT = 'pet:guest-visibility';
+/** This webview is the guest pet (`?guest=true`): it keeps its own place and size and touches no shared state. */
+export const IS_GUEST_PET = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('guest') === 'true';
 
 /** Main → pet: figure, model, mood and the interface settings the pet's texts follow. */
 export const PET_STATE_EVENT = 'pet:state';
@@ -196,11 +204,11 @@ export interface PetPlacement {
   height: number;
 }
 
-const PLACEMENT_KEY = 'otakusoul.desktopPet';
+const placementKey = (guest: boolean) => (guest ? 'otakusoul.desktopPetGuest' : 'otakusoul.desktopPet');
 
-export function loadPetPlacement(): PetPlacement {
+export function loadPetPlacement(guest = IS_GUEST_PET): PetPlacement {
   try {
-    const stored = JSON.parse(localStorage.getItem(PLACEMENT_KEY) ?? 'null') as
+    const stored = JSON.parse(localStorage.getItem(placementKey(guest)) ?? 'null') as
       | (Partial<PetPlacement> & { size?: string })
       | null;
     // Before the free size: one of three steps.
@@ -214,7 +222,7 @@ export function loadPetPlacement(): PetPlacement {
   }
 }
 
-const MODEL_HEIGHTS_KEY = 'otakusoul.desktopPetModelHeights';
+const MODEL_HEIGHTS_KEY = IS_GUEST_PET ? 'otakusoul.desktopPetGuestModelHeights' : 'otakusoul.desktopPetModelHeights';
 /** Remembered heights per model; the oldest go beyond this many. */
 const MODEL_HEIGHTS_MAX = 100;
 
@@ -248,9 +256,9 @@ export function savePetModelHeight(modelPath: string, height: number) {
   }
 }
 
-export function savePetPlacement(change: Partial<PetPlacement>) {
+export function savePetPlacement(change: Partial<PetPlacement>, guest = IS_GUEST_PET) {
   try {
-    localStorage.setItem(PLACEMENT_KEY, JSON.stringify({ ...loadPetPlacement(), ...change }));
+    localStorage.setItem(placementKey(guest), JSON.stringify({ ...loadPetPlacement(guest), ...change }));
   } catch {
     // Only a convenience: the pet then opens at its default place.
   }
@@ -542,3 +550,31 @@ export function saveHiddenParts(model: string, names: string[]) {
 /** `names` with `name` added or removed. */
 export const toggledPart = (names: readonly string[], name: string): string[] =>
   names.includes(name) ? names.filter((n) => n !== name) : [...names, name];
+
+const GUEST_KEY = 'otakusoul.desktopPetGuestCharacter';
+const guestListeners = new Set<() => void>();
+
+/** The id of the character shown as guest pet ('' = none chosen). */
+export function loadGuestCharacter(): string {
+  try {
+    return localStorage.getItem(GUEST_KEY) ?? '';
+  } catch {
+    return '';
+  }
+}
+
+export function saveGuestCharacter(id: string) {
+  try {
+    if (id) localStorage.setItem(GUEST_KEY, id);
+    else localStorage.removeItem(GUEST_KEY);
+  } catch {
+    // Only a convenience: the choice is lost at the next start.
+  }
+  for (const listener of guestListeners) listener();
+}
+
+/** Calls `listener` whenever the guest character changes; returns the stop function. */
+export function onGuestCharacterChange(listener: () => void): () => void {
+  guestListeners.add(listener);
+  return () => guestListeners.delete(listener);
+}

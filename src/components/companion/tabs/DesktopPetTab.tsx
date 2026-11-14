@@ -13,17 +13,20 @@ import {
   clampPetHeight,
   formatAccelerator,
   FRAME_RATES,
+  loadGuestCharacter,
   loadPetFraming,
   loadPetPlacement,
   loadPetPrefs,
   PET_HEIGHT_MAX,
   PET_HEIGHT_MIN,
+  PET_GUEST_VISIBILITY_EVENT,
   PET_LABEL,
   PET_PREFS_EVENT,
   PET_PRESETS,
   PET_RESIZE_EVENT,
   petModelPath,
   petWindowSize,
+  saveGuestCharacter,
   savePetPlacement,
   savePetPrefs,
   type PetFigureChoice,
@@ -60,8 +63,9 @@ export const DesktopPetTab: React.FC = () => {
     'scannedLive2ds',
     'activeLive2dPath',
     'avatarMode',
+    'availableCharacters',
   );
-  const { toggleDesktopPet, companionState } = store;
+  const { toggleDesktopPet, companionState, availableCharacters } = store;
   const open = !!companionState?.overlay_active;
   const [prefs, setPrefs] = useState<PetPrefs>(loadPetPrefs);
   const [height, setHeight] = useState(() => loadPetPlacement().height);
@@ -74,6 +78,28 @@ export const DesktopPetTab: React.FC = () => {
     ];
     return () => stops.forEach((stop) => void stop.then((unlisten) => unlisten()));
   }, []);
+
+  // The guest pet: a second, decorative figure (another character) next to the pet.
+  const [guestOpen, setGuestOpen] = useState(false);
+  const [guestChar, setGuestChar] = useState(loadGuestCharacter);
+  useEffect(() => {
+    const stop = listen<boolean>(PET_GUEST_VISIBILITY_EVENT, ({ payload }) => setGuestOpen(payload));
+    return () => void stop.then((unlisten) => unlisten());
+  }, []);
+  // The guest lives next to the pet: with the pet gone the window is closed, so it shows as closed.
+  const guestShown = guestOpen && open;
+  const chooseGuest = (id: string) => {
+    setGuestChar(id);
+    saveGuestCharacter(id);
+  };
+  const toggleGuest = () => {
+    if (guestShown) {
+      void api.togglePetGuest(false);
+      return;
+    }
+    const placement = loadPetPlacement(true);
+    void api.togglePetGuest(true, { x: placement.x, y: placement.y, ...petWindowSize(placement.height) });
+  };
 
   const update = (change: Partial<PetPrefs>) => {
     const next = { ...prefs, ...change };
@@ -167,6 +193,38 @@ export const DesktopPetTab: React.FC = () => {
           {t(open ? 'pet.hide' : 'pet.show')}
         </button>
       </div>
+
+      <section className="space-y-2" aria-labelledby="pet-guest-title">
+        <h4 id="pet-guest-title" className="text-xs font-bold text-slate-400">
+          {t('pet.guest')}
+        </h4>
+        <p className="text-xs text-slate-500">{t('pet.guestHint')}</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            id="pet-guest-figure"
+            aria-label={t('pet.guestFigure')}
+            value={guestChar}
+            onChange={(e) => chooseGuest(e.target.value)}
+            className="px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-xs text-slate-100 max-w-[16rem]"
+          >
+            <option value="">{t('pet.guestNone')}</option>
+            {availableCharacters.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.card.data.name}
+              </option>
+            ))}
+          </select>
+          <button
+            id="pet-guest-toggle"
+            onClick={toggleGuest}
+            disabled={!open || !guestChar}
+            aria-pressed={guestShown}
+            className="px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-white text-xs font-bold transition"
+          >
+            {t(guestShown ? 'pet.guestHide' : 'pet.guestShow')}
+          </button>
+        </div>
+      </section>
 
       <section className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4" aria-labelledby="pet-settings-title">
         <div className="space-y-4">

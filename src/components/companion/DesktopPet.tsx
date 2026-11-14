@@ -4,6 +4,7 @@ import { emitTo, listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import type { PetFigure } from '../avatar/avatarStage';
 import { StrokeDetector } from './petStroke';
+import { openGuestMenu } from './pet/PetMenu';
 import { atMouth, EAT_DWELL_MS, FEED_TIMEOUT_MS, type PetFood } from './petFood';
 import { advance, loadTimer, saveTimer, startPomodoro, startTimer, type PetTimerState } from './petTimer';
 import type { PetEvent } from '../../types/generated/PetEvent';
@@ -48,7 +49,9 @@ import {
   PET_MUSIC_EVENT,
   PET_PLATFORMS_EVENT,
   PET_PREFS_EVENT,
+  PET_GUEST_READY_EVENT,
   PET_READY_EVENT,
+  IS_GUEST_PET,
   PET_RESIZE_EVENT,
   PET_SAY_EVENT,
   PET_REMARK_EVENT,
@@ -104,8 +107,15 @@ import { usePetWindowPhysics } from './pet/usePetWindowPhysics';
  */
 export const DesktopPet: React.FC = () => {
   const { t, tEmotion, tOptional, currentLanguage } = useTranslation();
-  const { companionState, fetchCompanionState, applyHormoneInteraction, requestToolCall, toggleDesktopPet } =
+  const { companionState, fetchCompanionState, applyHormoneInteraction: storeHormone, requestToolCall, toggleDesktopPet } =
     useStoreFields('companionState', 'fetchCompanionState', 'applyHormoneInteraction', 'requestToolCall', 'toggleDesktopPet');
+  /** The guest is only decoration: touching it changes nothing about the companion. */
+  const applyHormoneInteraction = useCallback(
+    async (type: string) => {
+      if (!IS_GUEST_PET) await storeHormone(type);
+    },
+    [storeHormone],
+  );
   const [pet, setPet] = useState<PetState | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [gesture, setGesture] = useState<GestureRequest | null>(null);
@@ -242,6 +252,8 @@ export const DesktopPet: React.FC = () => {
     stageRef.current?.setFrameRate(prefs.frameRate);
     behavior.setPhysics(prefs.physics);
     if (prefs.physics) void syncWindow().catch(() => {});
+    // The guest only reads the switches; saving or announcing them is the pet's job.
+    if (IS_GUEST_PET) return;
     savePetPrefs(prefs);
     void api.setPetIgnoredApps(prefs.ignoredApps).catch(() => {});
     // The Desktop-Pet tab shows the same switches.
@@ -251,7 +263,7 @@ export const DesktopPet: React.FC = () => {
   // The cue texts follow the language without restarting the behaviour timer.
   /** Asks the main window for a model line about an event (switch on, not while talking, with a pause between). */
   const askRemark = useCallback((event: PetEvent, now: number) => {
-    if (!prefsRef.current.eventRemarks || !prefsRef.current.chatBubbles || speakingRef.current) return;
+    if (IS_GUEST_PET || !prefsRef.current.eventRemarks || !prefsRef.current.chatBubbles || speakingRef.current) return;
     if (now - lastRemarkAt.current < REMARK_GAP_MS) return;
     lastRemarkAt.current = now;
     void emitTo('main', PET_REMARK_EVENT, { event } satisfies PetRemark).catch(() => {});
@@ -272,6 +284,7 @@ export const DesktopPet: React.FC = () => {
   }, []);
   // When a phase ends the figure wakes up, waves and says so; during fullscreen it waits.
   useEffect(() => {
+    if (IS_GUEST_PET) return undefined;
     const check = window.setInterval(() => {
       if (!timerRef.current || awayRef.current) return;
       const { state, finished } = advance(timerRef.current, Date.now());
@@ -340,7 +353,7 @@ export const DesktopPet: React.FC = () => {
   const lastProgramAt = useRef(Number.NEGATIVE_INFINITY);
   const lastProgram = useRef('');
   useEffect(() => {
-    if (!prefs.commentPrograms || !prefs.chatBubbles || screen.ignored || screen.locked || screen.focus === 0) {
+    if (IS_GUEST_PET || !prefs.commentPrograms || !prefs.chatBubbles || screen.ignored || screen.locked || screen.focus === 0) {
       return undefined;
     }
     const timer = window.setTimeout(() => {
@@ -374,7 +387,7 @@ export const DesktopPet: React.FC = () => {
     if (!feeding) return;
     stopFeeding();
     behavior.eat(performance.now());
-    say(Math.random() < 0.5 ? t('pet.eatReply1') : t('pet.eatReply2'));
+    if (!IS_GUEST_PET) say(Math.random() < 0.5 ? t('pet.eatReply1') : t('pet.eatReply2'));
     void applyHormoneInteraction('feed');
   }, [behavior, say, stopFeeding, t, applyHormoneInteraction]);
   const cueTexts = useRef({ doze: '', wake: '' });
@@ -501,7 +514,7 @@ export const DesktopPet: React.FC = () => {
         setPlatforms(payload);
       }),
       listen(PET_HELLO_EVENT, () => {
-        void emitTo('main', PET_READY_EVENT).catch(() => {});
+        void emitTo('main', IS_GUEST_PET ? PET_GUEST_READY_EVENT : PET_READY_EVENT).catch(() => {});
       }),
       listen<PetScreen>(PET_SCREEN_EVENT, ({ payload }) => {
         setScreen(payload);
@@ -590,7 +603,7 @@ export const DesktopPet: React.FC = () => {
       }),
     ];
     void Promise.all(unlisteners).then(() => {
-      if (isSubscribed) void emitTo('main', PET_READY_EVENT).catch(() => {});
+      if (isSubscribed) void emitTo('main', IS_GUEST_PET ? PET_GUEST_READY_EVENT : PET_READY_EVENT).catch(() => {});
     });
     const stopMoved = getCurrentWindow().onMoved(({ payload }) => {
       trackWindowMoved(performance.now(), payload.x, payload.y);
@@ -656,7 +669,7 @@ export const DesktopPet: React.FC = () => {
     behavior.pat(performance.now(), zone);
     const replies =
       zone === 'head' ? [t('pet.headpatReply1'), t('pet.headpatReply2')] : [t('pet.pokeReply1'), t('pet.pokeReply2')];
-    say(replies[Math.floor(Math.random() * replies.length)]!);
+    if (!IS_GUEST_PET) say(replies[Math.floor(Math.random() * replies.length)]!);
     await applyHormoneInteraction(zone === 'head' ? 'headpat' : 'poke');
   };
 
@@ -682,7 +695,20 @@ export const DesktopPet: React.FC = () => {
   };
 
   const openMenu = () =>
-    openPetContextMenu({
+    IS_GUEST_PET
+      ? openGuestMenu({
+          t,
+          currentHeight: currentHeight(),
+          resizeTo,
+          startFeeding,
+          stopFeeding,
+          feeding: feedRef.current !== null,
+          parts: stageRef.current?.listParts?.() ?? [],
+          hiddenParts: modelRef.current ? loadHiddenParts(modelRef.current) : [],
+          togglePart,
+          dismiss: () => void api.togglePetGuest(false),
+        })
+      : openPetContextMenu({
       pet,
       prefs,
       statusOpen,
@@ -716,7 +742,7 @@ export const DesktopPet: React.FC = () => {
   /** A quick click on a hand. */
   const highFive = async () => {
     behavior.highFive(performance.now());
-    say(Math.random() < 0.5 ? t('pet.highFiveReply1') : t('pet.highFiveReply2'));
+    if (!IS_GUEST_PET) say(Math.random() < 0.5 ? t('pet.highFiveReply1') : t('pet.highFiveReply2'));
     await applyHormoneInteraction('high_five');
   };
 
@@ -739,7 +765,7 @@ export const DesktopPet: React.FC = () => {
         if (pressRef.current !== press || press.dragging) return;
         press.holding = true;
         behavior.holdHand(performance.now());
-        say(Math.random() < 0.5 ? t('pet.holdHandReply1') : t('pet.holdHandReply2'));
+        if (!IS_GUEST_PET) say(Math.random() < 0.5 ? t('pet.holdHandReply1') : t('pet.holdHandReply2'));
         void applyHormoneInteraction('hold_hand');
       }, HOLD_HAND_MS);
     }

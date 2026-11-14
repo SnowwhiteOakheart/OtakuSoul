@@ -10,6 +10,7 @@ import { useSyncUpdateCheck } from './hooks/useSyncUpdateCheck';
 import { useProactiveMessages } from './hooks/useProactiveMessages';
 import { useJournal } from './hooks/useJournal';
 import { useDesktopPetBridge } from './hooks/useDesktopPetBridge';
+import { useDesktopPetGuestBridge } from './hooks/useDesktopPetGuestBridge';
 import { useOverlayBridge } from './hooks/useOverlayBridge';
 import { useMobileBridge } from './hooks/useMobileBridge';
 import { isPetWindow } from './services/desktopPet';
@@ -51,6 +52,7 @@ export function App() {
   useProactiveMessages(!isPet);
   useJournal(!isPet);
   useDesktopPetBridge(!isPet);
+  useDesktopPetGuestBridge(!isPet);
   useOverlayBridge(!isPet);
   useMobileBridge(!isPet);
   useSyncUpdateCheck(!isPet && onboardingCompleted);

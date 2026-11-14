@@ -460,6 +460,7 @@ pub fn run() {
             commands::companion::save_companion_plugin,
             commands::companion::execute_companion_plugin,
             commands::desktop_pet::toggle_desktop_pet,
+            commands::desktop_pet::toggle_pet_guest,
             commands::desktop_pet::get_pet_shortcut,
             commands::desktop_pet::set_pet_shortcut,
             commands::desktop_pet::show_main_window,

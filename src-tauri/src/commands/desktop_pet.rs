@@ -10,6 +10,10 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager, State};
 
 pub const PET_LABEL: &str = "desktop_pet";
+/// The second, decorative pet (a guest figure; no chat, no inner state of its own).
+pub const GUEST_LABEL: &str = "desktop_pet_guest";
+/// Both pet windows, the main one first.
+const PET_LABELS: [&str; 2] = [PET_LABEL, GUEST_LABEL];
 
 /// Pointer polling rate: smooth enough for head tracking, cheap for the main thread.
 const CURSOR_INTERVAL: std::time::Duration = std::time::Duration::from_millis(33);
@@ -75,13 +79,13 @@ fn position_on_screen(app: &AppHandle, x: i32, y: i32) -> bool {
     })
 }
 
-fn spawn_cursor_watch(app: AppHandle) {
+fn spawn_cursor_watch(app: AppHandle, label: &'static str) {
     std::thread::spawn(move || {
         let mut last: Option<PetCursor> = None;
         let clock = std::time::Instant::now();
         loop {
             std::thread::sleep(CURSOR_INTERVAL);
-            let Some(window) = app.get_webview_window(PET_LABEL) else {
+            let Some(window) = app.get_webview_window(label) else {
                 break;
             };
             if !window.is_visible().unwrap_or(false) {
@@ -129,7 +133,7 @@ fn spawn_cursor_watch(app: AppHandle) {
                     || (prev.gy - next.gy).abs() > 0.5
             });
             if moved {
-                let _ = window.emit_to(PET_LABEL, "pet:cursor", next);
+                let _ = window.emit_to(label, "pet:cursor", next);
                 last = Some(next);
             }
         }
@@ -146,7 +150,7 @@ const PLATFORM_INTERVAL: std::time::Duration = std::time::Duration::from_millis(
 /// unchanged: the first ones may come before the pet's webview listens. On Linux the window
 /// edges come from KWin (`kwin_bridge`, KDE Wayland only), elsewhere there none yet.
 #[cfg(any(windows, target_os = "linux"))]
-fn spawn_platform_watch(app: AppHandle) {
+fn spawn_platform_watch(app: AppHandle, label: &'static str) {
     std::thread::spawn(move || {
         let mut last: Option<Vec<crate::modules::desktop_windows::Platform>> = None;
         let mut last_screen = crate::modules::desktop_windows::ScreenState::default();
@@ -155,7 +159,7 @@ fn spawn_platform_watch(app: AppHandle) {
             std::thread::sleep(PLATFORM_INTERVAL);
             tick = tick.wrapping_add(1);
             let repeat = tick.is_multiple_of(20);
-            let Some(window) = app.get_webview_window(PET_LABEL) else {
+            let Some(window) = app.get_webview_window(label) else {
                 break;
             };
             if !window.is_visible().unwrap_or(false) {
@@ -168,12 +172,12 @@ fn spawn_platform_watch(app: AppHandle) {
             let own = 0;
             let screen = crate::modules::desktop_windows::screen_state(own);
             if screen != last_screen || repeat {
-                let _ = window.emit_to(PET_LABEL, "pet:screen", screen);
+                let _ = window.emit_to(label, "pet:screen", screen);
                 last_screen = screen;
             }
             let platforms = crate::modules::desktop_windows::scan(own);
             if last.as_ref() != Some(&platforms) || repeat {
-                let _ = window.emit_to(PET_LABEL, "pet:platforms", &platforms);
+                let _ = window.emit_to(label, "pet:platforms", &platforms);
                 last = Some(platforms);
             }
         }
@@ -212,12 +216,17 @@ fn spawn_music_watch(app: AppHandle) {
                 continue;
             };
             let sample = detector.push(peak, std::time::Instant::now());
+            // The guest dances along: both pets hear the same music.
             if let Some(playing) = sample.music {
                 music = playing;
-                let _ = window.emit_to(PET_LABEL, "pet:music", playing);
+                for label in PET_LABELS {
+                    let _ = app.emit_to(label, "pet:music", playing);
+                }
             }
             if sample.beat && music {
-                let _ = window.emit_to(PET_LABEL, "pet:beat", ());
+                for label in PET_LABELS {
+                    let _ = app.emit_to(label, "pet:beat", ());
+                }
             }
         }
     });
@@ -236,6 +245,10 @@ pub async fn toggle_desktop_pet(
         } else {
             // Closed, not hidden: a hidden pet would keep its webview and the model in VRAM.
             let _ = window.destroy();
+            // The guest only lives next to the pet.
+            if let Some(guest) = app.get_webview_window(GUEST_LABEL) {
+                let _ = guest.destroy();
+            }
         }
     } else if enable {
         let (width, height) = placement
@@ -283,7 +296,7 @@ pub async fn toggle_desktop_pet(
                 notify_open(&handle, false);
             }
         });
-        spawn_cursor_watch(app.clone());
+        spawn_cursor_watch(app.clone(), PET_LABEL);
         // KDE Wayland: pointer, fullscreen and window edges from KWin (D-Bus calls block).
         #[cfg(target_os = "linux")]
         std::thread::spawn(|| {
@@ -292,13 +305,77 @@ pub async fn toggle_desktop_pet(
             }
         });
         #[cfg(any(windows, target_os = "linux"))]
-        spawn_platform_watch(app.clone());
+        spawn_platform_watch(app.clone(), PET_LABEL);
         #[cfg(windows)]
         spawn_music_watch(app.clone());
     }
     state.companion_engine.set_overlay_active(enable);
     notify_open(&app, enable);
     Ok(enable)
+}
+
+/// Opens or closes the guest pet: a second, decorative figure next to the pet (it needs the
+/// pet to be open). It has no chat of its own; the main window feeds it its figure and the
+/// pointer, window edges and music come from the same watchers as for the pet.
+#[tauri::command]
+pub async fn toggle_pet_guest(
+    app: AppHandle,
+    enable: bool,
+    placement: Option<PetPlacement>,
+) -> Result<bool, String> {
+    if let Some(window) = app.get_webview_window(GUEST_LABEL) {
+        if enable {
+            let _ = window.show();
+        } else {
+            let _ = window.destroy();
+        }
+        return Ok(enable);
+    }
+    if !enable || app.get_webview_window(PET_LABEL).is_none() {
+        return Ok(false);
+    }
+    let (width, height) = placement
+        .map(|p| (p.width.clamp(160.0, 900.0), p.height.clamp(220.0, 1200.0)))
+        .unwrap_or((260.0, 380.0));
+    let remembered = placement
+        .and_then(|p| p.x.zip(p.y))
+        .filter(|&(x, y)| position_on_screen(&app, x, y));
+    let mut builder = tauri::WebviewWindowBuilder::new(
+        &app,
+        GUEST_LABEL,
+        tauri::WebviewUrl::App("index.html?pet=true&guest=true".into()),
+    )
+    .title("OtakuSoul Pet Guest")
+    .inner_size(width, height)
+    .resizable(false)
+    .decorations(false)
+    .transparent(true)
+    .always_on_top(true)
+    .skip_taskbar(true)
+    .shadow(false)
+    .focused(false);
+    if let Some(home) = crate::modules::paths::isolated_home() {
+        builder = builder.data_directory(home.join("webview"));
+    }
+    let window = builder
+        .build()
+        .map_err(|e| crate::err!("backend.companion.overlayWindow", error = e))?;
+    // Left of the pet's default place unless a position was remembered.
+    let fallback = default_position(&app, width, height).map(|(x, y)| (x - (width as i32) - 40, y));
+    if let Some((x, y)) = remembered.or(fallback) {
+        let _ = window.set_position(tauri::PhysicalPosition::new(x, y));
+    }
+    let handle = app.clone();
+    window.on_window_event(move |event| {
+        if let tauri::WindowEvent::Destroyed = event {
+            let _ = handle.emit_to("main", "pet:guest-visibility", false);
+        }
+    });
+    spawn_cursor_watch(app.clone(), GUEST_LABEL);
+    #[cfg(any(windows, target_os = "linux"))]
+    spawn_platform_watch(app.clone(), GUEST_LABEL);
+    let _ = app.emit_to("main", "pet:guest-visibility", true);
+    Ok(true)
 }
 
 /// Global shortcut for the pet: Ctrl+Alt+Shift+P (Cmd on macOS). Unusual on purpose – a global

@@ -135,6 +135,14 @@ export const companionApi = {
     return await invoke<string>('execute_companion_plugin', { pluginId, arguments: args });
   },
 
+  /** Opens or closes the guest pet (a second, decorative figure; needs the pet open); a new window starts at `placement`. */
+  togglePetGuest: async (
+    enable: boolean,
+    placement?: { x?: number; y?: number; width: number; height: number },
+  ): Promise<boolean> => {
+    return await invoke<boolean>('toggle_pet_guest', { enable, placement: placement ?? null });
+  },
+
   /** Opens or hides the desktop pet; a new window starts at `placement` (physical position, logical size). */
   toggleDesktopPet: async (
     enable: boolean,

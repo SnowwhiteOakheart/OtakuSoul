@@ -292,3 +292,73 @@ export async function openPetContextMenu({
   });
   await menu.popup();
 }
+
+interface GuestMenuArgs {
+  t: OpenPetMenuArgs['t'];
+  currentHeight: number;
+  resizeTo: (wanted: number) => Promise<void>;
+  startFeeding: (food: PetFood) => void;
+  stopFeeding: () => void;
+  feeding: boolean;
+  parts: string[];
+  hiddenParts: string[];
+  togglePart: (name: string) => void;
+  dismiss: () => void;
+}
+
+/** The guest pet's right-click menu: only what changes the guest itself (size, food, parts, goodbye). */
+export async function openGuestMenu({
+  t,
+  currentHeight,
+  resizeTo,
+  startFeeding,
+  stopFeeding,
+  feeding,
+  parts,
+  hiddenParts,
+  togglePart,
+  dismiss,
+}: GuestMenuArgs): Promise<void> {
+  const sizes: { key: PetSize; label: string }[] = [
+    { key: 'small', label: t('pet.sizeSmall') },
+    { key: 'medium', label: t('pet.sizeMedium') },
+    { key: 'large', label: t('pet.sizeLarge') },
+  ];
+  const menu = await Menu.new({
+    items: [
+      {
+        text: t('pet.size'),
+        items: sizes.map(({ key, label }) => ({
+          text: label,
+          checked: currentHeight === PET_PRESETS[key],
+          action: () => void resizeTo(PET_PRESETS[key]),
+        })),
+      },
+      {
+        text: t('pet.feed'),
+        items: [
+          ...PET_FOODS.map((food) => ({
+            text: `${food.emoji} ${t(`pet.food.${food.id}` as TranslationKey)}`,
+            action: () => startFeeding(food),
+          })),
+          ...(feeding ? [{ item: 'Separator' as const }, { text: t('pet.feedStop'), action: stopFeeding }] : []),
+        ],
+      },
+      ...(parts.length > 1
+        ? [
+            {
+              text: t('pet.parts'),
+              items: parts.slice(0, MAX_MENU_PARTS).map((name) => ({
+                text: name,
+                checked: !hiddenParts.includes(name),
+                action: () => togglePart(name),
+              })),
+            },
+          ]
+        : []),
+      { item: 'Separator' },
+      { text: t('pet.guestDismiss'), action: dismiss },
+    ],
+  });
+  await menu.popup();
+}

@@ -3,7 +3,8 @@
   "identifier": "desktop-pet",
   "description": "Capability for the desktop pet window: events from the main window, dragging, click-through, size and position",
   "windows": [
-    "desktop_pet"
+    "desktop_pet",
+    "desktop_pet_guest"
   ],
   "permissions": [
     "core:default",
