@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { useStoreFields } from '../../store/useAppStore';
 import { LOCALES, useTranslation, type TranslationKey } from '../../i18n';
 import { Bot, Activity, Terminal, Layers, Sparkles, Target, Tv, type LucideIcon } from 'lucide-react';
@@ -7,7 +7,14 @@ import { ThoughtsTab } from './tabs/ThoughtsTab';
 import { GoalsTab } from './tabs/GoalsTab';
 import { ToolWorkbenchTab } from './tabs/ToolWorkbenchTab';
 import { McpPluginsTab } from './tabs/McpPluginsTab';
-import { DesktopPetTab } from './tabs/DesktopPetTab';
+import { Skeleton } from '../ui';
+
+/**
+ * The Desktop-Pet tab shows a live preview of the figure (three.js, VRM, Live2D): loaded only
+ * when that tab is chosen, so the Companion page itself opens quickly (in development Vite would
+ * otherwise transform the whole avatar stack before the first tab shows).
+ */
+const DesktopPetTab = lazy(() => import('./tabs/DesktopPetTab').then((module) => ({ default: module.DesktopPetTab })));
 
 type CompanionTab = 'monitor' | 'thoughts' | 'goals' | 'tools' | 'mcp' | 'overlay';
 
@@ -119,7 +126,11 @@ export const CompanionView: React.FC = () => {
       {activeSubTab === 'goals' && <GoalsTab />}
       {activeSubTab === 'tools' && <ToolWorkbenchTab />}
       {activeSubTab === 'mcp' && <McpPluginsTab />}
-      {activeSubTab === 'overlay' && <DesktopPetTab />}
+      {activeSubTab === 'overlay' && (
+        <Suspense fallback={<Skeleton className="block h-64 w-full rounded-2xl" />}>
+          <DesktopPetTab />
+        </Suspense>
+      )}
     </div>
   );
 };
