@@ -13,6 +13,7 @@ pub const PET_LABEL: &str = "desktop_pet";
 /// The second, decorative pet (a guest figure; no chat, no inner state of its own).
 pub const GUEST_LABEL: &str = "desktop_pet_guest";
 /// Both pet windows, the main one first.
+#[cfg(windows)]
 const PET_LABELS: [&str; 2] = [PET_LABEL, GUEST_LABEL];
 
 /// Pointer polling rate: smooth enough for head tracking, cheap for the main thread.
