@@ -3,21 +3,16 @@ import type React from 'react';
 import { VrmViewer } from '../../avatar/VrmViewer';
 import type { PetFigure } from '../../avatar/avatarStage';
 import { PET_FEET_SHARE } from '../../../services/avatarViewState';
-import { isLive2dPath, isPortraitPath, type PetState } from '../../../services/desktopPet';
+import { type PetState } from '../../../services/desktopPet';
 import type { GestureRequest, LoopRole } from '../../../utils/avatarGestures';
 import type { PetHang, PetMode, PetRecover, PetSeat, SeatPose } from '../petBehavior';
 import type { PetEat } from '../../avatar/eatTimeline';
 import type { PetHands } from '../../avatar/handTimeline';
 import {
-  EXPRESSION_EMOTIONS,
   GltfViewer,
-  Inochi2dViewer,
-  Live2DViewer,
   MmdViewer,
-  PortraitPet,
   SIT_DROP,
   isGltfModel,
-  isInochi2dModel,
   isMmdModel,
 } from './petConstants';
 
@@ -43,7 +38,6 @@ interface PetFigureCanvasProps {
   /** Drawn over the figure in its box (effects and props), moving with hops and the sitting drop. */
   overlay?: React.ReactNode;
   hop: boolean;
-  walking: boolean;
   lift: number;
   isSpeaking: boolean;
   faceOverride: string | null;
@@ -70,7 +64,6 @@ export const PetFigureCanvas: React.FC<PetFigureCanvasProps> = ({
   hands = null,
   overlay = null,
   hop,
-  walking,
   lift,
   isSpeaking,
   faceOverride,
@@ -83,8 +76,6 @@ export const PetFigureCanvas: React.FC<PetFigureCanvasProps> = ({
   onPointerUp,
   noModelLabel,
 }) => {
-  const is2dFigure = isPortraitPath(modelPath) || isLive2dPath(modelPath) || isInochi2dModel(modelPath);
-
   const viewerProps = {
     modelPath,
     // Only VRM models have a blush; glTF and MMD show their relaxed face instead.
@@ -115,13 +106,13 @@ export const PetFigureCanvas: React.FC<PetFigureCanvasProps> = ({
           className={`pet-shadow ${loop === 'sit' ? 'pet-shadow-sit' : ''} ${
             mode === 'dragged' || mode === 'falling'
               ? 'pet-shadow-off'
-              : `${hop ? 'pet-shadow-hop' : ''}${!is2dFigure ? ' opacity-35' : ''}`
+              : `${hop ? 'pet-shadow-hop' : ''} opacity-35`
           }`}
         />
       )}
       <div
         ref={figureRef}
-        className={`absolute inset-0 ${hop ? 'pet-hop' : walking && is2dFigure ? 'pet-walk' : ''}`}
+        className={`absolute inset-0 ${hop ? 'pet-hop' : ''}`}
         style={loop === 'sit' ? { transform: `translateY(${SIT_DROP * 100}%)` } : undefined}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -129,42 +120,7 @@ export const PetFigureCanvas: React.FC<PetFigureCanvasProps> = ({
       >
         {pet && modelPath ? (
           <Suspense fallback={null}>
-            {isPortraitPath(modelPath) ? (
-              <PortraitPet
-                key={modelPath}
-                src={pet.portrait ?? ''}
-                characterId={pet.characterId}
-                isSpeaking={isSpeaking}
-                pet={petLink}
-                loop={loop}
-              />
-            ) : isLive2dPath(modelPath) ? (
-              <Live2DViewer
-                key={modelPath}
-                modelPath={modelPath}
-                emotion={
-                  (faceOverride ?? sentenceFace ? EXPRESSION_EMOTIONS[(faceOverride ?? sentenceFace)!] : undefined) ??
-                  pet.emotion ??
-                  'neutral'
-                }
-                isSpeaking={isSpeaking}
-                pet={petLink}
-              />
-            ) : isInochi2dModel(modelPath) ? (
-              <Inochi2dViewer
-                key={modelPath}
-                modelPath={modelPath}
-                emotion={
-                  (faceOverride ?? sentenceFace ? EXPRESSION_EMOTIONS[(faceOverride ?? sentenceFace)!] : undefined) ??
-                  pet.emotion ??
-                  'neutral'
-                }
-                isSpeaking={isSpeaking}
-                gesture={gesture}
-                pet={petLink}
-                loop={loop}
-              />
-            ) : isMmdModel(modelPath) ? (
+            {isMmdModel(modelPath) ? (
               <MmdViewer key={modelPath} {...viewerProps} />
             ) : isGltfModel(modelPath) ? (
               <GltfViewer key={modelPath} {...viewerProps} />

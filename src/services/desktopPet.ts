@@ -153,16 +153,11 @@ export interface PetState {
   characterName: string;
   /** The figure's id (its speaking portrait, if set up). */
   characterId: string;
-  /** The model the chat shows (Inochi2D puppet in that view, otherwise the 3D model). */
+  /**
+   * The figure's 3D model (VRM, glTF or MMD; "" if none). The pet shows only real 3D figures:
+   * Live2D, Inochi2D, mesh avatars and portraits stay in the chat.
+   */
   modelPath: string;
-  /** The figure's 3D model and Inochi2D puppet ("" if none), for the pet's own choice. */
-  vrmPath: string;
-  inochi2dPath: string;
-  /** The Live2D model ("" if none) and the portrait: a marker path (`portrait:<id>`, "" without picture) and its picture. */
-  live2dPath: string;
-  portraitPath: string;
-  /** Left out when unchanged since the last state (it is large); the pet keeps the one it has. */
-  portrait?: string;
   /** GoEmotions name (shown in the status panel). */
   emotion: string;
   /** VRM expression behind it (drives the face). */
@@ -316,8 +311,6 @@ export interface PetPrefs {
   reactToDesktop: boolean;
   /** Frames per second the figure is drawn with: smoother at 60, lighter on the GPU at 20. */
   frameRate: PetFrameRate;
-  /** Which of the figure's models the pet shows: as in the chat, or always 3D / Inochi2D. */
-  figure: PetFigureChoice;
   /** Posture chosen in the menu: by itself (stands, walks, sits now and then), standing or sitting. */
   pose: PetPose;
   /** Open the pet whenever the app starts (off by default: the pet only shows when switched on). */
@@ -359,25 +352,8 @@ export const PET_POSES: PetPose[] = ['auto', 'stand', 'sit'];
 export type PetFrameRate = 20 | 30 | 60;
 export const FRAME_RATES: PetFrameRate[] = [20, 30, 60];
 
-export type PetFigureChoice = 'chat' | '3d' | 'inochi2d' | 'live2d' | 'portrait';
-const FIGURE_CHOICES: PetFigureChoice[] = ['chat', '3d', 'inochi2d', 'live2d', 'portrait'];
-
-/** The portrait has no file: its "model path" is a marker that still keys size and framing. */
-export const PORTRAIT_PREFIX = 'portrait:';
-export const isPortraitPath = (path: string) => path.startsWith(PORTRAIT_PREFIX);
-export const isLive2dPath = (path: string) => /\.model3?\.json$/i.test(path);
-
-/** The model the pet shows for its choice; one the figure lacks falls back to the chat's. */
-export function petModelPath(
-  state: Pick<PetState, 'modelPath' | 'vrmPath' | 'inochi2dPath' | 'live2dPath' | 'portraitPath'>,
-  figure: PetFigureChoice,
-): string {
-  if (figure === '3d' && state.vrmPath) return state.vrmPath;
-  if (figure === 'inochi2d' && state.inochi2dPath) return state.inochi2dPath;
-  if (figure === 'live2d' && state.live2dPath) return state.live2dPath;
-  if (figure === 'portrait' && state.portraitPath) return state.portraitPath;
-  return state.modelPath;
-}
+/** Only real 3D figures (VRM, glTF, MMD) can be a desktop pet. */
+export const isPet3dModel = (path: string) => /\.(vrm|glb|gltf|pmx|pmd)$/i.test(path) || path.startsWith('vroid:');
 
 const PREFS_KEY = 'otakusoul.desktopPetPrefs';
 const DEFAULT_PREFS: PetPrefs = {
@@ -390,7 +366,6 @@ const DEFAULT_PREFS: PetPrefs = {
   quietAtNight: true,
   reactToDesktop: true,
   frameRate: 30,
-  figure: 'chat',
   pose: 'auto',
   openAtStart: false,
   eventRemarks: false,
@@ -450,7 +425,6 @@ export function loadPetPrefs(): PetPrefs {
       quietAtNight: typeof stored?.quietAtNight === 'boolean' ? stored.quietAtNight : DEFAULT_PREFS.quietAtNight,
       reactToDesktop: typeof stored?.reactToDesktop === 'boolean' ? stored.reactToDesktop : DEFAULT_PREFS.reactToDesktop,
       frameRate: FRAME_RATES.includes(stored?.frameRate as PetFrameRate) ? stored!.frameRate! : DEFAULT_PREFS.frameRate,
-      figure: FIGURE_CHOICES.includes(stored?.figure as PetFigureChoice) ? stored!.figure! : DEFAULT_PREFS.figure,
       pose: PET_POSES.includes(stored?.pose as PetPose) ? stored!.pose! : DEFAULT_PREFS.pose,
       openAtStart: typeof stored?.openAtStart === 'boolean' ? stored.openAtStart : DEFAULT_PREFS.openAtStart,
       eventRemarks: typeof stored?.eventRemarks === 'boolean' ? stored.eventRemarks : DEFAULT_PREFS.eventRemarks,

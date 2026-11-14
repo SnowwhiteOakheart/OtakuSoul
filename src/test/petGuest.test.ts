@@ -36,7 +36,7 @@ describe('guest pet', () => {
       emotion: 'neutral',
       gesture: null,
       thinking: false,
-      vrmPath: '',
+      modelPath: '',
     });
   });
 

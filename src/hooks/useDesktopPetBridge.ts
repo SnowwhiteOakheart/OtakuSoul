@@ -4,7 +4,7 @@ import { useAppStore } from '../store/useAppStore';
 import { audioPlayer } from '../services/audioPlayer';
 import { streamingTts } from '../services/streamingTts';
 import { api } from '../services/api';
-import { manualEmotion, resolveInochi2dPath, resolveLive2dPath, resolveVrmPath } from '../components/avatars/avatarMatch';
+import { manualEmotion, resolveVrmPath } from '../components/avatars/avatarMatch';
 import { APP_DEFAULT_COMPANION_NAME } from '../constants/branding';
 import {
   PET_AUDIO_EVENT,
@@ -20,7 +20,7 @@ import {
   PET_STATE_EVENT,
   PET_TOGGLE_EVENT,
   PET_VISIBILITY_EVENT,
-  PORTRAIT_PREFIX,
+  isPet3dModel,
   forgetLegacyPetOpen,
   loadPetPrefs,
   type PetAudioFrame,
@@ -42,37 +42,16 @@ const AUDIO_FRAME_MS = 33;
 
 type StoreState = ReturnType<typeof useAppStore.getState>;
 
-/** The figure's models the pet chooses from (also the Desktop-Pet tab's preview). */
+/**
+ * The figure's model for the pet (also the Desktop-Pet tab's preview): only a real 3D model
+ * (VRM, glTF, MMD). Live2D, Inochi2D, mesh avatars and portraits stay in the chat; without a 3D
+ * model the pet shows a note instead of a figure.
+ */
 export function petModels(
-  s: Pick<
-    StoreState,
-    | 'activeCharacter'
-    | 'scannedVrms'
-    | 'activeVrmPath'
-    | 'scannedInochi2ds'
-    | 'activeInochi2dPath'
-    | 'scannedLive2ds'
-    | 'activeLive2dPath'
-    | 'avatarMode'
-  >,
-): Pick<PetState, 'modelPath' | 'vrmPath' | 'inochi2dPath' | 'live2dPath' | 'portraitPath' | 'portrait'> {
+  s: Pick<StoreState, 'activeCharacter' | 'scannedVrms' | 'activeVrmPath'>,
+): Pick<PetState, 'modelPath'> {
   const vrmPath = resolveVrmPath(s.activeCharacter, s.scannedVrms, s.activeVrmPath);
-  const inochi2dPath = resolveInochi2dPath(s.activeCharacter, s.scannedInochi2ds, s.activeInochi2dPath);
-  const live2dPath = resolveLive2dPath(s.activeCharacter, s.scannedLive2ds, s.activeLive2dPath);
-  const portrait = s.activeCharacter?.avatar_data_url ?? '';
-  const portraitPath = portrait ? `${PORTRAIT_PREFIX}${s.activeCharacter?.id ?? ''}` : '';
-  // The chat shows an Inochi2D puppet or a Live2D model: the pet shows it too; otherwise the
-  // 3D model (unless the pet's menu asks for another). Without a 3D model it takes what the
-  // figure has: a Live2D model, an Inochi2D puppet or at least the portrait.
-  const shown =
-    (s.avatarMode === 'inochi2d' && inochi2dPath) ||
-    (s.avatarMode === 'live2d' && live2dPath) ||
-    (s.avatarMode === '2d' && !vrmPath && portraitPath) ||
-    vrmPath ||
-    live2dPath ||
-    inochi2dPath ||
-    portraitPath;
-  return { modelPath: shown, vrmPath, inochi2dPath, live2dPath: live2dPath ?? '', portraitPath, portrait };
+  return { modelPath: isPet3dModel(vrmPath) ? vrmPath : '' };
 }
 
 function petState(s: StoreState): PetState {
@@ -102,24 +81,15 @@ export function useDesktopPetBridge(enabled = true) {
     let open = false;
     let lastSent = '';
     let staleGestureId: number | null = null;
-    /** The portrait the pet has (a data URL, often MBs): it goes along only when it changed. */
-    let sentPortrait: string | null = null;
-
     const send = (force = false) => {
       if (!open) return;
       const state = petState(useAppStore.getState());
       // A gesture plays once: a freshly opened pet does not repeat the one from before.
       if (force) staleGestureId = state.gesture?.id ?? null;
-      const portraitChanged = force || state.portrait !== sentPortrait;
-      const payload: PetState = {
-        ...state,
-        gesture: state.gesture?.id === staleGestureId ? null : state.gesture,
-        portrait: portraitChanged ? state.portrait : undefined,
-      };
-      const key = JSON.stringify({ ...payload, portrait: undefined });
-      if (!force && !portraitChanged && key === lastSent) return;
+      const payload: PetState = { ...state, gesture: state.gesture?.id === staleGestureId ? null : state.gesture };
+      const key = JSON.stringify(payload);
+      if (!force && key === lastSent) return;
       lastSent = key;
-      sentPortrait = state.portrait ?? '';
       void emitTo(PET_LABEL, PET_STATE_EVENT, payload).catch(() => {});
     };
 
@@ -132,12 +102,6 @@ export function useDesktopPetBridge(enabled = true) {
         s.activeCharacter !== prev.activeCharacter ||
         s.scannedVrms !== prev.scannedVrms ||
         s.activeVrmPath !== prev.activeVrmPath ||
-        // Switching the chat's view (3D ↔ Inochi2D) or its puppet changes the pet's figure.
-        s.avatarMode !== prev.avatarMode ||
-        s.scannedInochi2ds !== prev.scannedInochi2ds ||
-        s.activeInochi2dPath !== prev.activeInochi2dPath ||
-        s.scannedLive2ds !== prev.scannedLive2ds ||
-        s.activeLive2dPath !== prev.activeLive2dPath ||
         s.currentEmotion !== prev.currentEmotion ||
         s.avatarMotions !== prev.avatarMotions ||
         s.avatarGesture !== prev.avatarGesture ||

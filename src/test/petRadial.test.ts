@@ -106,7 +106,6 @@ describe('pet menu model', () => {
     quietAtNight: false,
     reactToDesktop: true,
     frameRate: 30,
-    figure: 'chat',
     pose: 'auto',
     openAtStart: false,
     eventRemarks: false,

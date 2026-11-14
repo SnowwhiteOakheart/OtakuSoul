@@ -2,23 +2,18 @@ import type React from 'react';
 import { emitTo } from '@tauri-apps/api/event';
 import {
   Activity,
-  Box,
   Camera,
   Clipboard,
   Cookie,
   Download,
-  Drama,
   Eye,
   Hand,
-  ImageIcon,
-  Layers,
   MessageCircle,
   PanelLeftOpen,
   PersonStanding,
   Repeat,
   Settings2,
   Smile,
-  Sparkles,
   Timer,
   X,
   type LucideIcon,
@@ -28,10 +23,9 @@ import {
   PET_MOODS,
   PET_PICK_EMOTION_EVENT,
   PET_PRESETS,
-  type PetFigureChoice,
   type PetPrefs,
-  type PetSize,
   type PetState,
+  type PetSize,
 } from '../../../services/desktopPet';
 import type { MotionPackItem } from '../../../types/generated/MotionPackItem';
 import type { TranslationKey } from '../../../i18n';
@@ -158,14 +152,6 @@ const MOOD_GLYPHS: Record<(typeof PET_MOODS)[number], string> = {
   neutral: '😐',
 };
 
-const FIGURES: { choice: PetFigureChoice; label: TranslationKey; icon: LucideIcon; has: (pet: PetState | null) => boolean }[] = [
-  { choice: 'chat', label: 'pet.figureChat', icon: Sparkles, has: () => true },
-  { choice: '3d', label: 'pet.figure3d', icon: Box, has: (pet) => !!pet?.vrmPath },
-  { choice: 'inochi2d', label: 'pet.figureInochi2d', icon: Layers, has: (pet) => !!pet?.inochi2dPath },
-  { choice: 'live2d', label: 'pet.figureLive2d', icon: Drama, has: (pet) => !!pet?.live2dPath },
-  { choice: 'portrait', label: 'pet.figurePortrait', icon: ImageIcon, has: (pet) => !!pet?.portraitPath },
-];
-
 const SIZES: { key: PetSize; label: TranslationKey; glyph: string }[] = [
   { key: 'small', label: 'pet.sizeSmall', glyph: 'S' },
   { key: 'medium', label: 'pet.sizeMedium', glyph: 'M' },
@@ -264,14 +250,6 @@ export function buildPetMenu(a: PetMenuArgs): PetMenuModel {
       label: t('pet.figureGroup'),
       icon: PersonStanding,
       children: [
-        // Only the kinds this character has (the settings card names all of them).
-        ...FIGURES.filter(({ has }) => has(pet)).map(({ choice, label, icon }) => ({
-          id: `figure-${choice}`,
-          label: t(label),
-          icon,
-          checked: prefs.figure === choice,
-          action: () => a.setPrefs((p) => ({ ...p, figure: choice })),
-        })),
         ...SIZES.map(({ key, label, glyph }) => ({
           id: `size-${key}`,
           label: `${t('pet.size')}: ${t(label)}`,
@@ -309,14 +287,6 @@ export function buildPetMenu(a: PetMenuArgs): PetMenuModel {
             { value: 'sit', label: t('pet.poseSit'), enabled: a.canSit },
           ],
           set: (pose) => a.setPrefs((p) => ({ ...p, pose: pose as PetPrefs['pose'] })),
-        },
-        {
-          kind: 'choice',
-          id: 'figure',
-          label: t('pet.figure'),
-          value: prefs.figure,
-          options: FIGURES.map(({ choice, label, has }) => ({ value: choice, label: t(label), enabled: has(pet) })),
-          set: (figure) => a.setPrefs((p) => ({ ...p, figure: figure as PetFigureChoice })),
         },
       ],
     },

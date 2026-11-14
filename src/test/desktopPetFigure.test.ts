@@ -1,63 +1,35 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
-  isLive2dPath,
-  isPortraitPath,
+  isPet3dModel,
   loadPetFraming,
   loadPetModelHeight,
   loadPetPlacement,
-  loadPetPrefs,
   PET_HEIGHT_MAX,
   PET_HEIGHT_MIN,
   PET_PRESETS,
-  petModelPath,
   petWindowSize,
   savePetFraming,
   savePetModelHeight,
   savePetPlacement,
-  savePetPrefs,
 } from '../services/desktopPet';
+import { petModels } from '../hooks/useDesktopPetBridge';
 
-const state = {
-  modelPath: 'C:/m/Aka.inx',
-  vrmPath: 'C:/m/Girl.vrm',
-  inochi2dPath: 'C:/m/Aka.inx',
-  live2dPath: 'C:/m/Hiyori.model3.json',
-  portraitPath: 'portrait:abc',
-};
-
-describe('desktop pet figure choice', () => {
-  beforeEach(() => localStorage.clear());
-
-  it('shows the chat’s model, or the one picked in the menu', () => {
-    expect(petModelPath(state, 'chat')).toBe('C:/m/Aka.inx');
-    expect(petModelPath(state, '3d')).toBe('C:/m/Girl.vrm');
-    expect(petModelPath({ ...state, modelPath: 'C:/m/Girl.vrm' }, 'inochi2d')).toBe('C:/m/Aka.inx');
+describe('desktop pet figure', () => {
+  it('takes only real 3D models', () => {
+    for (const path of ['C:/m/Girl.vrm', 'C:/m/Boy.glb', 'C:/m/Rig.gltf', 'C:/m/Miku.pmx', 'C:/m/Old.pmd', 'vroid:123']) {
+      expect(isPet3dModel(path)).toBe(true);
+    }
+    for (const path of ['C:/m/Aka.inx', 'C:/m/Aka.inp', 'C:/m/Hiyori.model3.json', 'C:/m/Shiro.mavatar', 'portrait:abc', '']) {
+      expect(isPet3dModel(path)).toBe(false);
+    }
   });
 
-  it('shows the Live2D model or the portrait when picked', () => {
-    expect(petModelPath(state, 'live2d')).toBe('C:/m/Hiyori.model3.json');
-    expect(petModelPath(state, 'portrait')).toBe('portrait:abc');
-    expect(isLive2dPath('C:/m/Hiyori.model3.json')).toBe(true);
-    expect(isLive2dPath('C:/m/Old.model.json')).toBe(true);
-    expect(isLive2dPath('C:/m/Aka.inx')).toBe(false);
-    expect(isPortraitPath('portrait:abc')).toBe(true);
-    expect(isPortraitPath('C:/m/Girl.vrm')).toBe(false);
-  });
-
-  it('falls back to the chat’s model when the figure lacks the picked kind', () => {
-    expect(petModelPath({ ...state, inochi2dPath: '' }, 'inochi2d')).toBe('C:/m/Aka.inx');
-    expect(petModelPath({ ...state, vrmPath: '' }, '3d')).toBe('C:/m/Aka.inx');
-    expect(petModelPath({ ...state, live2dPath: '' }, 'live2d')).toBe('C:/m/Aka.inx');
-    expect(petModelPath({ ...state, portraitPath: '' }, 'portrait')).toBe('C:/m/Aka.inx');
-  });
-
-  it('remembers the choice and ignores unknown values', () => {
-    expect(loadPetPrefs().figure).toBe('chat');
-    savePetPrefs({ ...loadPetPrefs(), figure: 'live2d' });
-    expect(loadPetPrefs().figure).toBe('live2d');
-    localStorage.setItem('otakusoul.desktopPetPrefs', JSON.stringify({ figure: 'hologram' }));
-    expect(loadPetPrefs().figure).toBe('chat');
+  it('shows the 3D model whatever the chat shows, and nothing without one', () => {
+    const store = { activeCharacter: null, scannedVrms: [], activeVrmPath: 'C:/m/Girl.vrm' };
+    expect(petModels(store).modelPath).toBe('C:/m/Girl.vrm');
+    expect(petModels({ ...store, activeVrmPath: '' }).modelPath).toBe('');
+    expect(petModels({ ...store, activeVrmPath: 'C:/m/Aka.inx' }).modelPath).toBe('');
   });
 });
 

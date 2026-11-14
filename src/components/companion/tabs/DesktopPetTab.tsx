@@ -24,12 +24,10 @@ import {
   PET_PREFS_EVENT,
   PET_PRESETS,
   PET_RESIZE_EVENT,
-  petModelPath,
   petWindowSize,
   saveGuestCharacter,
   savePetPlacement,
   savePetPrefs,
-  type PetFigureChoice,
   type PetPrefs,
   type PetShortcut,
   type PetSize,
@@ -37,14 +35,6 @@ import {
 
 const SIZES: PetSize[] = ['small', 'medium', 'large'];
 const SIZE_LABELS = { small: 'pet.sizeSmall', medium: 'pet.sizeMedium', large: 'pet.sizeLarge' } as const;
-const FIGURES: PetFigureChoice[] = ['chat', '3d', 'inochi2d', 'live2d', 'portrait'];
-const FIGURE_LABELS = {
-  chat: 'pet.figureChat',
-  '3d': 'pet.figure3d',
-  inochi2d: 'pet.figureInochi2d',
-  live2d: 'pet.figureLive2d',
-  portrait: 'pet.figurePortrait',
-} as const;
 
 /**
  * Opens the desktop pet (the active avatar on the desktop), explains how to handle it and holds
@@ -58,11 +48,6 @@ export const DesktopPetTab: React.FC = () => {
     'activeCharacter',
     'scannedVrms',
     'activeVrmPath',
-    'scannedInochi2ds',
-    'activeInochi2dPath',
-    'scannedLive2ds',
-    'activeLive2dPath',
-    'avatarMode',
     'availableCharacters',
   );
   const { toggleDesktopPet, companionState, availableCharacters } = store;
@@ -144,16 +129,9 @@ export const DesktopPetTab: React.FC = () => {
     return () => window.removeEventListener('keydown', onKey, true);
   }, [recording]);
 
-  const models = petModels(store);
-  const previewPath = petModelPath(models, prefs.figure);
+  // Only real 3D figures (VRM, glTF, MMD) can be a pet; 2D kinds stay in the chat.
+  const previewPath = petModels(store).modelPath;
   const previewFraming = useMemo(() => loadPetFraming(previewPath), [previewPath]);
-  const figureAvailable: Record<PetFigureChoice, boolean> = {
-    chat: true,
-    '3d': !!models.vrmPath,
-    inochi2d: !!models.inochi2dPath,
-    live2d: !!models.live2dPath,
-    portrait: !!models.portraitPath,
-  };
 
   // Until the backend answered: the default, so the hint never reads without its keys.
   const shownShortcut = formatAccelerator(shortcut?.shortcut ?? 'CommandOrControl+Alt+Shift+P');
@@ -193,6 +171,7 @@ export const DesktopPetTab: React.FC = () => {
           {t(open ? 'pet.hide' : 'pet.show')}
         </button>
       </div>
+      <p className="text-xs text-slate-400" data-pet-only-3d>{t('pet.only3d')}</p>
 
       <section className="space-y-2" aria-labelledby="pet-guest-title">
         <h4 id="pet-guest-title" className="text-xs font-bold text-slate-400">
@@ -232,24 +211,6 @@ export const DesktopPetTab: React.FC = () => {
             <Settings2 className="w-3.5 h-3.5" aria-hidden />
             {t('pet.settingsTitle')}
           </h4>
-
-          <div className="space-y-1.5">
-            <p className="text-xs font-semibold text-slate-300">{t('pet.figure')}</p>
-            <div className="flex flex-wrap gap-1.5" role="group" aria-label={t('pet.figure')}>
-              {FIGURES.map((figure) => (
-                <button
-                  key={figure}
-                  type="button"
-                  disabled={!figureAvailable[figure]}
-                  aria-pressed={prefs.figure === figure}
-                  onClick={() => update({ figure })}
-                  className={chip(prefs.figure === figure)}
-                >
-                  {t(FIGURE_LABELS[figure])}
-                </button>
-              ))}
-            </div>
-          </div>
 
           <div className="space-y-1.5">
             <p className="text-xs font-semibold text-slate-300">{t('pet.size')}</p>
@@ -420,7 +381,7 @@ export const DesktopPetTab: React.FC = () => {
         <figure className="space-y-1.5">
           <figcaption className="text-xs font-semibold text-slate-300">{t('pet.preview')}</figcaption>
           {previewPath ? (
-            <PetFramePreview modelPath={previewPath} framing={previewFraming} portrait={models.portrait ?? ''} />
+            <PetFramePreview modelPath={previewPath} framing={previewFraming} />
           ) : (
             <div className="rounded-xl border border-slate-800 bg-app" style={petWindowSize(PET_PRESETS.small)} data-pet-preview>
               <p className="p-3 text-center text-xs text-slate-400">{t('pet.noModel')}</p>

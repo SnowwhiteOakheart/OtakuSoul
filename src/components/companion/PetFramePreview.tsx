@@ -1,26 +1,17 @@
 import { lazy, Suspense, useEffect, useMemo, useRef } from 'react';
-import { loadCubismCore } from '../../services/live2dRuntime';
 import { VrmViewer } from '../avatar/VrmViewer';
 import type { PetFigure } from '../avatar/avatarStage';
 import { PET_FEET_SHARE, type PetFraming } from '../../services/avatarViewState';
-import { isLive2dPath, isPortraitPath, PET_PRESETS, petWindowSize } from '../../services/desktopPet';
+import { PET_PRESETS, petWindowSize } from '../../services/desktopPet';
 
 const MmdViewer = lazy(() => import('../avatar/MmdViewer'));
 const GltfViewer = lazy(() => import('../avatar/GltfViewer'));
-const Inochi2dViewer = lazy(() => import('../avatar/Inochi2dViewer'));
-// The Cubism core has to be loaded before the Live2D engine (as in the chat).
-const Live2DViewer = lazy(() =>
-  loadCubismCore()
-    .then(() => import('../avatar/Live2DViewer'))
-    .then((module) => ({ default: module.Live2DViewer })),
-);
-const PortraitPet = lazy(() => import('../avatar/PortraitPet'));
 
 /**
- * A model as the desktop pet shows it (whole figure, its framing, the shadow at its feet), in
+ * A 3D model as the desktop pet shows it (whole figure, its framing, the shadow at its feet), in
  * the pet window's proportions at the small size. Changes of `framing` apply without reloading.
  */
-export function PetFramePreview({ modelPath, framing, portrait = '' }: { modelPath: string; framing: PetFraming; portrait?: string }) {
+export function PetFramePreview({ modelPath, framing }: { modelPath: string; framing: PetFraming }) {
   const stageRef = useRef<PetFigure | null>(null);
   const framingRef = useRef(framing);
   useEffect(() => {
@@ -37,13 +28,7 @@ export function PetFramePreview({ modelPath, framing, portrait = '' }: { modelPa
     [],
   );
 
-  const viewer = isPortraitPath(modelPath) ? (
-    <PortraitPet key={modelPath} src={portrait} pet={pet} />
-  ) : isLive2dPath(modelPath) ? (
-    <Live2DViewer key={modelPath} modelPath={modelPath} pet={pet} />
-  ) : /\.(inp|inx)$/i.test(modelPath) ? (
-    <Inochi2dViewer key={modelPath} modelPath={modelPath} pet={pet} />
-  ) : /\.(pmx|pmd)$/i.test(modelPath) ? (
+  const viewer = /\.(pmx|pmd)$/i.test(modelPath) ? (
     <MmdViewer key={modelPath} modelPath={modelPath} pet={pet} />
   ) : /\.(glb|gltf)$/i.test(modelPath) ? (
     <GltfViewer key={modelPath} modelPath={modelPath} pet={pet} />

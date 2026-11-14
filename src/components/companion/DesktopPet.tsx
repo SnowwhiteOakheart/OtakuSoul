@@ -80,7 +80,7 @@ import {
   PET_SEND_EVENT,
   PET_SENTENCE_EVENT,
   PET_STATE_EVENT,
-  petModelPath,
+  isPet3dModel,
   petWindowSize,
   listenOwn,
   loadHiddenParts,
@@ -283,7 +283,6 @@ export const DesktopPet: React.FC = () => {
   const [sentenceFace, setSentenceFace] = useState<string | null>(null);
   const sentenceTimer = useRef<number | null>(null);
   const [hop, setHop] = useState(false);
-  const [walking, setWalking] = useState(false);
   const [loop, setLoop] = useState<LoopRole | null>(null);
   /** Sitting on the ground (VRM pose of its own). */
   const [seat, setSeat] = useState<PetSeat | null>(null);
@@ -306,7 +305,8 @@ export const DesktopPet: React.FC = () => {
   const [prints, setPrints] = useState<{ id: number; gx: number; born: number; left: number; opacity: number }[]>([]);
   /** The window's width before it widened for hanging (logical px); null when it has its own width. */
   const widenedFrom = useRef<number | null>(null);
-  const modelPath = pet ? petModelPath(pet, prefs.figure) : '';
+  // Only real 3D figures (VRM, glTF, MMD): anything else shows the note instead.
+  const modelPath = pet && isPet3dModel(pet.modelPath) ? pet.modelPath : '';
   /** The shown model, whose size a resize remembers. */
   const modelRef = useRef(modelPath);
   /** Live framing overrides broadcast by the avatar manager while the model stays shown. */
@@ -859,7 +859,6 @@ export const DesktopPet: React.FC = () => {
       setMode(frame.mode);
       setFaceOverride(frame.expression);
       setHop(frame.hop);
-      setWalking(frame.walk !== 0);
       setLoop(frame.loop);
       setSeat(frame.seat);
       setSeatPose(frame.seatPose);
@@ -938,8 +937,7 @@ export const DesktopPet: React.FC = () => {
     const unlisteners = [
       listenOwn<PetState>(PET_STATE_EVENT, ({ payload }) => {
         if (!isSubscribed) return;
-        // The portrait comes only when it changed.
-        setPet((current) => (payload.portrait === undefined ? { ...payload, portrait: current?.portrait ?? '' } : payload));
+        setPet(payload);
         if (payload.gesture) setGesture(payload.gesture);
         const store = useAppStore.getState();
         if (payload.appLanguage && payload.appLanguage !== store.appLanguage) store.setAppLanguage(payload.appLanguage);
@@ -1290,7 +1288,7 @@ export const DesktopPet: React.FC = () => {
   const loadMenuContext = async () => {
     // A 3D figure without walking or sitting motions: the menu offers the motion pack.
     const motionPack =
-      pet?.vrmPath && lacksPetMotions(pet.motions ?? [])
+      pet && modelPath && lacksPetMotions(pet.motions ?? [])
         ? recommendedMotionPack((await api.getMotionPacks(currentLanguage).catch(() => [])) ?? [])
         : null;
     // The program in front before the menu opened (the pet itself never counts).
@@ -1722,7 +1720,6 @@ export const DesktopPet: React.FC = () => {
         hands={hands}
         overlay={propsLayer}
         hop={hop}
-        walking={walking}
         lift={framing.lift}
         isSpeaking={isSpeaking || mode === 'talking'}
         faceOverride={faceOverride}

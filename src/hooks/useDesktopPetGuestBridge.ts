@@ -25,7 +25,7 @@ export function guestState(s: StoreState, characterId: string): PetState | null 
     characterName: character.card.data.name,
     characterId: character.id,
     // The chat's own model choice belongs to the active character, not to the guest.
-    ...petModels({ ...s, activeCharacter: character, activeVrmPath: '', activeInochi2dPath: '', activeLive2dPath: '' }),
+    ...petModels({ ...s, activeCharacter: character, activeVrmPath: '' }),
     emotion: 'neutral',
     expression: 'neutral',
     motions: s.avatarMotions,
@@ -47,29 +47,22 @@ export function useDesktopPetGuestBridge(enabled = true) {
     if (!enabled) return undefined;
     let open = false;
     let lastKey = '';
-    let sentPortrait: string | null = null;
 
     const send = (force = false) => {
       if (!open) return;
       const state = guestState(useAppStore.getState(), loadGuestCharacter());
       if (!state) return;
-      const portraitChanged = force || state.portrait !== sentPortrait;
-      const payload: PetState = { ...state, portrait: portraitChanged ? state.portrait : undefined };
-      const key = JSON.stringify({ ...payload, portrait: undefined });
-      if (!force && !portraitChanged && key === lastKey) return;
+      const key = JSON.stringify(state);
+      if (!force && key === lastKey) return;
       lastKey = key;
-      sentPortrait = state.portrait ?? '';
-      void emitTo(GUEST_LABEL, PET_STATE_EVENT, payload).catch(() => {});
+      void emitTo(GUEST_LABEL, PET_STATE_EVENT, state).catch(() => {});
     };
 
     const unsubscribeStore = useAppStore.subscribe((s, prev) => {
       if (
         s.availableCharacters !== prev.availableCharacters ||
         s.scannedVrms !== prev.scannedVrms ||
-        s.scannedInochi2ds !== prev.scannedInochi2ds ||
-        s.scannedLive2ds !== prev.scannedLive2ds ||
         s.avatarMotions !== prev.avatarMotions ||
-        s.avatarMode !== prev.avatarMode ||
         s.appLanguage !== prev.appLanguage ||
         s.theme !== prev.theme ||
         s.colorMode !== prev.colorMode
@@ -81,10 +74,7 @@ export function useDesktopPetGuestBridge(enabled = true) {
     const unlisteners = [
       listen<boolean>(PET_GUEST_VISIBILITY_EVENT, ({ payload }) => {
         open = payload;
-        if (!payload) {
-          lastKey = '';
-          sentPortrait = null;
-        }
+        if (!payload) lastKey = '';
       }),
       listen(PET_GUEST_READY_EVENT, () => {
         open = true;

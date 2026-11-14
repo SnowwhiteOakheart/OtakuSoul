@@ -26,7 +26,7 @@ const packFiles = () => {
 };
 
 const state = (model, motions) => ({
-  characterName: 'Test', modelPath: model.path, vrmPath: model.path, inochi2dPath: '', live2dPath: '', portraitPath: '',
+  characterName: 'Test', modelPath: model.path,
   emotion: 'neutral', expression: 'neutral', motions, gesture: null, appLanguage: 'de', theme: 'obsidian',
   colorMode: 'dark', thinking: false,
 });

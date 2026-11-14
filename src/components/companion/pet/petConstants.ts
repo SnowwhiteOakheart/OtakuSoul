@@ -1,5 +1,4 @@
 import { lazy } from 'react';
-import { loadCubismCore } from '../../../services/live2dRuntime';
 import { PET_EDGE_SINK } from '../../../services/avatarViewState';
 import type { PetSeat } from '../petBehavior';
 
@@ -21,27 +20,6 @@ export const seatDrop = (seat: PetSeat | null) =>
 export const SINK_EASE = 0.25;
 export const isGltfModel = (path: string) => /\.(glb|gltf)$/i.test(path);
 
-// Inochi2D puppets bring their own runtime; only loaded for them.
-export const Inochi2dViewer = lazy(() => import('../../avatar/Inochi2dViewer'));
-// The Cubism core has to be loaded before the Live2D engine (as in the chat).
-export const Live2DViewer = lazy(() =>
-  loadCubismCore()
-    .then(() => import('../../avatar/Live2DViewer'))
-    .then((module) => ({ default: module.Live2DViewer })),
-);
-export const PortraitPet = lazy(() => import('../../avatar/PortraitPet'));
-export const isInochi2dModel = (path: string) => /\.(inp|inx)$/i.test(path);
-
-/** The pet's faces are VRM expressions; an Inochi2D puppet takes the feeling behind them. */
-export const EXPRESSION_EMOTIONS: Record<string, string> = {
-  happy: 'joy',
-  angry: 'anger',
-  sad: 'sadness',
-  surprised: 'surprise',
-  relaxed: 'relief',
-  blush: 'embarrassment',
-  neutral: 'neutral',
-};
 
 /** How long a speech bubble stays. */
 export const BUBBLE_MS = 5000;
