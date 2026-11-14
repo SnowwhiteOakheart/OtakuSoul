@@ -275,6 +275,9 @@ async fn test_group_chat_local_pipeline() {
                     seed: -1,
                     loras: &[],
                     reference: None,
+                    size: None,
+                    steps: None,
+                    cfg_scale: None,
                 };
 
                 let img_start = Instant::now();

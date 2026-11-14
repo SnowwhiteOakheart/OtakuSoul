@@ -9,7 +9,7 @@ import { launch, screenshotDir } from './harness.mjs';
 const THEMES = ['obsidian', 'cyberpunk', 'sakura', 'midnight', 'emerald'];
 const MODES = ['dark', 'light'];
 // Ctrl+number follows the sidebar order; the settings open with Ctrl+, .
-const VIEWS = [['Start', 1], ['Chat', 2], ['Geschichten', 3], ['Charaktere', 5], ['Avatare', 6], ['Song-Studio', 9], ['Integrationen', null], ['Einstellungen', ',']];
+const VIEWS = [['Start', 1], ['Chat', 2], ['Geschichten', 3], ['Charaktere', 5], ['Avatare', 6], ['Song-Studio', 9], ['Bild-Studio', null], ['Integrationen', null], ['Einstellungen', ',']];
 
 /** Runs in the page: texts below the WCAG limit as {text, ratio, fg, bg, where}. */
 function lowContrast() {

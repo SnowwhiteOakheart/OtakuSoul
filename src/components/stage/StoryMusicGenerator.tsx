@@ -4,7 +4,7 @@ import { api } from '../../services/api';
 import { useTranslation } from '../../i18n';
 import { errorCode, errorMessage } from '../../utils/errors';
 import { toast } from '../ui/feedback';
-import { MusicModelPicker, useMusicModels } from '../music/MusicModelPicker';
+import { MusicModelPicker, useMusicModels } from '../studio/MusicModelPicker';
 import type { MusicGenProgress, SceneDefinition, SceneMusicPlan } from '../../types';
 
 /** Tracks still missing in the plan (each mood up to its `count`). */

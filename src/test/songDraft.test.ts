@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_DRAFT, INSTRUMENTAL, fromRequest, toRequest } from '../components/music/songDraft';
+import { DEFAULT_DRAFT, INSTRUMENTAL, fromRequest, toRequest } from '../components/studio/songDraft';
 
 describe('Song-Studio-Formular', () => {
   it('macht aus den Liedtext-Modi die passende Anfrage', () => {

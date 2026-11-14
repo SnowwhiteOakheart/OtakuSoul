@@ -13,4 +13,5 @@ pub mod lorebook;
 pub mod memory;
 pub mod music;
 pub mod stage;
+pub mod studio;
 pub mod voice;

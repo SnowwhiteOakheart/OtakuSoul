@@ -813,6 +813,9 @@ async fn images() {
                         seed: 42,
                         loras: &[],
                         reference: None,
+                        size: None,
+                        steps: None,
+                        cfg_scale: None,
                     },
                 )
                 .await;
@@ -929,6 +932,9 @@ async fn selfies() {
                     seed: 42,
                     loras: &[],
                     reference: Some(ImageReference { png: &portrait, img2img: true }),
+                    size: None,
+                    steps: None,
+                    cfg_scale: None,
                 },
             )
             .await
@@ -1075,6 +1081,9 @@ async fn dream_picture() {
                     png: &portrait,
                     img2img: false,
                 }),
+                size: None,
+                steps: None,
+                cfg_scale: None,
             },
         )
         .await
@@ -1128,6 +1137,9 @@ async fn loras() {
                     seed: 42,
                     loras,
                     reference: None,
+                    size: None,
+                    steps: None,
+                    cfg_scale: None,
                 },
             )
             .await

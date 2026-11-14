@@ -109,7 +109,12 @@ import type { MusicModelProgress } from './generated/MusicModelProgress';
 import type { MusicGenProgress } from './generated/MusicGenProgress';
 import type { SongRequest } from './generated/SongRequest';
 import type { SongEntry } from './generated/SongEntry';
-import type { SongFolder } from './generated/SongFolder';
+import type { StudioFolder } from './generated/StudioFolder';
+import type { StudioKind } from './generated/StudioKind';
+import type { StudioImage } from './generated/StudioImage';
+import type { ImageStudioRequest } from './generated/ImageStudioRequest';
+import type { ImageStudioProgress } from './generated/ImageStudioProgress';
+import type { ImageStudioModel } from './generated/ImageStudioModel';
 import type { ScannedInochi2d } from './generated/ScannedInochi2d';
 import type { Inochi2dMapping } from './generated/Inochi2dMapping';
 import type { Inochi2dChannel } from './generated/Inochi2dChannel';
@@ -266,7 +271,12 @@ export type {
   MusicGenProgress,
   SongRequest,
   SongEntry,
-  SongFolder,
+  StudioFolder,
+  StudioKind,
+  StudioImage,
+  ImageStudioRequest,
+  ImageStudioProgress,
+  ImageStudioModel,
   ScannedInochi2d,
   Inochi2dMapping,
   Inochi2dChannel,

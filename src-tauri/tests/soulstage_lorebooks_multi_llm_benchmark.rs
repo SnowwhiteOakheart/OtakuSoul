@@ -392,6 +392,9 @@ async fn test_full_soulstage_lorebooks_multi_llm_benchmark() {
             seed: 42,
             loras: &[],
             reference: None,
+            size: None,
+            steps: None,
+            cfg_scale: None,
         };
         let img_start = Instant::now();
         let img_res = image_engine.generate(&|_| {}, llama.clone(), img_req).await;
@@ -558,6 +561,9 @@ async fn test_full_soulstage_lorebooks_multi_llm_benchmark() {
                         seed: 1234,
                         loras: &[],
                         reference: None,
+                        size: None,
+                        steps: None,
+                        cfg_scale: None,
                     };
                     let g_img_start = Instant::now();
                     let g_img_res = image_engine

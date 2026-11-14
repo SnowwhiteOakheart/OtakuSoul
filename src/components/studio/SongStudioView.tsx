@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { open } from '@tauri-apps/plugin-dialog';
 import {
   ChevronDown,
   FolderOpen,
@@ -20,7 +19,8 @@ import { errorMessage } from '../../utils/errors';
 import { confirmDialog, toast } from '../ui/feedback';
 import { MusicModelPicker, useMusicModels } from './MusicModelPicker';
 import { useSongJob } from './songJobStore';
-import type { SongEntry, SongFolder } from '../../types';
+import type { SongEntry } from '../../types';
+import { StudioFolderPicker } from './StudioFolderPicker';
 import { DEFAULT_DRAFT, INSTRUMENTAL, fromRequest, loadDraft, saveDraft, toRequest, type SongDraft } from './songDraft';
 
 /** Languages ACE-Step's language model sings in (`music_gen::language_name`). */
@@ -55,7 +55,6 @@ export const SongStudioView = () => {
   const { running, progress, finishedRuns, start } = useSongJob();
   const [draft, setDraft] = useState<SongDraft>(loadDraft);
   const [advanced, setAdvanced] = useState(false);
-  const [folder, setFolder] = useState<SongFolder | null>(null);
   const [songs, setSongs] = useState<SongEntry[] | null>(null);
   const lyricsRef = useRef<HTMLTextAreaElement>(null);
 
@@ -76,30 +75,8 @@ export const SongStudioView = () => {
   );
 
   useEffect(() => {
-    void api.getSongFolder().then(setFolder).catch(() => setFolder(null));
-  }, []);
-  useEffect(() => {
     void refreshSongs();
   }, [refreshSongs, finishedRuns]);
-
-  const chooseFolder = async () => {
-    const picked = await open({ directory: true, defaultPath: folder?.path });
-    if (typeof picked !== 'string') return;
-    try {
-      setFolder(await api.setSongFolder(picked));
-      void refreshSongs();
-    } catch (error) {
-      toast.error(errorMessage(error));
-    }
-  };
-  const resetFolder = async () => {
-    try {
-      setFolder(await api.setSongFolder(null));
-      void refreshSongs();
-    } catch (error) {
-      toast.error(errorMessage(error));
-    }
-  };
 
   const insertTag = (tag: string) => {
     const area = lyricsRef.current;
@@ -422,23 +399,7 @@ export const SongStudioView = () => {
               <MusicModelPicker music={music} disabled={running} />
             </div>
 
-            <div className="space-y-1.5">
-              <p className={labelClass}>{t('songStudio.folder')}</p>
-              <p className="break-all rounded-lg bg-slate-900/70 px-3 py-2 font-mono text-[11px] text-slate-300" data-testid="song-folder">
-                {folder?.path ?? '…'}
-                {folder?.is_default && <span className="ml-2 font-sans text-slate-500">({t('songStudio.folderDefault')})</span>}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <button type="button" onClick={() => void chooseFolder()} className="flex items-center gap-1.5 rounded-xl bg-slate-800 px-3 py-1.5 text-xs font-semibold hover:bg-slate-700">
-                  <FolderOpen className="w-3.5 h-3.5" /> {t('songStudio.folderChoose')}
-                </button>
-                {!folder?.is_default && (
-                  <button type="button" onClick={() => void resetFolder()} className="flex items-center gap-1.5 rounded-xl bg-slate-800 px-3 py-1.5 text-xs font-semibold hover:bg-slate-700">
-                    <RotateCcw className="w-3.5 h-3.5" /> {t('songStudio.folderReset')}
-                  </button>
-                )}
-              </div>
-            </div>
+            <StudioFolderPicker kind="songs" onChanged={() => void refreshSongs()} />
 
             <div className="flex flex-wrap items-center gap-2">
               <button
@@ -527,7 +488,7 @@ const SongList = ({ songs, onRefresh, onReuse }: SongListProps) => {
       setPlaying(null);
     }
     try {
-      await api.deleteSong(song.file_name);
+      await api.deleteStudioFile('songs', song.file_name);
       await onRefresh();
     } catch (error) {
       toast.error(errorMessage(error));
@@ -542,7 +503,7 @@ const SongList = ({ songs, onRefresh, onReuse }: SongListProps) => {
           <button type="button" onClick={() => void onRefresh()} title={t('songStudio.refresh')} aria-label={t('songStudio.refresh')} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-slate-200">
             <RefreshCw className="w-4 h-4" />
           </button>
-          <button type="button" onClick={() => void api.openSongFolder()} title={t('songStudio.folderOpen')} aria-label={t('songStudio.folderOpen')} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+          <button type="button" onClick={() => void api.openStudioFolder('songs')} title={t('studio.folderOpen')} aria-label={t('studio.folderOpen')} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-slate-200">
             <FolderOpen className="w-4 h-4" />
           </button>
         </div>

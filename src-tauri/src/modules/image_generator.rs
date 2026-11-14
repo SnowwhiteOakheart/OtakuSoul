@@ -540,6 +540,9 @@ impl ImageGenerator {
                             seed: config.seed,
                             loras: &config.local_loras,
                             reference,
+                            size: None,
+                            steps: None,
+                            cfg_scale: None,
                         },
                     )
                     .await?;

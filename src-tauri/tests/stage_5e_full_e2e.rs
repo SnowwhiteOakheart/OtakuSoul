@@ -179,6 +179,9 @@ async fn test_soulstage_5e_local_pipeline() {
                 seed: -1,
                 loras: &[],
                 reference: None,
+                size: None,
+                steps: None,
+                cfg_scale: None,
             };
             let img_start = Instant::now();
             let gen_res = image_engine

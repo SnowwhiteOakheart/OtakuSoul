@@ -4,6 +4,7 @@ import {
   Compass,
   Dice5,
   House,
+  Images,
   Layers,
   MessageSquare,
   Music,
@@ -44,6 +45,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { tab: 'lorebooks', label: 'nav.lorebooks', icon: BookOpen },
       { tab: 'hub', label: 'nav.hub', icon: Compass },
       { tab: 'music', label: 'nav.music', icon: Music },
+      { tab: 'images', label: 'nav.images', icon: Images },
     ],
   },
   {

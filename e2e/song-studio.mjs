@@ -15,7 +15,7 @@ try {
 
   // A folder of the test instead of the real music folder.
   const folder = path.join(home, 'meine-songs');
-  const set = await invoke('set_song_folder', { path: folder });
+  const set = await invoke('set_studio_folder', { kind: 'songs', path: folder });
   assert.equal(set.is_default, false);
   mkdirSync(folder, { recursive: true });
   writeFileSync(path.join(folder, 'Neon Nacht.mp3'), Buffer.from('ID3fake'));
@@ -31,7 +31,7 @@ try {
 
   await jsClick(await browser.$('button=Song-Studio'));
   await browser.$('[data-testid="song-studio"]').waitForDisplayed({ timeout: 15_000 });
-  await browser.waitUntil(async () => (await browser.$('[data-testid="song-folder"]').getText()).includes('meine-songs'), {
+  await browser.waitUntil(async () => (await browser.$('[data-testid="studio-folder"]').getText()).includes('meine-songs'), {
     timeout: 5000,
     timeoutMsg: 'Songordner wird nicht angezeigt',
   });
@@ -64,7 +64,7 @@ try {
   assert.equal(existsSync(path.join(folder, 'Neon Nacht.mp3.json')), false);
 
   // Back to the default folder.
-  const reset = await invoke('set_song_folder', { path: null });
+  const reset = await invoke('set_studio_folder', { kind: 'songs', path: null });
   assert.equal(reset.is_default, true);
   console.log('Song-Studio: Ordner, Songliste, Einstellungen übernehmen und Löschen bestanden.');
 } finally {

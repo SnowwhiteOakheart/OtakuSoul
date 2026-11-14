@@ -409,6 +409,47 @@ pub fn list_models(with_extras: bool) -> Vec<ImageModelInfo> {
         .collect()
 }
 
+/// An installed image model with its own settings, as the Image Studio offers it.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
+#[ts(export)]
+pub struct ImageStudioModel {
+    pub id: String,
+    pub name: String,
+    pub family: String,
+    pub license: String,
+    pub width: u32,
+    pub height: u32,
+    pub steps: u32,
+    pub cfg_scale: f32,
+}
+
+fn studio_model(m: &CatalogModel) -> ImageStudioModel {
+    ImageStudioModel {
+        id: m.id.to_string(),
+        name: m.name.to_string(),
+        family: m.family.to_string(),
+        license: m.license.to_string(),
+        width: m.width,
+        height: m.height,
+        steps: m.steps,
+        cfg_scale: m.cfg_scale,
+    }
+}
+
+/// The catalog models whose files are complete (optional extras do not count).
+pub fn installed_models() -> Vec<ImageStudioModel> {
+    CATALOG
+        .iter()
+        .filter(|m| m.files.iter().all(is_file_complete))
+        .map(studio_model)
+        .collect()
+}
+
+/// A catalog model's own settings, installed or not.
+pub fn model_defaults(id: &str) -> Option<ImageStudioModel> {
+    catalog_model(id).ok().map(studio_model)
+}
+
 /// (total, free) VRAM of the GPU models run on in MB; free is `None` when the driver doesn't say.
 fn best_gpu_vram() -> (u64, Option<u64>) {
     crate::modules::hardware::probe_hardware()
@@ -722,6 +763,14 @@ pub struct LocalImageEngine {
     process: Mutex<Option<SdProcess>>,
     logs: Arc<Mutex<std::collections::VecDeque<String>>>,
     busy: Mutex<()>,
+    /// Stops a batch of the Image Studio after the current image.
+    cancel: std::sync::atomic::AtomicBool,
+}
+
+/// What [`LocalImageEngine::prepare`] changed on the GPU, undone by [`LocalImageEngine::restore`].
+struct Prepared {
+    plan: VramPlan,
+    llm_config: Option<LlamaServerConfig>,
 }
 
 impl Default for LocalImageEngine {
@@ -731,6 +780,7 @@ impl Default for LocalImageEngine {
 }
 
 /// Settings of the generation, taken from the model and the user's image settings.
+#[derive(Clone, Copy)]
 pub struct GenerationRequest<'a> {
     pub model_id: &'a str,
     pub strategy: VramStrategy,
@@ -740,6 +790,11 @@ pub struct GenerationRequest<'a> {
     pub loras: &'a [crate::modules::image_loras::LoraSelection],
     /// The character's picture, so they look the same in every image of them.
     pub reference: Option<ImageReference<'a>>,
+    /// Size other than the model's own (Image Studio: same pixel count, other aspect ratio).
+    pub size: Option<(u32, u32)>,
+    /// Steps and CFG other than the model's own (Image Studio).
+    pub steps: Option<u32>,
+    pub cfg_scale: Option<f32>,
 }
 
 /// A character's picture (PNG) for an image of them.
@@ -780,7 +835,18 @@ impl LocalImageEngine {
             process: Mutex::new(None),
             logs: Arc::new(Mutex::new(std::collections::VecDeque::with_capacity(60))),
             busy: Mutex::new(()),
+            cancel: std::sync::atomic::AtomicBool::new(false),
         }
+    }
+
+    /// An image is being generated (the music engine then waits instead of stopping sd-server).
+    pub fn is_busy(&self) -> bool {
+        self.busy.try_lock().is_err()
+    }
+
+    /// Stops a running Image Studio batch after the current image.
+    pub fn cancel_batch(&self) {
+        self.cancel.store(true, std::sync::atomic::Ordering::SeqCst);
     }
 
     /// Model the running `sd-server` has loaded.
@@ -1037,10 +1103,10 @@ impl LocalImageEngine {
         let mut payload = serde_json::json!({
             "prompt": crate::modules::image_loras::with_triggers(req.prompt, &loras.triggers),
             "negative_prompt": req.negative,
-            "width": model.width,
-            "height": model.height,
-            "steps": model.steps,
-            "cfg_scale": model.cfg_scale,
+            "width": req.size.map_or(model.width, |s| s.0),
+            "height": req.size.map_or(model.height, |s| s.1),
+            "steps": req.steps.unwrap_or(model.steps),
+            "cfg_scale": req.cfg_scale.unwrap_or(model.cfg_scale),
             "sampler_name": model.sampler,
             "seed": req.seed,
             "batch_size": 1,
@@ -1087,27 +1153,16 @@ impl LocalImageEngine {
             .map_err(|e| crate::err!("backend.image.base64", error = e))
     }
 
-    /// Generates one image, sharing the GPU with `llama` according to the plan. In swap mode
-    /// the chat model is started again in the background, so the image is returned at once.
-    /// `on_status` receives each phase (the app forwards it as `local-image-status`).
-    pub async fn generate(
+    /// Plans the GPU for `model` and makes room: TTS, then the chat model (unloaded or fewer
+    /// layers) as the plan says. Phases go to `emit`.
+    async fn prepare(
         &self,
-        on_status: &(impl Fn(LocalImageStatus) + Sync),
-        llama: Arc<LlamaServerManager>,
-        req: GenerationRequest<'_>,
-    ) -> Result<Vec<u8>, String> {
-        let _busy = self.busy.lock().await;
-        let model = catalog_model(req.model_id)?;
-        let emit = |phase: &str, plan: Option<VramPlan>| {
-            on_status(LocalImageStatus {
-                phase: phase.to_string(),
-                plan,
-                model_id: Some(model.id.to_string()),
-            });
-        };
-        emit("planning", None);
-        let loras = crate::modules::image_loras::apply(req.loras, model.family);
-
+        model: &CatalogModel,
+        strategy: VramStrategy,
+        loras_vram_mb: u64,
+        llama: &Arc<LlamaServerManager>,
+        emit: &(impl Fn(&str, Option<VramPlan>) + Sync),
+    ) -> Result<Prepared, String> {
         let llm_config = llama.running_config().await;
         let loaded_image = self.loaded_model().await;
         let image_already_loaded = loaded_image.as_deref() == Some(model.id);
@@ -1121,7 +1176,7 @@ impl LocalImageEngine {
         let tts_vram = crate::modules::tts_local::engine().loaded_vram_mb().await;
         let decision = {
             let llm = llm_config.clone();
-            let image_vram = model.vram_mb + loras.vram_mb;
+            let image_vram = model.vram_mb + loras_vram_mb;
             tokio::task::spawn_blocking(move || {
                 let (total, free) = best_gpu_vram();
                 let (llm_vram, total_layers, gpu_layers) = match &llm {
@@ -1162,7 +1217,7 @@ impl LocalImageEngine {
                         image_vram_mb: image_vram,
                         tts_vram_mb: tts_vram,
                     },
-                    req.strategy,
+                    strategy,
                 )
             })
             .await
@@ -1198,14 +1253,18 @@ impl LocalImageEngine {
             _ => {}
         }
 
-        let result = async {
-            emit("loading_model", Some(plan));
-            self.ensure_server(model).await?;
-            emit("generating", Some(plan));
-            self.txt2img(model, &req, &loras).await
-        }
-        .await;
+        Ok(Prepared { plan, llm_config })
+    }
 
+    /// After generating: in swap mode sd-server goes and the chat model starts again in the
+    /// background.
+    async fn restore(
+        &self,
+        prepared: Prepared,
+        llama: Arc<LlamaServerManager>,
+        emit: &(impl Fn(&str, Option<VramPlan>) + Sync),
+    ) {
+        let Prepared { plan, llm_config } = prepared;
         if plan == VramPlan::Swap {
             self.stop().await;
             if let Some(cfg) = llm_config {
@@ -1219,6 +1278,87 @@ impl LocalImageEngine {
                 });
             }
         }
+    }
+
+    /// The Image Studio's batch: plans the GPU once, keeps the model loaded for all `count`
+    /// images (seeds `seed`, `seed + 1`, …) and gives each to `on_image`. Refuses while another
+    /// image is generated instead of waiting. Returns how many were made.
+    pub async fn generate_batch(
+        &self,
+        on_phase: &(impl Fn(&str, u32) + Sync),
+        llama: Arc<LlamaServerManager>,
+        req: GenerationRequest<'_>,
+        count: u32,
+        on_image: &mut (dyn FnMut(u32, i64, Vec<u8>) -> Result<(), String> + Send),
+    ) -> Result<u32, String> {
+        let Ok(_busy) = self.busy.try_lock() else {
+            return Err(crate::err!("backend.localImage.busy"));
+        };
+        self.cancel
+            .store(false, std::sync::atomic::Ordering::SeqCst);
+        let model = catalog_model(req.model_id)?;
+        let emit = |phase: &str, _: Option<VramPlan>| on_phase(phase, 0);
+        emit("planning", None);
+        let loras = crate::modules::image_loras::apply(req.loras, model.family);
+        let prepared = self
+            .prepare(model, req.strategy, loras.vram_mb, &llama, &emit)
+            .await?;
+        let mut made = 0;
+        let result: Result<(), String> = async {
+            emit("loading_model", None);
+            self.ensure_server(model).await?;
+            for index in 0..count {
+                if self.cancel.load(std::sync::atomic::Ordering::SeqCst) {
+                    return Err(crate::err!("backend.localImage.cancelled"));
+                }
+                on_phase("generating", index + 1);
+                let seed = req.seed + i64::from(index);
+                let image = self
+                    .txt2img(model, &GenerationRequest { seed, ..req }, &loras)
+                    .await?;
+                on_image(index + 1, seed, image)?;
+                made += 1;
+            }
+            Ok(())
+        }
+        .await;
+        self.restore(prepared, llama, &emit).await;
+        result.map(|()| made)
+    }
+
+    /// Generates one image, sharing the GPU with `llama` according to the plan. In swap mode
+    /// the chat model is started again in the background, so the image is returned at once.
+    /// `on_status` receives each phase (the app forwards it as `local-image-status`).
+    pub async fn generate(
+        &self,
+        on_status: &(impl Fn(LocalImageStatus) + Sync),
+        llama: Arc<LlamaServerManager>,
+        req: GenerationRequest<'_>,
+    ) -> Result<Vec<u8>, String> {
+        let _busy = self.busy.lock().await;
+        let model = catalog_model(req.model_id)?;
+        let emit = |phase: &str, plan: Option<VramPlan>| {
+            on_status(LocalImageStatus {
+                phase: phase.to_string(),
+                plan,
+                model_id: Some(model.id.to_string()),
+            });
+        };
+        emit("planning", None);
+        let loras = crate::modules::image_loras::apply(req.loras, model.family);
+        let prepared = self
+            .prepare(model, req.strategy, loras.vram_mb, &llama, &emit)
+            .await?;
+        let plan = prepared.plan;
+        let result = async {
+            emit("loading_model", Some(plan));
+            self.ensure_server(model).await?;
+            emit("generating", Some(plan));
+            self.txt2img(model, &req, &loras).await
+        }
+        .await;
+
+        self.restore(prepared, llama, &emit).await;
         emit(if result.is_ok() { "done" } else { "failed" }, Some(plan));
         result
     }

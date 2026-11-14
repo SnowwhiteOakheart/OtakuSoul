@@ -27,6 +27,7 @@ use crate::modules::model_files::RemoteFile;
 use crate::modules::songs::SongRequest;
 use crate::modules::stage::SceneDefinition;
 use crate::modules::story_music::{self, PlannedMood};
+use crate::modules::studio_files::{self, StudioKind};
 
 /// Port of the app's own `ace-server` (next to llama-server's 48596 and sd-server's 48597).
 const ACE_PORT: u16 = 48598;
@@ -748,6 +749,11 @@ impl MusicEngine {
         Ok((audio, lyrics))
     }
 
+    /// A story's music or a song is being generated.
+    pub fn is_busy(&self) -> bool {
+        self.busy.try_lock().is_err()
+    }
+
     /// Asks a running generation to stop (the current server job is cancelled as well).
     pub fn cancel(&self) {
         self.cancel.store(true, Ordering::SeqCst);
@@ -767,6 +773,10 @@ impl MusicEngine {
         let Ok(_busy) = self.busy.try_lock() else {
             return Err(crate::err!("backend.music.busy"));
         };
+        // Stopping sd-server would break the image being made.
+        if image.is_busy() {
+            return Err(crate::err!("backend.music.imageBusy"));
+        }
         self.cancel.store(false, Ordering::SeqCst);
         let tier = tier(model_id)?;
         if let Some(missing) = tier.files().iter().find(|f| !f.ready()) {
@@ -985,6 +995,10 @@ impl MusicEngine {
         let Ok(_busy) = self.busy.try_lock() else {
             return Err(crate::err!("backend.music.busy"));
         };
+        // Stopping sd-server would break the image being made.
+        if image.is_busy() {
+            return Err(crate::err!("backend.music.imageBusy"));
+        }
         self.cancel.store(false, Ordering::SeqCst);
         let tier = tier(&request.model_id)?;
         if let Some(missing) = tier.files().iter().find(|f| !f.ready()) {
@@ -997,8 +1011,8 @@ impl MusicEngine {
         if request.caption.trim().is_empty() {
             return Err(crate::err!("backend.music.noCaption"));
         }
-        let dir = crate::modules::songs::prepare_dir()?;
-        let title = crate::modules::songs::song_title(&request.title);
+        let dir = studio_files::prepare_dir(StudioKind::Songs)?;
+        let title = studio_files::file_title(&request.title, "Song");
         let planned = song_plan(request);
         let options = TrackOptions {
             timesignature: request.timesignature.clone(),
@@ -1039,7 +1053,7 @@ impl MusicEngine {
                         emit(track, phase, None, None)
                     })
                     .await?;
-                let name = crate::modules::songs::unique_file_name(&dir, &title);
+                let name = studio_files::unique_file_name(&dir, &title, "mp3");
                 tokio::fs::write(dir.join(&name), &audio)
                     .await
                     .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
