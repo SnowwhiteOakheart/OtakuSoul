@@ -216,6 +216,7 @@ export function useDesktopPetBridge(enabled = true) {
             const s = useAppStore.getState();
             return api.petRemark({
               event: event.payload.event,
+              detail: event.payload.detail ?? null,
               char_name: localizeCard(char.card.data, languageCode(s.replyLanguage)).name || char.card.data.name,
               char_description: char.card.data.description ?? '',
               user_name: s.activePersona.name,

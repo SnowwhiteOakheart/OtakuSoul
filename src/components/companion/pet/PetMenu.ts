@@ -17,6 +17,9 @@ import type { TranslationKey } from '../../../i18n';
 import { PET_FOODS, type PetFood } from '../petFood';
 import { minutesLeft, TIMER_PRESETS_MIN, type PetTimerState } from '../petTimer';
 
+/** A menu longer than this is unusable; models with more parts show the first ones. */
+const MAX_MENU_PARTS = 30;
+
 interface OpenPetMenuArgs {
   pet: PetState | null;
   prefs: PetPrefs;
@@ -28,6 +31,10 @@ interface OpenPetMenuArgs {
   tEmotion: (emotion: string) => string;
   openCompose: () => void;
   pat: () => Promise<void>;
+  /** The model's meshes (3D figures) and the ones hidden; the menu lets the user show or hide each. */
+  parts: string[];
+  hiddenParts: string[];
+  togglePart: (name: string) => void;
   peeking: boolean;
   startPeek: () => void;
   endPeek: () => void;
@@ -56,6 +63,9 @@ export async function openPetContextMenu({
   tEmotion,
   openCompose,
   pat,
+  parts,
+  hiddenParts,
+  togglePart,
   peeking,
   startPeek,
   endPeek,
@@ -208,6 +218,11 @@ export async function openPetContextMenu({
         action: () => setPrefs((p) => ({ ...p, eventRemarks: !p.eventRemarks })),
       },
       {
+        text: t('pet.commentPrograms'),
+        checked: prefs.commentPrograms,
+        action: () => setPrefs((p) => ({ ...p, commentPrograms: !p.commentPrograms })),
+      },
+      {
         text: t('pet.ambientLight'),
         checked: prefs.ambientLight,
         action: () => setPrefs((p) => ({ ...p, ambientLight: !p.ambientLight })),
@@ -217,6 +232,18 @@ export async function openPetContextMenu({
         checked: prefs.hideInFullscreen,
         action: () => setPrefs((p) => ({ ...p, hideInFullscreen: !p.hideInFullscreen })),
       },
+      ...(parts.length > 1
+        ? [
+            {
+              text: t('pet.parts'),
+              items: parts.slice(0, MAX_MENU_PARTS).map((name) => ({
+                text: name,
+                checked: !hiddenParts.includes(name),
+                action: () => togglePart(name),
+              })),
+            },
+          ]
+        : []),
       peeking
         ? { text: t('pet.peekEnd'), action: endPeek }
         : { text: t('pet.peek'), enabled: prefs.physics, action: startPeek },

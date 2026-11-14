@@ -63,6 +63,10 @@ export interface AvatarStage {
    * left tints the rim light, right the key light); null puts the studio colours back.
    */
   setAmbientTint: (left: readonly [number, number, number] | null, right: readonly [number, number, number] | null) => void;
+  /** Names of the model's meshes (clothes, accessories, hair …), each once, in scene order; hideable with `setHiddenParts`. */
+  listParts: () => string[];
+  /** Hides every mesh with one of these names (and shows all others); also applies to a model loaded later. */
+  setHiddenParts: (names: readonly string[]) => void;
   /** Desktop pet: frames per second it draws (20, 30 or 60); the battery saver goes below. */
   setFrameRate: (fps: number) => void;
   /**
@@ -95,7 +99,16 @@ export interface AvatarStage {
 export type PetFigure = Pick<
   AvatarStage,
   'mouse' | 'probe' | 'setPaused' | 'setSaver' | 'setFrameRate' | 'addWindowMove' | 'setTurn' | 'setFraming' | 'headLine' | 'handAt'> &
-  Partial<Pick<AvatarStage, 'setAmbientTint'>>;
+  Partial<Pick<AvatarStage, 'setAmbientTint' | 'listParts' | 'setHiddenParts'>>;
+
+/** Names of all meshes under `root`, each once, in scene order (empty names left out). */
+export function meshNames(root: THREE.Object3D): string[] {
+  const names: string[] = [];
+  root.traverse((node) => {
+    if ((node as THREE.Mesh).isMesh && node.name && !names.includes(node.name)) names.push(node.name);
+  });
+  return names;
+}
 
 /** Reach around a wrist bone that counts as the hand (metres; the hand itself is about this long). */
 const HAND_REACH = 0.11;
@@ -246,6 +259,22 @@ export function createAvatarStage(container: HTMLElement, modelPath: string, opt
   rimLight.position.set(-1.0, 1.5, -1.0).normalize();
   scene.add(rimLight);
 
+  /** Mesh names the user hid; applied again once the model is framed (it loads after the stage is made). */
+  let hiddenParts = new Set<string>();
+  /** Meshes this hid, so showing them again never touches a mesh the model itself keeps invisible. */
+  const hiddenByUser = new Set<THREE.Object3D>();
+  const applyHiddenParts = () => {
+    scene.traverse((node) => {
+      if (!(node as THREE.Mesh).isMesh || !node.name) return;
+      if (hiddenParts.has(node.name)) {
+        node.visible = false;
+        hiddenByUser.add(node);
+      } else if (hiddenByUser.delete(node)) {
+        node.visible = true;
+      }
+    });
+  };
+
   let cachedRect: DOMRect | null = null;
   const invalidateRect = () => {
     cachedRect = null;
@@ -323,6 +352,7 @@ export function createAvatarStage(container: HTMLElement, modelPath: string, opt
     camera,
     mouse,
     frameModel: (headY, topY) => {
+      applyHiddenParts();
       modelTop = topY;
       modelHead = headY;
       defaultView = pet
@@ -403,6 +433,12 @@ export function createAvatarStage(container: HTMLElement, modelPath: string, opt
     },
     setSaver: (next) => {
       saver = next;
+    },
+    listParts: () => meshNames(scene),
+    setHiddenParts: (names) => {
+      hiddenParts = new Set(names);
+      applyHiddenParts();
+      markActive();
     },
     setAmbientTint: (left, right) => {
       // Half way between the studio colour and the desktop's, so the figure stays itself.

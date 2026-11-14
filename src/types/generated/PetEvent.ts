@@ -3,4 +3,4 @@
 /**
  * What happened to the pet.
  */
-export type PetEvent = "thrown" | "landed" | "woke" | "sat";
+export type PetEvent = "thrown" | "landed" | "woke" | "sat" | "program";

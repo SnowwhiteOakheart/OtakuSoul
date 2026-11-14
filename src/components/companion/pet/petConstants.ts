@@ -67,6 +67,10 @@ export const PHYSICS_TICK_MS = 33;
 export const AREA_REFRESH_MS = 3000;
 /** A message the character wrote on their own stays in the bubble at least this long. */
 export const PROACTIVE_BUBBLE_MS = 12_000;
+/** The same program must stay in front this long before the pet comments on it (ms). */
+export const PROGRAM_DWELL_MS = 120_000;
+/** At least this long between two comments on programs (ms). */
+export const PROGRAM_GAP_MS = 600_000;
 /** Peeking in from the side ends by itself after this long (ms). */
 export const PEEK_MS = 90_000;
 /** The desktop's colours beside the pet are read this often (ms) while the lights follow them. */

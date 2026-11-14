@@ -22,6 +22,8 @@ pub enum PetEvent {
     Landed,
     Woke,
     Sat,
+    /// The user has been working in one program for a while (`detail` names it).
+    Program,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -32,6 +34,9 @@ pub struct PetRemarkRequest {
     /// The character's description (may be empty).
     pub char_description: String,
     pub user_name: String,
+    /// What the event is about (the program for `Program`); cleaned before it reaches the prompt.
+    #[serde(default)]
+    pub detail: Option<String>,
     /// Language name as written into the prompt, e.g. "Deutsch".
     pub language: String,
     pub endpoint_url: String,
@@ -40,8 +45,29 @@ pub struct PetRemarkRequest {
     pub provider: Option<crate::modules::providers::LlmProviderType>,
 }
 
-fn what_happened(event: PetEvent, user: &str) -> String {
+/// A program name made safe for the prompt: no path or `.exe`, only plain characters, short.
+pub fn clean_program(name: &str) -> String {
+    let base = name.rsplit(['\\', '/']).next().unwrap_or(name);
+    let base = base
+        .strip_suffix(".exe")
+        .or_else(|| base.strip_suffix(".EXE"))
+        .unwrap_or(base);
+    base.chars()
+        .filter(|c| c.is_alphanumeric() || matches!(c, ' ' | '-' | '_' | '.' | '+'))
+        .take(48)
+        .collect::<String>()
+        .trim()
+        .to_string()
+}
+
+fn what_happened(event: PetEvent, user: &str, detail: Option<&str>) -> String {
     match event {
+        PetEvent::Program => match detail.map(clean_program).filter(|d| !d.is_empty()) {
+            Some(program) => format!(
+                "{user} has been busy with the program \"{program}\" for a while; you may comment on that,                  but do not claim to know what exactly they are doing in it"
+            ),
+            None => format!("{user} has been busy with the same program for a while"),
+        },
         PetEvent::Thrown => format!("{user} just grabbed you and flung you across the screen"),
         PetEvent::Landed => "you just landed on the floor after a fall".to_string(),
         PetEvent::Woke => format!("you were dozing and {user} came back and woke you up"),
@@ -55,7 +81,7 @@ fn instructions(req: &PetRemarkRequest) -> String {
         "[DESKTOP PET — REMARK]\nYou are {char}, living as a small pet on {user}'s desktop. \
          Right now {what}.\nSay exactly one short line (at most 12 words) in {lang} reacting to that, \
          in character. No quotation marks, no stage directions, no explanations, nothing else.",
-        what = what_happened(req.event, user),
+        what = what_happened(req.event, user, req.detail.as_deref()),
         lang = req.language,
     );
     let description: String = req
@@ -119,6 +145,7 @@ mod tests {
             char_name: "Ayu".into(),
             char_description: "Schüchtern.".into(),
             user_name: "Kai".into(),
+            detail: None,
             language: "Deutsch".into(),
             endpoint_url: String::new(),
             api_key: None,
@@ -134,6 +161,17 @@ mod tests {
         assert!(text.contains("in Deutsch"));
         assert!(text.contains("About Ayu: Schüchtern."));
         assert!(instructions(&request(PetEvent::Woke)).contains("woke you up"));
+    }
+
+    #[test]
+    fn a_program_is_named_cleanly_and_without_claims() {
+        let mut req = request(PetEvent::Program);
+        req.detail = Some(r"C:\Games\Elden Ring\eldenring.exe".into());
+        let text = instructions(&req);
+        assert!(text.contains("\"eldenring\""), "{text}");
+        assert!(text.contains("do not claim to know"));
+        assert_eq!(clean_program("a\"b<script>.exe"), "abscript");
+        assert!(instructions(&request(PetEvent::Program)).contains("same program"));
     }
 
     #[test]

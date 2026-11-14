@@ -57,8 +57,11 @@ import {
   PET_SENTENCE_EVENT,
   PET_STATE_EVENT,
   petModelPath,
+  loadHiddenParts,
+  saveHiddenParts,
   savePetPrefs,
   smoothColor,
+  toggledPart,
   watchOnBattery,
   type PetAmbient,
   type PetAudioFrame,
@@ -81,6 +84,8 @@ import {
   REMARK_GAP_MS,
   AMBIENT_POLL_MS,
   PEEK_MS,
+  PROGRAM_DWELL_MS,
+  PROGRAM_GAP_MS,
   SIT_DROP,
   STATUS_POLL_MS,
   clamp,
@@ -331,6 +336,28 @@ export const DesktopPet: React.FC = () => {
     const timer = window.setTimeout(endPeek, PEEK_MS);
     return () => window.clearTimeout(timer);
   }, [peeking, endPeek]);
+  // The same program in front for a while (never its title or content): the pet may comment on it.
+  const lastProgramAt = useRef(Number.NEGATIVE_INFINITY);
+  const lastProgram = useRef('');
+  useEffect(() => {
+    if (!prefs.commentPrograms || !prefs.chatBubbles || screen.ignored || screen.locked || screen.focus === 0) {
+      return undefined;
+    }
+    const timer = window.setTimeout(() => {
+      const now = performance.now();
+      if (awayRef.current || speakingRef.current || now - lastProgramAt.current < PROGRAM_GAP_MS) return;
+      void api
+        .getPetLastApp()
+        .then((app) => {
+          if (!app || app === lastProgram.current || !prefsRef.current.commentPrograms) return;
+          lastProgram.current = app;
+          lastProgramAt.current = performance.now();
+          void emitTo('main', PET_REMARK_EVENT, { event: 'program', detail: app } satisfies PetRemark).catch(() => {});
+        })
+        .catch(() => {});
+    }, PROGRAM_DWELL_MS);
+    return () => window.clearTimeout(timer);
+  }, [prefs.commentPrograms, prefs.chatBubbles, screen.focus, screen.ignored, screen.locked]);
   /** The food on the pointer (null: not feeding), when it reached the mouth, and where it is drawn. */
   const feedRef = useRef<{ food: PetFood; until: number; atMouthSince: number | null } | null>(null);
   const [feedView, setFeedView] = useState<{ emoji: string; x: number; y: number } | null>(null);
@@ -666,6 +693,9 @@ export const DesktopPet: React.FC = () => {
       tEmotion,
       openCompose,
       pat,
+      parts: stageRef.current?.listParts?.() ?? [],
+      hiddenParts: modelRef.current ? loadHiddenParts(modelRef.current) : [],
+      togglePart,
       peeking,
       startPeek,
       endPeek,
@@ -760,6 +790,7 @@ export const DesktopPet: React.FC = () => {
     stage?.setPaused(awayRef.current);
     stage?.setFraming(framingRef.current);
     stage?.setFrameRate(prefsRef.current.frameRate);
+    if (modelRef.current) stage?.setHiddenParts?.(loadHiddenParts(modelRef.current));
   }, []);
 
   useEffect(() => {
@@ -801,6 +832,18 @@ export const DesktopPet: React.FC = () => {
     framingRef.current = framing;
     stageRef.current?.setFraming(framing);
   }, [framing, modelPath]);
+  // The parts hidden for this model (clothes, accessories) stay hidden.
+  useEffect(() => {
+    if (modelPath) stageRef.current?.setHiddenParts?.(loadHiddenParts(modelPath));
+  }, [modelPath]);
+  /** Shows or hides one of the model's parts (menu) and remembers it for the model. */
+  const togglePart = useCallback((name: string) => {
+    const model = modelRef.current;
+    if (!model) return;
+    const next = toggledPart(loadHiddenParts(model), name);
+    saveHiddenParts(model, next);
+    stageRef.current?.setHiddenParts?.(next);
+  }, []);
   useEffect(() => {
     const remembered = modelPath ? loadPetModelHeight(modelPath) : undefined;
     if (remembered !== undefined) void resizeTo(remembered);

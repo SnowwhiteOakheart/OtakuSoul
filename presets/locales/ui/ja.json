@@ -4363,6 +4363,8 @@
   "pet.physics": "重力と歩行",
   "pet.rideWindows": "ウィンドウと一緒に移動",
   "pet.hideInFullscreen": "全画面表示中は隠す",
+  "pet.commentPrograms": "使用中のプログラムに一言（プログラム名をモデルへ送信）",
+  "pet.parts": "服とアクセサリー",
   "pet.peek": "画面の端からのぞく",
   "pet.peekEnd": "のぞくのをやめる",
   "pet.ambientLight": "デスクトップの色で照らす",

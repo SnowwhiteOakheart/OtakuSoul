@@ -8,6 +8,10 @@ export type PetRemarkRequest = { event: PetEvent, char_name: string,
  */
 char_description: string, user_name: string, 
 /**
+ * What the event is about (the program for `Program`); cleaned before it reaches the prompt.
+ */
+detail: string | null, 
+/**
  * Language name as written into the prompt, e.g. "Deutsch".
  */
 language: string, endpoint_url: string, api_key: string | null, model: string | null, provider: LlmProviderType | null, };

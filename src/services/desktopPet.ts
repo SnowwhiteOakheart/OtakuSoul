@@ -82,6 +82,8 @@ export const PET_REMARK_EVENT = 'pet:remark';
 
 export interface PetRemark {
   event: PetEvent;
+  /** What the event is about (the program's file name for `program`). */
+  detail?: string;
 }
 
 /** Colours of the desktop beside the pet window (from the backend). */
@@ -291,6 +293,8 @@ export interface PetPrefs {
   openAtStart: boolean;
   /** Now and then a short line of the model about what happened to it (thrown, landed, woken, sat); off by default (costs a request). */
   eventRemarks: boolean;
+  /** Now and then a model line about the program the user has been in for a while (sends only its file name to the model; off by default). */
+  commentPrograms: boolean;
   /** The figure's lights take the colours of the desktop beside it (Windows; only two averages are read, nothing kept). */
   ambientLight: boolean;
   /** Programs (file names, e.g. `game.exe`) the pet steps back for while they are in front. */
@@ -338,6 +342,7 @@ const DEFAULT_PREFS: PetPrefs = {
   pose: 'auto',
   openAtStart: false,
   eventRemarks: false,
+  commentPrograms: false,
   ambientLight: false,
   ignoredApps: [],
 };
@@ -386,6 +391,7 @@ export function loadPetPrefs(): PetPrefs {
       pose: PET_POSES.includes(stored?.pose as PetPose) ? stored!.pose! : DEFAULT_PREFS.pose,
       openAtStart: typeof stored?.openAtStart === 'boolean' ? stored.openAtStart : DEFAULT_PREFS.openAtStart,
       eventRemarks: typeof stored?.eventRemarks === 'boolean' ? stored.eventRemarks : DEFAULT_PREFS.eventRemarks,
+      commentPrograms: typeof stored?.commentPrograms === 'boolean' ? stored.commentPrograms : DEFAULT_PREFS.commentPrograms,
       ambientLight: typeof stored?.ambientLight === 'boolean' ? stored.ambientLight : DEFAULT_PREFS.ambientLight,
       ignoredApps: Array.isArray(stored?.ignoredApps)
         ? stored.ignoredApps.filter((a): a is string => typeof a === 'string' && a.length > 0 && a.length <= 128).slice(0, 64)
@@ -499,3 +505,40 @@ export async function announceOnPet(content: string, chat: NonNullable<PetSay['c
     () => false,
   );
 }
+
+const PARTS_KEY = 'otakusoul.desktopPetHiddenParts';
+
+/** The mesh names the user hid for each model (clothes, accessories). */
+function loadAllHiddenParts(): Record<string, string[]> {
+  try {
+    const raw = JSON.parse(localStorage.getItem(PARTS_KEY) ?? '{}') as unknown;
+    if (!raw || typeof raw !== 'object') return {};
+    return Object.fromEntries(
+      Object.entries(raw as Record<string, unknown>).map(([model, names]) => [
+        model,
+        Array.isArray(names) ? names.filter((n): n is string => typeof n === 'string').slice(0, 200) : [],
+      ]),
+    );
+  } catch {
+    return {};
+  }
+}
+
+export function loadHiddenParts(model: string): string[] {
+  return loadAllHiddenParts()[model] ?? [];
+}
+
+export function saveHiddenParts(model: string, names: string[]) {
+  try {
+    const all = loadAllHiddenParts();
+    if (names.length > 0) all[model] = names;
+    else delete all[model];
+    localStorage.setItem(PARTS_KEY, JSON.stringify(all));
+  } catch {
+    // Only a convenience: the parts show again next time.
+  }
+}
+
+/** `names` with `name` added or removed. */
+export const toggledPart = (names: readonly string[], name: string): string[] =>
+  names.includes(name) ? names.filter((n) => n !== name) : [...names, name];

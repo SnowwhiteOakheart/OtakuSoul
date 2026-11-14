@@ -4362,6 +4362,8 @@
   "pet.physics": "Schwerkraft und Laufen",
   "pet.rideWindows": "Auf Fenstern mitfahren",
   "pet.hideInFullscreen": "Bei Vollbild ausblenden",
+  "pet.commentPrograms": "Kommentiert das laufende Programm (sendet den Programmnamen ans Modell)",
+  "pet.parts": "Kleidung & Zubehör",
   "pet.peek": "Am Rand spähen",
   "pet.peekEnd": "Nicht mehr spähen",
   "pet.ambientLight": "Licht nach Desktop-Farben",
