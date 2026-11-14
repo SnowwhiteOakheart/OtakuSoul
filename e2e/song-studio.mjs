@@ -40,7 +40,8 @@ try {
 
   const list = await browser.$('[data-testid="song-list"]');
   await list.waitForDisplayed({ timeout: 5000 });
-  assert.ok((await list.getText()).includes('Neon Nacht'));
+  const listText = await browser.execute((el) => el.textContent, list);
+  assert.ok(listText.includes('Neon Nacht'), `Songliste: ${listText}`);
   await browser.saveScreenshot(path.join(screenshotDir, 'song-studio.png'));
 
   // Load the song's settings back into the form.
@@ -51,11 +52,11 @@ try {
 
   // The lyrics as sung can be shown.
   await jsClick(await list.$('button=Text zeigen'));
-  assert.ok((await list.getText()).includes('Lichter der Stadt'));
+  await browser.waitUntil(async () => (await browser.execute((el) => el.textContent, list)).includes('Lichter der Stadt'), { timeout: 5000, timeoutMsg: 'Liedtext fehlt' });
 
   // Delete with confirmation.
   await jsClick(await list.$('button[aria-label="Löschen"]'));
-  const confirm = await browser.$('[role="dialog"] button=Löschen');
+  const confirm = await browser.$('[role="dialog"]').$('button=Löschen');
   await confirm.waitForDisplayed({ timeout: 5000 });
   await jsClick(confirm);
   await browser.$('p=Noch keine Songs in diesem Ordner.').waitForDisplayed({ timeout: 5000 });
