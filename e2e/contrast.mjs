@@ -8,9 +8,8 @@ import { launch, screenshotDir } from './harness.mjs';
 
 const THEMES = ['obsidian', 'cyberpunk', 'sakura', 'midnight', 'emerald'];
 const MODES = ['dark', 'light'];
-// Ctrl+N in the order of the sidebar.
 // Ctrl+number follows the sidebar order; the settings open with Ctrl+, .
-const VIEWS = [['Start', 1], ['Chat', 2], ['Geschichten', 3], ['Charaktere', 5], ['Avatare', 6], ['Integrationen', 9], ['Einstellungen', ',']];
+const VIEWS = [['Start', 1], ['Chat', 2], ['Geschichten', 3], ['Charaktere', 5], ['Avatare', 6], ['Song-Studio', 9], ['Integrationen', null], ['Einstellungen', ',']];
 
 /** Runs in the page: texts below the WCAG limit as {text, ratio, fg, bg, where}. */
 function lowContrast() {
@@ -107,7 +106,12 @@ try {
         document.documentElement.dataset.colorMode = m;
       }, theme, mode);
       for (const [view, key] of VIEWS) {
-        await browser.execute((k) => window.dispatchEvent(new KeyboardEvent('keydown', { key: String(k), ctrlKey: true })), key);
+        if (key === null) {
+          // Views past Ctrl+9 open from the sidebar.
+          await browser.execute((el) => el.click(), await browser.$(`button=${view}`));
+        } else {
+          await browser.execute((k) => window.dispatchEvent(new KeyboardEvent('keydown', { key: String(k), ctrlKey: true })), key);
+        }
         await browser.pause(700);
         const found = await browser.execute(lowContrast);
         for (const f of found) failures.push({ theme, mode, view, ...f });

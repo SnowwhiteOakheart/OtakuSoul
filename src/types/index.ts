@@ -107,6 +107,9 @@ import type { MusicAsset } from './generated/MusicAsset';
 import type { MusicModelInfo } from './generated/MusicModelInfo';
 import type { MusicModelProgress } from './generated/MusicModelProgress';
 import type { MusicGenProgress } from './generated/MusicGenProgress';
+import type { SongRequest } from './generated/SongRequest';
+import type { SongEntry } from './generated/SongEntry';
+import type { SongFolder } from './generated/SongFolder';
 import type { ScannedInochi2d } from './generated/ScannedInochi2d';
 import type { Inochi2dMapping } from './generated/Inochi2dMapping';
 import type { Inochi2dChannel } from './generated/Inochi2dChannel';
@@ -261,6 +264,9 @@ export type {
   MusicModelInfo,
   MusicModelProgress,
   MusicGenProgress,
+  SongRequest,
+  SongEntry,
+  SongFolder,
   ScannedInochi2d,
   Inochi2dMapping,
   Inochi2dChannel,

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useAppStore, type AppTab } from '../store/useAppStore';
 
-const TABS: readonly AppTab[] = ['chat', 'characters', 'lorebooks', 'stage', 'companion', 'settings', 'hub', 'integrations'];
+const TABS: readonly AppTab[] = ['chat', 'characters', 'lorebooks', 'stage', 'companion', 'settings', 'hub', 'integrations', 'music'];
 const isAppTab = (value: unknown): value is AppTab => TABS.includes(value as AppTab);
 
 /**

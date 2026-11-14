@@ -24,6 +24,7 @@ use crate::modules::local_image::{
     LocalImageEngine, PlanInput, VramDecision, VramPlan, VramStrategy,
 };
 use crate::modules::model_files::RemoteFile;
+use crate::modules::songs::SongRequest;
 use crate::modules::stage::SceneDefinition;
 use crate::modules::story_music::{self, PlannedMood};
 
@@ -362,6 +363,31 @@ fn language_name(code: &str) -> Option<&'static str> {
     })
 }
 
+/// Fine tuning the Song Studio offers beyond a story's music plan (all `None`/empty: defaults).
+#[derive(Debug, Clone, Default)]
+struct TrackOptions {
+    timesignature: String,
+    lm_temperature: Option<f32>,
+    steps: Option<u32>,
+}
+
+impl TrackOptions {
+    fn apply_lm(&self, body: &mut serde_json::Value) {
+        if !self.timesignature.trim().is_empty() {
+            body["timesignature"] = self.timesignature.trim().into();
+        }
+        if let Some(temperature) = self.lm_temperature {
+            body["lm_temperature"] = f64::from(temperature.clamp(0.1, 1.5)).into();
+        }
+    }
+
+    fn apply_synth(&self, body: &mut serde_json::Value) {
+        if let Some(steps) = self.steps {
+            body["inference_steps"] = steps.clamp(1, 200).into();
+        }
+    }
+}
+
 /// The `/lm` request for one track: the story's caption and lyrics taken word for word.
 fn lm_request(planned: &PlannedMood, tier: &Tier, seed: i64) -> serde_json::Value {
     let mut body = serde_json::json!({
@@ -671,21 +697,25 @@ impl MusicEngine {
         self.wait_job(client, &id).await
     }
 
-    /// One track: language model, then diffusion; returns the MP3.
+    /// One track: language model, then diffusion; returns the MP3 and the lyrics as sung (the
+    /// language model writes them when the request has none).
     async fn make_track(
         &self,
         planned: &PlannedMood,
         tier: &Tier,
         seed: i64,
+        options: &TrackOptions,
         on_phase: &(impl Fn(&str) + Sync),
-    ) -> Result<Vec<u8>, String> {
+    ) -> Result<(Vec<u8>, String), String> {
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(120))
             .build()
             .map_err(|e| crate::err!("backend.common.httpClient", error = e))?;
         on_phase("composing");
+        let mut lm_body = lm_request(planned, tier, seed);
+        options.apply_lm(&mut lm_body);
         let lm = self
-            .submit(&client, "lm", &lm_request(planned, tier, seed))
+            .submit(&client, "lm", &lm_body)
             .await?
             .json::<serde_json::Value>()
             .await
@@ -694,10 +724,15 @@ impl MusicEngine {
             serde_json::Value::Array(mut items) if !items.is_empty() => items.swap_remove(0),
             other => other,
         };
+        let lyrics = enriched["lyrics"]
+            .as_str()
+            .filter(|l| !l.trim().is_empty())
+            .unwrap_or(&planned.lyrics)
+            .to_string();
         on_phase("rendering");
-        let synth = self
-            .submit(&client, "synth", &synth_request(enriched, planned, tier)?)
-            .await?;
+        let mut synth_body = synth_request(enriched, planned, tier)?;
+        options.apply_synth(&mut synth_body);
+        let synth = self.submit(&client, "synth", &synth_body).await?;
         let content_type = synth
             .headers()
             .get(reqwest::header::CONTENT_TYPE)
@@ -708,7 +743,9 @@ impl MusicEngine {
             .bytes()
             .await
             .map_err(|e| crate::err!("backend.music.generateFailed", error = e))?;
-        extract_audio(&content_type, &body).ok_or_else(|| crate::err!("backend.music.noAudio"))
+        let audio = extract_audio(&content_type, &body)
+            .ok_or_else(|| crate::err!("backend.music.noAudio"))?;
+        Ok((audio, lyrics))
     }
 
     /// Asks a running generation to stop (the current server job is cancelled as well).
@@ -773,8 +810,89 @@ impl MusicEngine {
             return Ok(0);
         }
         emit("", 0, "planning", None, None);
+        let room = self
+            .make_room(&llama, &image, tier, &|| {
+                emit("", 0, "unloading_llm", None, None)
+            })
+            .await?;
 
-        // Room on the GPU: the image server is idle and goes, the chat model when needed.
+        let dir = story_music::set_dir(
+            &PathBuf::from(crate::modules::paths::resolve_app_paths().data_dir),
+            &set,
+        );
+        let mut saved = 0;
+        let result: Result<(), String> = async {
+            emit("", 0, "starting", None, None);
+            self.ensure_server().await?;
+            for (number, (planned, index)) in jobs.iter().enumerate() {
+                let track = number as u32 + 1;
+                let seed = planned
+                    .seed
+                    .map(|s| s + i64::from(*index))
+                    .unwrap_or_else(|| i64::from(rand::random::<u32>() >> 1));
+                let (audio, _) = self
+                    .make_track(planned, tier, seed, &TrackOptions::default(), &|phase| {
+                        emit(&planned.mood, track, phase, None, None)
+                    })
+                    .await?;
+                let mood_dir = dir.join(&planned.mood);
+                tokio::fs::create_dir_all(&mood_dir)
+                    .await
+                    .map_err(|e| crate::err!("backend.common.dirCreate", error = e))?;
+                let name = next_file_name(&mood_dir, &planned.mood);
+                tokio::fs::write(mood_dir.join(&name), &audio)
+                    .await
+                    .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
+                let origin = serde_json::json!({
+                    "set": set,
+                    "mood": planned.mood,
+                    "generator": generator_name(),
+                    "model": tier.synth.name,
+                    "lm_model": tier.lm.name,
+                    "caption": planned.caption,
+                    "lyrics": planned.lyrics,
+                    "vocal_language": planned.vocal_language,
+                    "seed": seed,
+                    "steps": tier.steps,
+                    "generated": chrono::Local::now().format("%Y-%m-%d").to_string(),
+                    "license": LICENSE_NOTE,
+                });
+                let _ = tokio::fs::write(
+                    mood_dir.join(format!("{name}.json")),
+                    serde_json::to_string_pretty(&origin).unwrap_or_default(),
+                )
+                .await;
+                saved += 1;
+                emit(&planned.mood, track, "saved", Some(name), None);
+            }
+            Ok(())
+        }
+        .await;
+
+        self.release_room(room, llama, &|| {
+            emit("", saved, "reloading_llm", None, None)
+        })
+        .await;
+        match &result {
+            Ok(()) => emit("", saved, "done", None, None),
+            Err(e) if self.cancel.load(Ordering::SeqCst) => {
+                emit("", saved, "cancelled", None, Some(e.clone()))
+            }
+            Err(e) => emit("", saved, "failed", None, Some(e.clone())),
+        }
+        result.map(|()| saved)
+    }
+
+    /// Makes room on the GPU for `tier`: the image server is idle and goes, local TTS and the
+    /// chat model when both do not fit next to the music models (`on_unload` before the chat
+    /// model stops). [`Self::release_room`] undoes it.
+    async fn make_room(
+        &self,
+        llama: &Arc<LlamaServerManager>,
+        image: &Arc<LocalImageEngine>,
+        tier: &Tier,
+        on_unload: &(impl Fn() + Sync),
+    ) -> Result<GpuRoom, String> {
         image.stop().await;
         let llm_config = llama.running_config().await;
         let tts_vram = crate::modules::tts_local::engine().loaded_vram_mb().await;
@@ -829,83 +947,177 @@ impl MusicEngine {
         }
         let swapped = decision.plan != VramPlan::Parallel && llm_config.is_some();
         if swapped {
-            emit("", 0, "unloading_llm", None, None);
+            on_unload();
             llama.stop().await?;
         }
+        Ok(GpuRoom {
+            llm_to_restart: llm_config.filter(|_| swapped),
+        })
+    }
 
-        let dir = story_music::set_dir(
-            &PathBuf::from(crate::modules::paths::resolve_app_paths().data_dir),
-            &set,
-        );
-        let mut saved = 0;
-        let result: Result<(), String> = async {
-            emit("", 0, "starting", None, None);
-            self.ensure_server().await?;
-            for (number, (planned, index)) in jobs.iter().enumerate() {
-                let track = number as u32 + 1;
-                let seed = planned
-                    .seed
-                    .map(|s| s + i64::from(*index))
-                    .unwrap_or_else(|| i64::from(rand::random::<u32>() >> 1));
-                let audio = self
-                    .make_track(planned, tier, seed, &|phase| {
-                        emit(&planned.mood, track, phase, None, None)
-                    })
-                    .await?;
-                let mood_dir = dir.join(&planned.mood);
-                tokio::fs::create_dir_all(&mood_dir)
-                    .await
-                    .map_err(|e| crate::err!("backend.common.dirCreate", error = e))?;
-                let name = next_file_name(&mood_dir, &planned.mood);
-                tokio::fs::write(mood_dir.join(&name), &audio)
-                    .await
-                    .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
-                let origin = serde_json::json!({
-                    "set": set,
-                    "mood": planned.mood,
-                    "generator": format!(
-                        "ACE-Step 1.5 (acestep.cpp, {})",
-                        crate::modules::runtimes::ACESTEP_RELEASE
-                    ),
-                    "model": tier.synth.name,
-                    "lm_model": tier.lm.name,
-                    "caption": planned.caption,
-                    "lyrics": planned.lyrics,
-                    "vocal_language": planned.vocal_language,
-                    "seed": seed,
-                    "steps": tier.steps,
-                    "generated": chrono::Local::now().format("%Y-%m-%d").to_string(),
-                    "license": "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt",
-                });
-                let _ = tokio::fs::write(
-                    mood_dir.join(format!("{name}.json")),
-                    serde_json::to_string_pretty(&origin).unwrap_or_default(),
-                )
-                .await;
-                saved += 1;
-                emit(&planned.mood, track, "saved", Some(name), None);
-            }
-            Ok(())
-        }
-        .await;
-
+    /// Stops `ace-server` and starts the chat model again when it made room.
+    async fn release_room(
+        &self,
+        room: GpuRoom,
+        llama: Arc<LlamaServerManager>,
+        on_reload: &(impl Fn() + Sync),
+    ) {
         self.stop().await;
-        if swapped && let Some(cfg) = llm_config {
-            emit("", saved, "reloading_llm", None, None);
+        if let Some(cfg) = room.llm_to_restart {
+            on_reload();
             tokio::spawn(async move {
                 if let Err(e) = llama.start(cfg).await {
                     tracing::warn!("Chat-Modell konnte nach der Musik nicht neu starten: {e}");
                 }
             });
         }
-        match &result {
-            Ok(()) => emit("", saved, "done", None, None),
-            Err(e) if self.cancel.load(Ordering::SeqCst) => {
-                emit("", saved, "cancelled", None, Some(e.clone()))
+    }
+
+    /// Generates the Song Studio's `request` (`versions` songs, seeds counting up) into the song
+    /// folder, sharing the GPU like a story's music. Returns the saved file names.
+    pub async fn generate_song(
+        &self,
+        on_progress: &(impl Fn(MusicGenProgress) + Sync),
+        llama: Arc<LlamaServerManager>,
+        image: Arc<LocalImageEngine>,
+        request: &SongRequest,
+    ) -> Result<Vec<String>, String> {
+        let Ok(_busy) = self.busy.try_lock() else {
+            return Err(crate::err!("backend.music.busy"));
+        };
+        self.cancel.store(false, Ordering::SeqCst);
+        let tier = tier(&request.model_id)?;
+        if let Some(missing) = tier.files().iter().find(|f| !f.ready()) {
+            return Err(crate::err!(
+                "backend.music.notInstalled",
+                model = tier.name,
+                file = missing.name
+            ));
+        }
+        if request.caption.trim().is_empty() {
+            return Err(crate::err!("backend.music.noCaption"));
+        }
+        let dir = crate::modules::songs::prepare_dir()?;
+        let title = crate::modules::songs::song_title(&request.title);
+        let planned = song_plan(request);
+        let options = TrackOptions {
+            timesignature: request.timesignature.clone(),
+            lm_temperature: request.lm_temperature,
+            steps: request.steps,
+        };
+        let total = request.versions.clamp(1, MAX_VERSIONS);
+        let emit = |track: u32, phase: &str, file: Option<String>, error: Option<String>| {
+            on_progress(MusicGenProgress {
+                set: SONG_SET.to_string(),
+                mood: title.clone(),
+                track,
+                total,
+                phase: phase.to_string(),
+                file,
+                error,
+            });
+        };
+        emit(0, "planning", None, None);
+        let room = self
+            .make_room(&llama, &image, tier, &|| {
+                emit(0, "unloading_llm", None, None)
+            })
+            .await?;
+
+        let base_seed = request
+            .seed
+            .unwrap_or_else(|| i64::from(rand::random::<u32>() >> 1));
+        let mut saved = Vec::new();
+        let result: Result<(), String> = async {
+            emit(0, "starting", None, None);
+            self.ensure_server().await?;
+            for index in 0..total {
+                let track = index + 1;
+                let seed = base_seed + i64::from(index);
+                let (audio, lyrics) = self
+                    .make_track(&planned, tier, seed, &options, &|phase| {
+                        emit(track, phase, None, None)
+                    })
+                    .await?;
+                let name = crate::modules::songs::unique_file_name(&dir, &title);
+                tokio::fs::write(dir.join(&name), &audio)
+                    .await
+                    .map_err(|e| crate::err!("backend.common.fileWrite", error = e))?;
+                let mut kept = request.clone();
+                kept.title = title.clone();
+                let origin = crate::modules::songs::SongOrigin {
+                    title: if total > 1 {
+                        format!("{title} ({track})")
+                    } else {
+                        title.clone()
+                    },
+                    request: Some(kept),
+                    lyrics,
+                    seed: Some(seed),
+                    generator: generator_name(),
+                    model: tier.synth.name.to_string(),
+                    lm_model: tier.lm.name.to_string(),
+                    generated: chrono::Local::now().format("%Y-%m-%d %H:%M").to_string(),
+                    license: LICENSE_NOTE.to_string(),
+                };
+                let _ = tokio::fs::write(
+                    dir.join(format!("{name}.json")),
+                    serde_json::to_string_pretty(&origin).unwrap_or_default(),
+                )
+                .await;
+                emit(track, "saved", Some(name.clone()), None);
+                saved.push(name);
             }
-            Err(e) => emit("", saved, "failed", None, Some(e.clone())),
+            Ok(())
+        }
+        .await;
+
+        let count = saved.len() as u32;
+        self.release_room(room, llama, &|| emit(count, "reloading_llm", None, None))
+            .await;
+        match &result {
+            Ok(()) => emit(count, "done", None, None),
+            Err(e) if self.cancel.load(Ordering::SeqCst) => {
+                emit(count, "cancelled", None, Some(e.clone()))
+            }
+            Err(e) => emit(count, "failed", None, Some(e.clone())),
         }
         result.map(|()| saved)
+    }
+}
+
+/// What [`MusicEngine::make_room`] changed: the chat model to start again afterwards.
+struct GpuRoom {
+    llm_to_restart: Option<crate::modules::llama_manager::LlamaServerConfig>,
+}
+
+/// `set` of the Song Studio's `music-gen-progress` events (`mood` holds the song title).
+pub const SONG_SET: &str = "@song";
+const MAX_VERSIONS: u32 = 10;
+const LICENSE_NOTE: &str = "KI-generiert mit ACE-Step 1.5 (MIT), selbst erzeugt";
+
+fn generator_name() -> String {
+    format!(
+        "ACE-Step 1.5 (acestep.cpp, {})",
+        crate::modules::runtimes::ACESTEP_RELEASE
+    )
+}
+
+/// A Song Studio request as one planned track (`lm_request`/`synth_request` take that form).
+fn song_plan(request: &SongRequest) -> PlannedMood {
+    let lyrics = request.lyrics.trim().to_string();
+    PlannedMood {
+        mood: SONG_SET.to_string(),
+        caption: request.caption.trim().to_string(),
+        has_vocals: !lyrics.eq_ignore_ascii_case(story_music::INSTRUMENTAL),
+        lyrics,
+        vocal_language: request.vocal_language.trim().to_string(),
+        bpm: request.bpm.filter(|b| (30..=300).contains(b)),
+        keyscale: request.keyscale.trim().to_string(),
+        duration: request.duration.clamp(10, MAX_SECONDS),
+        count: 1,
+        seed: request.seed,
+        installed: 0,
     }
 }
 
@@ -932,9 +1144,80 @@ pub async fn generate_scene<R: tauri::Runtime>(
         .await
 }
 
+/// Generates a Song Studio request and reports progress as the `music-gen-progress` event
+/// (`set` = [`SONG_SET`]).
+pub async fn generate_song<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    llama: Arc<LlamaServerManager>,
+    image: Arc<LocalImageEngine>,
+    request: &SongRequest,
+) -> Result<Vec<String>, String> {
+    engine()
+        .generate_song(
+            &|p| {
+                let _ = app.emit("music-gen-progress", p);
+            },
+            llama,
+            image,
+            request,
+        )
+        .await
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn song_requests_become_one_planned_track() {
+        let request = SongRequest {
+            caption: "  synthwave, female vocals ".into(),
+            lyrics: String::new(),
+            vocal_language: "ja".into(),
+            duration: 5_000,
+            bpm: Some(5),
+            versions: 3,
+            model_id: "standard".into(),
+            ..Default::default()
+        };
+        let planned = song_plan(&request);
+        assert_eq!(planned.caption, "synthwave, female vocals");
+        // Empty lyrics: the language model writes them, so there are vocals.
+        assert!(planned.has_vocals);
+        assert_eq!(planned.duration, MAX_SECONDS);
+        assert_eq!(planned.bpm, None);
+        let lm = lm_request(&planned, &TIERS[0], 1);
+        assert_eq!(lm["lyrics"], "");
+        assert_eq!(lm["vocal_language"], "Japanese");
+
+        let instrumental = song_plan(&SongRequest {
+            lyrics: "[instrumental]".into(),
+            duration: 1,
+            ..request
+        });
+        assert!(!instrumental.has_vocals);
+        assert_eq!(instrumental.duration, 10);
+    }
+
+    #[test]
+    fn track_options_only_set_what_was_chosen() {
+        let mut lm = serde_json::json!({});
+        let mut synth = serde_json::json!({ "inference_steps": 50 });
+        TrackOptions::default().apply_lm(&mut lm);
+        TrackOptions::default().apply_synth(&mut synth);
+        assert_eq!(lm, serde_json::json!({}));
+        assert_eq!(synth["inference_steps"], 50);
+        let options = TrackOptions {
+            timesignature: " 3 ".into(),
+            lm_temperature: Some(9.0),
+            steps: Some(500),
+        };
+        options.apply_lm(&mut lm);
+        options.apply_synth(&mut synth);
+        assert_eq!(lm["timesignature"], "3");
+        assert_eq!(lm["lm_temperature"], 1.5);
+        assert_eq!(synth["inference_steps"], 200);
+    }
 
     fn planned(lyrics: &str, language: &str) -> PlannedMood {
         PlannedMood {

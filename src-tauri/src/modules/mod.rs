@@ -59,6 +59,7 @@ pub mod runtimes;
 pub mod secrets;
 pub mod segmented_download;
 pub mod settings;
+pub mod songs;
 pub mod stage;
 pub mod stage_music;
 pub mod story_music;

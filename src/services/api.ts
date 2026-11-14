@@ -5,6 +5,7 @@ import { companionApi } from './api/companion';
 import { hubApi } from './api/hub';
 import { integrationsApi } from './api/integrations';
 import { memoryApi } from './api/memory';
+import { musicApi } from './api/music';
 import { stageApi } from './api/stage';
 import { systemApi } from './api/system';
 import { voiceApi } from './api/voice';
@@ -16,6 +17,7 @@ export const api = {
   ...charactersApi,
   ...memoryApi,
   ...stageApi,
+  ...musicApi,
   ...avatarsApi,
   ...voiceApi,
   ...companionApi,
@@ -31,6 +33,7 @@ export {
   hubApi,
   integrationsApi,
   memoryApi,
+  musicApi,
   stageApi,
   systemApi,
   voiceApi,

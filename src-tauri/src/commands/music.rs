@@ -48,3 +48,54 @@ pub async fn generate_scene_music(
 pub fn cancel_music_generation() {
     crate::modules::music_gen::engine().cancel();
 }
+
+/// Generates a Song Studio song (`versions` of it) into the song folder; progress goes to
+/// `music-gen-progress` (set `@song`). Returns the saved file names.
+#[tauri::command]
+pub async fn generate_song(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+    request: crate::modules::songs::SongRequest,
+) -> Result<Vec<String>, String> {
+    crate::modules::music_gen::generate_song(
+        &app,
+        state.llama_manager.clone(),
+        state.local_image.clone(),
+        &request,
+    )
+    .await
+}
+
+/// The folder songs are saved to and whether it is the default (system music folder).
+#[tauri::command(async)]
+pub fn get_song_folder() -> crate::modules::songs::SongFolder {
+    crate::modules::songs::folder()
+}
+
+/// Sets the song folder; `None` goes back to the default.
+#[tauri::command(async)]
+pub fn set_song_folder(path: Option<String>) -> Result<crate::modules::songs::SongFolder, String> {
+    crate::modules::songs::set_output_dir(path.as_deref())
+}
+
+/// Songs in the song folder, newest first.
+#[tauri::command(async)]
+pub fn list_songs() -> Vec<crate::modules::songs::SongEntry> {
+    crate::modules::songs::list()
+}
+
+/// Deletes a song (and its origin file) from the song folder.
+#[tauri::command(async)]
+pub fn delete_song(file_name: String) -> Result<(), String> {
+    crate::modules::songs::delete(&file_name)
+}
+
+/// Opens the song folder in the file manager.
+#[tauri::command(async)]
+pub fn open_song_folder(app: tauri::AppHandle) -> Result<(), String> {
+    use tauri_plugin_opener::OpenerExt;
+    let dir = crate::modules::songs::prepare_dir()?;
+    app.opener()
+        .open_path(dir.to_string_lossy(), None::<&str>)
+        .map_err(|e| crate::err!("backend.common.openFolder", error = e))
+}

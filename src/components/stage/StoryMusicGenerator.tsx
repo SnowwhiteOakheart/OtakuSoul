@@ -1,29 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Download, Loader2, Square, Wand2 } from 'lucide-react';
+import { Loader2, Square, Wand2 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useTranslation } from '../../i18n';
 import { errorCode, errorMessage } from '../../utils/errors';
 import { toast } from '../ui/feedback';
-import { RuntimeCard } from '../settings/sections/RuntimeCard';
-import type { MusicGenProgress, MusicModelInfo, MusicModelProgress, RuntimeInfo, SceneDefinition, SceneMusicPlan } from '../../types';
-
-const MODEL_KEY = 'otakusoul.musicModel';
-const gb = (bytes: number) => (bytes / 1024 ** 3).toFixed(1);
-
-const loadModelChoice = () => {
-  try {
-    return localStorage.getItem(MODEL_KEY);
-  } catch {
-    return null;
-  }
-};
-const saveModelChoice = (id: string) => {
-  try {
-    localStorage.setItem(MODEL_KEY, id);
-  } catch {
-    // Only a convenience: the recommended set is preselected next time.
-  }
-};
+import { MusicModelPicker, useMusicModels } from '../music/MusicModelPicker';
+import type { MusicGenProgress, SceneDefinition, SceneMusicPlan } from '../../types';
 
 /** Tracks still missing in the plan (each mood up to its `count`). */
 export const missingTracks = (plan: SceneMusicPlan) =>
@@ -42,50 +24,19 @@ interface StoryMusicGeneratorProps {
  */
 export const StoryMusicGenerator = ({ definition, plan, onGenerated }: StoryMusicGeneratorProps) => {
   const { t } = useTranslation();
-  const [runtime, setRuntime] = useState<RuntimeInfo | null | undefined>(undefined);
-  const [models, setModels] = useState<MusicModelInfo[] | null>(null);
-  const [modelId, setModelId] = useState<string | null>(loadModelChoice);
-  const [download, setDownload] = useState<MusicModelProgress | null>(null);
-  const [downloading, setDownloading] = useState(false);
+  const music = useMusicModels();
+  const { chosen } = music;
   const [progress, setProgress] = useState<MusicGenProgress | null>(null);
   const [generating, setGenerating] = useState(false);
 
-  const refreshModels = () =>
-    api
-      .listMusicModels()
-      .then((list) => setModels(list ?? []))
-      .catch(() => setModels([]));
-
   useEffect(() => {
-    void api.getRuntime('ace').then((info) => setRuntime(info ?? null)).catch(() => setRuntime(null));
-    void refreshModels();
-    const stops = [api.onMusicModelProgress(setDownload), api.onMusicGenProgress(setProgress)];
-    return () => stops.forEach((stop) => void stop.then((unlisten) => unlisten()).catch(() => {}));
+    const stop = api.onMusicGenProgress((p) => {
+      if (p.set !== '@song') setProgress(p);
+    });
+    return () => void stop.then((unlisten) => unlisten()).catch(() => {});
   }, []);
 
-  const chosen =
-    models?.find((m) => m.id === modelId) ?? models?.find((m) => m.installed) ?? models?.find((m) => m.recommended) ?? models?.[0];
   const missing = missingTracks(plan);
-
-  const choose = (id: string) => {
-    setModelId(id);
-    saveModelChoice(id);
-  };
-
-  const downloadModel = async () => {
-    if (!chosen) return;
-    setDownloading(true);
-    setDownload(null);
-    try {
-      await api.downloadMusicModel(chosen.id);
-      toast.success(t('musicGen.modelReady', { name: chosen.name }));
-    } catch (error) {
-      toast.error(t('musicGen.downloadFailed', { error: errorMessage(error) }));
-    } finally {
-      setDownloading(false);
-      void refreshModels();
-    }
-  };
 
   const generate = async () => {
     if (!chosen) return;
@@ -103,7 +54,7 @@ export const StoryMusicGenerator = ({ definition, plan, onGenerated }: StoryMusi
     }
   };
 
-  if (runtime === undefined || models === null) {
+  if (music.loading) {
     return <Loader2 className="w-4 h-4 animate-spin text-slate-400" />;
   }
 
@@ -126,53 +77,13 @@ export const StoryMusicGenerator = ({ definition, plan, onGenerated }: StoryMusi
       </p>
       <p className="text-xs text-slate-400">{t('musicGen.intro')}</p>
 
-      {!runtime && <RuntimeCard kind="ace" onInstalled={() => void api.getRuntime('ace').then(setRuntime)} />}
-
-      <div className="space-y-1" role="radiogroup" aria-label={t('musicGen.model')}>
-        {models.map((m) => (
-          <label key={m.id} className="flex items-center gap-2 text-xs text-slate-300">
-            <input
-              type="radio"
-              name="music-model"
-              checked={chosen?.id === m.id}
-              onChange={() => choose(m.id)}
-              disabled={generating || downloading}
-              className="accent-accent-500"
-            />
-            <span className="font-medium">{m.name}</span>
-            <span className="text-slate-500">
-              {t('musicGen.modelMeta', { size: gb(m.download_bytes), vram: (m.vram_mb / 1024).toFixed(0) })}
-            </span>
-            {m.recommended && <span className="rounded bg-emerald-900/40 px-1 text-[11px] text-emerald-200">{t('runtime.recommended')}</span>}
-            {m.installed && <span className="rounded bg-slate-800 px-1 text-[11px] text-slate-300">{t('musicGen.installed')}</span>}
-          </label>
-        ))}
-      </div>
-
-      {chosen && !chosen.installed && (
-        <button
-          type="button"
-          disabled={downloading}
-          onClick={() => void downloadModel()}
-          className="flex items-center gap-1.5 rounded-xl bg-slate-800 px-3 py-1.5 text-xs font-semibold hover:bg-slate-700 disabled:opacity-60"
-        >
-          {downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-          {downloading && download
-            ? t('musicGen.downloading', { percent: download.percent.toFixed(0) })
-            : t('musicGen.download', { size: gb(chosen.missing_bytes) })}
-        </button>
-      )}
-      {downloading && (
-        <button type="button" onClick={() => void api.cancelMusicModelDownload()} className="text-xs text-slate-400 underline hover:text-slate-200">
-          {t('common.cancel')}
-        </button>
-      )}
+      <MusicModelPicker music={music} disabled={generating} />
 
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
           data-testid="music-generate"
-          disabled={!runtime || !chosen?.installed || missing === 0 || generating}
+          disabled={!music.ready || missing === 0 || generating}
           onClick={() => void generate()}
           className="flex items-center gap-1.5 rounded-xl bg-accent-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-500 disabled:bg-slate-800 disabled:text-slate-400"
         >

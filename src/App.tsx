@@ -31,6 +31,7 @@ const SettingsView = lazy(() => import('./components/settings/SettingsView').the
 const StageView = lazy(() => import('./components/stage/StageView').then((module) => ({ default: module.StageView })));
 const CompanionView = lazy(() => import('./components/companion/CompanionView').then((module) => ({ default: module.CompanionView })));
 const HubView = lazy(() => import('./components/hub/HubView').then((module) => ({ default: module.HubView })));
+const SongStudioView = lazy(() => import('./components/music/SongStudioView').then((module) => ({ default: module.SongStudioView })));
 const IntegrationsView = lazy(() => import('./components/integrations/IntegrationsView').then((module) => ({ default: module.IntegrationsView })));
 const DesktopPet = lazy(() => import('./components/companion/DesktopPet').then((module) => ({ default: module.DesktopPet })));
 const CharacterAiAssistantModal = lazy(() => import('./components/characters/CharacterAiAssistantModal').then((module) => ({ default: module.CharacterAiAssistantModal })));
@@ -81,6 +82,7 @@ export function App() {
             {activeTab === 'lorebooks' && <LorebookView />}
             {activeTab === 'stage' && <StageView />}
             {activeTab === 'companion' && <CompanionView />}
+            {activeTab === 'music' && <SongStudioView />}
             {activeTab === 'integrations' && <IntegrationsView />}
             {activeTab === 'settings' && <SettingsView />}
           </Suspense>

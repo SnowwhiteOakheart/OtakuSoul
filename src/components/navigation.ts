@@ -6,6 +6,7 @@ import {
   House,
   Layers,
   MessageSquare,
+  Music,
   Settings,
   UserRound,
   Users,
@@ -42,6 +43,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { tab: 'avatars', label: 'nav.avatars', icon: UserRound },
       { tab: 'lorebooks', label: 'nav.lorebooks', icon: BookOpen },
       { tab: 'hub', label: 'nav.hub', icon: Compass },
+      { tab: 'music', label: 'nav.music', icon: Music },
     ],
   },
   {
