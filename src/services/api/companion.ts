@@ -1,4 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
+import type { PetRemarkRequest } from '../../types/generated/PetRemarkRequest';
 import type {
   CompanionPlugin,
   CompanionSettings,
@@ -139,6 +140,21 @@ export const companionApi = {
     placement?: { x?: number; y?: number; width: number; height: number },
   ): Promise<boolean> => {
     return await invoke<boolean>('toggle_desktop_pet', { enable, placement: placement ?? null });
+  },
+
+  /** One short line of the character about what just happened to the pet; nothing goes into the chat. */
+  petRemark: async (request: PetRemarkRequest): Promise<string> => {
+    return await invoke<string>('pet_remark', { request });
+  },
+
+  /** Tells the backend the programs the pet steps back for (file names); only a verdict comes back. */
+  setPetIgnoredApps: async (apps: string[]): Promise<void> => {
+    await invoke('set_pet_ignored_apps', { apps });
+  },
+
+  /** The program that was in front last (not the pet), lower-case file name; '' if unknown. */
+  getPetLastApp: async (): Promise<string> => {
+    return await invoke<string>('get_pet_last_app');
   },
 
   /** The pet's global shortcut (chosen or default) and whether the system accepted it. */

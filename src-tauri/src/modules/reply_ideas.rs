@@ -189,7 +189,7 @@ pub fn clean_draft(text: &str, user_name: &str) -> String {
 
 /// One request to the chat model without streaming, bounded so a stuck server doesn't leave the
 /// button waiting.
-async fn ask(
+pub(crate) async fn ask(
     client: &InferenceClient,
     req: &ReplyIdeasRequest,
     system: String,

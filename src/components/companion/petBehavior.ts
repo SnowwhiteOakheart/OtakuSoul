@@ -1,6 +1,7 @@
 import type { LoopRole, MotionRole } from '../../utils/avatarGestures';
 import type { PetPose } from '../../services/desktopPet';
 import { withoutEmotionTag } from '../../utils/replyTags';
+import type { PetEvent } from '../../types/generated/PetEvent';
 
 /**
  * What the desktop pet does on its own: a small state machine driven by time and by what
@@ -77,7 +78,9 @@ export type PetCue =
   | { kind: 'gesture'; role: MotionRole }
   | { kind: 'bubble'; text: 'doze' | 'wake' }
   /** Jump to a nearby window's edge; the caller plans it and reports back with `jumped`. */
-  | { kind: 'jump' };
+  | { kind: 'jump' }
+  /** Something happened to the figure that it may comment on (the caller decides whether and how often). */
+  | { kind: 'event'; event: PetEvent };
 
 /** Without pointer movement this long, the figure dozes off (shorter when tired or at night). */
 export const DOZE_AFTER_MS = 3 * 60_000;
@@ -209,6 +212,7 @@ export class PetBehavior {
       this.react(now, 'surprised');
       this.hopUntil = now + HOP_MS;
       this.cues.push({ kind: 'bubble', text: 'wake' });
+      this.cues.push({ kind: 'event', event: 'woke' });
     }
   }
 
@@ -221,7 +225,10 @@ export class PetBehavior {
 
   dragEnd(now: number) {
     this.lastPointer = now;
-    if (this.mode === 'dragged') this.react(now, 'relaxed', 900);
+    if (this.mode === 'dragged') {
+      this.react(now, 'relaxed', 900);
+      this.cues.push({ kind: 'event', event: 'thrown' });
+    }
   }
 
   /**
@@ -350,6 +357,7 @@ export class PetBehavior {
       } else {
         this.react(now, 'surprised', 700);
         this.hopUntil = now + HOP_MS;
+        this.cues.push({ kind: 'event', event: 'landed' });
       }
       this.cues.push({ kind: 'gesture', role: 'land' });
     }
@@ -490,6 +498,7 @@ export class PetBehavior {
     }
     if (kind === 'hop' || kind === 'wave') this.hopUntil = now + HOP_MS;
     if (kind === 'jump') this.cues.push({ kind: 'jump' });
+    if (kind === 'sit') this.cues.push({ kind: 'event', event: 'sat' });
     const gesture: Partial<Record<PetAction, MotionRole>> = { wave: 'greeting', think: 'thinking', nod: 'nod', yawn: 'yawn' };
     if (gesture[kind]) this.cues.push({ kind: 'gesture', role: gesture[kind] });
     this.action = action;

@@ -5,6 +5,7 @@ import { DEFAULT_PET_FRAMING, PET_LIFT_RANGE, PET_ZOOM_RANGE, type PetFraming } 
 import type { GestureRequest } from '../utils/avatarGestures';
 import type { Visemes } from './lipSync';
 import type { ColorModePreference } from './theme';
+import type { PetEvent } from '../types/generated/PetEvent';
 
 /**
  * Desktop pet: the active avatar in its own transparent window (`desktop_pet.rs`). The window
@@ -39,6 +40,8 @@ export interface PetScreen {
   locked: boolean;
   /** Handle of the window in front (0: none or the pet itself); only a change counts. */
   focus: number;
+  /** The program in front is on the ignore list (the pet steps back like in fullscreen). */
+  ignored: boolean;
 }
 
 /** Backend → pet: music starts or stops playing on the computer (payload boolean; Windows only). */
@@ -72,6 +75,13 @@ export interface PetSay {
    * click on it opens that chat.
    */
   chat?: { charId: string; chatId: string };
+}
+
+/** Pet → main: something happened to the figure it may comment on (payload `PetRemark`); main asks the model. */
+export const PET_REMARK_EVENT = 'pet:remark';
+
+export interface PetRemark {
+  event: PetEvent;
 }
 
 /** Both ways: the pet's switches changed (its menu or the Desktop-Pet tab); payload `PetPrefs`. */
@@ -264,6 +274,10 @@ export interface PetPrefs {
   pose: PetPose;
   /** Open the pet whenever the app starts (off by default: the pet only shows when switched on). */
   openAtStart: boolean;
+  /** Now and then a short line of the model about what happened to it (thrown, landed, woken, sat); off by default (costs a request). */
+  eventRemarks: boolean;
+  /** Programs (file names, e.g. `game.exe`) the pet steps back for while they are in front. */
+  ignoredApps: string[];
 }
 
 export type PetPose = 'auto' | 'stand' | 'sit';
@@ -306,6 +320,8 @@ const DEFAULT_PREFS: PetPrefs = {
   figure: 'chat',
   pose: 'auto',
   openAtStart: false,
+  eventRemarks: false,
+  ignoredApps: [],
 };
 
 interface BatteryManagerLike extends EventTarget {
@@ -351,6 +367,10 @@ export function loadPetPrefs(): PetPrefs {
       figure: FIGURE_CHOICES.includes(stored?.figure as PetFigureChoice) ? stored!.figure! : DEFAULT_PREFS.figure,
       pose: PET_POSES.includes(stored?.pose as PetPose) ? stored!.pose! : DEFAULT_PREFS.pose,
       openAtStart: typeof stored?.openAtStart === 'boolean' ? stored.openAtStart : DEFAULT_PREFS.openAtStart,
+      eventRemarks: typeof stored?.eventRemarks === 'boolean' ? stored.eventRemarks : DEFAULT_PREFS.eventRemarks,
+      ignoredApps: Array.isArray(stored?.ignoredApps)
+        ? stored.ignoredApps.filter((a): a is string => typeof a === 'string' && a.length > 0 && a.length <= 128).slice(0, 64)
+        : [],
     };
   } catch {
     return { ...DEFAULT_PREFS };

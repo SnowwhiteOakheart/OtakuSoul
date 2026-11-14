@@ -492,4 +492,21 @@ describe('bubbleText', () => {
     expect(bubbleMs('Hi')).toBe(4000);
     expect(bubbleMs('x'.repeat(500))).toBe(12_000);
   });
+
+  it('reports events it may comment on: woken, thrown, landed', () => {
+    const pet = new PetBehavior(0, fixed(0.5));
+    run(pet, 0, DOZE_AFTER_MS + 1000);
+    pet.pointer(DOZE_AFTER_MS + 1100);
+    expect(pet.tick(DOZE_AFTER_MS + 1200).cues).toContainEqual({ kind: 'event', event: 'woke' });
+
+    const t = DOZE_AFTER_MS + 5000;
+    pet.dragStart(t);
+    pet.dragEnd(t + 100);
+    expect(pet.tick(t + 200).cues).toContainEqual({ kind: 'event', event: 'thrown' });
+
+    pet.setGrounded(false, t + 300);
+    pet.tick(t + 350);
+    pet.setGrounded(true, t + 800);
+    expect(pet.tick(t + 850).cues).toContainEqual({ kind: 'event', event: 'landed' });
+  });
 });

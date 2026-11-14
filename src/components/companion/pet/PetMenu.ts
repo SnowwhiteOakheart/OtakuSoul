@@ -57,6 +57,10 @@ export async function openPetContextMenu({
     pet?.vrmPath && lacksPetMotions(pet.motions ?? [])
       ? recommendedMotionPack((await api.getMotionPacks(currentLanguage).catch(() => [])) ?? [])
       : null;
+  // The program in front before the menu opened (the pet itself never counts).
+  const lastApp = await api.getPetLastApp().catch(() => '');
+  const ignoreApp = (name: string) =>
+    setPrefs((p) => (p.ignoredApps.includes(name) ? p : { ...p, ignoredApps: [...p.ignoredApps, name] }));
   const sizes: { key: PetSize; label: string }[] = [
     { key: 'small', label: t('pet.sizeSmall') },
     { key: 'medium', label: t('pet.sizeMedium') },
@@ -179,9 +183,26 @@ export async function openPetContextMenu({
         action: () => setPrefs((p) => ({ ...p, rideWindows: !p.rideWindows })),
       },
       {
+        text: t('pet.eventRemarks'),
+        checked: prefs.eventRemarks,
+        action: () => setPrefs((p) => ({ ...p, eventRemarks: !p.eventRemarks })),
+      },
+      {
         text: t('pet.hideInFullscreen'),
         checked: prefs.hideInFullscreen,
         action: () => setPrefs((p) => ({ ...p, hideInFullscreen: !p.hideInFullscreen })),
+      },
+      {
+        text: t('pet.ignoredApps'),
+        items: [
+          lastApp && !prefs.ignoredApps.includes(lastApp)
+            ? { text: t('pet.ignoreLastApp', { name: lastApp }), action: () => ignoreApp(lastApp) }
+            : { text: t('pet.ignoreNoApp'), enabled: false },
+          ...prefs.ignoredApps.map((name) => ({
+            text: t('pet.ignoreRemove', { name }),
+            action: () => setPrefs((p) => ({ ...p, ignoredApps: p.ignoredApps.filter((a) => a !== name) })),
+          })),
+        ],
       },
       { item: 'Separator' },
       { text: t('pet.lookAtScreen'), action: () => void askTool('take_screenshot') },

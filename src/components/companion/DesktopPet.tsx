@@ -3,6 +3,8 @@ import type React from 'react';
 import { emitTo, listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import type { PetFigure } from '../avatar/avatarStage';
+import { StrokeDetector } from './petStroke';
+import type { PetEvent } from '../../types/generated/PetEvent';
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { useTranslation } from '../../i18n';
 import { api } from '../../services/api';
@@ -47,6 +49,7 @@ import {
   PET_READY_EVENT,
   PET_RESIZE_EVENT,
   PET_SAY_EVENT,
+  PET_REMARK_EVENT,
   PET_SCREEN_EVENT,
   PET_SEND_EVENT,
   PET_SENTENCE_EVENT,
@@ -59,6 +62,7 @@ import {
   type PetFramingChange,
   type PetPrefs,
   type PetSay,
+  type PetRemark,
   type PetScreen,
   type PetSentence,
   type PetState,
@@ -70,6 +74,7 @@ import {
   BUBBLE_MS,
   DRAG_THRESHOLD,
   PROACTIVE_BUBBLE_MS,
+  REMARK_GAP_MS,
   SIT_DROP,
   STATUS_POLL_MS,
   clamp,
@@ -138,8 +143,8 @@ export const DesktopPet: React.FC = () => {
   const mouthOpen = useRef(false);
   const prefsRef = useRef(prefs);
   /** Fullscreen window or lock screen in front: the pet steps back (not drawn, no clicks, no moves). */
-  const [screen, setScreen] = useState<PetScreen>({ fullscreen: false, locked: false, focus: 0 });
-  const away = screen.locked || (screen.fullscreen && prefs.hideInFullscreen);
+  const [screen, setScreen] = useState<PetScreen>({ fullscreen: false, locked: false, focus: 0, ignored: false });
+  const away = screen.locked || screen.ignored || (screen.fullscreen && prefs.hideInFullscreen);
   const awayRef = useRef(away);
   /** Last word from the backend whether clicks may go through (false: Wayland session). */
   const throughRef = useRef(true);
@@ -147,6 +152,9 @@ export const DesktopPet: React.FC = () => {
   const ignoreRef = useRef<boolean | null>(null);
   /** Pressed on the pet: click-through stays off until released. */
   const holdRef = useRef(false);
+  const lastRemarkAt = useRef(Number.NEGATIVE_INFINITY);
+  /** Recognises stroking (pointer wiggling over the figure). */
+  const strokeRef = useRef(new StrokeDetector());
   const pressRef = useRef<{
     x: number;
     y: number;
@@ -219,11 +227,19 @@ export const DesktopPet: React.FC = () => {
     behavior.setPhysics(prefs.physics);
     if (prefs.physics) void syncWindow().catch(() => {});
     savePetPrefs(prefs);
+    void api.setPetIgnoredApps(prefs.ignoredApps).catch(() => {});
     // The Desktop-Pet tab shows the same switches.
     void emitTo('main', PET_PREFS_EVENT, prefs).catch(() => {});
   }, [behavior, prefs, syncWindow]);
 
   // The cue texts follow the language without restarting the behaviour timer.
+  /** Asks the main window for a model line about an event (switch on, not while talking, with a pause between). */
+  const askRemark = useCallback((event: PetEvent, now: number) => {
+    if (!prefsRef.current.eventRemarks || !prefsRef.current.chatBubbles || speakingRef.current) return;
+    if (now - lastRemarkAt.current < REMARK_GAP_MS) return;
+    lastRemarkAt.current = now;
+    void emitTo('main', PET_REMARK_EVENT, { event } satisfies PetRemark).catch(() => {});
+  }, []);
   const cueTexts = useRef({ doze: '', wake: '' });
   useEffect(() => {
     cueTexts.current = { doze: t('pet.doze'), wake: t('pet.wake') };
@@ -284,11 +300,12 @@ export const DesktopPet: React.FC = () => {
       for (const cue of cues) {
         if (cue.kind === 'gesture') playLocalGesture(cue.role);
         else if (cue.kind === 'jump') startJump(now);
+        else if (cue.kind === 'event') askRemark(cue.event, now);
         else say(cueTexts.current[cue.text]);
       }
     }, BEHAVIOR_TICK_MS);
     return () => window.clearInterval(timer);
-  }, [behavior, say, playLocalGesture, startJump, settleDrag, setWalkDirection]);
+  }, [behavior, say, playLocalGesture, startJump, settleDrag, setWalkDirection, askRemark]);
 
   // State, voice and pointer from the main window and the backend.
   useEffect(() => {
@@ -562,6 +579,13 @@ export const DesktopPet: React.FC = () => {
   };
   const onPointerMove = (e: React.PointerEvent) => {
     const press = pressRef.current;
+    // Without a pressed button, wiggling or circling over the figure is stroking it.
+    if (!press && e.buttons === 0) {
+      if (strokeRef.current.move(e.clientX, e.clientY, performance.now())) {
+        void pat(touchZoneAt(e.clientY / window.innerHeight, headEnd()));
+      }
+      return;
+    }
     if (!press || press.dragging) return;
     if (Math.hypot(e.screenX - press.x, e.screenY - press.y) < DRAG_THRESHOLD) return;
     press.dragging = true;

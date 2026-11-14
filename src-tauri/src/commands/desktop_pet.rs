@@ -485,3 +485,25 @@ pub fn show_main_window(app: AppHandle) {
         let _ = window.set_focus();
     }
 }
+
+/// The programs the pet steps back for (like in fullscreen), by file name; sent by the pet
+/// whenever its list changes. Only the verdict goes back (`pet:screen.ignored`).
+#[tauri::command]
+pub fn set_pet_ignored_apps(apps: Vec<String>) {
+    crate::modules::desktop_windows::set_ignored_apps(&apps);
+}
+
+/// One short line of the pet about what just happened to it; nothing goes into the chat.
+#[tauri::command]
+pub async fn pet_remark(
+    state: tauri::State<'_, crate::state::AppState>,
+    request: crate::modules::pet_remark::PetRemarkRequest,
+) -> Result<String, String> {
+    crate::modules::pet_remark::remark(&state.inference_client, request).await
+}
+
+/// The program that was in front last (not the pet), for "ignore this program"; empty if unknown.
+#[tauri::command]
+pub fn get_pet_last_app() -> String {
+    crate::modules::desktop_windows::last_app()
+}

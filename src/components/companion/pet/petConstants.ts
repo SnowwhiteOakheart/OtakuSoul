@@ -67,6 +67,8 @@ export const PHYSICS_TICK_MS = 33;
 export const AREA_REFRESH_MS = 3000;
 /** A message the character wrote on their own stays in the bubble at least this long. */
 export const PROACTIVE_BUBBLE_MS = 12_000;
+/** At least this long between two model remarks about what happened to the pet (each costs a request). */
+export const REMARK_GAP_MS = 120_000;
 /** Physics ticks between two looks for a window to jump to (~1 s). */
 export const JUMP_CHECK_TICKS = 30;
 /** The remembered position is written at most this often while the pet moves itself. */

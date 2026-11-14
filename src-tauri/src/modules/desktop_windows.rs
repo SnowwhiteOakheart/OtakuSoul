@@ -86,6 +86,51 @@ pub struct ScreenState {
     /// Handle of the window in front (0: none, the pet itself or the shell) - only to notice
     /// that it changed; nothing of its title or content is read.
     pub focus: isize,
+    /// The program in front is on the user's ignore list (the pet steps back like in fullscreen).
+    /// Only this verdict leaves Rust; the program's name does not.
+    pub ignored: bool,
+}
+
+/// Lower-case program names (`game.exe`) the user wants the pet to step back for.
+static IGNORED_APPS: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
+/// The program that was in front last (not the pet itself), lower-case; for "ignore this one".
+static LAST_APP: std::sync::Mutex<String> = std::sync::Mutex::new(String::new());
+
+/// Replaces the ignore list (names compared case-insensitively, without path).
+pub fn set_ignored_apps(apps: &[String]) {
+    let mut list: Vec<String> = apps
+        .iter()
+        .map(|a| a.trim().to_lowercase())
+        .filter(|a| !a.is_empty() && a.len() <= 128)
+        .collect();
+    list.sort();
+    list.dedup();
+    list.truncate(64);
+    if let Ok(mut guard) = IGNORED_APPS.lock() {
+        *guard = list;
+    }
+}
+
+/// The program that was in front last, for the "ignore the last program" menu entry.
+pub fn last_app() -> String {
+    LAST_APP.lock().map(|g| g.clone()).unwrap_or_default()
+}
+
+/// Notes the program in front and says whether it is on the ignore list.
+#[cfg(any(windows, test))]
+fn note_foreground(name: Option<String>) -> bool {
+    let Some(name) = name.map(|n| n.to_lowercase()) else {
+        return false;
+    };
+    if let Ok(mut last) = LAST_APP.lock()
+        && *last != name
+    {
+        *last = name.clone();
+    }
+    IGNORED_APPS
+        .lock()
+        .map(|list| list.contains(&name))
+        .unwrap_or(false)
 }
 
 #[cfg(windows)]
@@ -94,6 +139,7 @@ pub fn screen_state(exclude: isize) -> ScreenState {
         fullscreen: win::foreground_fullscreen(exclude),
         locked: win::session_locked(),
         focus: win::foreground_handle(exclude),
+        ignored: note_foreground(win::foreground_app(exclude)),
     }
 }
 
@@ -106,6 +152,7 @@ pub fn screen_state(_exclude: isize) -> ScreenState {
         fullscreen,
         locked: linux::session_locked(),
         focus,
+        ignored: false,
     }
 }
 
@@ -445,6 +492,49 @@ mod win {
         true.into()
     }
 
+    /// File name of the program owning the foreground window (not the pet, not the shell).
+    pub fn foreground_app(exclude: isize) -> Option<String> {
+        use windows::Win32::Foundation::CloseHandle;
+        use windows::Win32::System::Threading::{
+            OpenProcess, PROCESS_NAME_WIN32, PROCESS_QUERY_LIMITED_INFORMATION,
+            QueryFullProcessImageNameW,
+        };
+        use windows::Win32::UI::WindowsAndMessaging::{
+            GetForegroundWindow, GetWindowThreadProcessId,
+        };
+        use windows::core::PWSTR;
+        // SAFETY: plain query without arguments.
+        let hwnd = unsafe { GetForegroundWindow() };
+        if hwnd.is_invalid()
+            || hwnd.0 as isize == exclude
+            || SHELL_CLASSES.contains(&class_name(hwnd).as_str())
+        {
+            return None;
+        }
+        let mut pid = 0u32;
+        // SAFETY: `pid` is a valid out pointer for the call.
+        unsafe { GetWindowThreadProcessId(hwnd, Some(&mut pid)) };
+        if pid == 0 || pid == std::process::id() {
+            return None;
+        }
+        // SAFETY: the handle is closed below; the buffer length is passed in `len`.
+        unsafe {
+            let process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid).ok()?;
+            let mut buf = [0u16; 520];
+            let mut len = buf.len() as u32;
+            let done = QueryFullProcessImageNameW(
+                process,
+                PROCESS_NAME_WIN32,
+                PWSTR(buf.as_mut_ptr()),
+                &mut len,
+            );
+            let _ = CloseHandle(process);
+            done.ok()?;
+            let path = String::from_utf16_lossy(&buf[..len as usize]);
+            path.rsplit(['\\', '/']).next().map(str::to_string)
+        }
+    }
+
     /// The foreground window covers its whole monitor (taskbar included); a maximised window
     /// leaves the taskbar free and does not count. The desktop itself never counts.
     pub fn foreground_handle(exclude: isize) -> isize {
@@ -533,6 +623,20 @@ mod tests {
             right,
             bottom,
         }
+    }
+
+    #[test]
+    fn ignore_list_matches_names_without_case_and_remembers_the_last_program() {
+        set_ignored_apps(&[" Game.EXE ".into(), "".into()]);
+        assert!(!note_foreground(Some("editor.exe".into())));
+        assert_eq!(last_app(), "editor.exe");
+        assert!(note_foreground(Some("GAME.exe".into())));
+        assert_eq!(last_app(), "game.exe");
+        // Nothing in front (pet or shell): not ignored, the last program stays.
+        assert!(!note_foreground(None));
+        assert_eq!(last_app(), "game.exe");
+        set_ignored_apps(&[]);
+        assert!(!note_foreground(Some("game.exe".into())));
     }
 
     #[test]

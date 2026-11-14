@@ -13,6 +13,7 @@ import {
   PET_MOTIONS_EVENT,
   PET_PICK_EMOTION_EVENT,
   PET_READY_EVENT,
+  PET_REMARK_EVENT,
   PET_SAY_EVENT,
   PET_SEND_EVENT,
   PET_SENTENCE_EVENT,
@@ -23,6 +24,7 @@ import {
   forgetLegacyPetOpen,
   loadPetPrefs,
   type PetAudioFrame,
+  type PetRemark,
   type PetSay,
   type PetSentence,
   type PetState,
@@ -32,6 +34,8 @@ import { watchNewReplies } from './replyWatcher';
 import { translate } from '../i18n';
 import { isNightHour, NIGHT_VOLUME } from '../utils/dayTime';
 import { errorMessage } from '../utils/errors';
+import { llmTarget } from '../store/helpers';
+import { languageCode, localizeCard } from '../utils/cardI18n';
 
 /** Voice frames to the pet at most this often (mouth shapes are smoothed there). */
 const AUDIO_FRAME_MS = 33;
@@ -201,6 +205,29 @@ export function useDesktopPetBridge(enabled = true) {
           });
       }),
       // Motions loaded from the pet's menu: read them again (the pet gets them with the next state).
+      // What happened to the pet (thrown, landed, woken, sat): one short line of the character.
+      listen<PetRemark>(PET_REMARK_EVENT, (event) => {
+        const state = useAppStore.getState();
+        const char = state.activeCharacter;
+        if (!open || !char || state.isGenerating) return;
+        void state
+          .ensureLocalAi()
+          .then(() => {
+            const s = useAppStore.getState();
+            return api.petRemark({
+              event: event.payload.event,
+              char_name: localizeCard(char.card.data, languageCode(s.replyLanguage)).name || char.card.data.name,
+              char_description: char.card.data.description ?? '',
+              user_name: s.activePersona.name,
+              language: s.replyLanguage,
+              ...llmTarget(s),
+            });
+          })
+          .then((text) => {
+            if (open && text) void emitTo(PET_LABEL, PET_SAY_EVENT, { text } satisfies PetSay).catch(() => {});
+          })
+          .catch(() => {});
+      }),
       listen(PET_MOTIONS_EVENT, () => {
         void useAppStore.getState().refreshAvatarMotions();
       }),
