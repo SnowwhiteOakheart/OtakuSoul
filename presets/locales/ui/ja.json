@@ -3806,6 +3806,8 @@
   "localImage.loraImported": "「{{name}}」を追加しました。",
   "localImage.loraEdit": "{{name}}を編集",
   "localImage.loraOwnFamily": "自分のファイル · {{family}}用",
+  "localImage.lorasOtherFamily": "別の画像モデル用の自分のLoRA（ここでは非表示。鉛筆でファミリーを変更できます）：",
+  "localImage.loraOtherFamilyImported": "{{family}}用のLoRAとして保存しました。{{family}}モデルを選ぶと表示されます。",
   "localImage.modelsTitle": "画像生成モデル",
   "localImage.modelsIntro": "VRAM容量別に厳選された、Hugging Faceからの直接ダウンロードです。ダウンロードは中断・再開可能で、すべてのファイルはSHA-256で検証されます。",
   "localImage.loading": "モデルを読み込み中 …",

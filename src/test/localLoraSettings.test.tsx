@@ -133,4 +133,30 @@ describe('LocalLoraSettings', () => {
       expect(api.updateImageLora).toHaveBeenCalledWith('uncensored.safetensors', expect.objectContaining({ nsfw: false, family: 'flux' })),
     );
   });
+
+  it('names own LoRAs of another model family instead of hiding them silently', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const info = vi.spyOn(toast, 'info').mockImplementation(() => {});
+    const flux = lora({ file: 'lora.safetensors', name: 'lora', catalog_id: null, family: 'flux', installed: true, license: null });
+    vi.mocked(api.listImageLoras).mockResolvedValue([...catalog, flux]);
+    vi.mocked(open).mockResolvedValue('C:\\Downloads\\lora.safetensors');
+    vi.mocked(api.importImageLora).mockResolvedValue('lora.safetensors');
+    render(<LocalLoraSettings selected={[]} onSelectedChange={onChange} family="flux2" />);
+
+    const other = await screen.findByTestId('lora-other-family');
+    expect(other).toHaveTextContent('lora');
+    expect(other).toHaveTextContent('FLUX.1');
+    // Catalog LoRAs of other families stay out of it.
+    expect(other).not.toHaveTextContent('GHIBSKY');
+    expect(within(other).getByRole('button', { name: 'Edit lora' })).toBeInTheDocument();
+
+    // An import for another family isn't chosen for this model, and says where it went.
+    await user.click(screen.getByRole('button', { name: 'Add own LoRA …' }));
+    const dialog = await screen.findByTestId('own-lora-dialog');
+    await user.selectOptions(within(dialog).getByLabelText('Model family'), 'flux');
+    await user.click(within(dialog).getByRole('button', { name: 'Add' }));
+    await waitFor(() => expect(info).toHaveBeenCalledWith(expect.stringContaining('FLUX.1')));
+    expect(onChange).not.toHaveBeenCalled();
+  });
 });

@@ -3805,6 +3805,8 @@
   "localImage.loraImported": "«{{name}}» добавлена.",
   "localImage.loraEdit": "Изменить {{name}}",
   "localImage.loraOwnFamily": "Свой файл · для {{family}}",
+  "localImage.lorasOtherFamily": "Свои LoRA для другой модели изображений (здесь скрыты, семейство можно изменить карандашом):",
+  "localImage.loraOtherFamilyImported": "LoRA сохранена для {{family}}. Она появится, когда будет выбрана модель {{family}}.",
   "localImage.modelsTitle": "Модели изображений",
   "localImage.modelsIntro": "По одной модели на каждый уровень видеопамяти, напрямую с Hugging Face. Загрузку можно прервать и продолжить позже; каждый файл проверяется по SHA-256.",
   "localImage.loading": "Загрузка моделей …",
