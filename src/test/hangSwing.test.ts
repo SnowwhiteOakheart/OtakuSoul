@@ -49,6 +49,12 @@ describe('hanging pendulum', () => {
     expect(swing.angle).toBeGreaterThan(-SWING_LIMIT - 1e-9);
   });
 
+  it('toppled the other way round (a whole turn off) it still hangs straight, not stuck at the limit', () => {
+    const swing: Swing = { angle: -2 * Math.PI + 0.1, speed: 0, hanging: true };
+    run(swing, 4);
+    expect(Math.abs(swing.angle)).toBeLessThan(0.1);
+  });
+
   it('swings slower on a longer pendulum (held by the feet) than a short one (by the collar)', () => {
     const crossings = (length: number) => {
       const angles = run({ angle: 0.5, speed: 0, hanging: true }, 4, undefined, length);

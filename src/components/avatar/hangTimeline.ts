@@ -94,6 +94,9 @@ const AIR_DRAG = 1.2;
 /** Grabbed head down from standing, it starts toppling with this speed (radians/s). */
 export const TOPPLE_KICK = 2.5;
 
+/** The same turn within -π…π. */
+export const wrapAngle = (angle: number) => Math.atan2(Math.sin(angle), Math.cos(angle));
+
 /** The swing of the hanging body about the grip: angle from hanging still (radians, counter-clockwise on screen). */
 export interface Swing {
   angle: number;
@@ -116,6 +119,8 @@ export function swingStep(
   length: number,
   dt: number,
 ) {
+  // A whole turn more or less is the same hang (toppled the other way round).
+  swing.angle = wrapAngle(swing.angle);
   const ax = Math.max(-MAX_ACCEL, Math.min(MAX_ACCEL, accel.x));
   const ay = Math.max(-MAX_ACCEL, Math.min(MAX_ACCEL, accel.y));
   const gravity = Math.max(GRAVITY * 0.2, Math.min(GRAVITY * 3, GRAVITY - ay));

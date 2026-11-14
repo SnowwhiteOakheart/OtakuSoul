@@ -339,6 +339,9 @@ export const VrmViewer = ({
       // The mouse look is added on top every frame, so the head starts from rest (or from
       // the motion, which overwrites it if it animates the head).
       model.humanoid.getNormalizedBoneNode('head')?.quaternion.identity();
+      // The upper chest too: no procedural pose sets it, so a bend added on top (pet hanging)
+      // would otherwise stay when no motion drives it.
+      model.humanoid.getNormalizedBoneNode('upperChest')?.quaternion.identity();
       // The hips start from rest too (a motion moves them itself; sitting and steps add on top).
       const hips = model.humanoid.getNormalizedBoneNode('hips');
       if (hips && hipsRestY !== null) hips.position.y = hipsRestY;

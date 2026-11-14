@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { VRM, VRMHumanBoneName } from '@pixiv/three-vrm';
 import { reachWithArm } from './armReach';
 import { forFacing, type BodyPose } from './proceduralBody';
-import { RECOVER_PHASES, swingStep, TOPPLE_KICK, type Hang, type HangPoint, type Recover, type Swing } from './hangTimeline';
+import { RECOVER_PHASES, swingStep, TOPPLE_KICK, wrapAngle, type Hang, type HangPoint, type Recover, type Swing } from './hangTimeline';
 
 /**
  * Desktop pet (VRM): hanging from where the user grabbed it and getting up after a hard landing.
@@ -20,6 +20,8 @@ import { RECOVER_PHASES, swingStep, TOPPLE_KICK, type Hang, type HangPoint, type
 
 /** Folded over the hand: the pelvis tips forwards this far (radians), the spine bends the rest. */
 const HIP_PITCH = 1.25;
+/** Longest integration step of swing and tipping (s): stable at any frame rate. */
+const MAX_STEP = 1 / 60;
 /** How fast the trunk follows the swing (1/s): slower bends it more like a whip, the head last. */
 const TRUNK_FOLLOW = 6;
 /** How far the trailing trunk bends at most (radians, all its joints together). */
@@ -81,7 +83,7 @@ export class HangRig {
   private readonly offset = new THREE.Vector3();
   private hang: Hang | null = null;
   private grabbed: Grabbed | null = null;
-  private recover: (Recover & { start: number; tipTo: number; rubSide: 'left' | 'right' }) | null = null;
+  private recover: (Recover & { start: number; tipTo: number; rubSide: 'left' | 'right'; springsReset: boolean }) | null = null;
   private lastRecoverId = -1;
   private readonly lastSpeed = { x: 0, y: 0 };
   /** Swing of arms and legs about the view axis (radians), trailing the body's. */
@@ -151,7 +153,7 @@ export class HangRig {
         this.hanging = false;
         this.trunkRoll = this.roll;
         // Grabbed head down from standing: it starts to topple at once (not balanced on the grip).
-        const off = this.roll - this.grabbed.roll;
+        const off = wrapAngle(this.roll - this.grabbed.roll);
         if (Math.abs(off) > 2.5) this.rollSpeed = -Math.sign(off) * TOPPLE_KICK;
       }
     }
@@ -160,7 +162,7 @@ export class HangRig {
       // Tips over the way it already leans: from head down a half turn further round.
       const flipped = Math.abs(this.roll) > Math.PI / 2;
       const tipTo = flipped ? Math.sign(this.roll) * 2 * Math.PI : 0;
-      this.recover = { ...recover, start: elapsed, tipTo, rubSide: this.grabbed?.heldLeg ?? 'right' };
+      this.recover = { ...recover, start: elapsed, tipTo, rubSide: this.grabbed?.heldLeg ?? 'right', springsReset: false };
     }
     if (this.recover && elapsed - this.recover.start > RECOVER_PHASES[this.recover.kind].total) this.recover = null;
   }
@@ -265,7 +267,8 @@ export class HangRig {
 
   /**
    * Bones of a pose (rig angles as in `proceduralBody`), mixed in by `weight`. Along the spine
-   * a negative X bends forwards (checked rendered with VRM 0.x and 1.0).
+   * a positive X bends forwards (checked rendered from the front with VRM 0.x and 1.0: the head
+   * test shows negative X tilts the head back).
    */
   private pose(pose: BodyPose & Partial<Record<'head', [number, number, number]>>, weight: number) {
     const head = pose.head;
@@ -310,7 +313,11 @@ export class HangRig {
    * is the window's speed (window heights per second, y down, from `BodySway`).
    */
   apply(delta: number, elapsed: number, sway: { x: number; y: number }) {
-    const dt = Math.min(0.05, Math.max(1e-3, delta));
+    // Up to a quarter second per frame (a slow frame or a low frame rate keeps real time); the
+    // swing and the tipping are stepped in small pieces below.
+    const dt = Math.min(0.25, Math.max(1e-3, delta));
+    const steps = Math.ceil(dt / MAX_STEP);
+    const step = dt / steps;
     const hang = this.hang;
     const grabbed = this.grabbed;
     const recover = this.recover;
@@ -340,23 +347,35 @@ export class HangRig {
     if (hang && grabbed) {
       // A pendulum about the grip (see `swingStep`), measured from hanging still.
       const swing: Swing = { angle: this.roll - rollTarget, speed: this.rollSpeed, hanging: this.hanging };
-      swingStep(swing, accel, sway, grabbed.length, dt);
+      for (let i = 0; i < steps; i++) swingStep(swing, accel, sway, grabbed.length, step);
       this.roll = rollTarget + swing.angle;
       this.rollSpeed = swing.speed;
       this.hanging = swing.hanging;
     } else {
-      this.rollSpeed += (TIP_STIFFNESS * (rollTarget - this.roll) - TIP_DAMPING * this.rollSpeed) * dt;
-      this.roll += this.rollSpeed * dt;
+      for (let i = 0; i < steps; i++) {
+        this.rollSpeed += (TIP_STIFFNESS * (rollTarget - this.roll) - TIP_DAMPING * this.rollSpeed) * step;
+        this.roll += this.rollSpeed * step;
+      }
     }
     // Arms and legs swing with the body, a little behind it.
     const limbTarget = hang && grabbed ? this.roll - rollTarget : 0;
     this.limbAngle += (limbTarget - this.limbAngle) * Math.min(1, dt * LIMB_FOLLOW);
-    this.pitchSpeed += (TIP_STIFFNESS * (pitchTarget - this.pitch) - TIP_DAMPING * this.pitchSpeed) * dt;
-    this.pitch += this.pitchSpeed * dt;
+    for (let i = 0; i < steps; i++) {
+      this.pitchSpeed += (TIP_STIFFNESS * (pitchTarget - this.pitch) - TIP_DAMPING * this.pitchSpeed) * step;
+      this.pitch += this.pitchSpeed * step;
+    }
     // Tipped a whole turn round: that is upright again.
     if (!hang && recover && recover.tipTo !== 0 && Math.abs(this.roll - recover.tipTo) < 0.01 && Math.abs(this.rollSpeed) < 0.05) {
       this.roll -= recover.tipTo;
       recover.tipTo = 0;
+    }
+    // Upright again after head down or folded: long hair may have caught on the head's and
+    // body's colliders on the wrong side (twin tails stood up); it falls back into place.
+    if (recover && !recover.springsReset && recover.kind !== 'feet' && phases && t > phases.settle) {
+      if (recover.tipTo === 0 && Math.abs(this.roll) < 0.2 && Math.abs(this.pitch) < 0.2) {
+        recover.springsReset = true;
+        this.vrm.springBoneManager?.reset();
+      }
     }
     const rate = weightTarget > this.weight ? 10 : 5;
     this.weight += (weightTarget - this.weight) * Math.min(1, dt * rate);
@@ -381,15 +400,15 @@ export class HangRig {
     this.curl = 0;
     if (this.weight > 0.001 && kind) {
       if (kind === 'shoulder') {
-        this.pose({ spine: [-0.05, 0, 0], neck: [-0.22, 0, 0], leftFoot: [0.45, 0, 0], rightFoot: [0.45, 0, 0] }, this.weight);
+        this.pose({ spine: [0.05, 0, 0], neck: [0.22, 0, 0], leftFoot: [0.45, 0, 0], rightFoot: [0.45, 0, 0] }, this.weight);
       } else if (kind === 'hip') {
         this.pose(
           {
-            spine: [-0.35, 0, 0],
-            chest: [-0.3, 0, 0],
-            upperChest: [-0.2, 0, 0],
-            neck: [-0.3, 0, 0],
-            head: [-0.15, 0, 0],
+            spine: [0.35, 0, 0],
+            chest: [0.3, 0, 0],
+            upperChest: [0.2, 0, 0],
+            neck: [0.3, 0, 0],
+            head: [0.15, 0, 0],
             leftFoot: [0.4, 0, 0],
             rightFoot: [0.4, 0, 0],
           },
@@ -403,9 +422,10 @@ export class HangRig {
         const curl = hang ? tired * Math.max(0, Math.sin(((since - 1) / CURL_EVERY_S) * 2 * Math.PI)) ** 3 : 0;
         this.pose(
           {
-            spine: [0.08 - 0.5 * curl, 0, 0],
-            chest: [-0.35 * curl, 0, 0],
-            neck: [0.25 - 0.6 * curl, 0, 0],
+            // Head down: the back arches a little and the head tips back towards the floor.
+            spine: [-0.08 + 0.5 * curl, 0, 0],
+            chest: [0.35 * curl, 0, 0],
+            neck: [-0.25 + 0.6 * curl, 0, 0],
             [`${held}UpperLeg` as const]: [0, 0, 0],
             // The held leg is not a rod: the knee gives a little.
             [`${held}LowerLeg` as const]: [0.12, 0, 0],
@@ -422,7 +442,7 @@ export class HangRig {
       const down = t < phases.impact ? ramp(t, 0, phases.impact) : 1 - ramp(t, phases.impact, phases.total);
       this.pose(
         {
-          spine: [-0.3 * down, 0, 0],
+          spine: [0.3 * down, 0, 0],
           leftUpperLeg: [-1.0 * down, 0, 0],
           rightUpperLeg: [-1.0 * down, 0, 0],
           leftLowerLeg: [1.8 * down, 0, 0],
@@ -438,8 +458,8 @@ export class HangRig {
     // 2. The whole body turned: on the screen (roll about the view axis), forwards over the hand (pitch).
     const towardsCamera = this.camera.getWorldDirection(this.viewAxis).negate();
     this.limbDown.copy(DOWN).applyAxisAngle(towardsCamera, this.limbAngle);
-    // Forwards is a turn about -X: the figure faces the camera (+Z), its top goes towards it.
-    this.turn.setFromAxisAngle(towardsCamera, this.roll).multiply(this.q.setFromAxisAngle(AXIS_X, -this.pitch));
+    // Forwards is a turn about +X: the figure faces the camera (+Z), its top goes towards it.
+    this.turn.setFromAxisAngle(towardsCamera, this.roll).multiply(this.q.setFromAxisAngle(AXIS_X, this.pitch));
     scene.quaternion.copy(this.turn).multiply(this.restTurn);
     scene.position.copy(this.restPosition);
     scene.updateMatrixWorld(true);
@@ -534,7 +554,7 @@ export class HangRig {
                   .addScaledVector(outwards, 0.04 * this.height);
           target.addScaledVector(front, 0.012 * this.height * Math.cos(circle)).addScaledVector(up, 0.012 * this.height * Math.sin(circle));
           // Head bowed (rubbing it) or the back straightened (rubbing that).
-          this.pose(recover.kind === 'head' ? { neck: [-0.3, 0, -0.1], spine: [-0.1, 0, 0] } : { spine: [0.15, 0, 0], neck: [0.1, 0, 0] }, rub);
+          this.pose(recover.kind === 'head' ? { neck: [0.3, 0, -0.1], spine: [0.1, 0, 0] } : { spine: [-0.15, 0, 0], neck: [-0.1, 0, 0] }, rub);
           scene.updateMatrixWorld(true);
           this.reach(side, 'Arm', target, rub);
         }
