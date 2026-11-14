@@ -208,7 +208,7 @@ export function usePetWindowPhysics({
         monitorScale.current,
         platforms.current,
         prefsRef.current.rideWindows,
-        { keepInside: behavior.dancing, peek: peekRef.current },
+        { keepInside: peekRef.current === 0, peek: peekRef.current },
       );
       behavior.setGrounded(result.grounded, now);
       behavior.setOnWindow(result.body.support !== null);
@@ -331,8 +331,15 @@ export function usePetWindowPhysics({
           const [scale, position, current] = await within(
             Promise.all([win.scaleFactor(), win.outerPosition(), win.innerSize()]),
           );
-          const x = Math.round(position.x + (current.width - size.width * scale) / 2);
-          const y = Math.round(position.y + current.height - size.height * scale);
+          let x = Math.round(position.x + (current.width - size.width * scale) / 2);
+          let y = Math.round(position.y + current.height - size.height * scale);
+          if (area.current) {
+            const field = walkArea(monitors.current, x + (size.width * scale) / 2, area.current);
+            const maxX = Math.max(field.x, field.x + field.width - size.width * scale);
+            const maxY = Math.max(field.y, field.y + field.height - size.height * scale);
+            x = Math.round(Math.max(field.x, Math.min(maxX, x)));
+            y = Math.round(Math.max(field.y, Math.min(maxY, y)));
+          }
           await within(win.setSize(new LogicalSize(size.width, size.height)));
           await within(win.setPosition(new PhysicalPosition(x, y)));
           heightRef.current = height;

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type React from 'react';
 import { emitTo, listen } from '@tauri-apps/api/event';
-import { getCurrentWindow, LogicalSize, PhysicalPosition } from '@tauri-apps/api/window';
+import { currentMonitor, getCurrentWindow, LogicalSize, PhysicalPosition } from '@tauri-apps/api/window';
 import type { PetFigure } from '../avatar/avatarStage';
 import { StrokeDetector } from './petStroke';
 import { openGuestMenu } from './pet/PetMenu';
@@ -133,11 +133,22 @@ async function openForHang(held: PetHang | null): Promise<number | null> {
   const { innerWidth: width, innerHeight: height } = window;
   const wide = Math.max(width, Math.round(height * HANG_ASPECT));
   const win = getCurrentWindow();
-  const [position, factor] = await within(Promise.all([win.outerPosition(), win.scaleFactor()]));
+  const [position, factor, monitor] = await within(
+    Promise.all([win.outerPosition(), win.scaleFactor(), currentMonitor().catch(() => null)]),
+  );
   if (wide > width) await within(win.setSize(new LogicalSize(wide, height)));
   const dx = width / 2 + held.at.x * height - (wide / 2 + held.anchor.x * height);
   const dy = (held.at.y - held.anchor.y) * height;
-  await within(win.setPosition(new PhysicalPosition(Math.round(position.x + dx * factor), Math.round(position.y + dy * factor))));
+  let nextX = Math.round(position.x + dx * factor);
+  let nextY = Math.round(position.y + dy * factor);
+  if (monitor) {
+    const { position: at, size: extent } = monitor.workArea;
+    const maxX = Math.max(at.x, at.x + extent.width - wide * factor);
+    const maxY = Math.max(at.y, at.y + extent.height - height * factor);
+    nextX = Math.round(Math.max(at.x, Math.min(maxX, nextX)));
+    nextY = Math.round(Math.max(at.y, Math.min(maxY, nextY)));
+  }
+  await within(win.setPosition(new PhysicalPosition(nextX, nextY)));
   return wide > width ? width : null;
 }
 

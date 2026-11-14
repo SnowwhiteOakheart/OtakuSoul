@@ -70,6 +70,8 @@ export const PetFigureCanvas: React.FC<PetFigureCanvasProps> = ({
   onPointerUp,
   noModelLabel,
 }) => {
+  const is2dFigure = isPortraitPath(modelPath) || isLive2dPath(modelPath) || isInochi2dModel(modelPath);
+
   const viewerProps = {
     modelPath,
     // Only VRM models have a blush; glTF and MMD show their relaxed face instead.
@@ -97,13 +99,15 @@ export const PetFigureCanvas: React.FC<PetFigureCanvasProps> = ({
           // A lifted model stands higher; sitting rests on the window's edge regardless.
           style={lift && loop !== 'sit' ? { bottom: `${(PET_FEET_SHARE + lift) * 100}%` } : undefined}
           className={`pet-shadow ${loop === 'sit' ? 'pet-shadow-sit' : ''} ${
-            mode === 'dragged' || mode === 'falling' ? 'pet-shadow-off' : hop ? 'pet-shadow-hop' : ''
+            mode === 'dragged' || mode === 'falling'
+              ? 'pet-shadow-off'
+              : `${hop ? 'pet-shadow-hop' : ''}${!is2dFigure ? ' opacity-35' : ''}`
           }`}
         />
       )}
       <div
         ref={figureRef}
-        className={`absolute inset-0 ${hop ? 'pet-hop' : walking ? 'pet-walk' : ''}`}
+        className={`absolute inset-0 ${hop ? 'pet-hop' : walking && is2dFigure ? 'pet-walk' : ''}`}
         style={loop === 'sit' ? { transform: `translateY(${SIT_DROP * 100}%)` } : undefined}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}

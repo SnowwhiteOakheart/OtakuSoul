@@ -298,7 +298,7 @@
   }
   @keyframes pet-hop {
     0%, 100% { transform: translateY(0); }
-    35% { transform: translateY(-7%); }
+    35% { transform: translateY(-5%); }
     60% { transform: translateY(0); }
     75% { transform: translateY(-2%); }
   }

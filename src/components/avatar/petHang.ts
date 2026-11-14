@@ -255,9 +255,11 @@ export class HangRig {
       if (y < lowest) lowest = y;
     };
     at('head', 0.12 * this.height);
+    at('head', -0.06 * this.height);
     at('hips', -0.05 * this.height);
     for (const side of ['left', 'right'] as const) {
       at(`${side}Hand`);
+      at(`${side}UpperArm`);
       at(`${side}LowerArm`);
       at(`${side}LowerLeg`);
       at(`${side}Foot`, -0.04 * this.height);
@@ -487,7 +489,7 @@ export class HangRig {
       this.offset.x += (0 - this.offset.x) * Math.min(1, dt * 6);
       this.offset.z += (0 - this.offset.z) * Math.min(1, dt * 6);
       // Falls the rest of the way at once (gravity), rises gently (standing up lifts the seat).
-      const floor = -(this.lowest() - this.restPosition.y);
+      const floor = -(this.lowest() - this.restPosition.y) + 0.015 * this.height;
       const gap = floor - this.offset.y;
       this.offset.y += gap * Math.min(1, dt * (gap < 0 ? 25 : 8));
     } else {

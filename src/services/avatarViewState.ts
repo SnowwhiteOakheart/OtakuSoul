@@ -167,7 +167,7 @@ export function frameFullBody(
   const height = Math.max(0.5, topY);
   // The whole figure (2 % below the feet) fills the lower 80 % of the window at zoom 1.
   const halfHeight = (height * 1.02) / 0.8 / 2 / framing.zoom;
-  const halfWidth = (height * 0.24) / framing.zoom;
+  const halfWidth = (height * 0.32) / framing.zoom;
   const distance = Math.max(halfHeight / tan, halfWidth / (tan * Math.max(aspect, 0.1)));
   // The toes point at the camera, which looks from about the middle of the body: in perspective
   // they show lower than the feet's plane. They (not the heels) stand at the feet's share, or the

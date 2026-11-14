@@ -63,9 +63,14 @@ export function gripAt(y: number, top: number, feet: number): HangGrip {
  * the feet at the figure's top, so the head ends at the floor line.
  */
 export function hangAnchor(grip: HangGrip, at: HangPoint, top: number): HangPoint {
-  if (grip === 'shoulder') return at;
-  if (grip === 'hip') return { x: 0, y: at.y };
-  return { x: 0, y: Math.max(0.03, top - 0.08) };
+  if (grip === 'shoulder') {
+    return {
+      x: Math.max(-0.35, Math.min(0.35, at.x)),
+      y: Math.max(0.12, Math.min(0.36, at.y)),
+    };
+  }
+  if (grip === 'hip') return { x: 0, y: Math.max(0.25, Math.min(0.55, at.y)) };
+  return { x: 0, y: Math.max(0.1, top - 0.08) };
 }
 
 /** How it lands after hanging like this: on the head from the feet, on the backside from the hips. */

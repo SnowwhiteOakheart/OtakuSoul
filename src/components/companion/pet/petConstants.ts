@@ -49,7 +49,7 @@ export const BUBBLE_MS = 5000;
  * While the figure hangs the window is this many times as wide as high (it swings and turns
  * over sideways); afterwards it gets its own width back.
  */
-export const HANG_ASPECT = 1.7;
+export const HANG_ASPECT = 2.0;
 /** Pointer travel (px) after which pressing turns into dragging the window. */
 export const DRAG_THRESHOLD = 4;
 export const STATUS_POLL_MS = 5000;

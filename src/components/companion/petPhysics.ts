@@ -151,7 +151,7 @@ export function usablePlatforms(platforms: Platform[], size: Size, area: Rect): 
   const bottom = area.y + area.height;
   return platforms.filter(
     (p) =>
-      p.y - size.height >= area.y - size.height * 0.1 &&
+      p.y - size.height >= area.y &&
       p.y < bottom - 4 &&
       p.right > area.x &&
       p.left < area.x + area.width &&
@@ -315,6 +315,10 @@ export function stepBody(
       landed = true;
     } else {
       y += vy * dt;
+      if (y < area.y) {
+        y = area.y;
+        vy = Math.max(0, vy);
+      }
       if (y >= floor) {
         y = floor;
         vy = 0;
