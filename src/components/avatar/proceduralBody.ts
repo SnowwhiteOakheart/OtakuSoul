@@ -87,7 +87,7 @@ export interface BodyInput {
  * half round the vertical axis: turns about X and Z go the other way, turns about Y stay. So Z
  * angles follow `leftArm`/`rightArm`, Y angles only the side (left/right), and X is turned here.
  */
-function forFacing(pose: BodyPose, leftArm: number): BodyPose {
+export function forFacing(pose: BodyPose, leftArm: number): BodyPose {
   if (leftArm >= 0) return pose;
   for (const angles of Object.values(pose)) if (angles) angles[0] = -angles[0];
   return pose;

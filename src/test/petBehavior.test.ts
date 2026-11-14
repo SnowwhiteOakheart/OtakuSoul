@@ -5,11 +5,14 @@ import {
   bubbleText,
   DOZE_AFTER_MS,
   eyeLine,
+  gripAt,
+  hangAnchor,
   HEAD_ZONE_END,
   headZoneEnd,
   isNightHour,
   NEUTRAL_DRIVE,
   PetBehavior,
+  RECOVER_MS,
   SIT_TURN,
   touchZoneAt,
   type PetDrive,
@@ -508,5 +511,77 @@ describe('bubbleText', () => {
     pet.tick(t + 350);
     pet.setGrounded(true, t + 800);
     expect(pet.tick(t + 850).cues).toContainEqual({ kind: 'event', event: 'landed' });
+  });
+});
+
+describe('hanging and landing', () => {
+  const hang = (grip: 'shoulder' | 'hip' | 'feet') => ({ grip, at: { x: 0.4, y: 0.5 }, anchor: { x: 0.5, y: 0.5 } });
+  const hangingPet = (grip: 'shoulder' | 'hip' | 'feet') => {
+    const pet = new PetBehavior(0, fixed(0.5));
+    pet.setFloorSit(true);
+    pet.dragStart(1000, hang(grip));
+    return pet;
+  };
+
+  it('splits the figure into shoulders, hips and feet', () => {
+    expect(gripAt(0.25, 0.2, 0.98)).toBe('shoulder');
+    expect(gripAt(0.6, 0.2, 0.98)).toBe('hip');
+    expect(gripAt(0.9, 0.2, 0.98)).toBe('feet');
+  });
+
+  it('hangs the feet at the top, so the head ends near the floor line', () => {
+    const feet = hangAnchor('feet', { x: 0.3, y: 0.9 }, 0.2);
+    expect(feet.x).toBe(0.5);
+    expect(feet.y).toBeCloseTo(0.18);
+    expect(hangAnchor('shoulder', { x: 0.3, y: 0.3 }, 0.2)).toEqual({ x: 0.3, y: 0.3 });
+  });
+
+  it('keeps hanging through the fall and lands on the head when held by the feet', () => {
+    const pet = hangingPet('feet');
+    expect(pet.tick(1100).frame.hang?.grip).toBe('feet');
+    pet.dragEnd(1200);
+    pet.setGrounded(false, 1250);
+    expect(pet.tick(1300).frame.hang?.grip).toBe('feet');
+    pet.setGrounded(true, 1900);
+    const { frame, cues } = pet.tick(2000);
+    expect(frame.hang).toBeNull();
+    expect(frame.recover?.kind).toBe('head');
+    expect(frame.hop).toBe(false);
+    expect(cues).toContainEqual({ kind: 'event', event: 'landed' });
+    expect(cues.some((cue) => cue.kind === 'gesture')).toBe(false);
+    // Rubbing its head looks sad; afterwards it is itself again.
+    expect(pet.tick(3500).frame.expression).toBe('sad');
+    expect(pet.tick(1900 + RECOVER_MS('head') + 100).frame.recover).toBeNull();
+  });
+
+  it('turns sideways folded over the hand and lands on its backside', () => {
+    const pet = hangingPet('hip');
+    expect(Math.abs(pet.tick(1100).frame.turn)).toBeGreaterThan(1);
+    pet.dragEnd(1200);
+    pet.setGrounded(false, 1250);
+    pet.setGrounded(true, 1600);
+    expect(pet.tick(1700).frame.recover?.kind).toBe('back');
+  });
+
+  it('lands softly on the feet after a short drop from the shoulders', () => {
+    const pet = hangingPet('shoulder');
+    pet.dragEnd(1200);
+    pet.setGrounded(false, 1250);
+    pet.setGrounded(true, 1450);
+    const { frame } = pet.tick(1500);
+    expect(frame.recover).toBeNull();
+    expect(frame.hang).toBeNull();
+  });
+
+  it('drops out of the hanging pose when let go on the ground', () => {
+    const pet = hangingPet('feet');
+    pet.dragEnd(1200);
+    expect(pet.tick(1300).frame.hang?.grip).toBe('feet');
+    expect(pet.tick(1600).frame.recover?.kind).toBe('head');
+  });
+
+  it('does not hang figures without the pose', () => {
+    const pet = new PetBehavior(0, fixed(0.5));
+    expect(pet.canHang).toBe(false);
   });
 });

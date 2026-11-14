@@ -40,6 +40,15 @@ export const PET_CURSOR_EVENT = 'pet:cursor';
 export const PET_TOGGLE_EVENT = 'pet:toggle';
 /** Backend → pet: "Komm her" from the tray (menu or double click); the figure comes to the pointer. */
 export const PET_COME_EVENT = 'pet:come';
+/**
+ * Test → pet interface in a test window (`?pet=true`, not the real pet): lift it by a grip
+ * (`grip`, `at` as shares of the window) or let it go (no `grip`). Pose checks without a real drag.
+ */
+export const PET_TEST_HANG_EVENT = 'pet:test-hang';
+export interface PetTestHang {
+  grip?: 'shoulder' | 'hip' | 'feet';
+  at: { x: number; y: number };
+}
 
 /** Backend → pet: a fullscreen window or the lock screen is in front (Windows only). */
 export const PET_SCREEN_EVENT = 'pet:screen';

@@ -4,6 +4,7 @@
 // sitting on the ground, for one VRM 0.x and one VRM 1.0 model of `assets/vrm`.
 // Not part of `npm run e2e`; run with `xvfb-run -a node e2e/local-pet-pose.mjs`
 // (`OTAKUSOUL_AVATAR=part-of-name` for a single model, `OTAKUSOUL_SHOTS=<folder>` for the output).
+// Standing it is also lifted by shoulders, hips and feet and let go (`OTAKUSOUL_HANG=0` skips that).
 import { existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import path from 'node:path';
@@ -57,6 +58,20 @@ for (const withPack of [true, false]) {
         const tag = `${name}-${withPack ? 'mit-paket' : 'ohne-paket'}-${pose}`;
         await browser.saveScreenshot(path.join(out, `${tag}.png`));
         console.log(`${tag}: ${motions.length} Bewegungen`);
+        if (pose !== 'stand' || process.env.OTAKUSOUL_HANG === '0') continue;
+        // Lifted by shoulders, hips and feet (`pet:test-hang`, no real drag), then let go: the
+        // landing (head, backside) with sitting, rubbing and standing up again.
+        const grips = { shoulder: { x: 0.45, y: 0.32 }, hip: { x: 0.45, y: 0.6 }, feet: { x: 0.45, y: 0.93 } };
+        for (const [grip, at] of Object.entries(grips)) {
+          await emit('pet:test-hang', { grip, at });
+          await browser.pause(1800);
+          await browser.saveScreenshot(path.join(out, `${tag}-haengt-${grip}.png`));
+          await emit('pet:test-hang', { at });
+          for (const [label, wait] of [['aufprall', 350], ['sitzt', 1400], ['steht', 3500]]) {
+            await browser.pause(wait);
+            await browser.saveScreenshot(path.join(out, `${tag}-${grip}-${label}.png`));
+          }
+        }
       }
     }
   } finally {

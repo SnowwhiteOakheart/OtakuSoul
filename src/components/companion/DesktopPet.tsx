@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type React from 'react';
-import { emitTo } from '@tauri-apps/api/event';
-import { getCurrentWindow } from '@tauri-apps/api/window';
+import { emitTo, listen } from '@tauri-apps/api/event';
+import { getCurrentWindow, PhysicalPosition } from '@tauri-apps/api/window';
 import type { PetFigure } from '../avatar/avatarStage';
 import { StrokeDetector } from './petStroke';
 import { openGuestMenu } from './pet/PetMenu';
@@ -19,6 +19,8 @@ import { PetBubble } from './PetBubble';
 import {
   bubbleMs,
   eyeLine,
+  gripAt,
+  hangAnchor,
   headZoneEnd,
   HOLD_HAND_MS,
   isNightHour,
@@ -28,13 +30,15 @@ import {
   type BubbleSide,
   type Gaze,
   type PetDrive,
+  type PetHang,
   type PetMode,
+  type PetRecover,
   type PetSeat,
   type TouchZone,
 } from './petBehavior';
 import type { GestureRequest, LoopRole } from '../../utils/avatarGestures';
 import type { MotionPackItem } from '../../types/generated/MotionPackItem';
-import { DEFAULT_PET_FRAMING, petFigureTop, type PetFraming } from '../../services/avatarViewState';
+import { DEFAULT_PET_FRAMING, PET_FEET_SHARE, petFigureTop, type PetFraming } from '../../services/avatarViewState';
 import {
   loadPetFraming,
   loadPetModelHeight,
@@ -43,6 +47,9 @@ import {
   PET_BEAT_EVENT,
   PET_COME_EVENT,
   PET_CURSOR_EVENT,
+  PET_LABEL,
+  GUEST_LABEL,
+  PET_TEST_HANG_EVENT,
   PET_FRAMING_EVENT,
   PET_HELLO_EVENT,
   PET_MOTIONS_EVENT,
@@ -77,6 +84,7 @@ import {
   type PetScreen,
   type PetSentence,
   type PetState,
+  type PetTestHang,
 } from '../../services/desktopPet';
 import { type Platform } from './petPhysics';
 import {
@@ -95,12 +103,33 @@ import {
   STATUS_POLL_MS,
   clamp,
   seatDrop,
+  within,
 } from './pet/petConstants';
 import { PetComposeForm } from './pet/PetComposeForm';
 import { PetStatusCard } from './pet/PetStatusCard';
 import { openPetContextMenu } from './pet/PetMenu';
 import { PetFigureCanvas } from './pet/PetFigureCanvas';
 import { usePetWindowPhysics } from './pet/usePetWindowPhysics';
+
+/** The grip at a press (logical px in the window) and where the grabbed part then hangs. */
+function grabbedAt(press: { cx: number; cy: number }, framing: PetFraming, drop: number): PetHang {
+  const at = { x: press.cx / window.innerWidth, y: press.cy / window.innerHeight };
+  const top = petFigureTop(framing);
+  // Seated, the figure is drawn lower (and squatter): the grip is read as if it stood.
+  const grip = gripAt(at.y - drop, top, 1 - PET_FEET_SHARE - framing.lift - drop);
+  return { grip, at, anchor: hangAnchor(grip, at, top) };
+}
+
+/** Moves the window by the way from the grabbed point to where that part is drawn while hanging. */
+async function shiftForHang(held: PetHang | null) {
+  if (!held) return;
+  const dx = (held.at.x - held.anchor.x) * window.innerWidth;
+  const dy = (held.at.y - held.anchor.y) * window.innerHeight;
+  if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+  const win = getCurrentWindow();
+  const [position, factor] = await within(Promise.all([win.outerPosition(), win.scaleFactor()]));
+  await within(win.setPosition(new PhysicalPosition(Math.round(position.x + dx * factor), Math.round(position.y + dy * factor))));
+}
 
 /**
  * The desktop pet window (`index.html?pet=true`): the active avatar on a transparent window.
@@ -142,6 +171,9 @@ export const DesktopPet: React.FC = () => {
   const [seat, setSeat] = useState<PetSeat | null>(null);
   const seatRef = useRef<PetSeat | null>(null);
   const sittingRef = useRef(false);
+  /** Held up from where it was grabbed, and getting up after a hard landing (VRM poses). */
+  const [hang, setHang] = useState<PetHang | null>(null);
+  const [recover, setRecover] = useState<PetRecover | null>(null);
   const modelPath = pet ? petModelPath(pet, prefs.figure) : '';
   /** The shown model, whose size a resize remembers. */
   const modelRef = useRef(modelPath);
@@ -184,6 +216,9 @@ export const DesktopPet: React.FC = () => {
   const pressRef = useRef<{
     x: number;
     y: number;
+    /** Where in the window it was pressed (logical px). */
+    cx: number;
+    cy: number;
     dragging: boolean;
     /** Pressed on one of the figure's hands. */
     hand: boolean;
@@ -445,6 +480,8 @@ export const DesktopPet: React.FC = () => {
       setWalking(frame.walk !== 0);
       setLoop(frame.loop);
       setSeat(frame.seat);
+      setHang(frame.hang);
+      setRecover((was) => (was?.id === frame.recover?.id ? was : frame.recover));
       seatRef.current = frame.seat;
       sittingRef.current = frame.loop === 'sit';
       setWalkDirection(frame.walk);
@@ -559,6 +596,18 @@ export const DesktopPet: React.FC = () => {
       }),
       listenOwn(PET_COME_EVENT, () => {
         void comeHere();
+      }),
+      // Pose checks (`e2e/local-pet-pose.mjs`): lift by a grip or let go, without a real drag.
+      // Only in the test window that shows the pet interface; the real pet windows never hear it.
+      listen<PetTestHang>(PET_TEST_HANG_EVENT, ({ payload }) => {
+        if (getCurrentWindow().label === PET_LABEL || getCurrentWindow().label === GUEST_LABEL) return;
+        const now = performance.now();
+        if (payload.grip) {
+          const top = petFigureTop(framingRef.current);
+          behavior.dragStart(now, { grip: payload.grip, at: payload.at, anchor: hangAnchor(payload.grip, payload.at, top) });
+        } else {
+          behavior.dragEnd(now);
+        }
       }),
       listenOwn<PetCursor>(PET_CURSOR_EVENT, ({ payload: { x, y, inside, button, through, gx, gy, t: polledAt } }) => {
         throughRef.current = through !== false;
@@ -770,6 +819,8 @@ export const DesktopPet: React.FC = () => {
     const press: NonNullable<typeof pressRef.current> = {
       x: e.screenX,
       y: e.screenY,
+      cx: e.clientX,
+      cy: e.clientY,
       dragging: false,
       hand,
       holding: false,
@@ -802,11 +853,16 @@ export const DesktopPet: React.FC = () => {
     const now = performance.now();
     beginDrag(now);
     endPeek();
-    behavior.dragStart(now);
-    // The system moves the window from here and keeps the button release (on Windows the
-    // call returns at once; the drag ends when the moves stop).
-    void getCurrentWindow()
-      .startDragging()
+    // Where it was grabbed decides how it hangs (VRM pose): the window moves so the grabbed
+    // part (drawn at `anchor`) is under the pointer before the system drag keeps that offset.
+    const held = behavior.canHang && !sittingRef.current ? grabbedAt(press, framingRef.current, seatDrop(seatRef.current)) : null;
+    behavior.dragStart(now, held);
+    const win = getCurrentWindow();
+    void shiftForHang(held)
+      .catch(() => {})
+      // The system moves the window from here and keeps the button release (on Windows the
+      // call returns at once; the drag ends when the moves stop).
+      .then(() => win.startDragging())
       .catch(() => {})
       .finally(() => {
         pressRef.current = null;
@@ -907,6 +963,8 @@ export const DesktopPet: React.FC = () => {
         mode={mode}
         loop={loop}
         seat={seat}
+        hang={hang}
+        recover={recover}
         hop={hop}
         walking={walking}
         lift={framing.lift}

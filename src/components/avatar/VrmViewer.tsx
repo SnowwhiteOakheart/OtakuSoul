@@ -18,6 +18,8 @@ import { AvatarViewerChrome } from './AvatarViewerChrome';
 import { bodyPose, BodySway, EDGE_SIT_LEGS, floorSitPose, legReach, walkBob, WALK_CYCLE_HZ, type BodyBone, type LegLengths } from './proceduralBody';
 import { PET_EDGE_SEAT } from '../../services/avatarViewState';
 import { reachWithArm } from './armReach';
+import { HangRig, isSkirtJoint } from './petHang';
+import type { Hang, Recover } from './hangTimeline';
 import { useAvatarMotions } from './useAvatarMotions';
 
 export interface AvatarViewerProps {
@@ -51,6 +53,10 @@ export interface AvatarViewerProps {
    * or on a window's edge (legs hanging; the pet window sinks `PET_EDGE_SINK` for them).
    */
   seat?: 'floor' | 'edge' | null;
+  /** Desktop pet held up: hangs from where it was grabbed (VRM only; see `petHang.ts`). */
+  hang?: Hang | null;
+  /** Desktop pet getting up after a hard landing (VRM only). */
+  recover?: Recover | null;
 }
 
 /**
@@ -131,6 +137,8 @@ export const VrmViewer = ({
   pet,
   loop = null,
   seat: seatMode = null,
+  hang = null,
+  recover = null,
 }: AvatarViewerProps) => {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -158,6 +166,14 @@ export const VrmViewer = ({
   useEffect(() => {
     seatRef.current = seatMode;
   }, [seatMode]);
+  const hangRef = useRef(hang);
+  useEffect(() => {
+    hangRef.current = hang;
+  }, [hang]);
+  const recoverRef = useRef(recover);
+  useEffect(() => {
+    recoverRef.current = recover;
+  }, [recover]);
 
   useEffect(() => {
     emotionRef.current = emotion;
@@ -180,6 +196,8 @@ export const VrmViewer = ({
     let leftArmDirection = 1;
     let rightArmDirection = -1;
     let vrm: VRM | null = null;
+    /** Hanging and getting up (desktop pet only), made once the model is loaded. */
+    let hangRig: HangRig | null = null;
     let morphBinds: MorphBind[] = [];
     const cleanupAudio = audioPlayer.onAudioFrame((_amplitude, visemes) => {
       audioVisemes = visemes;
@@ -258,6 +276,7 @@ export const VrmViewer = ({
         if (head) {
           stage.frameModel(head.getWorldPosition(new THREE.Vector3()).y, modelHeight);
         }
+        if (petRef.current) hangRig = new HangRig(loaded, stage.camera, modelHeight, leftArmDirection);
         // The pet may sit this figure on the ground (the pose needs the humanoid rig).
         petRef.current?.onFloorSit?.(!!loaded.humanoid.getNormalizedBoneNode('hips'));
         stage.setHands(
@@ -299,6 +318,7 @@ export const VrmViewer = ({
     /** Spring settings of hair and cloth as loaded, to add the window's wind to (and restore). */
     const springRest = new Map<object, { dir: THREE.Vector3; power: number }>();
     const wind = new THREE.Vector3();
+    const skirtFall = new THREE.Vector3();
     let neckX = 0;
     let neckY = 0;
     let lookX = 0;
@@ -364,7 +384,9 @@ export const VrmViewer = ({
       }
       // Desktop pet sitting on the ground: legs and hips go to the sitting pose over whatever
       // moved them (procedural or a motion), eased in and out.
-      const wanted = seatRef.current;
+      // Getting up after a hard landing sits down on the ground for a while.
+      hangRig?.sync(hangRef.current, recoverRef.current, elapsed);
+      const wanted = seatRef.current ?? hangRig?.seat(elapsed) ?? null;
       if (wanted) seatKind = wanted;
       seat += ((wanted ? 1 : 0) - seat) * Math.min(1, delta * 2.5);
       if (seat > 0.001 && hips && hipsRestY !== null) {
@@ -415,6 +437,8 @@ export const VrmViewer = ({
           lower.quaternion.copy(reachLower.slerp(lower.quaternion, seat));
         }
       }
+      // Held up or getting up: the whole body turns about the grip, limbs hang, a hand rubs.
+      hangRig?.apply(delta, elapsed, sway.windowSpeed.x);
       model.humanoid
         .getNormalizedBoneNode('head')
         // Up and down turn the other way on VRM 0.x rigs (see `forFacing` in proceduralBody).
@@ -436,7 +460,9 @@ export const VrmViewer = ({
           rest = { dir: joint.settings.gravityDir.clone(), power: joint.settings.gravityPower };
           springRest.set(joint, rest);
         }
-        const pull = poseVector.copy(rest.dir).multiplyScalar(rest.power).add(wind);
+        // Skirts fall along the legs however the body hangs (not over the head).
+        const fallDir = hangRig && isSkirtJoint(joint.bone.name) ? skirtFall.copy(rest.dir).applyQuaternion(hangRig.turn) : rest.dir;
+        const pull = poseVector.copy(fallDir).multiplyScalar(rest.power).add(wind);
         joint.settings.gravityPower = pull.length();
         if (joint.settings.gravityPower > 1e-4) joint.settings.gravityDir.copy(pull.normalize());
         else joint.settings.gravityDir.copy(rest.dir);
@@ -508,6 +534,7 @@ export const VrmViewer = ({
         settings.gravityPower = rest.power;
       }
       // Back to the cache in its loaded pose, for the next viewer of this model.
+      hangRig?.reset();
       if (vrm) releaseAvatar(vrm);
       setLoadedVrm(null);
       setPlayingGesture('');

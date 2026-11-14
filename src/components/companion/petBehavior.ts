@@ -2,6 +2,16 @@ import type { LoopRole, MotionRole } from '../../utils/avatarGestures';
 import type { PetPose } from '../../services/desktopPet';
 import { withoutEmotionTag } from '../../utils/replyTags';
 import type { PetEvent } from '../../types/generated/PetEvent';
+import {
+  gripAt,
+  hangAnchor,
+  landingFor,
+  RECOVER_PHASES,
+  type Hang,
+  type HangGrip,
+  type Landing,
+  type Recover,
+} from '../avatar/hangTimeline';
 
 /**
  * What the desktop pet does on its own: a small state machine driven by time and by what
@@ -42,9 +52,29 @@ export interface PetFrame {
    * window's edge with the legs hanging down; null when not (or when a sitting motion plays).
    */
   seat: PetSeat | null;
+  /** Held up by the user (VRM pose: hangs from where it was grabbed); also while it falls after that. */
+  hang: PetHang | null;
+  /** Getting up after a hard landing (VRM pose); a new `id` starts it again. */
+  recover: PetRecover | null;
 }
 
 export type PetSeat = 'floor' | 'edge';
+
+export type PetGrip = HangGrip;
+export type PetHang = Hang;
+export type PetLanding = Landing;
+export type PetRecover = Recover;
+export { gripAt, hangAnchor };
+
+/** How long getting up takes after landing on this (the viewer's pose follows the same timeline). */
+export const RECOVER_MS = (kind: Landing) => RECOVER_PHASES[kind].total * 1000;
+
+/** A drop shorter than this (ms in the air) from the shoulders is landed on the feet without a stumble. */
+const SOFT_FALL_MS = 450;
+/** Released without falling: the hanging pose still turns into the landing after this long. */
+const HANG_RELEASE_MS = 250;
+/** Folded over the hand, the figure is seen from the side. */
+const HANG_HIP_TURN = 1.2;
 
 /** Where the figure was touched: a stroke on the head or a poke elsewhere. */
 export type TouchZone = 'head' | 'body';
@@ -185,6 +215,13 @@ export class PetBehavior {
   private dancingNow = false;
   /** Peeking in from a screen side: stays there, no walking off by itself. */
   private peeking = false;
+  /** Held up (and falling afterwards) by this grip. */
+  private hang: PetHang | null = null;
+  /** Let go at this time (still hanging until it falls or lands). */
+  private releasedAt: number | null = null;
+  private fallStart = 0;
+  private recovering: (PetRecover & { start: number }) | null = null;
+  private recoverId = 0;
 
   constructor(
     now: number,
@@ -219,11 +256,15 @@ export class PetBehavior {
     }
   }
 
-  dragStart(now: number) {
+  /** Lifted up; `hang` says where (only for figures with the hanging pose, see `canHang`). */
+  dragStart(now: number, hang: PetHang | null = null) {
     this.lastPointer = now;
     this.leaping = false;
     this.mode = 'dragged';
     this.action = null;
+    this.recovering = null;
+    this.hang = hang;
+    this.releasedAt = null;
   }
 
   dragEnd(now: number) {
@@ -231,7 +272,28 @@ export class PetBehavior {
     if (this.mode === 'dragged') {
       this.react(now, 'relaxed', 900);
       this.cues.push({ kind: 'event', event: 'thrown' });
+      if (this.hang) this.releasedAt = now;
     }
+  }
+
+  /** Whether the figure can hang from where it is grabbed (VRM: the same pose support as sitting). */
+  get canHang() {
+    return this.floorSit;
+  }
+
+  /** Lands after hanging: what it hits depends on how it hung; a short drop from the shoulders is nothing. */
+  private landFromHang(now: number, airborne: number) {
+    const grip = this.hang?.grip;
+    this.hang = null;
+    this.releasedAt = null;
+    if (!grip || !this.floorSit) return false;
+    const kind = landingFor(grip);
+    if (kind === 'feet' && airborne < SOFT_FALL_MS) return false;
+    this.recoverId += 1;
+    this.recovering = { kind, id: this.recoverId, start: now };
+    this.sitSide = this.random() < 0.5 ? -1 : 1;
+    this.react(now, 'surprised', RECOVER_MS(kind));
+    return true;
   }
 
   /**
@@ -362,10 +424,15 @@ export class PetBehavior {
     if (!grounded && this.mode !== 'dragged' && this.mode !== 'falling') {
       this.mode = 'falling';
       this.action = null;
+      this.fallStart = now;
     } else if (grounded && !was && this.mode === 'falling') {
       if (this.leaping) {
         this.leaping = false;
         this.react(now, 'happy', 700);
+      } else if (this.landFromHang(now, now - this.fallStart)) {
+        // The landing is the pose's (no hop, no landing motion over it).
+        this.cues.push({ kind: 'event', event: 'landed' });
+        return;
       } else {
         this.react(now, 'surprised', 700);
         this.hopUntil = now + HOP_MS;
@@ -546,8 +613,35 @@ export class PetBehavior {
     return this.dancingNow;
   }
 
+  /** Hanging: the grip, and folded over the hand it turns sideways (seen in profile). */
+  private hangFrame(): Pick<PetFrame, 'hang' | 'turn'> {
+    const hang = this.hang;
+    return { hang, turn: hang?.grip === 'hip' ? (hang.at.x < 0.5 ? -HANG_HIP_TURN : HANG_HIP_TURN) : 0 };
+  }
+
+  /**
+   * Getting up: startled at the impact, then it sits rubbing its head or back (sad, looking
+   * down), relieved at the end. Landing on the feet is only a startled crouch.
+   */
+  private recoverFrame(now: number, recovering: PetRecover & { start: number }): Pick<PetFrame, 'expression' | 'gaze' | 'recover' | 'turn'> {
+    const elapsed = now - recovering.start;
+    const recover = { kind: recovering.kind, id: recovering.id };
+    if (recovering.kind === 'feet') return { expression: elapsed < 500 ? 'surprised' : 'relaxed', gaze: null, recover, turn: 0 };
+    const phases = RECOVER_PHASES[recovering.kind];
+    // Seated it turns to the side like any floor seat (the knees do not point at the camera).
+    const turn = elapsed >= phases.impact * 1000 && elapsed < phases.rub * 1000 ? this.sitSide * SIT_TURN : 0;
+    if (elapsed < phases.settle * 1000) return { expression: 'surprised', gaze: { x: 0, y: -0.2 }, recover, turn };
+    if (elapsed < phases.rub * 1000) return { expression: 'sad', gaze: { x: 0, y: -0.45 }, recover, turn };
+    return { expression: 'relaxed', gaze: null, recover, turn };
+  }
+
   /** Advances to `now` and returns the frame plus the one-time cues since the last tick. */
   tick(now: number): { frame: PetFrame; cues: PetCue[] } {
+    // Let go near the ground (no fall): it still drops out of the hanging pose.
+    if (this.hang && this.releasedAt !== null && this.mode !== 'falling' && now - this.releasedAt > HANG_RELEASE_MS) {
+      this.landFromHang(now, 0);
+    }
+    if (this.recovering && now >= this.recovering.start + RECOVER_MS(this.recovering.kind)) this.recovering = null;
     if (this.mode === 'reacting' && now >= this.modeUntil) this.mode = 'idle';
     const talking = this.speaking || now < this.talkUntil;
     if (this.mode === 'idle' || this.mode === 'talking') this.mode = talking ? 'talking' : 'idle';
@@ -567,7 +661,7 @@ export class PetBehavior {
       this.startAction(now);
     }
 
-    const still = { mouth: 0, hop: false, walk: 0 as const, turn: 0, loop: null, seat: null };
+    const still = { mouth: 0, hop: false, walk: 0 as const, turn: 0, loop: null, seat: null, hang: null, recover: null };
     const kept = this.keptSeat;
     let frame: PetFrame;
     switch (this.mode) {
@@ -575,15 +669,19 @@ export class PetBehavior {
         frame = { ...still, mode: 'dozing', expression: 'relaxed', gaze: { x: 0, y: -0.8 }, loop: 'sleep', seat: kept, turn: this.seatTurn(kept) };
         break;
       case 'dragged':
-        frame = { ...still, mode: 'dragged', expression: 'surprised', gaze: { x: 0, y: -0.6 }, loop: 'fall' };
+        frame = { ...still, mode: 'dragged', expression: 'surprised', gaze: { x: 0, y: -0.6 }, loop: 'fall', ...this.hangFrame() };
         break;
       case 'falling':
         frame = this.leaping
           ? { ...still, mode: 'falling', expression: 'happy', gaze: null, loop: 'fall' }
-          : { ...still, mode: 'falling', expression: 'surprised', gaze: { x: 0, y: -0.7 }, loop: 'fall' };
+          : { ...still, mode: 'falling', expression: 'surprised', gaze: { x: 0, y: -0.7 }, loop: 'fall', ...this.hangFrame() };
         break;
       case 'reacting':
-        frame = { ...still, mode: 'reacting', expression: this.reactExpression, gaze: this.reactGaze, seat: kept, turn: this.seatTurn(kept) };
+        frame = this.recovering
+          ? { ...still, mode: 'reacting', ...this.recoverFrame(now, this.recovering) }
+          : this.hang
+            ? { ...still, mode: 'reacting', expression: 'surprised', gaze: { x: 0, y: -0.6 }, ...this.hangFrame() }
+            : { ...still, mode: 'reacting', expression: this.reactExpression, gaze: this.reactGaze, seat: kept, turn: this.seatTurn(kept) };
         break;
       case 'talking':
         frame = { ...still, mode: 'talking', expression: null, gaze: null, loop: 'talk', seat: kept, turn: this.seatTurn(kept) };
