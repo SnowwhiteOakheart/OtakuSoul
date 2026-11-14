@@ -18,6 +18,7 @@ import { AvatarViewerChrome } from './AvatarViewerChrome';
 import { bodyPose, BodySway, computeSitPose, walkBob, WALK_CYCLE_HZ, type BodyBone, type LegLengths, type SeatPose } from './proceduralBody';
 import { PET_EDGE_SEAT } from '../../services/avatarViewState';
 import { reachWithArm } from './armReach';
+import { eatReach, type PetEat } from './eatTimeline';
 import { HangRig, isSkirtJoint } from './petHang';
 import type { Hang, Recover } from './hangTimeline';
 import { useAvatarMotions } from './useAvatarMotions';
@@ -59,6 +60,8 @@ export interface AvatarViewerProps {
   hang?: Hang | null;
   /** Desktop pet getting up after a hard landing (VRM only). */
   recover?: Recover | null;
+  /** Desktop pet eating what it was fed: the right hand brings it to the mouth (VRM only). */
+  eat?: PetEat | null;
 }
 
 /**
@@ -143,6 +146,7 @@ export const VrmViewer = ({
   seatPose = null,
   hang = null,
   recover = null,
+  eat = null,
 }: AvatarViewerProps) => {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -178,6 +182,10 @@ export const VrmViewer = ({
   useEffect(() => {
     hangRef.current = hang;
   }, [hang]);
+  const eatRef = useRef(eat);
+  useEffect(() => {
+    eatRef.current = eat;
+  }, [eat]);
   const recoverRef = useRef(recover);
   useEffect(() => {
     recoverRef.current = recover;
@@ -325,6 +333,15 @@ export const VrmViewer = ({
     const reachUpper = new THREE.Quaternion();
     const reachLower = new THREE.Quaternion();
     const upAxis = new THREE.Vector3(0, 1, 0);
+    // Eating: which meal it is on and since when (the viewer's own clock), and scratch values.
+    let eatSeen: number | null = null;
+    let eatStart = 0;
+    const eatHead = new THREE.Vector3();
+    const eatLeft = new THREE.Vector3();
+    const eatOther = new THREE.Vector3();
+    const eatFront = new THREE.Vector3();
+    const eatUpper = new THREE.Quaternion();
+    const eatLower = new THREE.Quaternion();
     /** Weiches Überblenden bei Wechseln zwischen verschiedenen Sitzhaltungen. */
     const sitBoneQuats = new Map<string, THREE.Quaternion>();
     const sitHandSmooth = { left: new THREE.Vector3(), right: new THREE.Vector3(), ready: false };
@@ -505,6 +522,40 @@ export const VrmViewer = ({
           lower.quaternion.copy(reachLower.slerp(lower.quaternion, seat));
         }
         sitHandSmooth.ready = true;
+      }
+      // Eating: the right hand brings the food up in front of the mouth and down again
+      // (`eatTimeline.ts`); the behaviour chews through the mouth meanwhile.
+      const meal = eatRef.current;
+      if (meal && meal.id !== eatSeen) {
+        eatSeen = meal.id;
+        eatStart = elapsed;
+      }
+      const toMouth = meal && !hangRef.current ? eatReach(elapsed - eatStart) : 0;
+      if (toMouth > 0.001) {
+        const node = (bone: string) => model.humanoid.getNormalizedBoneNode(bone as BodyBone);
+        const [head, upper, lower, hand, leftHip, rightHip] = [
+          node('head'), node('rightUpperArm'), node('rightLowerArm'), node('rightHand'), node('leftUpperLeg'), node('rightUpperLeg'),
+        ];
+        if (head && upper && lower && hand && leftHip && rightHip) {
+          model.scene.updateMatrixWorld(true);
+          // The body's left and front from the hips (whatever way the rig's own axes point).
+          eatLeft.subVectors(leftHip.getWorldPosition(eatLeft), rightHip.getWorldPosition(eatOther)).setY(0);
+          if (eatLeft.lengthSq() < 1e-8) eatLeft.set(1, 0, 0);
+          eatLeft.normalize();
+          eatFront.crossVectors(eatLeft, upAxis).normalize();
+          // The mouth: a little above the head joint and in front of the face; the hand holds
+          // the food just before it, slightly to its own side.
+          head
+            .getWorldPosition(eatHead)
+            .addScaledVector(upAxis, 0.025 * modelHeight)
+            .addScaledVector(eatFront, 0.1 * modelHeight)
+            .addScaledVector(eatLeft, -0.02 * modelHeight);
+          eatUpper.copy(upper.quaternion);
+          eatLower.copy(lower.quaternion);
+          reachWithArm(upper, lower, hand, eatHead);
+          upper.quaternion.copy(eatUpper.slerp(upper.quaternion, toMouth));
+          lower.quaternion.copy(eatLower.slerp(lower.quaternion, toMouth));
+        }
       }
       // 3D-Schattenhöhe dynamisch an Hängen, Kante oder Boden anpassen.
       if (hangRef.current) {

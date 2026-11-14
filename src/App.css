@@ -364,6 +364,41 @@
     60% { transform: translate(-50%, 50%) scale(1); opacity: 1; }
     75% { transform: translate(-50%, 50%) scale(0.92); opacity: 0.9; }
   }
+  /*
+   * The pet eats (once, 3.4 s = EAT_TOTAL_S): the food comes up to the mouth (with the VRM hand,
+   * from --pet-eat-from-x/y), gets smaller at each bite (0.75, 1.55, 2.35 s = EAT_BITES_S) and is
+   * gone after the last; crumbs fall at each bite.
+   */
+  .pet-eat-food {
+    animation: pet-eat-food 3.4s linear forwards;
+  }
+  @keyframes pet-eat-food {
+    0% { transform: translate(-50%, -50%) translate(var(--pet-eat-from-x, 0px), var(--pet-eat-from-y, 0px)) scale(0.9); opacity: 0.4; }
+    14.7% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    22% { transform: translate(-50%, -50%) scale(1); }
+    23.5% { transform: translate(-50%, -50%) scale(0.72) rotate(-6deg); }
+    45.5% { transform: translate(-50%, -50%) scale(0.72) rotate(-6deg); }
+    47% { transform: translate(-50%, -50%) scale(0.46) rotate(4deg); }
+    69% { transform: translate(-50%, -50%) scale(0.46) rotate(4deg); opacity: 1; }
+    71%, 100% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+  }
+  .pet-eat-crumb {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    border-radius: 9999px;
+    opacity: 0;
+    animation: pet-eat-crumb 0.6s ease-in forwards;
+  }
+  @keyframes pet-eat-crumb {
+    0% { opacity: 1; transform: translate(0, 0); }
+    100% { opacity: 0; transform: translate(var(--pet-crumb-x, 0px), 26px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pet-eat-crumb {
+      display: none;
+    }
+  }
   /* The pet's ring menu and settings card unfold once (no endless animation). */
   .pet-radial-in {
     animation: pet-radial-in 0.15s ease-out;

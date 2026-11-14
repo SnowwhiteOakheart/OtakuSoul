@@ -4,6 +4,7 @@ import { emitTo, listen } from '@tauri-apps/api/event';
 import { currentMonitor, getCurrentWindow, LogicalSize, PhysicalPosition } from '@tauri-apps/api/window';
 import type { PetFigure } from '../avatar/avatarStage';
 import type { HangHold } from '../avatar/hangTimeline';
+import { EAT_BITES_S, EAT_TOTAL_S, type PetEat } from '../avatar/eatTimeline';
 import { StrokeDetector } from './petStroke';
 import { openGuestMenu } from './pet/PetMenu';
 import { atMouth, EAT_DWELL_MS, FEED_TIMEOUT_MS, type PetFood } from './petFood';
@@ -269,6 +270,8 @@ export const DesktopPet: React.FC = () => {
   /** Held up from where it was grabbed, and getting up after a hard landing (VRM poses). */
   const [hang, setHang] = useState<PetHang | null>(null);
   const [recover, setRecover] = useState<PetRecover | null>(null);
+  /** Eating what it was fed (VRM: the hand brings it to the mouth). */
+  const [eat, setEat] = useState<PetEat | null>(null);
   /** The window's width before it widened for hanging (logical px); null when it has its own width. */
   const widenedFrom = useRef<number | null>(null);
   const modelPath = pet ? petModelPath(pet, prefs.figure) : '';
@@ -663,14 +666,47 @@ export const DesktopPet: React.FC = () => {
     setFeeding(true);
   }, []);
   /** The figure eats what is on the pointer. */
+  /** The food being eaten, at the mouth (window px); a 3D figure's hand brings it up from below. */
+  const [meal, setMeal] = useState<{ id: number; emoji: string; x: number; y: number; fromX: number; fromY: number; drink: boolean } | null>(null);
+  const mealTimer = useRef<number | null>(null);
+  /** Lifted while eating: the meal is gone (not drawn) and it says nothing about how it tasted. */
+  const mealLost = useRef(false);
   const eatFood = useCallback(() => {
     const feeding = feedRef.current;
     if (!feeding) return;
     stopFeeding();
     behavior.eat(performance.now());
-    if (!IS_GUEST_PET) say(tRef.current(Math.random() < 0.5 ? 'pet.eatReply1' : 'pet.eatReply2'));
+    // At the mouth: just above where the head ends, a little to the figure's right hand (left on screen).
+    const { innerWidth: width, innerHeight: height } = window;
+    const hand = behavior.canHang;
+    setMeal((was) => ({
+      id: (was?.id ?? 0) + 1,
+      emoji: feeding.food.emoji,
+      x: width / 2 - (hand ? 0.02 * height : 0),
+      y: (headEnd() - 0.02) * height,
+      fromX: hand ? -0.06 * height : 0,
+      fromY: hand ? 0.28 * height : 0,
+      drink: feeding.food.id === 'tea',
+    }));
+    if (mealTimer.current !== null) window.clearTimeout(mealTimer.current);
+    mealLost.current = false;
+    // When it has finished, it says how it liked it.
+    mealTimer.current = window.setTimeout(() => {
+      mealTimer.current = null;
+      setMeal(null);
+      if (!IS_GUEST_PET && !mealLost.current) say(tRef.current(Math.random() < 0.5 ? 'pet.eatReply1' : 'pet.eatReply2'));
+    }, EAT_TOTAL_S * 1000);
     void applyHormoneInteraction('feed');
-  }, [behavior, say, stopFeeding, applyHormoneInteraction]);
+  }, [behavior, say, stopFeeding, applyHormoneInteraction, headEnd]);
+  useEffect(
+    () => () => {
+      if (mealTimer.current !== null) window.clearTimeout(mealTimer.current);
+    },
+    [],
+  );
+  useEffect(() => {
+    if (hang) mealLost.current = true;
+  }, [hang]);
   const cueTexts = useRef<Record<PetBubbleCue, string[]>>({ doze: [], wake: [], scrape: [], upsideDown: [] });
   useEffect(() => {
     cueTexts.current = {
@@ -727,6 +763,7 @@ export const DesktopPet: React.FC = () => {
       setSeatPose(frame.seatPose);
       setHang(frame.hang);
       setRecover((was) => (was?.id === frame.recover?.id ? was : frame.recover));
+      setEat((was) => (was?.id === frame.eat?.id ? was : frame.eat));
       seatRef.current = frame.seat;
       sittingRef.current = frame.loop === 'sit';
       setWalkDirection(frame.walk);
@@ -1481,6 +1518,7 @@ export const DesktopPet: React.FC = () => {
         seatPose={seatPose}
         hang={hang}
         recover={recover}
+        eat={eat}
         hop={hop}
         walking={walking}
         lift={framing.lift}
@@ -1496,6 +1534,48 @@ export const DesktopPet: React.FC = () => {
         noModelLabel={t('pet.noModel')}
       />
       </div>
+
+      {meal && !hang && (
+        // Fixed at the mouth: the food comes up and shrinks; crumbs (drops for tea) fall at each bite.
+        <div
+          key={meal.id}
+          aria-hidden
+          style={{ position: 'fixed', left: meal.x, top: meal.y, width: 0, height: 0, pointerEvents: 'none', zIndex: 20 }}
+        >
+          <span
+            className="pet-eat-food"
+            style={
+              {
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                fontSize: 26,
+                lineHeight: 1,
+                '--pet-eat-from-x': `${meal.fromX}px`,
+                '--pet-eat-from-y': `${meal.fromY}px`,
+              } as React.CSSProperties
+            }
+          >
+            {meal.emoji}
+          </span>
+          {EAT_BITES_S.flatMap((bite, i) =>
+            [-9, 3, 11].map((dx, j) => (
+              <span
+                key={`${i}-${j}`}
+                className={`pet-eat-crumb ${meal.drink ? 'bg-sky-300' : 'bg-amber-200'}`}
+                style={
+                  {
+                    left: dx * 0.4,
+                    top: 8,
+                    animationDelay: `${bite + j * 0.04}s`,
+                    '--pet-crumb-x': `${dx}px`,
+                  } as React.CSSProperties
+                }
+              />
+            )),
+          )}
+        </div>
+      )}
 
       {feedView && (
         <div

@@ -6,6 +6,7 @@ import { PET_FEET_SHARE } from '../../../services/avatarViewState';
 import { isLive2dPath, isPortraitPath, type PetState } from '../../../services/desktopPet';
 import type { GestureRequest, LoopRole } from '../../../utils/avatarGestures';
 import type { PetHang, PetMode, PetRecover, PetSeat, SeatPose } from '../petBehavior';
+import type { PetEat } from '../../avatar/eatTimeline';
 import {
   EXPRESSION_EMOTIONS,
   GltfViewer,
@@ -34,6 +35,8 @@ interface PetFigureCanvasProps {
   seatPose?: SeatPose | null;
   hang: PetHang | null;
   recover: PetRecover | null;
+  /** Eating (VRM: the hand brings the food to the mouth; the others only chew). */
+  eat?: PetEat | null;
   hop: boolean;
   walking: boolean;
   lift: number;
@@ -58,6 +61,7 @@ export const PetFigureCanvas: React.FC<PetFigureCanvasProps> = ({
   seatPose = null,
   hang,
   recover,
+  eat = null,
   hop,
   walking,
   lift,
@@ -158,7 +162,7 @@ export const PetFigureCanvas: React.FC<PetFigureCanvasProps> = ({
             ) : isGltfModel(modelPath) ? (
               <GltfViewer key={modelPath} {...viewerProps} />
             ) : (
-              <VrmViewer key={modelPath} {...viewerProps} />
+              <VrmViewer key={modelPath} {...viewerProps} eat={eat} />
             )}
           </Suspense>
         ) : pet ? (

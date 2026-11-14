@@ -2,6 +2,7 @@ import type { LoopRole, MotionRole } from '../../utils/avatarGestures';
 import type { PetPose } from '../../services/desktopPet';
 import { withoutEmotionTag } from '../../utils/replyTags';
 import type { PetEvent } from '../../types/generated/PetEvent';
+import { EAT_TOTAL_S, eatMouth, type PetEat } from '../avatar/eatTimeline';
 import {
   EDGE_SEAT_POSES,
   FLOOR_SEAT_POSES,
@@ -65,6 +66,8 @@ export interface PetFrame {
   hang: PetHang | null;
   /** Getting up after a hard landing (VRM pose); a new `id` starts it again. */
   recover: PetRecover | null;
+  /** Eating what it was fed (see `eatTimeline.ts`); a new `id` starts it again. */
+  eat: PetEat | null;
 }
 
 export type PetSeat = 'floor' | 'edge';
@@ -248,6 +251,9 @@ export class PetBehavior {
   private releasedAt: number | null = null;
   private fallStart = 0;
   private recovering: (PetRecover & { start: number }) | null = null;
+  /** Eating right now (since `start`), and the last meal's number. */
+  private eating: (PetEat & { start: number }) | null = null;
+  private eatId = 0;
   /** Held by a foot near the floor (lying or at an angle) and when it last moved along it. */
   private groundDrag = false;
   private groundMovedAt = Number.NEGATIVE_INFINITY;
@@ -306,6 +312,8 @@ export class PetBehavior {
     this.recovering = null;
     this.hang = hang;
     this.releasedAt = null;
+    // Lifted while eating: the meal is over (the food is gone with it).
+    this.eating = null;
     this.groundDrag = false;
     this.groundMovedAt = Number.NEGATIVE_INFINITY;
     this.nextScrapeAt = 0;
@@ -404,12 +412,16 @@ export class PetBehavior {
   }
 
   /** Fed something: delighted for a moment, a little hop and a happy gesture. */
+  /**
+   * Fed something: it brings it to its mouth, takes three bites and chews (`eatTimeline.ts`),
+   * looking at it contentedly; when it is finished it is delighted (a hop and a happy gesture).
+   */
   eat(now: number) {
     this.lastPointer = now;
     if (this.mode === 'dozing') this.mode = 'idle';
-    this.react(now, 'happy', 2200, { x: 0, y: 0.1 });
-    this.hopUntil = now + HOP_MS;
-    this.cues.push({ kind: 'gesture', role: 'happy' });
+    this.eatId += 1;
+    this.eating = { id: this.eatId, start: now };
+    this.react(now, 'relaxed', EAT_TOTAL_S * 1000, { x: 0, y: -0.25 });
   }
 
   /** A hand is held (pressed without dragging): it blushes and looks at it until let go. */
@@ -740,6 +752,16 @@ export class PetBehavior {
       this.landFromHang(now, 0);
     }
     if (this.recovering && now >= this.recovering.start + RECOVER_MS(this.recovering.kind)) this.recovering = null;
+    // The meal is over: delighted, a hop and a happy gesture.
+    const eating = this.eating;
+    if (eating && now >= eating.start + EAT_TOTAL_S * 1000) {
+      this.eating = null;
+      if (this.mode === 'reacting') {
+        this.react(now, 'happy', 1200, { x: 0, y: 0.1 });
+        this.hopUntil = now + HOP_MS;
+        this.cues.push({ kind: 'gesture', role: 'happy' });
+      }
+    }
     if (this.mode === 'reacting' && now >= this.modeUntil) this.mode = 'idle';
     const talking = this.speaking || now < this.talkUntil;
     if (this.mode === 'idle' || this.mode === 'talking') this.mode = talking ? 'talking' : 'idle';
@@ -769,6 +791,7 @@ export class PetBehavior {
       seatPose: null as SeatPose | null,
       hang: null,
       recover: null,
+      eat: null,
     };
     const kept = this.keptSeat;
     let frame: PetFrame;
@@ -829,6 +852,11 @@ export class PetBehavior {
       }
     }
     this.dancingNow = frame.loop === 'dance';
+    // Eating: the same mouth path as a yawn chews; the viewer brings the food to the mouth.
+    if (this.eating && this.mode === 'reacting') {
+      frame.eat = this.eating;
+      frame.mouth = eatMouth((now - this.eating.start) / 1000);
+    }
     frame.hop = now < this.hopUntil && this.mode !== 'dragged';
     if (frame.seat !== null) {
       if (this.nextPoseShiftAt === 0 || !Number.isFinite(this.nextPoseShiftAt)) {
