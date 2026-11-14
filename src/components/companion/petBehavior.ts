@@ -556,6 +556,14 @@ export class PetBehavior {
     }
   }
 
+  /** Off the edge without climbing up (the window went, it was re-placed): the hanging just ends. */
+  dropLedge(now: number) {
+    if (!this.onLedge) return;
+    this.onLedge = false;
+    this.handPose = null;
+    if (this.mode === 'reacting' && this.modeUntil === Number.POSITIVE_INFINITY) this.react(now, 'surprised', 600);
+  }
+
   /** On a window's edge it caught right now. */
   get ledge() {
     return this.onLedge;
@@ -749,7 +757,8 @@ export class PetBehavior {
 
   /** Another window came to the front: a quick glance after it (not more often than every 8 s). */
   windowSwitched(now: number) {
-    if (this.mode !== 'idle' || this.saving || now - this.lastGlance < GLANCE_GAP_MS) return;
+    // Reading in focus it does not look up (it would get up and sit down anew).
+    if (this.mode !== 'idle' || this.saving || this.focus || now - this.lastGlance < GLANCE_GAP_MS) return;
     this.lastGlance = now;
     const side = this.random() < 0.5 ? -1 : 1;
     this.react(now, null, GLANCE_MS, { x: side * 0.7, y: 0.05 });
@@ -772,6 +781,7 @@ export class PetBehavior {
     this.physics = on;
     if (!on) {
       this.grounded = true;
+      this.dropLedge(0);
       if (this.action?.kind === 'walk') this.action = null;
       if (this.mode === 'falling') this.mode = 'idle';
       this.leaping = false;

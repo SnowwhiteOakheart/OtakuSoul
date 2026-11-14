@@ -112,6 +112,7 @@ import {
   GUEST_ASK_MS,
   PROGRAM_DWELL_MS,
   PROGRAM_GAP_MS,
+  FLOOR_SIT_DROP,
   HANG_ASPECT,
   SIT_DROP,
   STATUS_POLL_MS,
@@ -913,7 +914,7 @@ export const DesktopPet: React.FC = () => {
         if (cue.kind === 'gesture') playLocalGesture(cue.role);
         else if (cue.kind === 'jump') startJump(now);
         else if (cue.kind === 'event') askRemark(cue.event, now);
-        else if (cue.kind === 'visit') void comeHere();
+        else if (cue.kind === 'visit') void comeHere('walk');
         else if (cue.kind === 'kick') void kickSupport(cue.direction);
         else if (cue.kind === 'play') lifeRef.current.care('play');
         else {
@@ -988,7 +989,7 @@ export const DesktopPet: React.FC = () => {
             letterTimer.current = null;
             behavior.setCarry(false);
           }, ms);
-          void comeHere();
+          void comeHere('walk');
           return;
         }
         const ms = bubbleMs(payload.text);
@@ -1087,7 +1088,7 @@ export const DesktopPet: React.FC = () => {
           const at = performance.now();
           if (speed > CHASE_SPEED && near && !inside && at - chase.lastChase > CHASE_GAP_MS && !overlayRef.current) {
             chase.lastChase = at;
-            if (Math.random() < 0.35 + lifeRef.current.boredom * 0.4) void comeHere(true);
+            if (Math.random() < 0.35 + lifeRef.current.boredom * 0.4) void comeHere('chase');
           }
         }
         chase.x = gx;
@@ -1670,7 +1671,8 @@ export const DesktopPet: React.FC = () => {
   const upright = !hang && mode !== 'dragged' && mode !== 'falling';
   const propsLayer = pet && modelPath && (
     <PetProps
-      headTop={petFigureTop(framing) + seatDrop(seat)}
+      // Getting up after a hard landing it sits on the ground (the stars circle lower).
+      headTop={petFigureTop(framing) + (recover && recover.kind !== 'feet' ? FLOOR_SIT_DROP : seatDrop(seat))}
       headEnd={headLine}
       feetLine={1 - PET_FEET_SHARE - framing.lift}
       height={winHeight}

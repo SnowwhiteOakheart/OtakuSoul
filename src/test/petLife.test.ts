@@ -234,6 +234,19 @@ describe('pet behaviour life', () => {
     expect(bubbles(cues)).toContain('climbed');
   });
 
+  it('lets go of an edge it could not climb, and can walk again', () => {
+    const pet = standing();
+    pet.setGrounded(false, 100);
+    pet.setLedge(true, 200);
+    pet.dropLedge(400);
+    expect(pet.ledge).toBe(false);
+    pet.setGrounded(false, 400);
+    pet.setGrounded(true, 900, { down: 300, side: 0 });
+    pet.tick(3000);
+    expect(pet.tick(3100).frame.loop).not.toBe('fall');
+    expect(pet.come(3200, 1)).toBe(true);
+  });
+
   it('catches the pointer at the end of a chase (play for the bond)', () => {
     const pet = standing();
     expect(pet.come(100, 1, true)).toBe(true);

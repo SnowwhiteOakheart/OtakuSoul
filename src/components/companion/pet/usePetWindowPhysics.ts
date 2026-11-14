@@ -225,6 +225,8 @@ export function usePetWindowPhysics({
       // Caught a window's edge in the air: it hangs, then climbs up (before the landing logic).
       if (result.caught) behavior.setLedge(true, now);
       if (result.climbed) behavior.setLedge(false, now);
+      // Off the edge without climbing up (the window went, a re-read …): no hanging pose left behind.
+      else if (behavior.ledge && !result.onLedge) behavior.dropLedge(now);
       const scale = monitorScale.current;
       if (result.wallSpeed) behavior.wallHit(now, result.wallSpeed / scale);
       behavior.setGrounded(
@@ -284,6 +286,8 @@ export function usePetWindowPhysics({
             body.current.vx = kept.vx;
             body.current.support = kept.support;
             body.current.edge = kept.edge;
+            // Hanging from an edge it caught: the climb goes on.
+            body.current.ledge = kept.ledge;
           }
         });
       }
@@ -299,7 +303,8 @@ export function usePetWindowPhysics({
    * its floor below the pointer; without, or when it cannot walk now, it jumps there with its
    * feet at the pointer, inside the monitor's work area.
    */
-  const comeHere = useCallback(async (chase = false) => {
+  const comeHere = useCallback(async (how: 'come' | 'walk' | 'chase' = 'come') => {
+    const chase = how === 'chase';
     const cursor = lastCursor.current;
     if (!cursor || awayRef.current || drag.current || held.current) return;
     const now = performance.now();
@@ -315,8 +320,8 @@ export function usePetWindowPhysics({
         return;
       }
     }
-    // A game is only played walking.
-    if (chase) return;
+    // A game, a visit or a letter only walks over (no jump to the pointer).
+    if (how !== 'come') return;
     await syncWindow().catch(() => {});
     const { width, height } = windowSize.current;
     const under =
@@ -497,10 +502,12 @@ export function usePetWindowPhysics({
     if (!current || !id || !prefsRef.current.nudgeWindows) return false;
     const dx = Math.round(direction * KICK_PX * monitorScale.current);
     const moved = await api.nudgePetWindow(id, dx).catch(() => false);
-    if (!moved || body.current !== current || current.support !== id) return moved;
+    // Each physics step makes a new body: whatever stands on that window now moves along.
+    const now = body.current;
+    if (!moved || now?.support !== id) return moved;
     // The scan of the windows comes later: move the edge and the figure now, so it stays on it.
-    current.x += dx;
-    if (current.edge) current.edge = { ...current.edge, left: current.edge.left + dx, right: current.edge.right + dx };
+    now.x += dx;
+    if (now.edge) now.edge = { ...now.edge, left: now.edge.left + dx, right: now.edge.right + dx };
     platforms.current = platforms.current.map((p) => (p.id === id ? { ...p, left: p.left + dx, right: p.right + dx } : p));
     return true;
   }, [prefsRef]);
