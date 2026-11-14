@@ -27,6 +27,10 @@ interface PetPropsProps {
   sky: PetWeather['sky'] | null;
   /** What it thinks of when hungry (its favourite food, if known). */
   foodGlyph: string;
+  /** Smileys of what it says right now (taken out of the speech bubble), shown beside the head. */
+  smileys?: string[];
+  /** A new value pops them in again (a new sentence). */
+  smileysKey?: string;
 }
 
 const pct = (share: number) => `${share * 100}%`;
@@ -150,7 +154,20 @@ function NightCap({ headTop, height }: { headTop: number; height: number }) {
   );
 }
 
-export function PetProps({ headTop, headEnd, feetLine, height, fx, hands, build, nightCap, sky, foodGlyph }: PetPropsProps) {
+export function PetProps({
+  headTop,
+  headEnd,
+  feetLine,
+  height,
+  fx,
+  hands,
+  build,
+  nightCap,
+  sky,
+  foodGlyph,
+  smileys = [],
+  smileysKey = '',
+}: PetPropsProps) {
   const size = Math.max(16, Math.round(height * 0.06));
   const chest = headEnd + 0.13;
   return (
@@ -186,6 +203,21 @@ export function PetProps({ headTop, headEnd, feetLine, height, fx, hands, build,
         </span>
       )}
       {fx && <Effect key={fx.id} fx={fx} headTop={headTop} height={height} foodGlyph={foodGlyph} />}
+      {smileys.length > 0 && (
+        // Beside the head like a manga emote, one under the other.
+        <div
+          key={smileysKey}
+          className="pet-fx pet-prop-in flex flex-col items-start gap-0.5"
+          data-pet-smileys
+          style={{ ...at(0.11, (headTop + headEnd) / 2, height), transform: 'translate(0, -50%)', fontSize: size * 0.75 }}
+        >
+          {smileys.map((smiley, i) => (
+            <span key={i} className="whitespace-nowrap font-semibold text-white [text-shadow:0_0_3px_rgba(0,0,0,0.9),0_0_1px_rgba(0,0,0,0.9)]">
+              {smiley}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

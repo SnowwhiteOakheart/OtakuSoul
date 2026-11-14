@@ -24,6 +24,7 @@ import {
   visemesFromDesktopLevel,
 } from '../../services/lipSync';
 import { PetBubble } from './PetBubble';
+import { splitSmileys } from './petSmileys';
 import {
   bubbleMs,
   eyeLine,
@@ -80,6 +81,7 @@ import {
   PET_SENTENCE_EVENT,
   PET_STATE_EVENT,
   petModelPath,
+  petWindowSize,
   listenOwn,
   loadHiddenParts,
   saveHiddenParts,
@@ -1208,7 +1210,9 @@ export const DesktopPet: React.FC = () => {
 
   // While a reply is written in the main window, the bubble shows typing dots; the reply replaces them.
   const thinking = !!pet?.thinking;
-  const shownBubble = thinking && prefs.chatBubbles ? '…' : bubble?.text ?? null;
+  // Smileys go beside the head; the bubble keeps the words (none left: no bubble).
+  const spoken = useMemo(() => splitSmileys(bubble?.text ?? ''), [bubble]);
+  const shownBubble = thinking && prefs.chatBubbles ? '…' : spoken.text || null;
 
   const openBubbleChat = () => {
     const chat = bubble?.chat;
@@ -1682,6 +1686,8 @@ export const DesktopPet: React.FC = () => {
       nightCap={prefs.props && life.night && upright && !recover}
       sky={prefs.props && upright ? life.sky : null}
       foodGlyph={favoriteGlyph}
+      smileys={!thinking && !statusOpen && !composeOpen && !overlay ? spoken.smileys : []}
+      smileysKey={bubble?.text ?? ''}
     />
   );
 
@@ -1805,8 +1811,9 @@ export const DesktopPet: React.FC = () => {
       {shownBubble && !statusOpen && !composeOpen && !overlay && (
         <PetBubble
           text={shownBubble}
-          ms={bubble && shownBubble === bubble.text ? bubble.ms : 0}
+          ms={bubble && shownBubble === spoken.text ? bubble.ms : 0}
           side={bubbleSideNow}
+          width={petWindowSize(winHeight).width}
           // Sitting draws the figure lower: more room above the head.
           room={petFigureTop(framing) + (loop === 'sit' ? SIT_DROP : seatDrop(seat))}
           title={t('pet.compose')}

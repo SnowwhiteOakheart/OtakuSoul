@@ -8,13 +8,10 @@ const MIN_ROOM_PX = 52;
 /** Gap between the tail's tip and the top of the figure (px). */
 const HEAD_GAP_PX = 10;
 
-/** Bubble position and where its tail sits (the window's middle, above the head) for each side. */
-const PLACEMENT: Record<BubbleSide, { box: string; tail: string }> = {
-  center: { box: 'inset-x-3', tail: 'calc(50vw - 0.75rem)' },
-  // Leaning left (figure near the right screen edge): more room on the left side.
-  left: { box: 'left-2 right-8', tail: 'calc(50vw - 0.5rem)' },
-  right: { box: 'left-8 right-2', tail: 'calc(50vw - 2rem)' },
-};
+/** Margin of the bubble inside the pet's own width (px, each side). */
+const SIDE_MARGIN_PX = 12;
+/** How far the bubble leans towards the screen's middle near an edge (px). */
+const LEAN_PX: Record<BubbleSide, number> = { center: 0, left: -10, right: 10 };
 
 interface PetBubbleProps {
   text: string;
@@ -23,6 +20,12 @@ interface PetBubbleProps {
   side: BubbleSide;
   /** Free room above the figure: share of the window height from the top to the head. */
   room: number;
+  /**
+   * The pet's own width (logical px). The window widens while the figure hangs, is dragged by a
+   * foot or shows the menu; the bubble keeps this width, centred over the head, so it never
+   * flashes wide.
+   */
+  width: number;
   title: string;
   onClick: () => void;
 }
@@ -33,7 +36,7 @@ interface PetBubbleProps {
  * above the head allows; longer sentences scroll by themselves (or by wheel). A figure that fills
  * the window (zoomed in) leaves no room: then the bubble sits at the top as before.
  */
-export function PetBubble({ text, ms, side, room, title, onClick }: PetBubbleProps) {
+export function PetBubble({ text, ms, side, room, width, title, onClick }: PetBubbleProps) {
   const scrollRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
@@ -64,7 +67,8 @@ export function PetBubble({ text, ms, side, room, title, onClick }: PetBubblePro
     };
   }, [text, ms]);
 
-  const placement = PLACEMENT[side];
+  const boxWidth = Math.max(80, width - SIDE_MARGIN_PX * 2);
+  const lean = LEAN_PX[side];
   const roomPx = room * window.innerHeight - HEAD_GAP_PX;
   const aboveHead = roomPx >= MIN_ROOM_PX;
   return (
@@ -75,8 +79,12 @@ export function PetBubble({ text, ms, side, room, title, onClick }: PetBubblePro
       data-pet-bubble-above-head={aboveHead}
       aria-live="polite"
       title={title}
-      className={`absolute ${aboveHead ? '' : 'top-2'} ${placement.box} rounded-2xl bg-app/95 border border-accent-500/40 px-3 py-2 text-left text-xs text-slate-100 shadow-lg`}
-      style={aboveHead ? { bottom: `calc(${(1 - room) * 100}% + ${HEAD_GAP_PX}px)` } : undefined}
+      className={`absolute ${aboveHead ? '' : 'top-2'} rounded-2xl bg-app/95 border border-accent-500/40 px-3 py-2 text-left text-xs text-slate-100 shadow-lg`}
+      style={{
+        left: `calc(50% - ${boxWidth / 2}px + ${lean}px)`,
+        width: boxWidth,
+        ...(aboveHead ? { bottom: `calc(${(1 - room) * 100}% + ${HEAD_GAP_PX}px)` } : {}),
+      }}
       onClick={onClick}
     >
       <span
@@ -90,7 +98,8 @@ export function PetBubble({ text, ms, side, room, title, onClick }: PetBubblePro
       <span
         aria-hidden
         className="absolute -bottom-1.5 h-3 w-3 -translate-x-1/2 rotate-45 border-r border-b border-accent-500/40 bg-inherit"
-        style={{ left: placement.tail }}
+        // Under the window's middle, where the head is.
+        style={{ left: boxWidth / 2 - lean }}
       />
     </button>
   );
