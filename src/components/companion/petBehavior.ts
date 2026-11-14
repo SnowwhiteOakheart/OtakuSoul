@@ -229,6 +229,8 @@ export class PetBehavior {
   private dancingNow = false;
   /** Peeking in from a screen side: stays there, no walking off by itself. */
   private peeking = false;
+  /** The menu is open around the figure: no new idle actions (see `attend`). */
+  private attending = false;
   /** Held up (and falling afterwards) by this grip. */
   private hang: PetHang | null = null;
   /** Let go at this time (still hanging until it falls or lands). */
@@ -628,6 +630,25 @@ export class PetBehavior {
     }
   }
 
+  /**
+   * The pet's menu is open around the figure: it stops what it was doing (walking, sitting by
+   * itself) and starts nothing new until `endAttend`; it keeps looking after the pointer.
+   */
+  attend(now: number) {
+    this.lastPointer = now;
+    this.attending = true;
+    if (this.mode === 'dozing') this.mode = 'idle';
+    if (!this.action?.come) this.action = null;
+  }
+
+  /** The menu is closed: idle actions may come again after the usual pause. */
+  endAttend(now: number) {
+    if (!this.attending) return;
+    this.attending = false;
+    this.lastPointer = now;
+    this.nextActionAt = Math.max(this.nextActionAt, now + this.gap());
+  }
+
   /** Peeking in from the side (the caller walks it there with `come`): no random walks or sitting meanwhile. */
   setPeeking(on: boolean) {
     this.peeking = on;
@@ -683,7 +704,7 @@ export class PetBehavior {
     }
     if (this.mode !== 'idle') {
       this.action = null;
-    } else if (!this.action && this.idleActions && !this.saving && now >= this.nextActionAt) {
+    } else if (!this.action && this.idleActions && !this.saving && !this.attending && now >= this.nextActionAt) {
       this.startAction(now);
     }
 

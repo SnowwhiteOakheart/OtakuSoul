@@ -364,6 +364,27 @@
     60% { transform: translate(-50%, 50%) scale(1); opacity: 1; }
     75% { transform: translate(-50%, 50%) scale(0.92); opacity: 0.9; }
   }
+  /* The pet's ring menu and settings card unfold once (no endless animation). */
+  .pet-radial-in {
+    animation: pet-radial-in 0.15s ease-out;
+  }
+  .pet-radial-sub-in {
+    animation: pet-radial-sub-in 0.12s ease-out;
+  }
+  @keyframes pet-radial-in {
+    from { opacity: 0; transform: scale(0.86); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes pet-radial-sub-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pet-radial-in,
+    .pet-radial-sub-in {
+      animation: none;
+    }
+  }
   /* Stage speech bubble: the speaker slides in, each new sentence fades in. */
   .stage-speaker-in {
     animation: stage-speaker-in 0.3s ease-out;

@@ -9,7 +9,7 @@ import { atMouth, EAT_DWELL_MS, FEED_TIMEOUT_MS, type PetFood } from './petFood'
 import { advance, loadTimer, saveTimer, startPomodoro, startTimer, type PetTimerState } from './petTimer';
 import type { PetEvent } from '../../types/generated/PetEvent';
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
-import { useTranslation } from '../../i18n';
+import { useTranslation, type TranslationKey } from '../../i18n';
 import { api } from '../../services/api';
 import { errorMessage } from '../../utils/errors';
 import { NOTIFICATION_OPEN_CHAT_EVENT } from '../../services/notifications';
@@ -116,6 +116,11 @@ import {
 import { PetComposeForm } from './pet/PetComposeForm';
 import { PetStatusCard } from './pet/PetStatusCard';
 import { openPetContextMenu } from './pet/PetMenu';
+import { buildPetMenu, type PetMenuArgs, type PetMenuItem } from './pet/petMenuModel';
+import { PetRadialMenu } from './pet/PetRadialMenu';
+import { PetSettingsCard } from './pet/PetSettingsCard';
+import { MIN_OPEN_SPAN, openArc, radialRings, radialWidth, type VisibleBox } from './pet/radialLayout';
+import { lacksPetMotions, recommendedMotionPack } from '../../utils/motionPacks';
 import { PetFigureCanvas } from './pet/PetFigureCanvas';
 import { usePetWindowPhysics } from './pet/usePetWindowPhysics';
 
@@ -165,6 +170,51 @@ async function closeAfterHang(width: number) {
   const [position, size, factor] = await within(Promise.all([win.outerPosition(), win.innerSize(), win.scaleFactor()]));
   await within(win.setSize(new LogicalSize(width, size.height / factor)));
   await within(win.setPosition(new PhysicalPosition(Math.round(position.x + (size.width - width * factor) / 2), position.y)));
+}
+
+/** The settings card wants at least this much window width (logical px). */
+const SETTINGS_WIDTH = 300;
+/** The settings card is at most this wide (logical px). */
+const SETTINGS_CARD_MAX = 284;
+
+/** The window as the menu widened it: its width and height and the part on the screen (logical px). */
+interface MenuSpread {
+  /** The pet's own width before; the figure keeps it, centred. */
+  baseWidth: number;
+  width: number;
+  height: number;
+  visible: VisibleBox;
+}
+
+/**
+ * Widens (or narrows) the window to `target` around its middle, keeping its height, so the
+ * figure stays where it is on the screen. Not kept inside the work area (like peeking): the part
+ * off the screen is reported instead, and the ring opens towards the rest.
+ */
+async function spreadWindow(target: number): Promise<Omit<MenuSpread, 'baseWidth'>> {
+  const win = getCurrentWindow();
+  const [position, size, factor, monitor] = await within(
+    Promise.all([win.outerPosition(), win.innerSize(), win.scaleFactor(), currentMonitor().catch(() => null)]),
+  );
+  const width = size.width / factor;
+  const height = size.height / factor;
+  const shift = Math.round(((target - width) / 2) * factor);
+  if (Math.abs(target - width) >= 1) {
+    await within(win.setSize(new LogicalSize(target, height)));
+    await within(win.setPosition(new PhysicalPosition(position.x - shift, position.y)));
+  }
+  const x = position.x - shift;
+  let visible: VisibleBox = { left: 0, top: 0, right: target, bottom: height };
+  if (monitor) {
+    const { position: at, size: extent } = monitor.workArea;
+    visible = {
+      left: Math.max(0, (at.x - x) / factor),
+      top: Math.max(0, (at.y - position.y) / factor),
+      right: Math.min(target, (at.x + extent.width - x) / factor),
+      bottom: Math.min(height, (at.y + extent.height - position.y) / factor),
+    };
+  }
+  return { width: target, height, visible };
 }
 
 /**
@@ -279,6 +329,7 @@ export const DesktopPet: React.FC = () => {
     setWalkDirection,
     readBubbleSide,
     currentHeight,
+    holdWindow,
     nearestWall,
     startJump,
     comeHere,
@@ -331,6 +382,61 @@ export const DesktopPet: React.FC = () => {
     localGestureId.current -= 1;
     setGesture({ role, id: localGestureId.current });
   }, []);
+
+  // The menu around the figure (ring, then the settings card behind "More"). For it the window
+  // widens around the figure and holds still; closing restores its width and lets the physics on.
+  const [overlay, setOverlay] = useState<'radial' | 'settings' | null>(null);
+  const overlayRef = useRef<'radial' | 'settings' | null>(null);
+  const [spread, setSpread] = useState<MenuSpread | null>(null);
+  /** Set from the moment the menu starts opening until the window has its own width again. */
+  const spreadRef = useRef<MenuSpread | null>(null);
+  /** Opening and closing run one after the other (each moves the window). */
+  const menuQueue = useRef<Promise<unknown>>(Promise.resolve());
+  const menuClosing = useRef(false);
+  /** A resize asked for while the menu holds the window; done after it closes. */
+  const pendingHeight = useRef<number | null>(null);
+  /** The left button's last state, to see a new click outside the menu. */
+  const lastButton = useRef<boolean | null>(null);
+  const queueMenu = useCallback(<T,>(job: () => Promise<T>): Promise<T> => {
+    const next = menuQueue.current.then(job, job);
+    menuQueue.current = next.catch(() => {});
+    return next;
+  }, []);
+
+  const closeMenu = useCallback(
+    (): Promise<void> => {
+      if (!spreadRef.current || menuClosing.current) return menuQueue.current.then(() => {});
+      menuClosing.current = true;
+      overlayRef.current = null;
+      setOverlay(null);
+      return queueMenu(async () => {
+        const held = spreadRef.current;
+        if (held) await spreadWindow(held.baseWidth).catch(() => {});
+        spreadRef.current = null;
+        setSpread(null);
+        holdWindow(false);
+        behavior.endAttend(performance.now());
+        menuClosing.current = false;
+        await syncWindow().catch(() => {});
+        const height = pendingHeight.current;
+        pendingHeight.current = null;
+        if (height !== null) await resizeTo(height);
+      });
+    },
+    [behavior, holdWindow, queueMenu, resizeTo, syncWindow],
+  );
+
+  /** Resizes now, or after the menu let go of the window. */
+  const resizePet = useCallback(
+    async (height: number) => {
+      if (spreadRef.current) {
+        pendingHeight.current = height;
+        return;
+      }
+      await resizeTo(height);
+    },
+    [resizeTo],
+  );
 
   useEffect(() => {
     prefsRef.current = prefs;
@@ -474,12 +580,16 @@ export const DesktopPet: React.FC = () => {
   /** The food on the pointer (null: not feeding), when it reached the mouth, and where it is drawn. */
   const feedRef = useRef<{ food: PetFood; until: number; atMouthSince: number | null } | null>(null);
   const [feedView, setFeedView] = useState<{ emoji: string; x: number; y: number } | null>(null);
+  /** Food is on the pointer (the menu offers to stop). */
+  const [isFeeding, setFeeding] = useState(false);
   const stopFeeding = useCallback(() => {
     feedRef.current = null;
     setFeedView(null);
+    setFeeding(false);
   }, []);
   const startFeeding = useCallback((food: PetFood) => {
     feedRef.current = { food, until: performance.now() + FEED_TIMEOUT_MS, atMouthSince: null };
+    setFeeding(true);
   }, []);
   /** The figure eats what is on the pointer. */
   const eatFood = useCallback(() => {
@@ -677,7 +787,7 @@ export const DesktopPet: React.FC = () => {
         stageRef.current?.setFraming(payload.framing);
       }),
       listenOwn<number>(PET_RESIZE_EVENT, ({ payload }) => {
-        if (typeof payload === 'number') void resizeTo(payload);
+        if (typeof payload === 'number') void resizePet(payload);
       }),
       listenOwn(PET_COME_EVENT, () => {
         void comeHere();
@@ -708,6 +818,12 @@ export const DesktopPet: React.FC = () => {
       listenOwn<PetCursor>(PET_CURSOR_EVENT, ({ payload: { x, y, inside, button, through, gx, gy, t: polledAt } }) => {
         throughRef.current = through !== false;
         recordCursorMove(gx, gy, button, polledAt);
+        // A new click anywhere but on the menu closes it (clicks outside never reach this window).
+        const clicked = button === true && lastButton.current !== true;
+        lastButton.current = button;
+        if (clicked && overlayRef.current && !(inside && document.elementFromPoint(x, y)?.closest('[data-pet-solid]'))) {
+          void closeMenu();
+        }
         const stage = stageRef.current;
         const { innerWidth: w, innerHeight: h } = window;
         behavior.pointer(performance.now());
@@ -758,8 +874,10 @@ export const DesktopPet: React.FC = () => {
           setIgnore(true);
           return;
         }
-        // Sitting draws the figure lower than the window: probe where it really is.
-        stage.probe(x, sittingRef.current ? y - h * SIT_DROP : y, (hit) => setIgnore(!hit));
+        // Sitting draws the figure lower than the window: probe where it really is. While the
+        // menu widened the window, the figure keeps its own width in the middle.
+        const shift = spreadRef.current ? (w - spreadRef.current.baseWidth) / 2 : 0;
+        stage.probe(x - shift, sittingRef.current ? y - h * SIT_DROP : y, (hit) => setIgnore(!hit));
       }),
     ];
     void Promise.all(unlisteners).then(() => {
@@ -775,7 +893,7 @@ export const DesktopPet: React.FC = () => {
       if (bubbleTimer.current !== null) window.clearTimeout(bubbleTimer.current);
       if (sentenceTimer.current !== null) window.clearTimeout(sentenceTimer.current);
     };
-  }, [setIgnore, behavior, say, comeHere, resizeTo, headEnd, recordCursorMove, setPlatforms, trackWindowMoved, stopFeeding, eatFood]);
+  }, [setIgnore, behavior, say, comeHere, resizePet, headEnd, recordCursorMove, setPlatforms, trackWindowMoved, stopFeeding, eatFood, closeMenu]);
 
   // A new bubble leans away from the nearer screen edge (where the figure stands right now).
   useEffect(() => {
@@ -854,50 +972,150 @@ export const DesktopPet: React.FC = () => {
     }
   };
 
-  const openMenu = () =>
-    IS_GUEST_PET
-      ? openGuestMenu({
-          t,
-          currentHeight: currentHeight(),
-          resizeTo,
-          startFeeding,
-          stopFeeding,
-          feeding: feedRef.current !== null,
-          parts: stageRef.current?.listParts?.() ?? [],
-          hiddenParts: modelRef.current ? loadHiddenParts(modelRef.current) : [],
-          togglePart,
-          dismiss: () => void api.togglePetGuest(false),
-        })
-      : openPetContextMenu({
-      pet,
-      prefs,
-      statusOpen,
-      canSit,
-      currentHeight: currentHeight(),
-      currentLanguage,
-      t,
-      tEmotion,
-      openCompose,
-      pat,
-      parts: stageRef.current?.listParts?.() ?? [],
-      hiddenParts: modelRef.current ? loadHiddenParts(modelRef.current) : [],
-      togglePart,
-      peeking,
-      startPeek,
-      endPeek,
-      feeding: feedRef.current !== null,
-      startFeeding,
-      stopFeeding,
-      timer: alarm,
-      startAlarm,
-      stopAlarm,
-      loadMotionPack,
-      setStatusOpen,
-      setPrefs,
-      resizeTo,
-      askTool,
-      toggleDesktopPet,
+  /** What the menu needs beyond the pet's state: the motion pack offer, the last program, the model's parts. */
+  const [menuContext, setMenuContext] = useState<{
+    motionPack: MotionPackItem | null;
+    lastApp: string;
+    parts: string[];
+    /** The pet's height when the menu opened (marks the chosen size). */
+    height: number;
+  }>({ motionPack: null, lastApp: '', parts: [], height: 0 });
+  /** Bumped when a part is shown or hidden, so the settings card shows it. */
+  const [, setPartsVersion] = useState(0);
+  const loadMenuContext = async () => {
+    // A 3D figure without walking or sitting motions: the menu offers the motion pack.
+    const motionPack =
+      pet?.vrmPath && lacksPetMotions(pet.motions ?? [])
+        ? recommendedMotionPack((await api.getMotionPacks(currentLanguage).catch(() => [])) ?? [])
+        : null;
+    // The program in front before the menu opened (the pet itself never counts).
+    const lastApp = await api.getPetLastApp().catch(() => '');
+    const next = { motionPack, lastApp, parts: stageRef.current?.listParts?.() ?? [], height: currentHeight() };
+    setMenuContext(next);
+    return next;
+  };
+
+  /** Runs `then` once the menu has given the window back (resizing, walking and feeding need it). */
+  const afterMenu = (then: () => void) => void closeMenu().then(then);
+
+  /** The native menu: for the guest, with Shift+right click, and where the ring has no room. */
+  const openNativeMenu = async () => {
+    if (IS_GUEST_PET) {
+      await openGuestMenu({
+        t,
+        currentHeight: currentHeight(),
+        resizeTo,
+        startFeeding,
+        stopFeeding,
+        feeding: isFeeding,
+        parts: stageRef.current?.listParts?.() ?? [],
+        hiddenParts: modelRef.current ? loadHiddenParts(modelRef.current) : [],
+        togglePart,
+        dismiss: () => void api.togglePetGuest(false),
+      });
+      return;
+    }
+    await closeMenu();
+    const context = await loadMenuContext();
+    const model = buildPetMenu({
+      ...menuArgs,
+      currentHeight: context.height,
+      parts: context.parts,
+      motionPack: context.motionPack,
+      lastApp: context.lastApp,
     });
+    await openPetContextMenu(model, t);
+  };
+
+  /**
+   * Opens the ring around the figure: the window widens around it (its height and the figure
+   * stay), holds still, and the figure stops what it was doing. Too small a pet, or no room on
+   * the screen, gets the native menu instead.
+   */
+  const openRadial = () =>
+    queueMenu(async () => {
+      if (spreadRef.current || awayRef.current) return;
+      const { innerWidth: baseWidth, innerHeight: height } = window;
+      const sized = radialRings(height, 0);
+      if (!sized) {
+        void openNativeMenu();
+        return;
+      }
+      await loadMenuContext();
+      const opening: MenuSpread = {
+        baseWidth,
+        width: baseWidth,
+        height,
+        visible: { left: 0, top: 0, right: baseWidth, bottom: height },
+      };
+      spreadRef.current = opening;
+      setSpread(opening);
+      holdWindow(true);
+      behavior.attend(performance.now());
+      let placed: MenuSpread | null = null;
+      try {
+        placed = { baseWidth, ...(await spreadWindow(Math.max(baseWidth, radialWidth(sized)))) };
+      } catch {
+        placed = null;
+      }
+      const rings = placed ? radialRings(placed.height, placed.width / 2) : null;
+      const arc = placed && rings ? openArc(rings, placed.visible) : null;
+      if (!placed || !arc || arc.span < MIN_OPEN_SPAN) {
+        // Restored by the close below; the native menu follows it.
+        overlayRef.current = 'radial';
+        void closeMenu().then(() => openNativeMenu());
+        return;
+      }
+      spreadRef.current = placed;
+      setSpread(placed);
+      overlayRef.current = 'radial';
+      setOverlay('radial');
+      // Arrow keys and Escape need the focus (the pet window opens without it).
+      void getCurrentWindow().setFocus().catch(() => {});
+    });
+
+  /** "More" in the ring: the settings card, with the window wide enough for it. */
+  const openSettings = () =>
+    queueMenu(async () => {
+      const held = spreadRef.current;
+      if (!held || menuClosing.current) return;
+      overlayRef.current = 'settings';
+      setOverlay('settings');
+      if (held.width >= SETTINGS_WIDTH) return;
+      const placed = { baseWidth: held.baseWidth, ...(await spreadWindow(SETTINGS_WIDTH).catch(() => held)) };
+      if (spreadRef.current !== held) return;
+      spreadRef.current = placed;
+      setSpread(placed);
+    });
+
+  /** A ring entry: "More" turns the ring into the card; anything else closes the ring first. */
+  const runMenuItem = (item: PetMenuItem) => {
+    if (item.id === 'more') item.action?.();
+    else void closeMenu().then(() => item.action?.());
+  };
+
+  const onMenuRequest = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (IS_GUEST_PET || e.shiftKey) {
+      void openNativeMenu();
+    } else if (overlayRef.current) {
+      void closeMenu();
+    } else if (!menuClosing.current) {
+      void openRadial();
+    }
+  };
+
+  // Stepping back (fullscreen, lock screen) or being dragged away closes the menu.
+  useEffect(() => {
+    if (away) void closeMenu();
+  }, [away, closeMenu]);
+  // Another program in front: the menu goes (like a native one).
+  useEffect(() => {
+    const stop = getCurrentWindow().onFocusChanged(({ payload: focused }) => {
+      if (!focused && overlayRef.current) void closeMenu();
+    });
+    return () => void stop.then((unlisten) => unlisten());
+  }, [closeMenu]);
 
   /** A quick click on a hand. */
   const highFive = async () => {
@@ -908,6 +1126,11 @@ export const DesktopPet: React.FC = () => {
 
   const onPointerDown = (e: React.PointerEvent) => {
     if (e.button !== 0) return;
+    // With the menu open, a click on the figure only closes it.
+    if (spreadRef.current) {
+      void closeMenu();
+      return;
+    }
     holdRef.current = true;
     // Sitting draws the figure lower than the window: ask where it really is.
     const y = sittingRef.current ? e.clientY - window.innerHeight * SIT_DROP : e.clientY;
@@ -1039,11 +1262,47 @@ export const DesktopPet: React.FC = () => {
     const next = toggledPart(loadHiddenParts(model), name);
     saveHiddenParts(model, next);
     stageRef.current?.setHiddenParts?.(next);
+    setPartsVersion((version) => version + 1);
   }, []);
   useEffect(() => {
     const remembered = modelPath ? loadPetModelHeight(modelPath) : undefined;
-    if (remembered !== undefined) void resizeTo(remembered);
-  }, [modelPath, resizeTo]);
+    if (remembered !== undefined) void resizePet(remembered);
+  }, [modelPath, resizePet]);
+
+  /** Everything the menu shows and does (the ring builds its model from it while it is open). */
+  const menuArgs: PetMenuArgs = {
+    pet,
+    prefs,
+    statusOpen,
+    canSit,
+    currentHeight: menuContext.height,
+    t,
+    tEmotion,
+    openCompose: () => afterMenu(openCompose),
+    pat: () => afterMenu(() => void pat()),
+    parts: menuContext.parts,
+    hiddenParts: modelPath ? loadHiddenParts(modelPath) : [],
+    togglePart: (name) => togglePart(name),
+    peeking,
+    startPeek: () => afterMenu(startPeek),
+    endPeek: () => afterMenu(endPeek),
+    feeding: isFeeding,
+    startFeeding: (food) => afterMenu(() => startFeeding(food)),
+    stopFeeding: () => afterMenu(stopFeeding),
+    timer: alarm,
+    startAlarm: (kind, minutes) => afterMenu(() => startAlarm(kind, minutes)),
+    stopAlarm: () => afterMenu(stopAlarm),
+    motionPack: menuContext.motionPack,
+    loadMotionPack: (pack) => afterMenu(() => void loadMotionPack(pack)),
+    lastApp: menuContext.lastApp,
+    setStatusOpen: (open) => afterMenu(() => setStatusOpen(open)),
+    setPrefs,
+    resizeTo: (height) => void resizePet(height),
+    askTool: (tool) => afterMenu(() => void askTool(tool)),
+    openSettings: () => void openSettings(),
+    openApp: () => afterMenu(() => void api.showMainWindow().catch(() => {})),
+    hide: () => void toggleDesktopPet(false),
+  };
 
   return (
     <div
@@ -1051,11 +1310,17 @@ export const DesktopPet: React.FC = () => {
       data-desktop-pet
       data-pet-away={away || undefined}
       data-pet-mode={mode}
-      onContextMenu={(e) => {
-        e.preventDefault();
-        void openMenu();
+      onContextMenu={onMenuRequest}
+      // Without click-through (Wayland) the empty parts get clicks too: they close the menu.
+      onPointerDown={(e) => {
+        if (e.button === 0 && overlayRef.current && e.target === e.currentTarget) void closeMenu();
       }}
     >
+      {/* While the menu widened the window, the figure keeps its own width in the middle. */}
+      <div
+        className="absolute inset-y-0"
+        style={spread ? { left: '50%', width: spread.baseWidth, marginLeft: -spread.baseWidth / 2 } : { left: 0, right: 0 }}
+      >
       <PetFigureCanvas
         pet={pet}
         modelPath={modelPath}
@@ -1079,6 +1344,7 @@ export const DesktopPet: React.FC = () => {
         onPointerUp={onPointerUp}
         noModelLabel={t('pet.noModel')}
       />
+      </div>
 
       {feedView && (
         <div
@@ -1097,7 +1363,7 @@ export const DesktopPet: React.FC = () => {
         </div>
       )}
 
-      {shownBubble && !statusOpen && !composeOpen && (
+      {shownBubble && !statusOpen && !composeOpen && !overlay && (
         <PetBubble
           text={shownBubble}
           ms={bubble && shownBubble === bubble.text ? bubble.ms : 0}
@@ -1109,7 +1375,7 @@ export const DesktopPet: React.FC = () => {
         />
       )}
 
-      {composeOpen && (
+      {composeOpen && !overlay && (
         <PetComposeForm
           characterName={pet?.characterName ?? ''}
           draft={draft}
@@ -1121,7 +1387,7 @@ export const DesktopPet: React.FC = () => {
         />
       )}
 
-      {statusOpen && (
+      {statusOpen && !overlay && (
         <PetStatusCard
           characterName={pet?.characterName}
           emotion={pet?.emotion ?? 'neutral'}
@@ -1137,6 +1403,64 @@ export const DesktopPet: React.FC = () => {
           tOptional={tOptional}
         />
       )}
+
+      {overlay && spread && (
+        <PetMenuLayer
+          overlay={overlay}
+          spread={spread}
+          args={menuArgs}
+          t={t}
+          onRun={runMenuItem}
+          onBack={() => {
+            overlayRef.current = 'radial';
+            setOverlay('radial');
+          }}
+          onClose={() => void closeMenu()}
+        />
+      )}
     </div>
   );
 };
+
+/** The ring or the settings card over the widened window (geometry from its size and the screen). */
+function PetMenuLayer({
+  overlay,
+  spread,
+  args,
+  t,
+  onRun,
+  onBack,
+  onClose,
+}: {
+  overlay: 'radial' | 'settings';
+  spread: MenuSpread;
+  args: PetMenuArgs;
+  t: (key: TranslationKey, vars?: Record<string, string | number>) => string;
+  onRun: (item: PetMenuItem) => void;
+  onBack: () => void;
+  onClose: () => void;
+}) {
+  const model = buildPetMenu(args);
+  const rings = useMemo(() => radialRings(spread.height, spread.width / 2), [spread.height, spread.width]);
+  const arc = useMemo(() => (rings ? openArc(rings, spread.visible) : null), [rings, spread.visible]);
+  if (overlay === 'settings') {
+    // Centred on the figure, kept on the visible part of the window.
+    const width = Math.min(SETTINGS_CARD_MAX, spread.width - 16);
+    const low = Math.max(8, spread.visible.left + 8);
+    const high = Math.max(low, Math.min(spread.width - width - 8, spread.visible.right - width - 8));
+    const left = Math.min(high, Math.max(low, (spread.width - width) / 2));
+    return <PetSettingsCard model={model} left={left} width={width} t={t} onBack={onBack} onClose={onClose} />;
+  }
+  if (!rings || !arc) return null;
+  return (
+    <PetRadialMenu
+      items={model.actions}
+      rings={rings}
+      arc={arc}
+      title={model.title}
+      ariaLabel={t('pet.menuLabel')}
+      onRun={onRun}
+      onClose={onClose}
+    />
+  );
+}

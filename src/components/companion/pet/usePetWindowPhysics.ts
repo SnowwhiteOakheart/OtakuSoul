@@ -94,6 +94,11 @@ export function usePetWindowPhysics({
   /** Where "Komm her" walks to (physical x of the pointer) and which way, null when not called. */
   const comeTarget = useRef<{ x: number; direction: -1 | 1 } | null>(null);
   const drag = useRef<DragState | null>(null);
+  /**
+   * The window is held where it is (the menu widened it around the figure): no physics steps, no
+   * re-reads of its size and no saved placement until released.
+   */
+  const held = useRef(false);
 
   /** Reads where the window stands and the work area of the monitor under its feet. */
   const syncWindow = useCallback(async () => {
@@ -192,6 +197,7 @@ export function usePetWindowPhysics({
         !prefsRef.current.physics ||
         awayRef.current ||
         drag.current ||
+        held.current ||
         resizing.current.busy ||
         !current ||
         !area.current ||
@@ -254,7 +260,7 @@ export function usePetWindowPhysics({
         });
     }, PHYSICS_TICK_MS);
     const refresh = window.setInterval(() => {
-      if (prefsRef.current.physics && !drag.current) {
+      if (prefsRef.current.physics && !drag.current && !held.current) {
         const kept = body.current;
         void syncWindow().then(() => {
           // Keep the falling speed and the window it stands on across the re-read.
@@ -280,7 +286,7 @@ export function usePetWindowPhysics({
    */
   const comeHere = useCallback(async () => {
     const cursor = lastCursor.current;
-    if (!cursor || awayRef.current || drag.current) return;
+    if (!cursor || awayRef.current || drag.current || held.current) return;
     const now = performance.now();
     if (prefsRef.current.physics && body.current) {
       const dx = cursor.x - (body.current.x + windowSize.current.width / 2);
@@ -363,7 +369,8 @@ export function usePetWindowPhysics({
     const figure = figureRef.current;
     if (!figure) return undefined;
     const onWheel = (e: WheelEvent) => {
-      if (!e.ctrlKey || !e.deltaY) return;
+      // While the menu holds the window, its size stays (the menu closes before a resize).
+      if (!e.ctrlKey || !e.deltaY || held.current) return;
       e.preventDefault();
       const notches = Math.max(-3, Math.min(3, -e.deltaY / 100)) || -Math.sign(e.deltaY);
       const from = resizing.current.next ?? heightRef.current;
@@ -397,6 +404,8 @@ export function usePetWindowPhysics({
 
   const trackWindowMoved = useCallback((now: number, x: number, y: number) => {
     if (drag.current) drag.current.movedAt = now;
+    // Widened for the menu, the window stands further left than the pet does.
+    if (held.current) return;
     if (drag.current || now - placementSavedAt.current > PLACEMENT_SAVE_MS) {
       placementSavedAt.current = now;
       savePetPlacement({ x, y });
@@ -437,6 +446,11 @@ export function usePetWindowPhysics({
 
   const currentHeight = useCallback(() => heightRef.current, []);
 
+  /** Holds the window still (menu open) or lets the physics go on; after releasing, call `syncWindow`. */
+  const holdWindow = useCallback((on: boolean) => {
+    held.current = on;
+  }, []);
+
   /** The side wall nearer to the figure (-1 left, 1 right); null while the physics does not know the floor. */
   const nearestWall = useCallback((): -1 | 1 | null => {
     const current = body.current;
@@ -456,6 +470,7 @@ export function usePetWindowPhysics({
     setWalkDirection,
     readBubbleSide,
     currentHeight,
+    holdWindow,
     nearestWall,
     startJump,
     comeHere,
