@@ -2,6 +2,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import { withAvatarUrl } from '../../utils/characterAvatar';
 import type { WebtoonScript } from '../../types/generated/WebtoonScript';
+import type { ImprovisedMap } from '../../types/generated/ImprovisedMap';
 import type {
   BattleMap,
   CampaignClock,
@@ -253,6 +254,34 @@ export const stageApi = {
 
   listBattleMaps: async (): Promise<BattleMap[]> => {
     return await invoke<BattleMap[]>('list_battle_maps');
+  },
+
+  // Improvised battle maps (C8): a local Flux model paints the current place, read as a grid.
+  /** Installed image models that paint usable maps (empty: no option). */
+  battleMapPainters: async (): Promise<string[]> => {
+    return await invoke<string[]>('battle_map_painters');
+  },
+
+  stageBattleMap: async (sceneId: string): Promise<ImprovisedMap | null> => {
+    return await invoke<ImprovisedMap | null>('stage_battle_map', { sceneId });
+  },
+
+  /** Paints the current place (up to two minutes); null when there is nothing to do. */
+  generateStageBattleMap: async (sceneId: string, force = false): Promise<ImprovisedMap | null> => {
+    return await invoke<ImprovisedMap | null>('generate_stage_battle_map', { sceneId, force });
+  },
+
+  importStageBattleMap: async (sceneId: string, imagePath: string): Promise<ImprovisedMap> => {
+    return await invoke<ImprovisedMap>('import_stage_battle_map', { sceneId, imagePath });
+  },
+
+  discardStageBattleMap: async (sceneId: string): Promise<void> => {
+    await invoke('discard_stage_battle_map', { sceneId });
+  },
+
+  /** The map's picture as a data URL. */
+  stageBattleMapImage: async (sceneId: string, mapId: string): Promise<string> => {
+    return await invoke<string>('stage_battle_map_image', { sceneId, mapId });
   },
 
   listSrdSpells: async (): Promise<SpellData[]> => {

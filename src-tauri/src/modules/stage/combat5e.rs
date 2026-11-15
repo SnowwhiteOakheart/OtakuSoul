@@ -116,6 +116,12 @@ pub(super) fn start_requests<R: Rng + ?Sized>(
     rng: &mut R,
 ) -> bool {
     ensure_party_vitals(state);
+    // A scene without a map of its own fights on the improvised map of the current place, if
+    // there is a playable one; otherwise without a board. Set every time, so the map of an
+    // earlier place never stays.
+    if super::battlemap::scene_wants_maps(state) {
+        state.map = super::battlemap::for_fight(state);
+    }
     let report = rules5e::start_encounter_at(
         &mut state.table(),
         requests,

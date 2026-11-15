@@ -138,13 +138,14 @@ def render(map_path, out, cell=48, noise=True):
 
 def cell_features(img, cols, rows):
     """Per cell: median colour (RGB), HSV, brightness spread and edge density."""
-    arr = np.asarray(img.convert('RGB')).astype(np.float32) / 255.0
+    # float64 throughout: the app's Rust port (`modules/stage/battlemap.rs`) computes in f64.
+    arr = np.asarray(img.convert('RGB')).astype(np.float64) / 255.0
     H, W, _ = arr.shape
     gray = arr.mean(axis=2)
     gx = np.abs(np.diff(gray, axis=1, prepend=gray[:, :1]))
     gy = np.abs(np.diff(gray, axis=0, prepend=gray[:1, :]))
     edges = (gx + gy) > 0.12
-    feats = np.zeros((rows, cols, 7), np.float32)
+    feats = np.zeros((rows, cols, 7), np.float64)
     for y in range(rows):
         for x in range(cols):
             # The middle 70 % of the cell: borders bleed into neighbours.
@@ -206,8 +207,10 @@ def indoor_walls(f, water):
     cells clearly unlike it are walls or solid rock. Colour (brightness, saturation, warmth, texture) by 3-means."""
     rows, cols = f.shape[:2]
     feats = np.stack([f[..., 2], f[..., 1] * 0.6, (f[..., 5] - f[..., 6]) * 1.5, f[..., 3] * 2], axis=-1).reshape(-1, 4)
-    rng = np.random.default_rng(0)
-    centers = feats[rng.choice(len(feats), 3, replace=False)]
+    # Deterministic start (the app's Rust port does the same): cells at the 1/6, 1/2 and 5/6
+    # brightness quantile.
+    order = np.argsort(feats[:, 0], kind='stable')
+    centers = feats[[order[len(order) // 6], order[len(order) // 2], order[len(order) * 5 // 6]]]
     for _ in range(25):
         labels = np.argmin(((feats[:, None, :] - centers[None]) ** 2).sum(-1), axis=1)
         centers = np.array([feats[labels == k].mean(0) if (labels == k).any() else centers[k] for k in range(3)])
@@ -287,7 +290,8 @@ def walkable(grid, legend):
 
 def largest_region(cells):
     seen, best = set(), set()
-    for start in cells:
+    # Row by row, so equal-sized regions are decided the same way everywhere (the Rust port too).
+    for start in sorted(cells, key=lambda p: (p[1], p[0])):
         if start in seen:
             continue
         region, queue = {start}, deque([start])

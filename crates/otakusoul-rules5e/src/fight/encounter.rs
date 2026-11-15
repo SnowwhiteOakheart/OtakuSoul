@@ -150,11 +150,11 @@ pub fn place_on_map(t: &mut Table, zone: &str) {
         }
         return;
     }
-    *t.map = t
-        .rules
-        .and_then(|r| r.map_id.as_deref())
-        .and_then(battle_map)
-        .cloned();
+    // A scene with a map of its own fights there. Without one the map the app set up stays (an
+    // improvised map of the current place); the app clears it when there is none.
+    if let Some(id) = t.rules.and_then(|r| r.map_id.as_deref()) {
+        *t.map = battle_map(id).cloned();
+    }
     let Some(map) = t.map.as_ref() else {
         for combatant in &mut t.combat.combatants {
             combatant.position = None;

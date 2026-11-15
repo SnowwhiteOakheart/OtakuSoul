@@ -1,7 +1,8 @@
 import { findCharacterByName } from '../../utils/characterName';
-import React, { useId, useMemo, useState } from 'react';
+import React, { useEffect, useId, useMemo, useState } from 'react';
 import { Box, Crosshair, Map, Maximize2, Minus, PanelLeftClose, PanelLeftOpen, Plus } from 'lucide-react';
-import { useStoreFields } from '../../store/useAppStore';
+import { useAppStore, useStoreFields } from '../../store/useAppStore';
+import { useBattleMaps } from './battleMapStore';
 import { useTranslation, type TranslationKey } from '../../i18n';
 import { localizedName, tierLabel } from '../../utils/combatEvents';
 import { areaSquares, squaresBetween } from '../../utils/spellArea';
@@ -72,7 +73,37 @@ interface Props {
   onTarget?: (id: string) => void;
 }
 
-const BattleMapTiles = React.memo<{ map: BattleMap; diorama: boolean }>(({ map, diorama }) => {
+/** An improvised map (C8): its painted picture, the 5-ft grid, and what the rules read as walls and
+ * obstacles (red) or difficult water (blue), so a misread square is visible. */
+const PaintedMapTiles = React.memo<{ map: BattleMap; picture: string }>(({ map, picture }) => (
+  <g data-painted-map="">
+    <image href={picture} width={map.width * TILE} height={map.height * TILE} preserveAspectRatio="none" />
+    {map.cells.map((cell, index) => {
+      const x = index % map.width;
+      const y = Math.floor(index / map.width);
+      const blocked = cell.kind === 'wall' || cell.kind === 'pit' || BLOCKING.has(cell.object ?? '');
+      return (
+        <rect
+          key={index}
+          x={x * TILE}
+          y={y * TILE}
+          width={TILE}
+          height={TILE}
+          fill={blocked ? '#ef4444' : cell.kind === 'difficult' ? '#3b82f6' : 'none'}
+          fillOpacity={blocked ? 0.28 : 0.2}
+          stroke="#020617"
+          strokeOpacity={0.35}
+          strokeWidth={1}
+          data-blocked={blocked ? '' : undefined}
+        />
+      );
+    })}
+  </g>
+));
+PaintedMapTiles.displayName = 'PaintedMapTiles';
+
+const BattleMapTiles = React.memo<{ map: BattleMap; diorama: boolean; picture?: string | null }>(({ map, diorama, picture }) => {
+  if (picture && !diorama) return <PaintedMapTiles map={map} picture={picture} />;
   return (
     <>
       {map.cells.map((cell, index) => {
@@ -118,6 +149,18 @@ export const StageBattleMap: React.FC<Props> = ({
 }) => {
   const { t } = useTranslation();
   const { availableCharacters, stageAimedSpell, appLanguage } = useStoreFields('availableCharacters', 'stageAimedSpell', 'appLanguage');
+  // An improvised map brings its painted picture (loaded once per map).
+  const sceneId = useAppStore((s) => s.stageState?.definition.id ?? '');
+  const [picture, setPicture] = useState<string | null>(null);
+  useEffect(() => {
+    setPicture(null);
+    if (!sceneId || !map.id.startsWith('improvised_')) return;
+    let alive = true;
+    void useBattleMaps.getState().image(sceneId, map.id).then((url) => alive && setPicture(url));
+    return () => {
+      alive = false;
+    };
+  }, [sceneId, map.id]);
   const [hover, setHover] = useState<GridPos | null>(null);
   const [hoverLabel, setHoverLabel] = useState('');
   const [diorama, setDiorama] = usePersistentFlag('otakusoul.stage.diorama', false);
@@ -231,7 +274,7 @@ export const StageBattleMap: React.FC<Props> = ({
             </clipPath>
           </defs>
           <g transform={transform} pointerEvents="none">
-            <BattleMapTiles map={map} diorama={diorama} />
+            <BattleMapTiles map={map} diorama={diorama} picture={picture} />
           </g>
           {diorama && <StageDiorama map={map} />}
 

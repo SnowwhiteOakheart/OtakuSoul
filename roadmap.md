@@ -31,7 +31,6 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 | C1 | Zugriff von unterwegs (Relay), danach Handy-App | ★★★ | XL | Relay-Dienst, Sicherheitskonzept |
 | C6 | Mehrere Pets gleichzeitig | ★ | L | – |
 | C7 | Mitguck-Modus (Bildschirm/Webcam) | ★★ | L | Vision-Modell, Datenschutzkonzept |
-| C8 | Battlemap aus Text erzeugen (Versuch gemacht, Einbau offen) | ★ | M | Flux-Modell, starke GPU |
 | **D** | **Plattformen & Technik – nur mit Hardware oder bei Gelegenheit** | | | |
 | D1 | Desktop-Pet unter macOS | ★★ | M | Mac |
 | D2 | Apple Metal: richtiger GPU-Speicher | ★★ | S | Mac |
@@ -158,13 +157,6 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
   (eigene Fenster, gemeinsame Physik). Speicher je Pet-Webview: ~57 MB JS-Heap mit VRM-Figur (D4, 15.11.2026).
 - [ ] **C7 · Mitguck-Modus:** Optionaler Live-Blick bei Sprachanrufen oder fürs Pet: ein verkleinerter Schnappschuss
   des aktiven Fensters oder der Webcam für Vision-Modelle. Nur mit deutlicher Anzeige und Freigabe je Sitzung.
-- [ ] **C8 · Battlemap aus Text:** Improvisiert der Spielleiter einen Ort, erzeugt `stable-diffusion.cpp` eine
-  Draufsicht, aus der Wände, Hindernisse und Sichtlinien für die 5e-Engine abgeleitet werden. Ungewiss, ob die
-  Erkennung zuverlässig genug wird – zuerst einen kleinen Versuch.
-  - Versuch gemacht (15.11.2026, `docs/battlemap-versuch-2026-11-15.md`, `tools/battlemap_probe.py`): Flux 2 malt echte
-    Draufsichten (~95 s je Karte), das Pixelverfahren liest daraus bei 5 von 6 Orten ein brauchbares Raster; Flux 1 ist
-    schräger, Qwen-Image karg, das Vision-Modell (Qwen3-VL 8B) kann keine Raster. Empfehlung: optionaler Einbau mit
-    Flux im Hintergrund, Prüfung der Spielbarkeit und Rückfall auf mitgelieferte Karten (Aufwand M) – Entscheidung offen.
 
 > Alleinstellungsmerkmal: Das Desktop-Pet zusammen mit Gedächtnis und proaktiven Nachrichten –
 > „Deine Figur lebt auf deinem PC.“ Punkte, die das stärken (C6), haben bei gleicher Bewertung Vorrang.

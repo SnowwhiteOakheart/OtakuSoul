@@ -15,6 +15,7 @@ use crate::modules::inference::{ChatMessage, ChatRequest, InferenceClient, Sampl
 use crate::modules::paths::{resolve_app_paths, scan_available_characters};
 use crate::modules::settings::load_app_settings;
 
+pub mod battlemap;
 mod combat5e;
 mod dice;
 mod director;

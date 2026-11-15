@@ -764,3 +764,141 @@ pub fn stage_set_combatant_skill(
     crate::modules::stage::save_scene_state(&state.stage_engine.get_state())?;
     Ok(())
 }
+
+// ---------------------------------------------------------------------------------------------
+// Improvised battle maps (C8, `modules/stage/battlemap.rs`)
+
+/// The scene with this id: the open one (engine), else from disk.
+fn scene_by_id(
+    state: &AppState,
+    scene_id: &str,
+) -> Result<crate::modules::stage::SceneState, String> {
+    let open = state.stage_engine.get_state();
+    if open.definition.id == scene_id {
+        Ok(open)
+    } else {
+        crate::modules::stage::load_scene_by_id(scene_id)
+    }
+}
+
+/// Installed image models that paint usable maps (empty: the option does not show).
+#[tauri::command]
+pub fn battle_map_painters() -> Vec<String> {
+    let installed = crate::modules::local_image::installed_models();
+    crate::modules::stage::battlemap::PAINTERS
+        .iter()
+        .filter(|id| installed.iter().any(|m| m.id == **id))
+        .map(|id| id.to_string())
+        .collect()
+}
+
+/// The improvised map of the scene's current place, if there is one.
+#[tauri::command]
+pub fn stage_battle_map(
+    state: State<'_, AppState>,
+    scene_id: String,
+) -> Result<Option<crate::modules::stage::battlemap::ImprovisedMap>, String> {
+    let scene = scene_by_id(&state, &scene_id)?;
+    if !crate::modules::stage::battlemap::scene_wants_maps(&scene) {
+        return Ok(None);
+    }
+    Ok(crate::modules::stage::battlemap::for_place(
+        &scene_id,
+        &scene.world.location,
+    ))
+}
+
+/// Paints the scene's current place with a local Flux model and reads it as a battle map.
+/// Returns `None` when there is nothing to do (no place, not 5e, or – unless `force`, the user's
+/// own request – a map exists or was thrown away).
+#[tauri::command]
+pub async fn generate_stage_battle_map(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+    scene_id: String,
+    force: bool,
+) -> Result<Option<crate::modules::stage::battlemap::ImprovisedMap>, String> {
+    use crate::modules::stage::battlemap;
+    let scene = scene_by_id(&state, &scene_id)?;
+    let place = scene.world.location.trim().to_string();
+    if !battlemap::scene_wants_maps(&scene)
+        || place.is_empty()
+        || (!force
+            && (battlemap::for_place(&scene_id, &place).is_some()
+                || battlemap::discarded(&scene_id, &place)))
+    {
+        return Ok(None);
+    }
+    let painter = battle_map_painters()
+        .into_iter()
+        .next()
+        .ok_or_else(|| crate::err!("backend.battlemap.noPainter"))?;
+    let prompt = battlemap::prompt(&place, &scene.definition.world_context);
+    let config = crate::modules::image_generator::ImageGenerator::load_config();
+    let png = state
+        .local_image
+        .generate(
+            &|status| {
+                let _ = tauri::Emitter::emit(&app, "local-image-status", status);
+            },
+            state.llama_manager.clone(),
+            crate::modules::local_image::GenerationRequest {
+                model_id: &painter,
+                strategy: config.vram_strategy,
+                prompt: &prompt,
+                negative: battlemap::NEGATIVE,
+                seed: chrono::Utc::now().timestamp_millis() % 1_000_000,
+                loras: &[],
+                reference: None,
+                size: Some(battlemap::IMAGE_SIZE),
+                steps: None,
+                cfg_scale: None,
+            },
+        )
+        .await?;
+    // Stored under the place it was painted for, even if the party moved on meanwhile.
+    let id = scene_id.clone();
+    tokio::task::spawn_blocking(move || battlemap::store(&id, &place, &png, &painter))
+        .await
+        .map_err(|e| e.to_string())?
+        .map(Some)
+}
+
+/// A picture the user chose as the map of the current place (also used by the E2E tests).
+#[tauri::command]
+pub fn import_stage_battle_map(
+    state: State<'_, AppState>,
+    scene_id: String,
+    image_path: String,
+) -> Result<crate::modules::stage::battlemap::ImprovisedMap, String> {
+    let scene = scene_by_id(&state, &scene_id)?;
+    if !crate::modules::stage::battlemap::scene_wants_maps(&scene)
+        || scene.world.location.trim().is_empty()
+    {
+        return Err(crate::err!("backend.battlemap.notWanted"));
+    }
+    let png = std::fs::read(&image_path)
+        .map_err(|e| crate::err!("backend.battlemap.image", error = e))?;
+    crate::modules::stage::battlemap::store(&scene_id, &scene.world.location, &png, "import")
+}
+
+/// Throws the current place's map away; it is not painted again by itself.
+#[tauri::command]
+pub fn discard_stage_battle_map(
+    state: State<'_, AppState>,
+    scene_id: String,
+) -> Result<(), String> {
+    let scene = scene_by_id(&state, &scene_id)?;
+    crate::modules::stage::battlemap::discard(&scene_id, &scene.world.location)
+}
+
+/// The picture of an improvised map as a data URL (board background, preview).
+#[tauri::command]
+pub fn stage_battle_map_image(scene_id: String, map_id: String) -> Result<String, String> {
+    let bytes = crate::modules::stage::battlemap::image_of(&scene_id, &map_id)
+        .ok_or_else(|| crate::err!("backend.battlemap.missing"))?;
+    Ok(format!(
+        "data:image/png;base64,{}",
+        base64::Engine::encode(&base64::engine::general_purpose::STANDARD, bytes)
+    ))
+}

@@ -203,6 +203,58 @@ fn a_fight_plays_to_its_end_the_same_way_for_the_same_seed() {
 }
 
 #[test]
+fn a_scene_without_its_own_map_fights_on_the_map_the_app_set_up() {
+    // The app put an improvised map in place: the fight uses it, everyone gets a square.
+    let mut state = table_with_party(None);
+    let mut improvised = battle_map("forest_road").unwrap().clone();
+    improvised.id = "improvised_lichtung".into();
+    state.map = Some(improvised);
+    let mut rng = StdRng::seed_from_u64(5);
+    start_encounter_at(
+        &mut state.table(),
+        &goblins(2),
+        "en",
+        "spawn",
+        false,
+        1,
+        &mut rng,
+    );
+    assert_eq!(
+        state.map.as_ref().map(|m| m.id.as_str()),
+        Some("improvised_lichtung")
+    );
+    assert!(state.combat.combatants.iter().all(|c| c.position.is_some()));
+
+    // Without any map the fight runs without a board, as before.
+    let mut bare = table_with_party(None);
+    start_encounter_at(
+        &mut bare.table(),
+        &goblins(1),
+        "en",
+        "spawn",
+        false,
+        1,
+        &mut rng,
+    );
+    assert!(bare.map.is_none());
+    assert!(bare.combat.combatants.iter().all(|c| c.position.is_none()));
+
+    // A scene with its own map fights there, whatever was set before.
+    let mut own = table_with_party(Some("crypt_hall"));
+    own.map = Some(battle_map("forest_road").unwrap().clone());
+    start_encounter_at(
+        &mut own.table(),
+        &goblins(1),
+        "en",
+        "spawn",
+        false,
+        1,
+        &mut rng,
+    );
+    assert_eq!(own.map.as_ref().map(|m| m.id.as_str()), Some("crypt_hall"));
+}
+
+#[test]
 fn a_companion_choice_falls_back_to_the_engine() {
     let mut state = table_with_party(None);
     let mut rng = StdRng::seed_from_u64(3);

@@ -46,6 +46,8 @@ import {
   AudioLines,
   Mic,
   Map as MapIcon,
+  Grid3x3,
+  ImageUp,
   MoreHorizontal,
   Music,
   SlidersHorizontal,
@@ -53,7 +55,9 @@ import {
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { ContributeDialog } from '../hub/ContributeDialog';
-import { save as saveDialog } from '@tauri-apps/plugin-dialog';
+import { open as openDialog, save as saveDialog } from '@tauri-apps/plugin-dialog';
+import { ImprovisedMapCard, wantsImprovisedMaps } from './ImprovisedMapCard';
+import { useBattleMaps } from './battleMapStore';
 import { SceneState } from '../../types';
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { translate, useTranslation } from '../../i18n';
@@ -116,7 +120,18 @@ export const StageView: React.FC = () => {
   };
 
   const [selectedTab, setActiveTab] = useState<'adventure' | 'board' | 'tactics' | 'campaign'>('adventure');
-  const hasBoard = stageState?.definition.rules?.ruleset === '5e' && (!!stageState.map || !!stageState.definition.rules.map_id);
+  // An improvised map (C8) shows during its fight; afterwards the party may be somewhere else.
+  const improvisedBoard = !!stageState?.map?.id.startsWith('improvised_');
+  const hasBoard = stageState?.definition.rules?.ruleset === '5e'
+    && (!!stageState.definition.rules.map_id || (!!stageState.map && (!improvisedBoard || stageState.combat.is_active)));
+  const battleMaps = useBattleMaps();
+  const improvisedScene = wantsImprovisedMaps(stageState) ? stageState : null;
+  const paintersReady = (battleMaps.painters?.length ?? 0) > 0;
+  const importBattleMap = async () => {
+    if (!improvisedScene) return;
+    const path = await openDialog({ multiple: false, filters: [{ name: 'Image', extensions: ['png', 'jpg', 'jpeg', 'webp'] }] });
+    if (typeof path === 'string') await battleMaps.importImage(improvisedScene.definition.id, path);
+  };
   const activeTab = selectedTab === 'board' && !hasBoard ? 'adventure' : selectedTab;
   const boardFocused = activeTab === 'board';
   const splitAdventure = hasBoard && !boardFocused;
@@ -579,6 +594,36 @@ export const StageView: React.FC = () => {
                 icon: Sparkles,
                 onSelect: () => setAutoImages(!autoImages),
               },
+              ...(improvisedScene && paintersReady
+                ? [
+                    {
+                      label: battleMaps.auto ? t('stage.menuBattleMapsOn') : t('stage.menuBattleMapsOff'),
+                      description: t('stage.battleMapsHint'),
+                      icon: Grid3x3,
+                      onSelect: () => battleMaps.setAuto(!battleMaps.auto),
+                    },
+                    {
+                      label: t('stage.menuPaintBattleMap'),
+                      description: t('stage.paintBattleMapHint'),
+                      icon: MapIcon,
+                      onSelect: () => {
+                        if (improvisedScene.world.location.trim()) {
+                          void battleMaps.paint(improvisedScene.definition.id, improvisedScene.world.location, true);
+                        }
+                      },
+                    },
+                  ]
+                : []),
+              ...(improvisedScene
+                ? [
+                    {
+                      label: t('stage.menuImportBattleMap'),
+                      description: t('stage.importBattleMapHint'),
+                      icon: ImageUp,
+                      onSelect: () => void importBattleMap(),
+                    },
+                  ]
+                : []),
               {
                 label: stageState?.definition.lock_bg ? t('stage.menuUnlockBg') : t('stage.menuLockBg'),
                 description: stageState?.definition.lock_bg ? t('stage.bgLocked') : t('stage.bgDynamic'),
@@ -708,6 +753,7 @@ export const StageView: React.FC = () => {
                 </div>
 
                 {!hasBoard && <Combat5ePanel />}
+                <ImprovisedMapCard />
                 <TurnControlBar compact={splitAdventure || shortWindow} />
               </div>
               {hasBoard && <StageBoardView focused={boardFocused} onToggleFocus={() => setActiveTab(boardFocused ? 'adventure' : 'board')} />}
