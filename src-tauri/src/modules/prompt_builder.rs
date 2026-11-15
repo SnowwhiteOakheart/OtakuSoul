@@ -924,4 +924,116 @@ mod tests {
         ctx.character.post_history_instructions = None;
         assert_eq!(post_history_instruction(&ctx), None);
     }
+
+    /// Snapshot captured with the original renderer before moving its implementation.
+    #[test]
+    fn shared_prompt_migration_golden() {
+        let mut ctx = context(Some("{{original}}\n{{char}} bleibt bei {{user}}."));
+        ctx.user_name = "Kai".into();
+        ctx.reply_language = Some("Deutsch".into());
+        ctx.macro_seed = Some("migration-parity".into());
+        ctx.character.description = "{{char}} trägt einen {{pick:blauen}} Mantel.".into();
+        ctx.character.personality = "Ruhig und wachsam.".into();
+        ctx.character.scenario = "{{user}} wartet am Tor.".into();
+        ctx.character.mes_example = "{{user}}: Hallo!\n{{char}}: Willkommen.".into();
+        ctx.character.post_history_instructions = Some("{{original}} Bleib bei {{user}}.".into());
+        ctx.character.extensions = serde_json::json!({"otakusoul_i18n":{"source_language":"de","translations":{"en":{"description":"{{char}} wears a blue coat.","post_history_instructions":"English post should not replace original post."}}},"expressions":{"blush":"data:image/png;base64,AAAA"}});
+        ctx.active_lore = vec![
+            LorebookEntry {
+                name: "Ort".into(),
+                content: "{{char}} kennt die Stadt.".into(),
+                ..LorebookEntry::default()
+            },
+            LorebookEntry {
+                name: "Regel".into(),
+                content: "Sprich mit {{user}}.".into(),
+                injection_behavior: "active".into(),
+                ..LorebookEntry::default()
+            },
+        ];
+        ctx.active_directives = vec![LorebookEntry {
+            name: "Zusatz".into(),
+            content: "Das Tor bleibt offen.".into(),
+            ..LorebookEntry::default()
+        }];
+        ctx.state_variables = vec![StateVariable {
+            name: "Mut".into(),
+            value: "4".into(),
+            var_type: "progress".into(),
+            max_value: Some(10),
+        }];
+        ctx.group = Some(vec![GroupMember {
+            name: "Sora".into(),
+            description: "Bogenschütze".into(),
+        }]);
+        ctx.author_note = Some("{{user}} sieht den Weg.".into());
+        ctx.author_note_depth = Some(2);
+        ctx.chat_summary = Some("{{char}} hat das Tor gefunden.".into());
+        ctx.reply_length = Some("medium".into());
+        ctx.avoid_phrases = Some(vec!["Ozon".into()]);
+        ctx.emotion_tags = Some(true);
+        ctx.avatar_moods = Some(true);
+        ctx.template = Some(PromptTemplate {
+            post_history: "Später, {{user}}.".into(),
+            ..PromptTemplate::default()
+        });
+        let memory = |id, content: &str| crate::modules::memory::EpisodicMemory {
+            id,
+            category: "fact".into(),
+            content: content.into(),
+            significance: 3,
+            created_at: 0,
+            last_accessed_at: 0,
+            source_chat_id: None,
+            source_message_ids: Vec::new(),
+            origin: "auto".into(),
+            pinned: false,
+            needs_review: false,
+            topic_key: None,
+            superseded_by: None,
+            superseded_at: None,
+            supersede_reason: String::new(),
+        };
+        let db = crate::modules::memory::MemoryDb::new_in_memory().unwrap();
+        let mut cognitive = db.get_cognitive_overview("migration-aiko", "Kai").unwrap();
+        cognitive.psychology.core_identity = vec!["Ich halte mein Wort.".into()];
+        cognitive.psychology.primary_emotion = "happy".into();
+        cognitive.psychology.intensity = 3;
+        cognitive.psychology.psychological_tension = "Ein Geheimnis bewahren.".into();
+        cognitive.psychology.active_agenda = "Das Tor erreichen.".into();
+        cognitive.psychology.immediate_focus = "Der Pfad".into();
+        cognitive.psychology.cognitive_dissonance = "Keine.".into();
+        cognitive.relationship.role_in_story = "Freund".into();
+        cognitive.relationship.known_attributes = "Kai hört zu.".into();
+        cognitive.relationship.trust_level = "Developing Trust".into();
+        cognitive.relationship.dynamic_description = "Gemeinsame Reise".into();
+        cognitive.relationship.unspoken_tension = "Keine.".into();
+        cognitive.relationship.preferences_habits = vec!["Tee".into()];
+        cognitive.relationship.shared_milestones = vec!["Das Tor gefunden".into()];
+        cognitive.recent_memories = vec![memory(1, "Alte Übersicht")];
+        ctx.cognitive = Some(cognitive);
+        ctx.memories = Some(crate::modules::memory::PromptMemories {
+            core: vec![memory(2, "Kai heißt Kaito")],
+            relevant: vec![memory(3, "Mag Jasmintee")],
+            intentions: vec![crate::modules::memory::IntentionPrompt {
+                label: "due tomorrow".into(),
+                title: "Zusammen kochen".into(),
+                details: "italienisch".into(),
+                initiator: "user".into(),
+            }],
+        });
+        let directory = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../crates/otakusoul-prompt/tests/fixtures");
+        for (language, name) in [("Deutsch", "rich-de"), ("English", "rich-en")] {
+            ctx.reply_language = Some(language.into());
+            let prompt = assemble(&ctx);
+            let actual = format!(
+                "{}\n\n=== POST HISTORY ===\n{}\n",
+                prompt.system,
+                prompt.post_history.unwrap_or_default()
+            );
+            let path = directory.join(format!("{name}.txt"));
+            assert_eq!(actual, std::fs::read_to_string(path).unwrap(), "{language}");
+        }
+    }
 }
