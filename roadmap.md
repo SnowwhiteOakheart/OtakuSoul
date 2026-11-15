@@ -1,6 +1,6 @@
 # 🗺️ OtakuSoul – Roadmap (offen)
 
-> Stand: 02.11.2026 (nach 0.7.2). Diese Datei ist die **einzige** Liste offener Punkte; `roadmap_abgeschlossen.md`
+> Stand: 15.11.2026 (nach 0.7.8). Diese Datei ist die **einzige** Liste offener Punkte; `roadmap_abgeschlossen.md`
 > (nur lokal, nicht im Repository) enthält alles Erledigte. Offene Punkte sind Vorschläge, keine zugesagten Features.
 > Erledigtes wird abgehakt und beim nächsten Aufräumen nach `roadmap_abgeschlossen.md` verschoben.
 
@@ -26,13 +26,13 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 | B4 | Teilen: Lorebooks, automatische Prüfung der Einreichung | ★★ | M | Prüfablauf im Daten-Repo |
 | B5 | ~~Webtoon-Export~~ erledigt (05.11.2026) | – | – | – |
 | B6 | OBS-Overlay: 3D-/Live2D-Modell statt Porträt | ★ | M | – |
-| B7 | Benachrichtigungsklick unter Linux und macOS | ★ | S (Linux) / M (macOS) | Mac für macOS |
+| B7 | Benachrichtigungsklick unter macOS (Windows und Linux erledigt) | ★ | M | Mac |
 | **C** | **Später – größere Vorhaben** | | | |
 | C1 | Zugriff von unterwegs (Relay), danach Handy-App | ★★★ | XL | Relay-Dienst, Sicherheitskonzept |
 | C2 | ~~Beziehungs-Atlas~~ erledigt (05.11.2026) | – | – | – |
 | C3 | ~~Zeitreise-Checkpoints~~ erledigt (05.11.2026) | – | – | – |
 | C4 | ~~Abend-Reflexion und Monatsrückblick~~ erledigt (05.11.2026) | – | – | – |
-| C5 | Fokus-/Pomodoro-Modus mit Avatar | ★ | M | – |
+| C5 | ~~Fokus-/Pomodoro-Modus mit Avatar~~ erledigt (14.11.2026) | – | – | – |
 | C6 | Mehrere Pets gleichzeitig | ★ | L | – |
 | C7 | Mitguck-Modus (Bildschirm/Webcam) | ★★ | L | Vision-Modell, Datenschutzkonzept |
 | C8 | Battlemap aus Text erzeugen | ★ | L | Bildmodell, ungewisse Qualität |
@@ -145,8 +145,10 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 - [ ] **B6 · OBS-Overlay mit Modell:** Das Overlay (`/overlay`) zeigt heute das Porträt mit Sprechblase und Stimmung. Offen: das
   3D-/Live2D-Modell selbst als Browser-Quelle; dafür müssten Modelldateien über den Web-Server ausgeliefert und die Viewer
   ohne Tauri-Fensteraufrufe laufen.
-- [ ] **B7 · Klick auf die Benachrichtigung öffnet den Chat – Linux und macOS:** Unter Windows erledigt (`notify_chat`).
-  Linux: `notify-rust` mit `wait_for_action` (klein); macOS: `UNUserNotificationCenter`-Delegate (braucht einen Mac).
+- [ ] **B7 · Klick auf die Benachrichtigung öffnet den Chat – macOS:** Windows (`notify_chat`, Toast) und Linux/BSD
+  (15.11.2026: Plugin-Benachrichtigung mit `charId`/`chatId`, Klick über `on_action`/D-Bus, `register_notification_click`)
+  erledigt. Unter Linux noch einmal in einer echten Sitzung (GNOME, KDE, dunst) klicken. macOS: das Plugin meldet Klicks
+  dort ebenfalls über `on_action` – mit einem Mac ausprobieren, sonst `UNUserNotificationCenter`-Delegate.
 
 ## C. Später – größere Vorhaben
 
@@ -172,8 +174,8 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
   Vorhaben), optional mit Gute-Nacht-Nachricht und Erinnerung an Vorhaben für morgen; zu Monatsbeginn ein Rückblick auf
   den letzten Monat. Im Tagebuch-Reiter von Hand auslösbar. E2E `memory-journal.mjs` (Screenshot 121) bestanden.
   Offen nur: Klang der Texte mit echten Modellen.
-- [ ] **C5 · Fokus-/Pomodoro-Modus:** Fokus-Timer, bei dem der Avatar mitarbeitet, Pausen ankündigt und erledigte
-  Aufgaben feiert (inspiriert von *Spirit City: Lofi Sessions*).
+- [x] **C5 · Fokus-/Pomodoro-Modus:** erledigt (14.11.2026, `c7b4ceb`): Timer und Pomodoro im Desktop-Pet
+  (`petTimer.ts`), die Figur liest im Fokus ein Buch, kündigt Phasenenden an, Konfetti am Phasenende.
 - [ ] **C6 · Mehrere Pets:** Bei Gruppenchats mehrere Figuren gleichzeitig, die sich anschauen und nacheinander sprechen
   (eigene Fenster, gemeinsame Physik). Erst nach D4 (Speicherbedarf des Pet-Webviews).
 - [ ] **C7 · Mitguck-Modus:** Optionaler Live-Blick bei Sprachanrufen oder fürs Pet: ein verkleinerter Schnappschuss
@@ -186,7 +188,7 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
   (z. B. QuickJS als WebAssembly im Worker), weil importierte Skripte fremder Herkunft sein können.
 
 > Alleinstellungsmerkmal: Das Desktop-Pet zusammen mit Gedächtnis und proaktiven Nachrichten –
-> „Deine Figur lebt auf deinem PC.“ Punkte, die das stärken (B3, B6, C4), haben bei gleicher Bewertung Vorrang.
+> „Deine Figur lebt auf deinem PC.“ Punkte, die das stärken (B6, C6), haben bei gleicher Bewertung Vorrang.
 
 ## D. Plattformen & Technik – nur mit Hardware oder bei Gelegenheit
 
@@ -217,10 +219,9 @@ Stand 10.11.2026. Tauri bleibt die produktive Oberfläche. Der Stand `codex/nati
 kleine, einzeln rücknehmbare Änderungen auf `main`. Das bestehende Crate `otakusoul-rules5e`
 ist das Vorbild für die Trennung zwischen Fachlogik und App-Anbindung.
 
-- [ ] **D7.1 · Profilpfade.** `otakusoul-paths` aus `4748a6d` auf die gemeinsame
-  Pfadauflösung begrenzen und über `src-tauri/src/modules/paths.rs` einbinden. Die produktive
-  App-Kennung, die Standardordner und die Isolation über `OTAKUSOUL_HOME` bleiben kompatibel.
-  **Abnahme:** Einwegprofil mit gesetztem Override starten und Pfadwahl ohne Override separat prüfen.
+- [x] **D7.1 · Profilpfade.** Erledigt (15.11.2026): Crate `crates/otakusoul-paths` (aus `4748a6d`, ohne
+  `native_data_dir` des Prototyps) mit `base_dirs`, `production_dirs`, `isolated_home`; `paths.rs` exportiert
+  `base_dirs`/`isolated_home` weiter, App-Kennung `com.snowwhite.otakusoul` und `OTAKUSOUL_HOME` unverändert.
 - [ ] **D7.2 · Streaming.** `otakusoul-stream` aus `c46de2b` samt späteren Decoder-Korrekturen
   aus `53de0c2` prüfen. OpenAI-kompatible und Anthropic-SSE-Deltas, getrennte Gedanken und
   UTF-8-Stückgrenzen gemeinsam dekodieren. `providers.rs` und `inference.rs` behalten
