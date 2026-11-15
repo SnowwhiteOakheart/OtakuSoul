@@ -28,6 +28,7 @@
 | **Schneller Pre-Check** | `npm run check:fast` | Nur `docs:check`, Oxlint, `tsc --noEmit` und `cargo check --message-format=short` |
 | **Doku-Links prüfen** | `npm run docs:check` | Prüft Verweise in `AI.md` & `ARCHITECTURE_INDEX.md` auf `docs/ai/*.md` |
 | **Übersetzungen prüfen** | `npm run i18n:check [-- datei.json]` | Fehlende/unbekannte Schlüssel, Platzhalter gegen `de.json` |
+| **Feste Oberflächentexte** | `npm run ui:literals` | Wörter in JSX-Text und `title`/`placeholder`/`aria-label`/`alt` ohne `t()`; Teil von `check:web`/`check:agent`, Ausnahmen (Einheiten, Produktnamen) in `tools/ui_literals_check.mjs` |
 | **Typen synchronisieren / prüfen** | `npm run types:gen` / `npm run types:check` | Generiert TS-Typen aus Rust via `ts-rs` bzw. prüft ohne EOL-Rauschen auf Drift |
 | **E2E-Rauchtest (Mock-LLM)** | `npm run e2e` (`npm run e2e:run` ohne Build) | Baut nach `target/e2e`, nutzt tauri-driver + Mock-LLM; gezielt & kompakt: `npm run e2e:filter -- [--build\|--list\|--keep-going\|--json\|--verbose] <muster>` |
 | **Linux-Tests via WSL2** | `wsl -e bash -lc 'cd ~/Development/OtakuSoul && git pull --ff-only && xvfb-run -a npm run e2e:filter -- …'` | Eigenständiger Linux-Klon (`origin` = `/mnt/c/…`) mit `WebKitWebDriver`, `tauri-driver`, `cargo-audit`, `xvfb-run`; Details in `docs/ai/app-ui-i18n.md` |

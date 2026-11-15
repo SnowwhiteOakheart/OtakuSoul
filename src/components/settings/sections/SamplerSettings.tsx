@@ -223,7 +223,7 @@ export const SamplerSettings = () => {
           {/* Temperature */}
           <div className="p-3 rounded-lg bg-app/40 border border-slate-800/80 space-y-1.5">
             <div className="flex justify-between">
-              <span className="text-slate-300 font-medium">Temperature:</span>
+              <span className="text-slate-300 font-medium">{t('settings.temperature')}:</span>
               <span className="font-mono text-accent-300 font-bold">{sampling.temperature ?? 0.7}</span>
             </div>
             <input
@@ -241,7 +241,7 @@ export const SamplerSettings = () => {
           {/* Min-P */}
           <div className="p-3 rounded-lg bg-app/40 border border-slate-800/80 space-y-1.5">
             <div className="flex justify-between">
-              <span className="text-slate-300 font-medium">Min-P Sampler:</span>
+              <span className="text-slate-300 font-medium">{t('settings.samplerMinP')}:</span>
               <span className="font-mono text-cyan-300 font-bold">{sampling.min_p ?? 0.05}</span>
             </div>
             <input
@@ -259,7 +259,7 @@ export const SamplerSettings = () => {
           {/* Top-P */}
           <div className="p-3 rounded-lg bg-app/40 border border-slate-800/80 space-y-1.5">
             <div className="flex justify-between">
-              <span className="text-slate-300 font-medium">Top-P (Nucleus):</span>
+              <span className="text-slate-300 font-medium">{t('settings.samplerTopP')}:</span>
               <span className="font-mono text-emerald-300 font-bold">{sampling.top_p ?? 0.9}</span>
             </div>
             <input
@@ -297,7 +297,7 @@ export const SamplerSettings = () => {
           {/* Repeat Penalty */}
           <div className="p-3 rounded-lg bg-app/40 border border-slate-800/80 space-y-1.5">
             <div className="flex justify-between">
-              <span className="text-slate-300 font-medium">Repeat Penalty:</span>
+              <span className="text-slate-300 font-medium">{t('settings.samplerRepeatPenalty')}:</span>
               <span className="font-mono text-amber-300 font-bold">{sampling.repeat_penalty ?? 1.1}</span>
             </div>
             <input
@@ -315,7 +315,7 @@ export const SamplerSettings = () => {
           {/* Top-K */}
           <div className="p-3 rounded-lg bg-app/40 border border-slate-800/80 space-y-1.5">
             <div className="flex justify-between">
-              <span className="text-slate-300 font-medium">Top-K:</span>
+              <span className="text-slate-300 font-medium">{t('settings.samplerTopK')}:</span>
               <span className="font-mono text-indigo-300 font-bold">{sampling.top_k ?? 40}</span>
             </div>
             <input
@@ -343,7 +343,7 @@ export const SamplerSettings = () => {
           {/* DRY (Don't Repeat Yourself) Multiplier */}
           <div className="p-3 rounded-lg bg-app/40 border border-slate-800/80 space-y-1.5">
             <div className="flex justify-between">
-              <span className="text-slate-300 font-medium">DRY Multiplier:</span>
+              <span className="text-slate-300 font-medium">{t('settings.samplerDry')}:</span>
               <span className="font-mono text-rose-300 font-bold">{sampling.dry_multiplier ?? 0.8}</span>
             </div>
             <input
@@ -363,7 +363,7 @@ export const SamplerSettings = () => {
           {/* XTC (Exclude Top Choices) Threshold */}
           <div className="p-3 rounded-lg bg-app/40 border border-slate-800/80 space-y-1.5">
             <div className="flex justify-between">
-              <span className="text-slate-300 font-medium">XTC Threshold:</span>
+              <span className="text-slate-300 font-medium">{t('settings.samplerXtc')}:</span>
               <span className="font-mono text-cyan-300 font-bold">{sampling.xtc_threshold ?? 0.1}</span>
             </div>
             <input
@@ -385,7 +385,7 @@ export const SamplerSettings = () => {
           {/* Dynatemp Range */}
           <div className="p-3 rounded-lg bg-app/40 border border-slate-800/80 space-y-1.5">
             <div className="flex justify-between">
-              <span className="text-slate-300 font-medium">Dynamic Temperature Range:</span>
+              <span className="text-slate-300 font-medium">{t('settings.samplerDynatemp')}:</span>
               <span className="font-mono text-accent-300 font-bold">{sampling.dynatemp_range ?? 0.0}</span>
             </div>
             <input

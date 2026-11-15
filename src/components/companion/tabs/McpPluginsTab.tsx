@@ -56,7 +56,7 @@ export const McpPluginsTab: React.FC = () => {
               </div>
 
               <p className="text-xs text-slate-400 font-mono">
-                Transport: {srv.transport} • Befehl: {srv.command} {srv.args?.join(' ')}
+                Transport: {srv.transport} • {t('comp.mcpCommand')}: {srv.command} {srv.args?.join(' ')}
               </p>
             </div>
           ))}

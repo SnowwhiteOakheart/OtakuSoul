@@ -73,7 +73,7 @@ export const PartyHeader: React.FC = () => {
                       {!fiveE && <button
                         onClick={() => setEditingSkillsFor(member.id)}
                         className="text-slate-400 hover:text-slate-300 transition-colors"
-                        title="Fertigkeiten"
+                        title={t('stage.skillsTitle')}
                       >
                         <Settings className="w-3 h-3" />
                       </button>}
@@ -188,6 +188,7 @@ const SkillsModal: React.FC<{
   combatantId: string;
   onClose: () => void;
 }> = ({ combatantId, onClose }) => {
+  const { t } = useTranslation();
   const { stageState } = useStoreFields('stageState');
   
   const combatant = stageState?.combat?.combatants.find((c) => c.id === combatantId);
@@ -233,7 +234,7 @@ const SkillsModal: React.FC<{
           className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 font-mono h-40 focus:outline-none focus:border-accent-500 transition-colors resize-none"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Stärke: 2&#10;Geschick: 1&#10;Charisma: -1"
+          placeholder={t('stage.skillsPlaceholder')}
         />
         <div className="flex justify-end gap-2 mt-2">
           <button

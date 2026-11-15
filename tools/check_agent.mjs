@@ -132,6 +132,12 @@ if (!onlyRust) {
     summarize: (out) => out.split(/\r?\n/).find((l) => l.includes('Found ') || l.includes('Finished '))?.trim() || 'OK',
   });
   steps.push({
+    name: 'ui:literals',
+    cmd: process.execPath,
+    args: ['tools/ui_literals_check.mjs'],
+    summarize: () => 'keine festen Oberflächentexte',
+  });
+  steps.push({
     name: 'tsc',
     cmd: process.execPath,
     args: [bin('typescript/bin/tsc'), '--noEmit'],

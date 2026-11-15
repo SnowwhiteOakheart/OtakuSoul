@@ -15,7 +15,7 @@ export const CharacterTranslationsTab: React.FC<TranslationsTabProps> = ({
   translations,
   setTranslations,
 }) => {
-  const { tOptional } = useTranslation();
+  const { t, tOptional } = useTranslation();
   const langs = Object.keys(translations);
   const [activeLang, setActiveLang] = useState<string>(langs[0] || '');
   const [newLang, setNewLang] = useState('');
@@ -109,7 +109,7 @@ export const CharacterTranslationsTab: React.FC<TranslationsTabProps> = ({
           ) : (
             <>
               <div>
-                <label className="text-xs font-semibold text-slate-400 block mb-1">custom_title</label>
+                <label className="text-xs font-semibold text-slate-400 block mb-1">{t('editor.title')}</label>
                 <input
                   type="text"
                   value={translations[activeLang]?.custom_title || translations[activeLang]?.sow_title || ''}
@@ -118,7 +118,7 @@ export const CharacterTranslationsTab: React.FC<TranslationsTabProps> = ({
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-400 block mb-1">description</label>
+                <label className="text-xs font-semibold text-slate-400 block mb-1">{t('editor.description')}</label>
                 <textarea
                   rows={4}
                   value={translations[activeLang]?.description || ''}
@@ -127,7 +127,7 @@ export const CharacterTranslationsTab: React.FC<TranslationsTabProps> = ({
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-400 block mb-1">personality</label>
+                <label className="text-xs font-semibold text-slate-400 block mb-1">{t('editor.personality')}</label>
                 <textarea
                   rows={3}
                   value={translations[activeLang]?.personality || ''}
@@ -136,7 +136,7 @@ export const CharacterTranslationsTab: React.FC<TranslationsTabProps> = ({
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-400 block mb-1">scenario</label>
+                <label className="text-xs font-semibold text-slate-400 block mb-1">{t('editor.scenario')}</label>
                 <textarea
                   rows={3}
                   value={translations[activeLang]?.scenario || ''}
@@ -145,7 +145,7 @@ export const CharacterTranslationsTab: React.FC<TranslationsTabProps> = ({
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-400 block mb-1">first_mes</label>
+                <label className="text-xs font-semibold text-slate-400 block mb-1">{t('editor.firstMessageShort')}</label>
                 <textarea
                   rows={4}
                   value={translations[activeLang]?.first_mes || ''}
@@ -154,7 +154,7 @@ export const CharacterTranslationsTab: React.FC<TranslationsTabProps> = ({
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-400 block mb-1">mes_example</label>
+                <label className="text-xs font-semibold text-slate-400 block mb-1">{t('editor.examples')}</label>
                 <textarea
                   rows={4}
                   value={translations[activeLang]?.mes_example || ''}
@@ -163,7 +163,7 @@ export const CharacterTranslationsTab: React.FC<TranslationsTabProps> = ({
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-400 block mb-1">system_prompt</label>
+                <label className="text-xs font-semibold text-slate-400 block mb-1">{t('editor.systemPrompt')}</label>
                 <textarea
                   rows={3}
                   value={translations[activeLang]?.system_prompt || ''}
@@ -172,7 +172,7 @@ export const CharacterTranslationsTab: React.FC<TranslationsTabProps> = ({
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-400 block mb-1">post_history_instructions</label>
+                <label className="text-xs font-semibold text-slate-400 block mb-1">{t('editor.postHistory')}</label>
                 <textarea
                   rows={3}
                   value={translations[activeLang]?.post_history_instructions || ''}

@@ -15,7 +15,7 @@ import type { JsonObject } from '../../../types';
 import { Skeleton } from '../../ui';
 
 export const ToolWorkbenchTab: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, tPlural } = useTranslation();
   const {
     companionState, requestToolCall, updateCompanionSettings, environmentSnapshot,
     fetchEnvironmentSnapshot, detectDesktopWindow,
@@ -417,7 +417,7 @@ export const ToolWorkbenchTab: React.FC = () => {
             </h3>
           </div>
           <span className="text-xs text-slate-400 font-mono">
-            {history.length} Aktionen protokolliert
+            {tPlural('comp.auditCount', history.length)}
           </span>
         </div>
 

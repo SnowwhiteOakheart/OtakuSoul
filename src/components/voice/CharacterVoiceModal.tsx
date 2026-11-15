@@ -715,9 +715,9 @@ export function CharacterVoiceModal({ onClose, target, embedded = false, autoSav
                     <label><span className={labelClass}>{t('voiceCfg.apiKeyOptional')}</span><input type="password" value={draft.rvc.api_key} onChange={(event) => updateRvc('api_key', event.target.value)} className={fieldClass} /></label>
                   </div>
                   <div className="grid sm:grid-cols-3 gap-4">
-                    <label><span className={`${labelClass} flex justify-between`}><span>Pitch</span><span>{draft.rvc.pitch}</span></span><input type="range" min="-24" max="24" value={draft.rvc.pitch} onChange={(event) => updateRvc('pitch', Number(event.target.value))} className="w-full accent-accent-500" /></label>
-                    <label><span className={`${labelClass} flex justify-between`}><span>Index Rate</span><span>{draft.rvc.index_rate.toFixed(2)}</span></span><input type="range" min="0" max="1" step="0.05" value={draft.rvc.index_rate} onChange={(event) => updateRvc('index_rate', Number(event.target.value))} className="w-full accent-accent-500" /></label>
-                    <label><span className={`${labelClass} flex justify-between`}><span>Protect</span><span>{draft.rvc.protect.toFixed(2)}</span></span><input type="range" min="0" max="0.5" step="0.01" value={draft.rvc.protect} onChange={(event) => updateRvc('protect', Number(event.target.value))} className="w-full accent-accent-500" /></label>
+                    <label><span className={`${labelClass} flex justify-between`}><span>{t('voiceCfg.rvcPitch')}</span><span>{draft.rvc.pitch}</span></span><input type="range" min="-24" max="24" value={draft.rvc.pitch} onChange={(event) => updateRvc('pitch', Number(event.target.value))} className="w-full accent-accent-500" /></label>
+                    <label><span className={`${labelClass} flex justify-between`}><span>{t('voiceCfg.rvcIndexRate')}</span><span>{draft.rvc.index_rate.toFixed(2)}</span></span><input type="range" min="0" max="1" step="0.05" value={draft.rvc.index_rate} onChange={(event) => updateRvc('index_rate', Number(event.target.value))} className="w-full accent-accent-500" /></label>
+                    <label><span className={`${labelClass} flex justify-between`}><span>{t('voiceCfg.rvcProtect')}</span><span>{draft.rvc.protect.toFixed(2)}</span></span><input type="range" min="0" max="0.5" step="0.01" value={draft.rvc.protect} onChange={(event) => updateRvc('protect', Number(event.target.value))} className="w-full accent-accent-500" /></label>
                   </div>
                 </>
               )}

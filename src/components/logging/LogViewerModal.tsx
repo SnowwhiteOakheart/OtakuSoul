@@ -18,7 +18,7 @@ export const LogViewerModal: React.FC = () => {
   const { isLogViewerOpen, setIsLogViewerOpen, logs, fetchLogs, clearLogs, exportLogs } = useStoreFields(
     'isLogViewerOpen', 'setIsLogViewerOpen', 'logs', 'fetchLogs', 'clearLogs', 'exportLogs',
   );
-  const { t } = useTranslation();
+  const { t, tPlural } = useTranslation();
 
   const [levelFilter, setLevelFilter] = useState<'ALL' | 'INFO' | 'WARN' | 'ERROR' | 'DEBUG'>(
     'ALL'
@@ -110,7 +110,7 @@ export const LogViewerModal: React.FC = () => {
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-bold text-slate-100">{t('logger.title')}</h2>
                 <span className="text-[11px] uppercase font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
-                  {logs.length} Einträge
+                  {tPlural('logger.entryCount', logs.length)}
                 </span>
               </div>
               <p className="text-xs text-slate-400">{t('logger.subtitle')}</p>
@@ -195,7 +195,7 @@ export const LogViewerModal: React.FC = () => {
                 onChange={(e) => setAutoScroll(e.target.checked)}
                 className="rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-0"
               />
-              <span>Auto-Scroll</span>
+              <span>{t('logger.autoScroll')}</span>
             </label>
           </div>
         </div>

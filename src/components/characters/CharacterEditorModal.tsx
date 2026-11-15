@@ -850,7 +850,7 @@ export const CharacterEditorModal = ({
                 <div>
                   <span className="font-bold">{t('editor.lorebookBinding')}</span> {t('editor.lorebookBindingText')}
                 </div>
-                <span className="font-mono text-accent-300 font-bold">{boundLorebooks.length} gebunden</span>
+                <span className="font-mono text-accent-300 font-bold">{tPlural('editor.lorebooksBound', boundLorebooks.length)}</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

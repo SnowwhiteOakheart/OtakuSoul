@@ -155,10 +155,10 @@ export const StageEventCardView: React.FC<StageEventCardViewProps> = ({ card }) 
         <p className="text-xs text-slate-300 mb-2">{card.campfire_note}</p>
         <div className="flex flex-wrap gap-2 text-xs">
           <span className="px-2 py-0.5 rounded bg-emerald-950/70 border border-emerald-500/40 text-emerald-300 font-semibold text-xs">
-            +{card.recovered_hp} LP regeneriert
+            {t('stage.cardHpRecovered', { hp: card.recovered_hp })}
           </span>
           <span className="px-2 py-0.5 rounded bg-accent-950/70 border border-accent-500/40 text-accent-300 font-semibold text-xs">
-            -{card.recovered_stress} Stress abgebaut
+            {t('stage.cardStressReduced', { stress: card.recovered_stress })}
           </span>
         </div>
       </div>
