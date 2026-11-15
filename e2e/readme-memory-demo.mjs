@@ -91,8 +91,14 @@ try {
     });
     await caption(laterCaption);
     await browser.$('button[title="' + t['chat.sessionsTooltip'] + '"]').click();
-    const newChat = await browser.$('button=' + t['chatSidebar.newChat']);
-    await newChat.waitForClickable();
+    // Two buttons carry this text (sidebar and chat view): take the one that can be clicked.
+    let newChat;
+    await browser.waitUntil(async () => {
+      for (const button of await browser.$$('button=' + t['chatSidebar.newChat'])) {
+        if (await button.isClickable().catch(() => false)) newChat = button;
+      }
+      return !!newChat;
+    }, { timeout: 10_000, timeoutMsg: 'Knopf „Neuer Chat“ nicht klickbar' });
     await capture(0.9);
     await newChat.click();
     const closeSidebar = await browser.$('button[title="' + t['common.close'] + '"]');
