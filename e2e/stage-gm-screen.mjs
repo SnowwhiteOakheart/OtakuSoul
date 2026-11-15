@@ -101,7 +101,12 @@ try {
   await browser.$('button=Weltzustand bearbeiten').click();
   await browser.$('#stage-world-title').waitForDisplayed();
   const dialog = await browser.$('[role="dialog"]');
-  assert.ok(!(await dialog.getText()).includes('SECRET_TRAP'), 'Spielleiter-Schirm nicht eingeklappt');
+  // Rendered text and the details state: WebKit's driver also reports the folded part in getText().
+  const screen = await browser.execute(() => ({
+    open: document.querySelector('[data-testid="stage-gm-screen"]')?.open,
+    text: document.querySelector('[role="dialog"]')?.innerText ?? '',
+  }));
+  assert.ok(screen.open === false && !screen.text.includes('SECRET_TRAP'), 'Spielleiter-Schirm nicht eingeklappt');
   await jsClick(await dialog.$('[data-testid="stage-gm-screen"] summary'));
   await (await dialog.$$('textarea[aria-label="Geheimnis"]'))[0].waitForDisplayed({ timeout: 5000 });
   const texts = await dialog.$$('textarea[aria-label="Geheimnis"]');
