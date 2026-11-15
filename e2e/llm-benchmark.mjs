@@ -20,7 +20,7 @@ const results = [
     prompt_tps: 412.7, first_token_ms: 1650, rating: 'slow', vram_mb: 15800 }),
 ];
 
-const { browser, home, close } = await launch({}, { homeFiles: { 'data/llm_benchmarks.json': JSON.stringify(results) } });
+const { browser, home, close } = await launch({ expert_mode: true }, { homeFiles: { 'data/llm_benchmarks.json': JSON.stringify(results) } });
 // oxlint-disable-next-line no-underscore-dangle -- Tauri IPC in a disposable profile
 const call = async (command, args = {}) => {
   try {

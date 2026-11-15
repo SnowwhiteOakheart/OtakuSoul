@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ResetSection } from '../ResetSection';
 import { OptionHint } from '../OptionHint';
 import { changedFields, DEFAULT_KV_CACHE, kvCacheTypes, serverTuningDefaults } from '../../../utils/settingDefaults';
-import { useAppStore, useStoreFields } from '../../../store/useAppStore';
+import { useAppStore, useStoreFields, type SettingsSection } from '../../../store/useAppStore';
 import { translate, useTranslation } from '../../../i18n';
 import { errorMessage } from '../../../utils/errors';
 import { open } from '@tauri-apps/plugin-dialog';
@@ -21,6 +21,7 @@ import {
   Info,
   Eye,
   Loader2,
+  Download,
 } from 'lucide-react';
 import { backendMessage } from '../../../utils/errors';
 import { RuntimeCard } from './RuntimeCard';
@@ -29,8 +30,8 @@ import { LlmBenchmarkCard } from './LlmBenchmarkCard';
 import { api } from '../../../services/api';
 import type { ScannedModel, StarterModel } from '../../../types';
 
-export const ServerSettings = () => {
-  const { t, tOptional } = useTranslation();
+export const ServerSettings = ({ onNavigate }: { onNavigate?: (section: SettingsSection) => void }) => {
+  const { t, tOptional, currentLanguage } = useTranslation();
   const {
     hardware, layerRecommendation, fetchLayerRecommendation, serverStatus, serverConfig,
     setServerConfig, selectLocalModel, startServer, stopServer, scannedModels, expertMode, modelDefaults,
@@ -44,22 +45,26 @@ export const ServerSettings = () => {
   useEffect(() => {
     api.scanVisionProjectors().then(setProjectors).catch(() => setProjectors([]));
   }, []);
-  // A starter model that can see images, whose vision file is not there yet.
-  const [visionStarter, setVisionStarter] = useState<StarterModel | null>(null);
-  const [loadingVision, setLoadingVision] = useState(false);
+  // The catalogue models: description of the chosen one and its missing vision file.
+  const [starters, setStarters] = useState<StarterModel[]>([]);
+  const refreshStarters = () => api.listStarterModels().then(setStarters).catch(() => setStarters([]));
   useEffect(() => {
-    const path = serverConfig.model_path;
-    if (!path) return setVisionStarter(null);
-    api.listStarterModels()
-      .then((starters) => setVisionStarter(starters.find((s) => path.endsWith(s.file.filename) && s.mmproj && !s.mmproj_installed) ?? null))
-      .catch(() => setVisionStarter(null));
-  }, [serverConfig.model_path]);
+    void refreshStarters();
+  }, []);
+  const selectedStarter = serverConfig.model_path
+    ? starters.find((s) => serverConfig.model_path.endsWith(s.file.filename))
+    : undefined;
+  const selectedModel = scannedModels.find((m) => m.path === serverConfig.model_path);
+  const description = selectedStarter && (selectedStarter.description[currentLanguage] || selectedStarter.description.en);
+  // A starter model that can see images, whose vision file is not there yet.
+  const visionStarter = selectedStarter?.mmproj && !selectedStarter.mmproj_installed ? selectedStarter : null;
+  const [loadingVision, setLoadingVision] = useState(false);
   const loadVision = async () => {
     if (!visionStarter?.mmproj || !serverConfig.model_path) return;
     setLoadingVision(true);
     await useAppStore.getState().downloadVisionProjector({ ...visionStarter.mmproj, runtime: 'standard' }, serverConfig.model_path);
     setLoadingVision(false);
-    setVisionStarter(null);
+    void refreshStarters();
     api.scanVisionProjectors().then(setProjectors).catch(() => undefined);
   };
   // The recommendation (and the model's trained context) follows the chosen model.
@@ -145,7 +150,10 @@ export const ServerSettings = () => {
 
   return (
     <div className="space-y-6">
-      {/* 1. Hardware Status Card */}
+      <p className="text-xs text-slate-400" data-server-intro>{t('settings.serverIntro')}</p>
+
+      {/* 1. Hardware Status Card (experts; the app sizes the model itself) */}
+      {expertMode && (
       <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-4">
         <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
           <HardDrive className="w-4 h-4 text-cyan-400" />
@@ -203,9 +211,29 @@ export const ServerSettings = () => {
           </div>
         </div>
       </div>
+      )}
 
-      <RuntimeCard kind="llama" onInstalled={() => void useAppStore.getState().fetchServerStatus()} />
-      <RuntimeCard kind="prism" onInstalled={() => void useAppStore.getState().fetchServerStatus()} />
+      {/* Without expert mode a runtime only shows while it is missing. */}
+      <RuntimeCard kind="llama" hideWhenInstalled={!expertMode} onInstalled={() => void useAppStore.getState().fetchServerStatus()} />
+      {(expertMode || selectedModel?.runtime === 'prism') && (
+        <RuntimeCard kind="prism" hideWhenInstalled={!expertMode} onInstalled={() => void useAppStore.getState().fetchServerStatus()} />
+      )}
+
+      {scannedModels.length === 0 && (
+        <div className="rounded-xl border border-accent-700/50 bg-accent-950/20 p-4 flex flex-wrap items-center justify-between gap-3" data-server-no-model>
+          <p className="text-xs text-slate-300 flex-1 min-w-60">{t('settings.serverNoModel')}</p>
+          {onNavigate && (
+            <button
+              type="button"
+              onClick={() => onNavigate('hub')}
+              className="px-3.5 py-2 rounded-lg bg-accent-600 hover:bg-accent-500 text-white text-xs font-medium flex items-center gap-1.5"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span className="whitespace-nowrap">{t('settings.tabHub')}</span>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* 2. llama-server Controller */}
       <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-4">
@@ -273,8 +301,30 @@ export const ServerSettings = () => {
               <span className="whitespace-nowrap">{t('settings.browseFile')}</span>
             </button>
           </div>
-          {(() => {
-            const selectedModel = scannedModels.find((m) => m.path === serverConfig.model_path);
+          {selectedStarter ? (
+            <div className="rounded-lg border border-slate-800 bg-app/60 p-3 space-y-1 text-xs" data-server-model-description>
+              {description && <p className="text-slate-200">{description}</p>}
+              <p className="text-slate-400">
+                {t('onboarding.starterMeta', {
+                  size: selectedStarter.file.size_formatted,
+                  vram: (selectedStarter.vram_mb / 1024).toFixed(0),
+                  license: selectedStarter.license,
+                })}
+              </p>
+              {selectedStarter.license_kind !== 'open' && (
+                <p className="text-amber-200/90">
+                  <span className="font-semibold">
+                    {t(selectedStarter.license_kind === 'noncommercial' ? 'onboarding.licenseNoncommercial' : 'onboarding.licenseRestricted')}
+                  </span>{' '}
+                  {selectedStarter.license_note[currentLanguage] || selectedStarter.license_note.en || t('onboarding.licenseRestrictedHint')}
+                </p>
+              )}
+              {!selectedStarter.fits_gpu && <p className="text-amber-300/90">{t('onboarding.starterTooBig')}</p>}
+            </div>
+          ) : (
+            selectedModel && <p className="text-[11px] text-slate-500">{t('settings.serverModelUnknown')}</p>
+          )}
+          {expertMode && (() => {
             if (!selectedModel) return null;
             return (
               <div className={`text-xs flex items-center gap-1.5 ${selectedModel.runtime === 'prism' ? 'text-cyan-300' : 'text-slate-400'}`}>
@@ -288,11 +338,12 @@ export const ServerSettings = () => {
               </div>
             );
           })()}
-          <p className="text-[11px] text-slate-500">{t('settings.modelProfileHint')}</p>
+          {expertMode && <p className="text-[11px] text-slate-500">{t('settings.modelProfileHint')}</p>}
         </div>
 
         {/* Vision projector: lets the model see attached images */}
         <div className="space-y-1.5">
+          {expertMode ? (<>
           <label htmlFor="settings-mmproj" className="text-xs font-medium text-slate-300">
             {t('settings.mmproj')}
           </label>
@@ -321,6 +372,14 @@ export const ServerSettings = () => {
             </button>
           </div>
           <p className="text-xs text-slate-400">{t('settings.mmprojHint')}</p>
+          </>) : (
+            mmproj && (
+              <p className="text-xs text-emerald-300 flex items-center gap-1.5" data-server-vision-on>
+                <Eye className="w-3.5 h-3.5" aria-hidden />
+                {t('settings.serverVisionOn')}
+              </p>
+            )
+          )}
           {visionStarter?.mmproj && (
             <button
               type="button"
@@ -338,7 +397,7 @@ export const ServerSettings = () => {
         <ChatLoraPicker />
 
         {/* Core Parameters */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+        <div className={`grid grid-cols-1 gap-4 text-xs ${expertMode ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
           {/* Context Size */}
           <div className="space-y-1">
             <label htmlFor="settings-ctx" className="text-slate-300 font-medium">
@@ -374,7 +433,8 @@ export const ServerSettings = () => {
             )}
           </div>
 
-          {/* GPU Layers */}
+          {/* GPU Layers (experts; the app sets them per model) */}
+          {expertMode && (
           <div className="space-y-1">
             <div className="flex justify-between items-center">
               <label htmlFor="settings-ngl" className="text-slate-300 font-medium">
@@ -399,8 +459,10 @@ export const ServerSettings = () => {
             </div>
             <OptionHint id="settings-ngl-hint">{t('settings.gpuLayersHint')}</OptionHint>
           </div>
+          )}
 
-          {/* Port */}
+          {/* Port (experts) */}
+          {expertMode && (
           <div className="space-y-1">
             <label htmlFor="settings-port" className="text-slate-300 font-medium">
               {t('settings.port')}
@@ -415,6 +477,7 @@ export const ServerSettings = () => {
             />
             <OptionHint id="settings-port-hint">{t('settings.portHint')}</OptionHint>
           </div>
+          )}
         </div>
 
         {/* Advanced Server Tuning Section (experts) */}
@@ -563,7 +626,7 @@ export const ServerSettings = () => {
                 ? backendMessage(layerRecommendation.advice)
                 : t('settings.autoVramIntro')}
             </div>
-            {layerRecommendation && (
+            {expertMode && layerRecommendation && (
               <div className="text-[11px] text-slate-400">
                 {t('settings.vramBreakdown', {
                   profile: tOptional(`settings.profile.${layerRecommendation.profile_name}`, layerRecommendation.profile_name),
@@ -640,9 +703,10 @@ export const ServerSettings = () => {
           </div>
         )}
 
-        <LlmBenchmarkCard />
+        {expertMode && <LlmBenchmarkCard />}
 
-        {/* Server Live Logs */}
+        {/* Server Live Logs (experts, or when the start failed) */}
+        {(expertMode || serverStatus.state === 'failed') && (
         <div className="border border-slate-800 rounded-lg overflow-hidden bg-app">
           <button
             onClick={() => setShowLogs(!showLogs)}
@@ -670,7 +734,10 @@ export const ServerSettings = () => {
             </div>
           )}
         </div>
+        )}
       </div>
+
+      {!expertMode && <p className="text-xs text-slate-500" data-server-expert-hint>{t('settings.serverExpertHint')}</p>}
     </div>
   );
 };

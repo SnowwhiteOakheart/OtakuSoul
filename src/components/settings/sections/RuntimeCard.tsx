@@ -21,12 +21,16 @@ interface RuntimeCardProps {
   /** llama.cpp, the PrismML fork (Ternary Bonsai) or stable-diffusion.cpp (local images). */
   kind: RuntimeKind;
   onInstalled?: () => void;
+  /** Simple view: only show the card while the runtime is missing (or being installed). */
+  hideWhenInstalled?: boolean;
 }
 
 /** Downloads a prebuilt server runtime of `kind` for this system. */
-export const RuntimeCard = ({ kind, onInstalled }: RuntimeCardProps) => {
+export const RuntimeCard = ({ kind, onInstalled, hideWhenInstalled = false }: RuntimeCardProps) => {
   const { t } = useTranslation();
   const [installed, setInstalled] = useState<RuntimeInfo | null>(null);
+  // Whether the installed runtime was read, so a hidden card does not flash up first.
+  const [checked, setChecked] = useState(false);
   const [variants, setVariants] = useState<RuntimeVariant[] | null>(null);
   const [variantsError, setVariantsError] = useState<string | null>(null);
   const [selected, setSelected] = useState('');
@@ -51,7 +55,7 @@ export const RuntimeCard = ({ kind, onInstalled }: RuntimeCardProps) => {
   };
 
   useEffect(() => {
-    api.getRuntime(kind).then(setInstalled).catch(() => setInstalled(null));
+    api.getRuntime(kind).then(setInstalled).catch(() => setInstalled(null)).finally(() => setChecked(true));
     void loadPrevious();
     void fetchVariants();
     let unlisten: (() => void) | undefined;
@@ -98,6 +102,8 @@ export const RuntimeCard = ({ kind, onInstalled }: RuntimeCardProps) => {
       toast.error(errorMessage(e));
     }
   };
+
+  if (hideWhenInstalled && !installing && (!checked || installed)) return null;
 
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3">

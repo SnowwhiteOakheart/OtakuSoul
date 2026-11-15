@@ -48,7 +48,7 @@ const openServerTab = async () => {
   const tab = await browser.$('#settings-tab-server');
   await tab.waitForDisplayed({ timeout: 10_000 });
   await tab.click();
-  await browser.$('#settings-mmproj').waitForDisplayed({ timeout: 10_000 });
+  await browser.$('#settings-model').waitForDisplayed({ timeout: 10_000 });
 };
 
 try {
@@ -79,6 +79,8 @@ try {
   await openServerTab();
   const select = await browser.$('#settings-chat-lora');
   await select.waitForDisplayed({ timeout: 10_000 });
+  // In expert mode the picker shows before the adapter list has loaded.
+  await browser.waitUntil(async () => (await browser.execute((el) => el.options.length, select)) > 1, { timeout: 10_000 }).catch(() => {});
   const options = await browser.execute((el) => [...el.options].map((o) => o.textContent), select);
   assert.equal(options.length, 2, `Nur „Keiner“ und der E4B-Adapter erwartet: ${options}`);
   assert.ok(options[1].includes('Heretic') && options[1].includes('18+') && !options[1].includes('laden'), options[1]);

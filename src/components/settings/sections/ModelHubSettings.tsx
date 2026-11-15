@@ -17,7 +17,7 @@ import { ChatLoraPicker } from './ChatLoraPicker';
 import type { StarterModel } from '../../../types';
 
 export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: SettingsSection) => void }) => {
-  const { t } = useTranslation();
+  const { t, currentLanguage } = useTranslation();
   const {
     serverConfig, selectLocalModel, hfSearchResults, isSearchingHf, hfError,
     searchHfModels, hfModelFiles, isLoadingHfFiles, fetchHfModelFiles, downloadProgress,
@@ -159,6 +159,11 @@ export const ModelHubSettings = ({ onNavigate }: { onNavigate: (section: Setting
                   {model.runtime === 'prism' ? 'PrismML' : 'llama.cpp'}
                 </span>
               </div>
+              {(() => {
+                const starter = starters?.find((s) => model.path.endsWith(s.file.filename));
+                const text = starter && (starter.description[currentLanguage] || starter.description.en);
+                return text ? <p className="mt-2 text-xs text-slate-300" data-installed-description>{text}</p> : null;
+              })()}
               <div className="mt-2 text-[11px] text-slate-400">{t('settings.clickToSelect')}</div>
             </button>
           ))}

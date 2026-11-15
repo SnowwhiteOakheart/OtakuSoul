@@ -95,7 +95,7 @@ export const SettingsView = () => {
           aria-labelledby={`settings-tab-${activeTab}`}
         >
           {activeTab === 'general' && <GeneralSettings />}
-          {activeTab === 'server' && <ServerSettings />}
+          {activeTab === 'server' && <ServerSettings onNavigate={setActiveTab} />}
           {activeTab === 'providers' && <ProviderSettings />}
           {activeTab === 'sampler' && <SamplerSettings />}
           {activeTab === 'prompt' && <PromptSettings />}
