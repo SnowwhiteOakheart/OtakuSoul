@@ -1,6 +1,6 @@
 # 🗺️ OtakuSoul – Roadmap (offen)
 
-> Stand: 15.11.2026 (nach 0.7.8). Diese Datei ist die **einzige** Liste offener Punkte; `roadmap_abgeschlossen.md`
+> Stand: 15.11.2026 (nach 0.7.9). Diese Datei ist die **einzige** Liste offener Punkte; `roadmap_abgeschlossen.md`
 > (nur lokal, nicht im Repository) enthält alles Erledigte. Offene Punkte sind Vorschläge, keine zugesagten Features.
 > Erledigtes wird abgehakt und beim nächsten Aufräumen nach `roadmap_abgeschlossen.md` verschoben.
 
@@ -24,17 +24,10 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 | A5 | Signierte Installer (Windows, macOS) | ★★★ | S–M | Zertifikat bzw. Apple-Konto (Kosten) |
 | **B** | **Als Nächstes – baut auf Vorhandenem auf** | | | |
 | B4 | Teilen: Lorebooks, automatische Prüfung der Einreichung | ★★ | M | Prüfablauf im Daten-Repo |
-| B5 | ~~Webtoon-Export~~ erledigt (05.11.2026) | – | – | – |
 | B6 | OBS-Overlay: 3D-/Live2D-Modell statt Porträt | ★ | M | – |
 | B7 | Benachrichtigungsklick unter macOS (Windows und Linux erledigt) | ★ | M | Mac |
-| B8 | ~~Stage: Medien während des Zugs, Szenenbild auf Wunsch des Planers~~ erledigt (15.11.2026) | – | – | – |
-| B9 | ~~Stage: Spielleiter-Schirm~~ erledigt (15.11.2026) | – | – | – |
 | **C** | **Später – größere Vorhaben** | | | |
 | C1 | Zugriff von unterwegs (Relay), danach Handy-App | ★★★ | XL | Relay-Dienst, Sicherheitskonzept |
-| C2 | ~~Beziehungs-Atlas~~ erledigt (05.11.2026) | – | – | – |
-| C3 | ~~Zeitreise-Checkpoints~~ erledigt (05.11.2026) | – | – | – |
-| C4 | ~~Abend-Reflexion und Monatsrückblick~~ erledigt (05.11.2026) | – | – | – |
-| C5 | ~~Fokus-/Pomodoro-Modus mit Avatar~~ erledigt (14.11.2026) | – | – | – |
 | C6 | Mehrere Pets gleichzeitig | ★ | L | – |
 | C7 | Mitguck-Modus (Bildschirm/Webcam) | ★★ | L | Vision-Modell, Datenschutzkonzept |
 | C8 | Battlemap aus Text erzeugen | ★ | L | Bildmodell, ungewisse Qualität |
@@ -46,7 +39,6 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 | D4 | E2E-Test fürs Pet-Fenster, Speicher des Pet-Webviews | ★ | M | – |
 | D5 | Wackelige E2E-Tests beobachten | ★ | – | – |
 | D6 | Nicht mehr gepflegte Linux-Abhängigkeiten ersetzen: GTK-Makros (`proc-macro-error`), D-Bus-Eltern gemeinsam auf zbus 6; glib-Speicherfehler berücksichtigen | ★★ | M | Linux-Prüfplatz, abgestimmte Tauri-/Plugin-/Schlüsselbund-Updates; Details `docs/ungepflegte-abhaengigkeiten-2026-11-07.md` |
-| D7 | ~~Rust-Kern aus dem nativen GUI-Prototyp übernehmen~~ erledigt (15.11.2026, D7.1–D7.4) | – | – | – |
 | **E** | **Geparkt – wartet auf andere oder nur bei Bedarf** | | | |
 | E1 | `tauri-specta` (wartet auf stabile 2.0) | – | L | – |
 | E2 | TADA 3B Deutsch (wartet auf CrispASR) | – | S | – |
@@ -141,10 +133,6 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
   Anhänge ohne Anmeldung ausliefert und ob die Vorlage per `template=` greift), die Einstellung „Allow GitHub Actions to create and
   approve pull requests“ (sonst nur Ein-Klick-Link) und Lorebooks beisteuern. *Risiko:* Inhaltsprüfung und Moderation bleiben beim
   Betreiber.
-- [x] **B5 · Webtoon-Export:** erledigt (05.11.2026). Stage-Menü „Als Webtoon exportieren“: PNG-Bildspalte, je Zeile ein
-  Panel mit Ort, Stimmungsporträt und Sprechblase, lange Akte in mehreren Bildern (`webtoon.rs`, `services/webtoon.ts`).
-  Nachrichten merken sich ihren Hintergrund (`SceneTurnMessage.bg`), Ortswechsel erscheinen also erst in Akten ab jetzt.
-  Szenenbilder aus der Stage hängen an der Nachricht, bei der sie erzeugt wurden, und erscheinen danach als eigenes Panel.
 - [ ] **B6 · OBS-Overlay mit Modell:** Das Overlay (`/overlay`) zeigt heute das Porträt mit Sprechblase und Stimmung. Offen: das
   3D-/Live2D-Modell selbst als Browser-Quelle; dafür müssten Modelldateien über den Web-Server ausgeliefert und die Viewer
   ohne Tauri-Fensteraufrufe laufen.
@@ -152,39 +140,12 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
   (15.11.2026: Plugin-Benachrichtigung mit `charId`/`chatId`, Klick über `on_action`/D-Bus, `register_notification_click`)
   erledigt. Unter Linux noch einmal in einer echten Sitzung (GNOME, KDE, dunst) klicken. macOS: das Plugin meldet Klicks
   dort ebenfalls über `on_action` – mit einem Mac ausprobieren, sonst `UNUserNotificationCenter`-Delegate.
-- [x] **B8 · Stage-Medien schon während des Zugs:** erledigt (15.11.2026). Medienereignis im `stage-stream` direkt nach
-  dem Plan (Musik, Hintergrund, Ambient, Ort); der Planer kann ein Szenenbild anfordern (`scene_image`, gedrosselt), das nach
-  dem Zug entsteht, wenn der Schalter „Szenenbilder automatisch“ im Menü „Mehr“ an ist.
-- [x] **B9 · Spielleiter-Schirm:** erledigt (15.11.2026). `gm_secrets` nur im Planer-Prompt, NPCs kennen ihre eigenen Motive,
-  `secret_updates`/`reveal_secrets` im Plan, Aufdecken → Gruppen-Lorekarte und Entdeckungskarte, Leck-Schutz, eingeklappt im
-  Weltzustand-Editor (`stage/secrets.rs`, E2E `stage-gm-screen.mjs`); im Story-Assistenten vorbelegbar (Schritt „Start“).
 
 ## C. Später – größere Vorhaben
 
 - [ ] **C1 · Zugriff von unterwegs:** Web-Client außerhalb des WLANs über eine verschlüsselte Relay-Verbindung ohne
   Portfreigabe, mit Push-Benachrichtigungen; danach eine eigene Handy-App über Tauri 2 (Android/iOS) prüfen. *Nutzen:*
   größte Lücke gegenüber Character.AI, Kindroid und Replika; *aber:* braucht einen Relay-Dienst und ein Sicherheitskonzept.
-- [x] **C2 · Beziehungs-Atlas:** Interaktive Knotenansicht des SQLite-Gedächtnisses (`psyche`, `relationship`,
-  `episodes`, `diary`, `plans`), in der Verbindungen zeigen, welche Erlebnisse welche Überzeugungen geformt haben.
-  Umgesetzt (05.11.2026): Drawer-Reiter „Atlas“ (`memory/atlas.rs`, `AtlasTab.tsx`): Überzeugungen oben, Erlebnisse,
-  Tagebuch und Vorhaben auf einer Zeitachse; gespeicherte Verbindungen durchgezogen, über FTS5 erschlossene gestrichelt;
-  Klick zeigt Text, Verbindungen und „Zur Nachricht“. E2E `memory-atlas.mjs` (Screenshot 120) bestanden.
-- [x] **C3 · Zeitreise-Checkpoints:** Von einem Punkt der Beziehungs-Chronik aus einen neuen Zweig starten („Was wäre,
-  wenn …?“) – mit eigenem Gedächtnisstand. Braucht Gedächtnis-Snapshots je Zweig; sinnvoll nach C2.
-  Umgesetzt (05.11.2026): „Ab hier neu“ bietet „Eigenes Gedächtnis (Was wäre, wenn …?)“, der Atlas „Zweig ab hier“
-  an jeder Erinnerung mit Quelle. Der Zweig startet mit dem Gedächtnis am Verzweigungspunkt (Erinnerungen, Tagebuch,
-  Vorhaben; Stimmung und Beziehung im Stand des Verzweigungstags) und lebt danach getrennt; der Drawer zeigt „Gedächtnis
-  dieses Zweigs“. E2E `memory-branches.mjs` (Screenshot 122) bestanden. Grenze: Stimmung/Beziehung
-  zum damaligen Zeitpunkt bräuchte eine Historie dieser Werte.
-- [x] **C4 · Abend-Reflexion und Monatsrückblick:** Optionaler Journaling-Modus; die Figur reflektiert den Tag, begleitet
-  `habits`/`plans` und schreibt am Monatsende einen Rückblick. *Baut auf:* Tagebuch und proaktiven Nachrichten.
-  Umgesetzt (05.11.2026): Einstellung „Abend-Reflexion und Monatsrückblick“ (aus bis zum Einschalten): ab einer
-  wählbaren Uhrzeit schreibt die Figur des offenen Chats einmal am Tag über euren Tag ins Tagebuch (mit Gewohnheiten und
-  Vorhaben), optional mit Gute-Nacht-Nachricht und Erinnerung an Vorhaben für morgen; zu Monatsbeginn ein Rückblick auf
-  den letzten Monat. Im Tagebuch-Reiter von Hand auslösbar. E2E `memory-journal.mjs` (Screenshot 121) bestanden.
-  Offen nur: Klang der Texte mit echten Modellen.
-- [x] **C5 · Fokus-/Pomodoro-Modus:** erledigt (14.11.2026, `c7b4ceb`): Timer und Pomodoro im Desktop-Pet
-  (`petTimer.ts`), die Figur liest im Fokus ein Buch, kündigt Phasenenden an, Konfetti am Phasenende.
 - [ ] **C6 · Mehrere Pets:** Bei Gruppenchats mehrere Figuren gleichzeitig, die sich anschauen und nacheinander sprechen
   (eigene Fenster, gemeinsame Physik). Erst nach D4 (Speicherbedarf des Pet-Webviews).
 - [ ] **C7 · Mitguck-Modus:** Optionaler Live-Blick bei Sprachanrufen oder fürs Pet: ein verkleinerter Schnappschuss
@@ -222,37 +183,6 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
   `stage-npcs` (Windows), `chat-narrator-voice` (Linux); unter WSL2 starten Ambient-Klänge nicht (`stage-voice`,
   `chat-style`, schon mit 0.7.8 – Audio-Umgebung von WSL/xvfb, unter Windows grün). Ältere Fälle: `chat-sidebar-errors` (einmal Entwurfsvergleich) und `stage-5e` (einmal
   veraltetes Element `button[aria-label*="gegen"]`, 16.10.2026). Bei erneutem Auftreten Ursache suchen.
-
-### D7. Rust-Kern aus dem nativen GUI-Prototyp übernehmen
-
-Stand 10.11.2026. Tauri bleibt die produktive Oberfläche. Der Stand `codex/native-rust-gui` bei
-`4b89c8b` dient als Referenz für wiederverwendbare Rust-Logik und Regressionstests. Ziel sind
-kleine, einzeln rücknehmbare Änderungen auf `main`. Das bestehende Crate `otakusoul-rules5e`
-ist das Vorbild für die Trennung zwischen Fachlogik und App-Anbindung.
-
-- [x] **D7.1 · Profilpfade.** Erledigt (15.11.2026): Crate `crates/otakusoul-paths` (aus `4748a6d`, ohne
-  `native_data_dir` des Prototyps) mit `base_dirs`, `production_dirs`, `isolated_home`; `paths.rs` exportiert
-  `base_dirs`/`isolated_home` weiter, App-Kennung `com.snowwhite.otakusoul` und `OTAKUSOUL_HOME` unverändert.
-- [x] **D7.2 · Streaming.** Erledigt (15.11.2026): Crate `crates/otakusoul-stream` (aus `c46de2b`/`53de0c2`):
-  SSE-Zeilen mit UTF-8 erst an Zeilenenden, OpenAI-/Anthropic-Deltas, `<think>`-Filter, Endmarker; `inference.rs`
-  und `providers.rs` bleiben Adapter. Neu gegenüber vorher: ein Gedanken-Delta in der letzten, unterminierten Zeile
-  geht nicht mehr verloren. Abnahme: 6 Decoder-Tests, `partial-reply`, `chat-sessions-abort`,
-  `chat-generation-errors` unter Windows und Linux grün.
-- [x] **D7.3 · Makros und Prompt-Aufbau.** Erledigt (15.11.2026): zuerst der Golden-Test (`rich-de.txt`,
-  `rich-en.txt`) gegen den alten Renderer (`0b38304`), dann `crates/otakusoul-macros` und `crates/otakusoul-prompt`
-  (aus `d1eedaa`); Systemprompt und Nachspann bleiben bytegenau gleich. `types:gen`/`types:check`, `check:agent` und
-  `check:rust` erfassen die gemeinsamen Crates.
-- [x] **D7.4 · Lorebooks.** Erledigt (15.11.2026): `crates/otakusoul-lore` (aus `b9d70c3`); laden, importieren und
-  speichern sind freie Funktionen, auch in den inzwischen aufgeteilten Modulen `characters/` und `hub/`;
-  `i18n_translation` kommt aus `otakusoul-prompt`. Abnahme: Crate-Tests, Lore-/Hub-Rust-Tests, `chat-prompt-hits` und
-  `hub-updates` unter Windows und Linux grün.
-
-Die Änderungen werden gegen den jeweiligen Stand von `main` umgesetzt. Pro Schritt folgt
-ein eigener Commit nach den betroffenen Rust- und E2E-Prüfungen, zuerst unter Windows.
-Bei Pfad- oder Dateiverhalten folgt zusätzlich eine Prüfung auf den betroffenen Plattformen.
-Der bestehende 5e-Kern und sein Android-Vertrag bleiben der Bezugspunkt für Stage. Für
-Avatar-Importe dienen die Testmodelle und die im Prototyp erprobten Pfad-, Datei- und
-Texturgrenzen bei konkreten Befunden als Referenz für die vorhandenen Tauri-Importer.
 
 ## E. Geparkt – wartet auf andere oder nur bei Bedarf
 
