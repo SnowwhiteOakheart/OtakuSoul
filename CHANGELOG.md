@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.7.9]
+
+### Neu
+
+- Song-Studio: eigene Songs mit ACE-Step (Stil, Liedtext oder instrumental, Gesangssprache, Länge, BPM, Versionen), Ordner frei wählbar, Songliste mit Player.
+- Bild-Studio: eigene Bilder mit den lokalen Bildmodellen (Modellwahl, Format, bis zu 8 Bilder, Feineinstellungen), LoRA-Auswahl, eigene LoRAs mit 18+-Kennzeichen, Galerie mit Blättern.
+- OmniVoice (Stimme aus Beschreibung, Live-Vorschau der verstandenen Stichworte) und VoxCPM2 (Klon, 48 kHz) als lokale Sprachmodelle.
+- Klick auf eine Chat-Benachrichtigung öffnet den Chat jetzt auch unter Linux.
+- Desktop-Pet nur noch mit echten 3D-Avataren (VRM, GLB/glTF, MMD).
+- Einstellungen zur lokalen Chat-KI aufgeräumt, Modellbeschreibung, Lizenz und VRAM-Bedarf unter der Auswahl.
+- Gemeinsame Rust-Crates für Profilpfade, Stream-Decoder, Makros, Prompt-Aufbau und Lorebooks; Referenz-Prompts DE/EN als Golden-Test.
+- README mit Link zur Website; Website, README und Anleitungen nur noch auf Deutsch und Englisch.
+
+### Behoben
+
+- QR-Code des Web-Clients passt in seinen Rahmen und steht in der Verbindungsadresse.
+- Eigene LoRAs anderer Modellfamilien werden nicht mehr still ausgeblendet; Studio-Standardordner unter Linux ohne XDG.
+- Ein Gedanken-Delta in der letzten, unvollständigen Stream-Zeile geht nicht mehr verloren.
+- Stage bei 960×640: Kopfleiste bricht um, Lautstärke-Popover bleibt im Fenster, 5e-Kampfpanel rutscht nicht unter die Kopfleiste (Zugleiste kompakt bei niedrigen Fenstern).
+- Stage zeigt auch direkt nach dem App-Start die laufende Geschichte statt der Galerie.
+- Hinweise zu Chat-Modell und Kontextgröße, solange noch kein Modell gefunden ist.
+
+[Release Notes auf Deutsch und Englisch](packaging/release-notes/v0.7.9.md)
+
 ## [0.7.8]
 
 ### Neu
