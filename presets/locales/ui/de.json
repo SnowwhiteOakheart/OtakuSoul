@@ -3808,7 +3808,6 @@
   "localImage.loraImported": "„{{name}}“ hinzugefügt.",
   "localImage.loraEdit": "{{name}} bearbeiten",
   "localImage.loraOwnFamily": "Eigene Datei · für {{family}}",
-  "localImage.lorasOtherFamily": "Eigene LoRAs für ein anderes Bildmodell (hier ausgeblendet, Familie über den Stift ändern):",
   "localImage.loraOtherFamilyImported": "LoRA für {{family}} gespeichert. Sie erscheint, wenn ein {{family}}-Modell gewählt ist.",
   "localImage.modelsTitle": "Bildmodelle",
   "localImage.modelsIntro": "Eine Auswahl je VRAM-Stufe, direkt von Hugging Face. Downloads lassen sich abbrechen und später fortsetzen; jede Datei wird per SHA-256 geprüft.",

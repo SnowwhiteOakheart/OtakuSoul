@@ -132,10 +132,7 @@ export const LocalLoraSettings = ({ selected, onSelectedChange, family }: LocalL
     }
   };
 
-  const fits = (l: LoraInfo) => !family || !l.family || l.family === family;
-  const visible = (loras ?? []).filter(fits);
-  // Own files for another model family: named, so an import with another family doesn't just vanish.
-  const otherFamily = (loras ?? []).filter((l) => !l.catalog_id && !fits(l));
+  const visible = (loras ?? []).filter((l) => !family || !l.family || l.family === family);
 
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3" data-testid="lora-settings">
@@ -285,29 +282,6 @@ export const LocalLoraSettings = ({ selected, onSelectedChange, family }: LocalL
             );
           })}
         </ul>
-      )}
-
-      {otherFamily.length > 0 && (
-        <div className="text-xs text-slate-400 space-y-1" data-testid="lora-other-family">
-          <p>{t('localImage.lorasOtherFamily')}</p>
-          <ul className="flex flex-wrap gap-1.5">
-            {otherFamily.map((lora) => (
-              <li key={lora.file} className="flex items-center gap-1 rounded-md border border-slate-800 bg-app/60 pl-2 pr-0.5 py-0.5">
-                <span className="text-slate-300">{lora.name}</span>
-                <span>· {familyLabel(lora.family ?? '')}</span>
-                <button
-                  type="button"
-                  onClick={() => setEditing({ mode: 'edit', file: lora.file, meta: ownMeta(lora) })}
-                  aria-label={t('localImage.loraEdit', { name: lora.name })}
-                  title={t('localImage.loraEdit', { name: lora.name })}
-                  className="p-1 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800"
-                >
-                  <Pencil className="w-3 h-3" />
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
       )}
 
       {editing && (

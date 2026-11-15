@@ -134,7 +134,7 @@ describe('LocalLoraSettings', () => {
     );
   });
 
-  it('names own LoRAs of another model family instead of hiding them silently', async () => {
+  it('hides own LoRAs of another model family and says so when importing one', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
     const info = vi.spyOn(toast, 'info').mockImplementation(() => {});
@@ -144,12 +144,9 @@ describe('LocalLoraSettings', () => {
     vi.mocked(api.importImageLora).mockResolvedValue('lora.safetensors');
     render(<LocalLoraSettings selected={[]} onSelectedChange={onChange} family="flux2" />);
 
-    const other = await screen.findByTestId('lora-other-family');
-    expect(other).toHaveTextContent('lora');
-    expect(other).toHaveTextContent('FLUX.1');
-    // Catalog LoRAs of other families stay out of it.
-    expect(other).not.toHaveTextContent('GHIBSKY');
-    expect(within(other).getByRole('button', { name: 'Edit lora' })).toBeInTheDocument();
+    // Only shown with a model of its family.
+    await screen.findByText('my-style');
+    expect(screen.queryByText('lora')).not.toBeInTheDocument();
 
     // An import for another family isn't chosen for this model, and says where it went.
     await user.click(screen.getByRole('button', { name: 'Add own LoRA …' }));

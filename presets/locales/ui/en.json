@@ -3808,7 +3808,6 @@
   "localImage.loraImported": "“{{name}}” added.",
   "localImage.loraEdit": "Edit {{name}}",
   "localImage.loraOwnFamily": "Own file · for {{family}}",
-  "localImage.lorasOtherFamily": "Own LoRAs for another image model (hidden here, change the family with the pencil):",
   "localImage.loraOtherFamilyImported": "LoRA saved for {{family}}. It appears once a {{family}} model is selected.",
   "localImage.modelsTitle": "Image models",
   "localImage.modelsIntro": "One pick per VRAM tier, straight from Hugging Face. Downloads can be cancelled and resumed later; every file is checked by SHA-256.",
