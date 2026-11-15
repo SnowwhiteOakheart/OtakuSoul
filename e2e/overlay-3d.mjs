@@ -37,13 +37,13 @@ try {
   assert.match(script.headers.get('content-type') ?? '', /javascript/);
   assert.equal((await fetch(`${base}/overlay/model`)).status, 401, 'Modell ohne Token ausgeliefert');
   assert.equal((await fetch(`${base}/overlay/model?token=${phoneToken}`)).status, 401, 'Handy-Token öffnet das Modell');
+  // Before the reload the main window may still have named the default model: wait for the figure's.
   let bytes = 0;
   await browser.waitUntil(async () => {
     const response = await fetch(`${base}/overlay/model?token=${token}`);
     bytes = response.ok ? (await response.arrayBuffer()).byteLength : 0;
-    return bytes > 0;
-  }, { timeout: 20_000, timeoutMsg: 'Hauptfenster meldet kein Modell' });
-  assert.equal(bytes, statSync(vrm).size, 'ausgeliefertes Modell ist nicht die VRM-Datei');
+    return bytes === statSync(vrm).size;
+  }, { timeout: 20_000, timeoutMsg: `ausgeliefertes Modell ist nicht die VRM-Datei der Figur (${bytes} Bytes)` });
 
   // The page OBS loads: the 3D figure instead of the portrait.
   await browser.url(`${base}/overlay?token=${token}&bg=%23203040`);

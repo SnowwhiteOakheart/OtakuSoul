@@ -115,7 +115,11 @@ try {
   await saveSettingsAndReload(browser, { start_tab: 'chat', server_config: { ...settings.server_config, model_path: model } });
   await browser.$('textarea[aria-label="Nachricht"]').waitForDisplayed({ timeout: 30_000 });
   await badge().waitForDisplayed({ timeout: 10_000, timeoutMsg: 'Kein KI-Hinweis im Chat' });
-  assert.equal(await badge().getAttribute('data-chat-ai-badge'), 'on-demand', 'Gewähltes Modell als fehlend gemeldet');
+  // The settings arrive a moment after the chat: until then no model is known.
+  await browser.waitUntil(async () => (await badge().getAttribute('data-chat-ai-badge')) === 'on-demand', {
+    timeout: 10_000,
+    timeoutMsg: 'Gewähltes Modell als fehlend gemeldet',
+  });
   assert.equal(await badge().getText(), 'Lokale KI startet mit der ersten Nachricht');
   await shot('41-chat-startet-von-selbst');
 

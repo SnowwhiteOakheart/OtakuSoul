@@ -17,7 +17,8 @@ const send = async (text) => {
   await clickSend(browser);
   await browser.waitUntil(async () => {
     const log = await invoke('get_last_prompt');
-    return !!log && (log.at > before || log.messages.some((m) => m.content.includes(text)));
+    // The prompt of this very message: a late prompt of the previous reply does not count.
+    return !!log && log.at > before && log.messages.some((m) => m.content.includes(text));
   }, { timeout: 20_000, timeoutMsg: 'Kein Prompt gesendet' });
   await browser.$('textarea[aria-label="Nachricht"]:not([disabled])').waitForExist({ timeout: 20_000 });
 };
@@ -36,6 +37,10 @@ try {
 
   // Image mode without any portrait picture: no tag at all.
   await jsClick(await browser.$('button[aria-label="Bild"]'));
+  await browser.waitUntil(async () => (await browser.$('button[aria-label="Bild"]').getAttribute('aria-pressed')) === 'true', {
+    timeout: 5000,
+    timeoutMsg: 'Bildmodus nicht aktiv',
+  });
   await send('Hallo im Bildmodus');
   assert.equal(await tagRule(), null, 'Tag ohne Bilder angefordert');
   console.log('Emotions-Tag: 3D bietet die Grundstimmungen an, Bildmodus ohne Bilder keinen Tag.');

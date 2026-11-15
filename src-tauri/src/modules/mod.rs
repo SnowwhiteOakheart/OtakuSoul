@@ -78,6 +78,7 @@ pub mod pet_remark;
 pub mod pet_weather;
 pub mod replay_export;
 pub mod reply_ideas;
+pub mod test_window;
 pub mod translate;
 pub mod tts_local;
 pub mod ui_locales;

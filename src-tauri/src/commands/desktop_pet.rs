@@ -279,6 +279,7 @@ pub async fn toggle_desktop_pet(
         .shadow(false)
         // Opening the pet must not take the keyboard from the window the user works in.
         .focused(false);
+        builder = crate::modules::test_window::prepare(builder);
         // All webviews of one process share the data folder (WebView2 refuses a second one).
         if let Some(home) = crate::modules::paths::isolated_home() {
             builder = builder.data_directory(home.join("webview"));
@@ -289,6 +290,9 @@ pub async fn toggle_desktop_pet(
             .map_err(|e| crate::err!("backend.companion.overlayWindow", error = e))?;
         if let Some((x, y)) = remembered.or_else(|| default_position(&app, width, height)) {
             let _ = window.set_position(tauri::PhysicalPosition::new(x, y));
+        }
+        if crate::modules::test_window::background() {
+            crate::modules::test_window::show(&window);
         }
         let handle = app.clone();
         window.on_window_event(move |event| {
@@ -360,6 +364,7 @@ pub async fn toggle_pet_guest(
     .skip_taskbar(true)
     .shadow(false)
     .focused(false);
+    builder = crate::modules::test_window::prepare(builder);
     if let Some(home) = crate::modules::paths::isolated_home() {
         builder = builder.data_directory(home.join("webview"));
     }
@@ -370,6 +375,9 @@ pub async fn toggle_pet_guest(
     let fallback = default_position(&app, width, height).map(|(x, y)| (x - (width as i32) - 40, y));
     if let Some((x, y)) = remembered.or(fallback) {
         let _ = window.set_position(tauri::PhysicalPosition::new(x, y));
+    }
+    if crate::modules::test_window::background() {
+        crate::modules::test_window::show(&window);
     }
     let handle = app.clone();
     window.on_window_event(move |event| {

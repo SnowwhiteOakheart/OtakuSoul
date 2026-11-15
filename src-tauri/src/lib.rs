@@ -51,7 +51,8 @@ fn create_main_window(app: &tauri::App) -> tauri::Result<()> {
     let Some(config) = app.config().app.windows.iter().find(|w| w.label == "main") else {
         return Ok(());
     };
-    let mut builder = tauri::WebviewWindowBuilder::from_config(app, config)?;
+    let mut builder =
+        modules::test_window::prepare(tauri::WebviewWindowBuilder::from_config(app, config)?);
     if let Some(home) = modules::paths::isolated_home() {
         builder = builder.data_directory(home.join("webview"));
     }
@@ -225,7 +226,8 @@ pub fn run() {
                         });
                     center_on_active_monitor(&window, size);
                 }
-                let _ = window.show();
+                // E2E runs: behind the other windows, without taking the focus.
+                modules::test_window::show(&window);
 
                 // Closing hides the window into the tray (setting `close_to_tray`); until the user
                 // remembers a choice, the interface asks first (tray or quit).

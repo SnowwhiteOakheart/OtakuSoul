@@ -97,6 +97,8 @@ export async function launch(settings = {}, { hubFiles, homeFiles = {} } = {}) {
     env: {
       ...process.env,
       OTAKUSOUL_HOME: home,
+      // Windows open behind the others without taking the focus; `OTAKUSOUL_E2E_FOREGROUND=1` to watch.
+      OTAKUSOUL_E2E_BACKGROUND: process.env.OTAKUSOUL_E2E_FOREGROUND === '1' ? '0' : '1',
       OTAKUSOUL_HUB_BASE: mock.url.replace('/v1/chat/completions', '/hub'),
       OTAKUSOUL_NSFW_HUB_BASE: mock.url.replace('/v1/chat/completions', '/hub-nsfw'),
       GDK_BACKEND: process.env.GDK_BACKEND ?? 'x11',
