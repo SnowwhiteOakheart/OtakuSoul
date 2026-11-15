@@ -96,7 +96,14 @@ function noteScriptResult(code: string, error: string | null) {
  * Like `applyScripts`, with JavaScript rules (C9) in their place in the order. A script that fails
  * leaves the text as it was (its error shows in the settings), so a broken script never breaks the chat.
  */
-export async function applyScriptsAsync(text: string, rules: ReplyReplacement[], role: 'user' | 'assistant', stage: 'save' | 'prompt'): Promise<string> {
+export async function applyScriptsAsync(
+  text: string,
+  rules: ReplyReplacement[],
+  role: 'user' | 'assistant',
+  stage: 'save' | 'prompt',
+  /** Scripts that already failed in this batch (a whole chat for the prompt): not run again. */
+  failed: Set<string> = new Set(),
+): Promise<string> {
   if (!text || !rules.some((r) => isScriptRule(r) && applies(withDefaults(r), role, stage))) return applyScripts(text, rules, role, stage);
   let out = text;
   for (const raw of rules) {
@@ -106,10 +113,15 @@ export async function applyScriptsAsync(text: string, rules: ReplyReplacement[],
       out = applyFindReplace(out, rule);
       continue;
     }
+    // A script that failed (e.g. its time ran out) would fail again on every message of the chat.
+    if (failed.has(rule.code)) continue;
     const result = await runUserScript(rule.code, out, { role, stage });
     noteScriptResult(rule.code, result.ok ? null : result.error);
     if (result.ok) out = result.text;
-    else console.warn(`Script "${rule.name || '?'}" failed:`, result.error);
+    else {
+      failed.add(rule.code);
+      console.warn(`Script "${rule.name || '?'}" failed:`, result.error);
+    }
   }
   return out;
 }
@@ -134,8 +146,9 @@ export function forPrompt<T extends { role: string; content: string }>(messages:
 export async function forPromptAsync<T extends { role: string; content: string }>(messages: T[], rules: ReplyReplacement[]): Promise<T[]> {
   if (!rules.some((r) => isScriptRule(r) && withDefaults(r).mode === 'prompt')) return forPrompt(messages, rules);
   const out: T[] = [];
+  const failed = new Set<string>();
   for (const m of messages) {
-    const content = m.role === 'user' || m.role === 'assistant' ? await applyScriptsAsync(m.content, rules, m.role, 'prompt') : m.content;
+    const content = m.role === 'user' || m.role === 'assistant' ? await applyScriptsAsync(m.content, rules, m.role, 'prompt', failed) : m.content;
     out.push({ ...m, content });
   }
   return out;

@@ -201,6 +201,9 @@ export function createChatRuntime(set: ChatSet, get: ChatGet) {
 
     // A guest reads aloud with their own voice: load it before the first token arrives.
     if (speakerId) await get().loadSpeakerVoice(speakerId);
+    // Prompt scripts take a moment: a stop meanwhile sends nothing.
+    const promptMessages = await forPromptAsync(payloadMessages, get().replyReplacements);
+    if (!inContext(chatId, charId)) return null;
     const state = get();
     set({ generationSpeakerId: speakerId });
     await makeRoomForChat();
@@ -209,7 +212,7 @@ export function createChatRuntime(set: ChatSet, get: ChatGet) {
       provider: state.selectedBackend === 'cloud' ? state.cloudProvider : 'local_llama',
       api_key: state.selectedBackend === 'cloud' ? state.cloudApiKey : undefined,
       model: state.selectedBackend === 'cloud' ? state.cloudModel : undefined,
-      messages: await forPromptAsync(payloadMessages, get().replyReplacements),
+      messages: promptMessages,
       reasoning_mode: state.serverConfig.reasoning_mode,
       sampling: chatSampling(state),
     }, generationId, state.selectedBackend === 'cloud' ? state.cloudContextTokens : undefined, state.chatTools);

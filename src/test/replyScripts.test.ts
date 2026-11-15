@@ -42,6 +42,13 @@ describe('JavaScript rules in the reply pipeline', () => {
     expect(runUserScript).not.toHaveBeenCalled();
   });
 
+  it('runs a failing prompt script once per send, not once per message of the chat', async () => {
+    const chat = Array.from({ length: 100 }, (_, i) => ({ role: i % 2 ? 'assistant' : 'user', content: `m${i}` }));
+    const out = await forPromptAsync(chat, [rule({ code: 'throw', mode: 'prompt', on_input: true })]);
+    expect(runUserScript).toHaveBeenCalledTimes(1);
+    expect(out.map((m) => m.content)).toEqual(chat.map((m) => m.content));
+  });
+
   it('changes only user and assistant messages for the prompt', async () => {
     const messages = [{ role: 'system', content: 's' }, { role: 'user', content: 'u' }, { role: 'assistant', content: 'a' }];
     const out = await forPromptAsync(messages, [rule({ code: 'P', mode: 'prompt', on_input: true })]);

@@ -170,6 +170,8 @@ export function createChatAutonomousSlice(rt: ChatRuntime, set: ChatSet, get: Ch
             { role: 'system', content: instruction(group ? nameOf('') : presentedAs(character, state.replyLanguage).name) },
           ];
           signal.throwIfAborted();
+          const promptMessages = await forPromptAsync(messages, get().replyReplacements);
+          signal.throwIfAborted();
           const now = get();
           const target = llmTarget(now);
           const done = await api.sendChatMessage({
@@ -177,7 +179,7 @@ export function createChatAutonomousSlice(rt: ChatRuntime, set: ChatSet, get: Ch
             provider: target.provider,
             api_key: target.api_key ?? undefined,
             model: target.model ?? undefined,
-            messages: await forPromptAsync(messages, now.replyReplacements),
+            messages: promptMessages,
             reasoning_mode: now.serverConfig.reasoning_mode,
             sampling: chatSampling(view),
           }, crypto.randomUUID(), now.selectedBackend === 'cloud' ? now.cloudContextTokens : undefined);

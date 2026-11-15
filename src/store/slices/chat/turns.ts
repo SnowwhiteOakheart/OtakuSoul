@@ -120,13 +120,16 @@ export function createChatTurnsSlice(rt: ChatRuntime, set: ChatSet, get: ChatGet
             ? `http://127.0.0.1:${serverConfig.port}/v1/chat/completions`
             : cloudEndpoint;
 
+        // Prompt scripts take a moment: a stop meanwhile sends nothing.
+        const promptMessages = await forPromptAsync(payloadMessages, get().replyReplacements);
+        if (!rt.inContext(activeChatId, activeCharacter.id)) return;
         await makeRoomForChat();
         const done = await api.sendChatMessage({
           endpoint_url: endpoint,
           provider: selectedBackend === 'cloud' ? cloudProvider : 'local_llama',
           api_key: selectedBackend === 'cloud' ? cloudApiKey : undefined,
           model: selectedBackend === 'cloud' ? cloudModel : undefined,
-          messages: await forPromptAsync(payloadMessages, get().replyReplacements),
+          messages: promptMessages,
           reasoning_mode: serverConfig.reasoning_mode,
           sampling: chatSampling(get()),
         }, generationId, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined, get().chatTools);
@@ -226,13 +229,16 @@ export function createChatTurnsSlice(rt: ChatRuntime, set: ChatSet, get: ChatGet
             ? `http://127.0.0.1:${serverConfig.port}/v1/chat/completions`
             : cloudEndpoint;
 
+        // Prompt scripts take a moment: a stop meanwhile sends nothing.
+        const promptMessages = await forPromptAsync(payloadMessages, get().replyReplacements);
+        if (!rt.inContext(activeChatId, activeCharacter.id)) return;
         await makeRoomForChat();
         const done = await api.sendChatMessage({
           endpoint_url: endpoint,
           provider: selectedBackend === 'cloud' ? cloudProvider : 'local_llama',
           api_key: selectedBackend === 'cloud' ? cloudApiKey : undefined,
           model: selectedBackend === 'cloud' ? cloudModel : undefined,
-          messages: await forPromptAsync(payloadMessages, get().replyReplacements),
+          messages: promptMessages,
           reasoning_mode: serverConfig.reasoning_mode,
           sampling: chatSampling(get()),
         }, generationId, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined, get().chatTools);
