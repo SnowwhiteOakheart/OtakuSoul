@@ -358,7 +358,7 @@ Die README-Screenshots und die Animation oben entstehen mit `node e2e/readme-scr
 ### Technologie
 
 * **Desktop:** [Tauri 2](https://tauri.app/) · **Backend:** [Rust](https://www.rust-lang.org/), [Tokio](https://tokio.rs/), SQLite (`rusqlite`), `reqwest`, `axum`
-* **Frontend:** [React 19](https://react.dev/), [TypeScript](https://www.typescriptlang.org/), [Vite](https://vitejs.dev/), [Tailwind CSS 4](https://tailwindcss.com/), [Zustand](https://github.com/pmndrs/zustand)
+* **Frontend:** [React 19](https://react.dev/), [TypeScript](https://www.typescriptlang.org/), [Vite](https://vitejs.dev/), [Tailwind CSS 4](https://tailwindcss.com/), [Zustand](https://github.com/pmndrs/zustand); eigene Skripte laufen in [QuickJS](https://bellard.org/quickjs/) als WebAssembly ([quickjs-emscripten](https://github.com/justjake/quickjs-emscripten), MIT)
 * **Avatare:** [Three.js](https://threejs.org/), [@pixiv/three-vrm](https://github.com/pixiv/three-vrm), `@moeru/three-mmd`, [PixiJS](https://pixijs.com/) & Live2D Cubism Core, Inochi2D-Laufzeit portiert aus [Inox2D](https://github.com/Inochi2D/inox2d)
 * **Lokale KI:** llama.cpp & PrismML, stable-diffusion.cpp, CrispASR, whisper.cpp, ONNX Runtime (`ort`, für Kokoro & Talking Head Anime 3)
 * **Vibe-Coding & KI:** Größtenteils durch Vibe-Coding und Pair-Programming mit Unterstützung von Claude, ChatGPT und Gemini (Antigravity) entwickelt – abgesichert durch strenge Typensicherheit (`ts-rs`), Clippy, E2E-Tests und ein festes Architektur-Regelwerk ([`AI.md`](AI.md)).

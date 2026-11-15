@@ -1,12 +1,16 @@
 import type { ReplyReplacement } from '../types';
+import { runUserScript } from '../services/scriptSandbox';
 
 /** Where a regex script acts: the stored text, only what the chat shows, or only what the model reads. */
 export type ScriptStage = 'save' | 'display' | 'prompt';
 
 /** A new rule as the old find/replace rules worked: on replies, changing the stored text. */
 export const NEW_RULE: ReplyReplacement = {
-  find: '', replace: '', regex: false, name: '', disabled: false, on_input: false, on_output: true, mode: 'save',
+  find: '', replace: '', regex: false, name: '', disabled: false, on_input: false, on_output: true, mode: 'save', code: '',
 };
+
+/** A rule with JavaScript (C9): it runs in the sandbox, asynchronously, only on `save` and `prompt`. */
+export const isScriptRule = (rule: Partial<ReplyReplacement>) => !!rule.code?.trim();
 
 /** Fills fields a rule from an older settings file or a test lacks. */
 export function withDefaults(rule: Partial<ReplyReplacement>): ReplyReplacement {
@@ -48,17 +52,71 @@ export function applyScripts(text: string, rules: ReplyReplacement[], role: stri
   let out = text;
   for (const raw of rules) {
     const rule = withDefaults(raw);
-    if (rule.disabled || !rule.find || (rule.mode || 'save') !== stage) continue;
-    if (role === 'user' ? !rule.on_input : role === 'assistant' ? !rule.on_output : true) continue;
-    if (rule.regex) {
-      const compiled = compileCached(rule.find);
-      if (typeof compiled === 'string') continue;
-      out = out.replace(compiled, rule.replace);
-    } else {
-      out = out.split(rule.find).join(rule.replace);
-    }
+    // JavaScript rules need the sandbox: only the async path runs them (live text skips them).
+    if (isScriptRule(rule) || !applies(rule, role, stage)) continue;
+    out = applyFindReplace(out, rule);
   }
   return out;
+}
+
+function applies(rule: ReplyReplacement, role: string, stage: ScriptStage): boolean {
+  if (rule.disabled || (rule.mode || 'save') !== stage) return false;
+  if (!isScriptRule(rule) && !rule.find) return false;
+  return role === 'user' ? rule.on_input : role === 'assistant' ? rule.on_output : false;
+}
+
+function applyFindReplace(text: string, rule: ReplyReplacement): string {
+  if (!rule.regex) return text.split(rule.find).join(rule.replace);
+  const compiled = compileCached(rule.find);
+  return typeof compiled === 'string' ? text : text.replace(compiled, rule.replace);
+}
+
+/** The last error of each script (by its code), for the settings; listeners hear about new ones. */
+const scriptErrors = new Map<string, string>();
+const scriptErrorListeners = new Set<() => void>();
+
+export function scriptError(code: string): string | null {
+  return scriptErrors.get(code.trim()) ?? null;
+}
+
+export function onScriptErrors(listener: () => void): () => void {
+  scriptErrorListeners.add(listener);
+  return () => scriptErrorListeners.delete(listener);
+}
+
+function noteScriptResult(code: string, error: string | null) {
+  const key = code.trim();
+  if ((scriptErrors.get(key) ?? null) === error) return;
+  if (error) scriptErrors.set(key, error);
+  else scriptErrors.delete(key);
+  for (const listener of scriptErrorListeners) listener();
+}
+
+/**
+ * Like `applyScripts`, with JavaScript rules (C9) in their place in the order. A script that fails
+ * leaves the text as it was (its error shows in the settings), so a broken script never breaks the chat.
+ */
+export async function applyScriptsAsync(text: string, rules: ReplyReplacement[], role: 'user' | 'assistant', stage: 'save' | 'prompt'): Promise<string> {
+  if (!text || !rules.some((r) => isScriptRule(r) && applies(withDefaults(r), role, stage))) return applyScripts(text, rules, role, stage);
+  let out = text;
+  for (const raw of rules) {
+    const rule = withDefaults(raw);
+    if (!applies(rule, role, stage)) continue;
+    if (!isScriptRule(rule)) {
+      out = applyFindReplace(out, rule);
+      continue;
+    }
+    const result = await runUserScript(rule.code, out, { role, stage });
+    noteScriptResult(rule.code, result.ok ? null : result.error);
+    if (result.ok) out = result.text;
+    else console.warn(`Script "${rule.name || '?'}" failed:`, result.error);
+  }
+  return out;
+}
+
+/** Replies as they are saved, JavaScript rules included. */
+export function applyRepliesAsync(text: string, rules: ReplyReplacement[]): Promise<string> {
+  return applyScriptsAsync(text, rules, 'assistant', 'save');
 }
 
 /** Replies as they are saved: the rules that change the stored text (kept for older callers). */
@@ -70,6 +128,17 @@ export function applyReplacements(text: string, rules: ReplyReplacement[]): stri
 export function forPrompt<T extends { role: string; content: string }>(messages: T[], rules: ReplyReplacement[]): T[] {
   if (!rules.some((r) => withDefaults(r).mode === 'prompt')) return messages;
   return messages.map((m) => ({ ...m, content: applyScripts(m.content, rules, m.role, 'prompt') }));
+}
+
+/** `forPrompt` with JavaScript rules: each user and assistant message once through the scripts. */
+export async function forPromptAsync<T extends { role: string; content: string }>(messages: T[], rules: ReplyReplacement[]): Promise<T[]> {
+  if (!rules.some((r) => isScriptRule(r) && withDefaults(r).mode === 'prompt')) return forPrompt(messages, rules);
+  const out: T[] = [];
+  for (const m of messages) {
+    const content = m.role === 'user' || m.role === 'assistant' ? await applyScriptsAsync(m.content, rules, m.role, 'prompt') : m.content;
+    out.push({ ...m, content });
+  }
+  return out;
 }
 
 /** What a SillyTavern regex script file gave: rules, and how many parts could not be taken over. */

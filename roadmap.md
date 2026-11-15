@@ -32,7 +32,6 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 | C6 | Mehrere Pets gleichzeitig | ★ | L | – |
 | C7 | Mitguck-Modus (Bildschirm/Webcam) | ★★ | L | Vision-Modell, Datenschutzkonzept |
 | C8 | Battlemap aus Text erzeugen | ★ | L | Bildmodell, ungewisse Qualität |
-| C9 | Skript-Hook für eigenen Code | ★ | L | echte Sandbox |
 | **D** | **Plattformen & Technik – nur mit Hardware oder bei Gelegenheit** | | | |
 | D1 | Desktop-Pet unter macOS | ★★ | M | Mac |
 | D2 | Apple Metal: richtiger GPU-Speicher | ★★ | S | Mac |
@@ -162,9 +161,6 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 - [ ] **C8 · Battlemap aus Text:** Improvisiert der Spielleiter einen Ort, erzeugt `stable-diffusion.cpp` eine
   Draufsicht, aus der Wände, Hindernisse und Sichtlinien für die 5e-Engine abgeleitet werden. Ungewiss, ob die
   Erkennung zuverlässig genug wird – zuerst einen kleinen Versuch.
-- [ ] **C9 · Skript-Hook für eigenen Code:** Regex-Skripte und Quick-Replies gibt es; offen ist ein Hook, der eigenen
-  Code (z. B. JavaScript) auf Ein-/Ausgabe anwendet. Nur in einer echten Sandbox ohne Netz und ohne Zugriff auf die App
-  (z. B. QuickJS als WebAssembly im Worker), weil importierte Skripte fremder Herkunft sein können.
 
 > Alleinstellungsmerkmal: Das Desktop-Pet zusammen mit Gedächtnis und proaktiven Nachrichten –
 > „Deine Figur lebt auf deinem PC.“ Punkte, die das stärken (C6), haben bei gleicher Bewertung Vorrang.

@@ -26,4 +26,10 @@ on_output: boolean,
  * `save` changes the stored text, `display` only what the chat shows, `prompt` only what
  * the model reads.
  */
-mode: string, };
+mode: string, 
+/**
+ * JavaScript with `transform(text, info)` (C9): when set, the rule runs this code in the
+ * sandbox (QuickJS/WebAssembly, `services/scriptSandbox`) instead of `find`/`replace`.
+ * Only `save` and `prompt`; empty for find/replace rules.
+ */
+code: string, };

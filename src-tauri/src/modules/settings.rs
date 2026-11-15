@@ -43,6 +43,10 @@ pub struct ReplyReplacement {
     /// `save` changes the stored text, `display` only what the chat shows, `prompt` only what
     /// the model reads.
     pub mode: String,
+    /// JavaScript with `transform(text, info)` (C9): when set, the rule runs this code in the
+    /// sandbox (QuickJS/WebAssembly, `services/scriptSandbox`) instead of `find`/`replace`.
+    /// Only `save` and `prompt`; empty for find/replace rules.
+    pub code: String,
 }
 
 impl Default for ReplyReplacement {
@@ -56,6 +60,7 @@ impl Default for ReplyReplacement {
             on_input: false,
             on_output: true,
             mode: "save".into(),
+            code: String::new(),
         }
     }
 }

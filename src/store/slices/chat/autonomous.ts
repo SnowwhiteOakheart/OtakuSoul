@@ -4,7 +4,7 @@ import { withoutEmotionTag } from '../../../utils/replyTags';
 import { chatSampling, llmTarget, resolvePromptWithLore, type PromptSpeaker } from '../../helpers';
 import { errorMessage } from '../../../utils/errors';
 import { waitWithAbort } from '../../../utils/cancellation';
-import { applyReplacements, forPrompt } from '../../../utils/replyFilters';
+import { applyRepliesAsync, forPromptAsync } from '../../../utils/replyFilters';
 import { GROUP_MAX_REPLIES, chatSpeakers, groupHistory, memoryIdFor, presentedAs } from '../../../utils/groupChat';
 import type { ChatMessage, StoredChatMessage } from '../../../types';
 import {
@@ -177,12 +177,12 @@ export function createChatAutonomousSlice(rt: ChatRuntime, set: ChatSet, get: Ch
             provider: target.provider,
             api_key: target.api_key ?? undefined,
             model: target.model ?? undefined,
-            messages: forPrompt(messages, now.replyReplacements),
+            messages: await forPromptAsync(messages, now.replyReplacements),
             reasoning_mode: now.serverConfig.reasoning_mode,
             sampling: chatSampling(view),
           }, crypto.randomUUID(), now.selectedBackend === 'cloud' ? now.cloudContextTokens : undefined);
           if (done.aborted || signal.aborted) return null;
-          const { cleanedText } = extractStateUpdates(withoutEmotionTag(applyReplacements(done.full_text, get().replyReplacements)));
+          const { cleanedText } = extractStateUpdates(withoutEmotionTag(await applyRepliesAsync(done.full_text, get().replyReplacements)));
           if (!cleanedText.trim()) return null;
           const stored = await api.addChatMessage(chatId, 'assistant', cleanedText, done.full_thought.trim() ? done.full_thought : null);
           // Opened meanwhile: the message shows right away.

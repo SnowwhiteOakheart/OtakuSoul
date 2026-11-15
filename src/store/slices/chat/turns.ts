@@ -9,7 +9,7 @@ import { errorMessage } from '../../../utils/errors';
 import { fileToBase64 } from '../../../utils/files';
 import { waitWithAbort } from '../../../utils/cancellation';
 import { isRepeat } from '../../../utils/repetition';
-import { applyReplacements, applyScripts, forPrompt } from '../../../utils/replyFilters';
+import { applyRepliesAsync, applyScriptsAsync, forPromptAsync } from '../../../utils/replyFilters';
 import { GROUP_MAX_REPLIES, chatSpeakers, memoryIdFor, presentedAs } from '../../../utils/groupChat';
 import type { Attachment, ChatMessage, StoredChatMessage } from '../../../types';
 import {
@@ -126,13 +126,13 @@ export function createChatTurnsSlice(rt: ChatRuntime, set: ChatSet, get: ChatGet
           provider: selectedBackend === 'cloud' ? cloudProvider : 'local_llama',
           api_key: selectedBackend === 'cloud' ? cloudApiKey : undefined,
           model: selectedBackend === 'cloud' ? cloudModel : undefined,
-          messages: forPrompt(payloadMessages, get().replyReplacements),
+          messages: await forPromptAsync(payloadMessages, get().replyReplacements),
           reasoning_mode: serverConfig.reasoning_mode,
           sampling: chatSampling(get()),
         }, generationId, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined, get().chatTools);
         if (!rt.inContext(activeChatId, activeCharacter.id) && !rt.keepsPartial(done, activeChatId, activeCharacter.id)) return;
 
-        const { cleanedText, stateUpdates } = extractStateUpdates(withoutEmotionTag(applyReplacements(done.full_text, get().replyReplacements)));
+        const { cleanedText, stateUpdates } = extractStateUpdates(withoutEmotionTag(await applyRepliesAsync(done.full_text, get().replyReplacements)));
 
         const updatedMsg = await api.addMessageSwipe(
           msgId,
@@ -232,13 +232,13 @@ export function createChatTurnsSlice(rt: ChatRuntime, set: ChatSet, get: ChatGet
           provider: selectedBackend === 'cloud' ? cloudProvider : 'local_llama',
           api_key: selectedBackend === 'cloud' ? cloudApiKey : undefined,
           model: selectedBackend === 'cloud' ? cloudModel : undefined,
-          messages: forPrompt(payloadMessages, get().replyReplacements),
+          messages: await forPromptAsync(payloadMessages, get().replyReplacements),
           reasoning_mode: serverConfig.reasoning_mode,
           sampling: chatSampling(get()),
         }, generationId, selectedBackend === 'cloud' ? get().cloudContextTokens : undefined, get().chatTools);
         if (!rt.inContext(activeChatId, activeCharacter.id) && !rt.keepsPartial(done, activeChatId, activeCharacter.id)) return;
 
-        const { cleanedText, stateUpdates } = extractStateUpdates(withoutEmotionTag(applyReplacements(done.full_text, get().replyReplacements)));
+        const { cleanedText, stateUpdates } = extractStateUpdates(withoutEmotionTag(await applyRepliesAsync(done.full_text, get().replyReplacements)));
 
         const mergedContent = `${targetMsg.content} ${cleanedText}`.trim();
         const updatedMsg = await api.updateChatMessage(msgId, mergedContent, targetMsg.thought);
@@ -327,7 +327,10 @@ export function createChatTurnsSlice(rt: ChatRuntime, set: ChatSet, get: ChatGet
           if (rt.stopped()) throw new Error(translate('chat.sendCancelled'));
           if (!rt.inContext(chatId, activeCharacter?.id)) return;
           // The user's regex scripts that change what is saved apply before it is stored.
-          content = applyScripts(content, get().replyReplacements, 'user', 'save');
+          content = await applyScriptsAsync(content, get().replyReplacements, 'user', 'save');
+          // A script takes a moment: the send may have been stopped or the chat left meanwhile.
+          if (rt.stopped()) throw new Error(translate('chat.sendCancelled'));
+          if (!rt.inContext(chatId, activeCharacter?.id)) return;
           userStored = await api.addChatMessage(chatId, 'user', content, null, attachments);
         }
         if (!rt.isCurrentContext(chatId, activeCharacter?.id)) return;

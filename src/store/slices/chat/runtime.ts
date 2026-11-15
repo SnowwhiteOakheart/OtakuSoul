@@ -6,7 +6,7 @@ import { withoutEmotionTag } from '../../../utils/replyTags';
 import { chatSampling, llmTarget, hitKey, resolvePromptWithLore, type PromptSpeaker } from '../../helpers';
 import { waitWithAbort } from '../../../utils/cancellation';
 import { languageCode, localizeCard } from '../../../utils/cardI18n';
-import { applyReplacements, forPrompt } from '../../../utils/replyFilters';
+import { applyRepliesAsync, forPromptAsync } from '../../../utils/replyFilters';
 import { chatSpeakers, groupHistory, memoryCharacter, memoryId, memoryIdFor, presentedAs } from '../../../utils/groupChat';
 import type { ChatMessage, DoneEvent, ReplyIdeasRequest, StoredChatMessage } from '../../../types';
 import type { ChatGet, ChatSet } from './types';
@@ -209,14 +209,14 @@ export function createChatRuntime(set: ChatSet, get: ChatGet) {
       provider: state.selectedBackend === 'cloud' ? state.cloudProvider : 'local_llama',
       api_key: state.selectedBackend === 'cloud' ? state.cloudApiKey : undefined,
       model: state.selectedBackend === 'cloud' ? state.cloudModel : undefined,
-      messages: forPrompt(payloadMessages, get().replyReplacements),
+      messages: await forPromptAsync(payloadMessages, get().replyReplacements),
       reasoning_mode: state.serverConfig.reasoning_mode,
       sampling: chatSampling(state),
     }, generationId, state.selectedBackend === 'cloud' ? state.cloudContextTokens : undefined, state.chatTools);
     if (!inContext(chatId, charId) && !keepsPartial(done, chatId, charId)) return null;
 
     // <state> tags update the HUD; the user's replacement rules apply first.
-    const { cleanedText, stateUpdates } = extractStateUpdates(withoutEmotionTag(applyReplacements(done.full_text, get().replyReplacements)));
+    const { cleanedText, stateUpdates } = extractStateUpdates(withoutEmotionTag(await applyRepliesAsync(done.full_text, get().replyReplacements)));
     const thought = done.full_thought.trim() ? done.full_thought : null;
     const stored = speakerId
       ? await api.addChatMessage(chatId, 'assistant', cleanedText, thought, undefined, speakerId)

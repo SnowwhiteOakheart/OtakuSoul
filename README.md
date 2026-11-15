@@ -358,7 +358,7 @@ The README screenshots and the animation at the top are generated with `node e2e
 ### Technology stack
 
 * **Desktop:** [Tauri 2](https://tauri.app/) · **Backend:** [Rust](https://www.rust-lang.org/), [Tokio](https://tokio.rs/), SQLite (`rusqlite`), `reqwest`, `axum`
-* **Frontend:** [React 19](https://react.dev/), [TypeScript](https://www.typescriptlang.org/), [Vite](https://vitejs.dev/), [Tailwind CSS 4](https://tailwindcss.com/), [Zustand](https://github.com/pmndrs/zustand)
+* **Frontend:** [React 19](https://react.dev/), [TypeScript](https://www.typescriptlang.org/), [Vite](https://vitejs.dev/), [Tailwind CSS 4](https://tailwindcss.com/), [Zustand](https://github.com/pmndrs/zustand); user scripts run in [QuickJS](https://bellard.org/quickjs/) as WebAssembly ([quickjs-emscripten](https://github.com/justjake/quickjs-emscripten), MIT)
 * **Avatars:** [Three.js](https://threejs.org/), [@pixiv/three-vrm](https://github.com/pixiv/three-vrm), `@moeru/three-mmd`, [PixiJS](https://pixijs.com/) & Live2D Cubism Core, Inochi2D runtime ported from [Inox2D](https://github.com/Inochi2D/inox2d)
 * **Local AI:** llama.cpp & PrismML, stable-diffusion.cpp, CrispASR, whisper.cpp, ONNX Runtime (`ort`, for Kokoro & Talking Head Anime 3)
 * **Vibe-coding & AI:** Built primarily through vibe-coding and AI pair-programming with assistance from Claude, ChatGPT, and Gemini (Antigravity) – reinforced by strict typing (`ts-rs`), clippy, e2e tests, and architectural guidelines ([`AI.md`](AI.md)).
