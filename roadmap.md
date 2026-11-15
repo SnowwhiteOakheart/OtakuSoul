@@ -20,8 +20,10 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 | A1 | VRoid Hub mit echtem Konto testen, dann bei pixiv melden | ★★★ | S | Release-Build, VRoid-Konto |
 | A2 | Musik: Prüfstand mit echter GPU, Titel der Starter-Geschichten ausliefern | ★★★ | S–M | GPU, Zeit zum Anhören |
 | A3 | Sync zwischen Geräten und Sprechblasen im Alltag prüfen | ★★ | S | zwei Geräte, Nextcloud o. Ä. |
-| A4 | Nutzertests mit 2–3 Einsteigern | ★★★ | S | Testpersonen |
 | A5 | Signierte Installer (Windows, macOS) | ★★★ | S–M | Zertifikat bzw. Apple-Konto (Kosten) |
+| **T** | **Wartet auf Tester – erst nach deren Rückmeldung** | | | |
+| T1 | Nutzertests mit 2–3 Einsteigern (früher A4) | ★★★ | S | Testpersonen |
+| T2 | Stage: separates Spielleiter-Modell (früher E8) | – | M–L | Nutzerfeedback, Messung |
 | **B** | **Als Nächstes – baut auf Vorhandenem auf** | | | |
 | B4 | Teilen: Lorebooks, automatische Prüfung der Einreichung | ★★ | M | Prüfablauf im Daten-Repo |
 | B6 | OBS-Overlay: 3D-/Live2D-Modell statt Porträt | ★ | M | – |
@@ -47,7 +49,6 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 | E5 | Lokale Embeddings fürs Gedächtnis | – | M | Messung, dass FTS5 nicht reicht |
 | E6 | VRoid-Anmeldung über `otakusoul://`-Link | – | S | Berichte über belegten Port |
 | E7 | Hörbuch-Export (vorerst gestrichen, 02.11.2026) | ★ | M | – |
-| E8 | Stage: separates Spielleiter-Modell | – | M–L | Nutzerfeedback, Messung |
 
 ## Leitlinien für neue Oberflächen
 
@@ -109,7 +110,17 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
   geteilten Ordner, Hinweis beim Start, Wiederherstellen mit Sicherheitskopie (Protokoll-Test gegen eigene Nextcloud:
   `cargo test --lib real_webdav_server -- --ignored`, siehe `AI.md`). Sprechblasen: passt die Satzaufteilung nach
   Textlänge zur echten Stimme, auch bei Erzählerstimme für Aktionen?
-- [ ] **A4 · Nutzertests mit 2–3 Einsteigern** anhand einer Aufgabenliste; Befunde hier als neue Punkte eintragen.
+- [ ] **A5 · Signierte Installer:** Windows-Code-Signierung (gegen die SmartScreen-Warnung) und macOS-Notarisierung (statt
+  Rechtsklick → Öffnen bzw. `xattr`) im Release-Workflow. *Nutzen:* Die Warnungen sind die größte Hürde beim ersten Start.
+  *Kosten:* Zertifikat bzw. Apple Developer Account (~99 $/Jahr) – Entscheidung des Nutzers.
+
+## T. Wartet auf Tester – erst nach deren Rückmeldung
+
+> Diese Punkte brauchen andere Menschen. Sie ruhen, bis die Tester Rückmeldung gegeben haben; Befunde dann als
+> neue Punkte in A/B eintragen. Stand 15.11.2026: Ersteinrichtung, Hub-Hinweise und automatische Laufzeit-Einrichtung
+> sind neu – genau das prüfen Aufgabe 1 und 7 von T1.
+
+- [ ] **T1 · Nutzertests mit 2–3 Einsteigern** (früher A4) anhand einer Aufgabenliste; Befunde hier als neue Punkte eintragen.
   Ohne Hilfe vorlesen, beobachten, wo gezögert wird, Zeit pro Aufgabe notieren:
   1. „Richte die App so ein, dass eine Figur dir antworten kann.“
   2. „Unterhalte dich mit einer Figur, die dir gefällt, und lass eine Antwort neu schreiben.“
@@ -119,9 +130,11 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
   6. „Finde heraus, was ‚Kontext‘ bedeutet.“
   7. „Hol dir eine neue Figur aus dem Hub.“
   8. „Lass Musik für deine Geschichte erzeugen.“ (neu seit 0.7.2)
-- [ ] **A5 · Signierte Installer:** Windows-Code-Signierung (gegen die SmartScreen-Warnung) und macOS-Notarisierung (statt
-  Rechtsklick → Öffnen bzw. `xattr`) im Release-Workflow. *Nutzen:* Die Warnungen sind die größte Hürde beim ersten Start.
-  *Kosten:* Zertifikat bzw. Apple Developer Account (~99 $/Jahr) – Entscheidung des Nutzers.
+- [ ] **T2 · Separates Spielleiter-Modell** (früher E8) – zurückgestellt (15.11.2026), Plan in `roadmap_spielleiter_als_seperates_modell.md`
+  (lokal). Steuernde Stage-Aufrufe (Planer, Routing, Kampfwahl, Archiv, Faktenprüfung) an ein eigenes Instruct-Modell statt ans
+  Erzählmodell. Lohnt vor allem bei RP-Fine-Tunes als Erzählmodell oder für „lokal erzählen, Cloud plant“. Erst messen
+  (Reparatur-/Fehlerquote des Planer-JSON, Ersatzwahl beim Routing, Planer-Latenz je Modell), dann nur Phase A (zweiter
+  Endpoint über `StageLlm`); ein zweiter lokaler llama-server kostet auf 8–12-GB-Karten mehr, als er bringt.
 
 ## B. Als Nächstes – baut auf Vorhandenem auf
 
@@ -201,11 +214,6 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 
 - [ ] **E7 · Hörbuch-Export** – vorerst gestrichen (Entscheidung 02.11.2026), niedrigste Priorität: Sprachclips eines
   Kapitels (Erzähler- und Charakterstimmen) zu einer Audiodatei mit Kapitelmarken zusammenfügen.
-- [ ] **E8 · Separates Spielleiter-Modell** – zurückgestellt (15.11.2026), Plan in `roadmap_spielleiter_als_seperates_modell.md`
-  (lokal). Steuernde Stage-Aufrufe (Planer, Routing, Kampfwahl, Archiv, Faktenprüfung) an ein eigenes Instruct-Modell statt ans
-  Erzählmodell. Lohnt vor allem bei RP-Fine-Tunes als Erzählmodell oder für „lokal erzählen, Cloud plant“. Erst messen
-  (Reparatur-/Fehlerquote des Planer-JSON, Ersatzwahl beim Routing, Planer-Latenz je Modell), dann nur Phase A (zweiter
-  Endpoint über `StageLlm`); ein zweiter lokaler llama-server kostet auf 8–12-GB-Karten mehr, als er bringt.
 
 ---
 
