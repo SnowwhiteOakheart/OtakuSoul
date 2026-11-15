@@ -53,7 +53,7 @@ Die neueste Version gibt es auf der **[Release-Seite](https://github.com/Snowwhi
 | 🪟 **Windows 10 / 11** | `OtakuSoul_*_x64-setup.exe` | Doppelklick und dem Installer folgen. |
 | 🐧 **Linux** | `OtakuSoul_*_amd64.AppImage` | Ausführbar machen (`chmod +x`) und starten. |
 | 🐧 **Debian / Ubuntu** | `OtakuSoul_*_amd64.deb` | `sudo apt install ./OtakuSoul_*_amd64.deb` |
-| 🍏 **macOS** (Apple Silicon) | `OtakuSoul_*_aarch64.dmg` | OtakuSoul in *Programme* ziehen. Die App ist nicht notarisiert: beim ersten Start Rechtsklick → *Öffnen* (oder `xattr -dr com.apple.quarantine /Applications/OtakuSoul.app`). |
+| 🍏 **macOS** (Apple Silicon) | `OtakuSoul_*_aarch64.dmg` (ab macOS 13) | DMG öffnen und OtakuSoul in *Programme* ziehen. Die App ist noch nicht notarisiert, deshalb blockiert macOS den ersten Start: einmal öffnen, dann *Systemeinstellungen → Datenschutz & Sicherheit → Dennoch öffnen* wählen (oder im Terminal `xattr -dr com.apple.quarantine /Applications/OtakuSoul.app`). Updates kommen danach wie unter Windows und Linux in der App an. |
 
 OtakuSoul aktualisiert sich selbst: Gibt es eine neue Version, erscheint ein Knopf in der Kopfzeile.
 

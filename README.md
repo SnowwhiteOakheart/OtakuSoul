@@ -53,7 +53,7 @@ Get the latest version from the **[Releases page](https://github.com/SnowwhiteOa
 | 🪟 **Windows 10 / 11** | `OtakuSoul_*_x64-setup.exe` | Double-click and follow the installer. |
 | 🐧 **Linux** | `OtakuSoul_*_amd64.AppImage` | Make it executable (`chmod +x`) and start it. |
 | 🐧 **Debian / Ubuntu** | `OtakuSoul_*_amd64.deb` | `sudo apt install ./OtakuSoul_*_amd64.deb` |
-| 🍏 **macOS** (Apple Silicon) | `OtakuSoul_*_aarch64.dmg` | Drag OtakuSoul into *Applications*. The app is not notarised: on first start right-click → *Open* (or run `xattr -dr com.apple.quarantine /Applications/OtakuSoul.app`). |
+| 🍏 **macOS** (Apple Silicon) | `OtakuSoul_*_aarch64.dmg` (macOS 13 or later) | Open the DMG and drag OtakuSoul into *Applications*. The app is not notarised yet, so macOS blocks the first start: try to open it once, then choose *System Settings → Privacy & Security → Open Anyway* (or run `xattr -dr com.apple.quarantine /Applications/OtakuSoul.app` in Terminal). Updates arrive in the app like on Windows and Linux. |
 
 OtakuSoul updates itself: when a new version is out, a button appears in the title bar.
 
