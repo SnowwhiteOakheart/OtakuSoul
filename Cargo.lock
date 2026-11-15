@@ -4177,6 +4177,7 @@ dependencies = [
  "ort",
  "otakusoul-paths",
  "otakusoul-rules5e",
+ "otakusoul-stream",
  "parking_lot 0.13.0",
  "pdf-extract",
  "png",
@@ -4231,6 +4232,13 @@ dependencies = [
  "serde",
  "serde_json",
  "ts-rs",
+]
+
+[[package]]
+name = "otakusoul-stream"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
 ]
 
 [[package]]

@@ -39,6 +39,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 rand = "0.10"
 otakusoul-rules5e = { path = "../crates/otakusoul-rules5e" }
 otakusoul-paths = { path = "../crates/otakusoul-paths" }
+otakusoul-stream = { path = "../crates/otakusoul-stream" }
 base64 = "0.23"
 png = "0.18"
 urlencoding = "2.1"

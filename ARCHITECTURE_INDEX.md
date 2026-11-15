@@ -42,12 +42,12 @@
 ## 🗺️ System-Architektur & Modul-Landkarte
 
 ### 1. Rust-Backend (`src-tauri/src/`)
-* **Einstieg & Zustand:** `lib.rs` (Plugins, Handler-Registrierung), `state.rs` (`AppState`), `paths.rs` (`base_dirs`, Daten- und Konfigpfade).
+* **Einstieg & Zustand:** `lib.rs` (Plugins, Handler-Registrierung), `state.rs` (`AppState`), `paths.rs` (`base_dirs` aus dem Crate `crates/otakusoul-paths`, Daten- und Konfigpfade).
 * **IPC-Befehle (`commands/`):** Schnittstelle zum Frontend über `tauri::command` (z. B. `chat.rs`, `characters.rs`, `stage.rs`, `runtimes.rs`, `memory.rs`, `settings.rs`, `lorebook.rs`, `hub.rs`).
 
 | Bereich | Kern-Module (`modules/`) | Aufgabe / Verantwortung |
 |---|---|---|
-| **Inferenz & Chat** | `inference.rs`, `providers.rs`, `prompt_builder.rs`, `context_window.rs`, `chat_summary.rs`, `attachments.rs`, `translate.rs`, `chat_tools.rs` | LLM-Streaming (SSE, `<think>`-Filter), Provider-Routing (llama-server, Anthropic, OpenAI), Prompt-Zusammenbau, Token-Zählung. |
+| **Inferenz & Chat** | `inference.rs`, `providers.rs`, `prompt_builder.rs`, `context_window.rs`, `chat_summary.rs`, `attachments.rs`, `translate.rs`, `chat_tools.rs` | LLM-Streaming (SSE- und `<think>`-Decoder im Crate `crates/otakusoul-stream`), Provider-Routing (llama-server, Anthropic, OpenAI), Prompt-Zusammenbau, Token-Zählung. |
 | **Lokale Server & Runtimes** | `runtimes.rs`, `llama_manager.rs`, `local_image.rs`, `tts_local/` (`catalog.rs`, `engine.rs`, `downloads.rs`, `cloning.rs`, `models.rs`), `model_files.rs`, `segmented_download.rs`, `gguf.rs`, `hardware.rs`, `image_loras.rs` | Verwaltung, Download und Ausführung lokaler Binaries (llama.cpp, sd.cpp, CrispASR, PrismML), VRAM-Schätzung, GPU-Zuweisung. |
 | **Gedächtnis & Daten** | `memory/` (`chats.rs`, `soul.rs`, SQLite), `memory_pipeline/` (`prompts.rs`, `models.rs`, `json.rs`, `runner.rs`, `cleanup.rs`), `settings.rs`, `characters/` (`models.rs`, `png.rs`, `storage.rs`, `wizard.rs`), `lorebook.rs`, `profile_backup.rs`, `device_sync.rs`, `secrets.rs` | SQLite-Datenbank (`otakusoul.db`), Kognitives Gedächtnis, Episodisches Gedächtnis, V2-Charakterkarten (PNG/JSON), Lorebooks, Backups und Sync zwischen Geräten (Ordner/WebDAV). |
 | **Stage & 5e Engine** | `stage/` (`director.rs`, `engine.rs`, `turn/`, `scenes.rs`, `combat5e.rs`, `explore5e.rs`, `party.rs`, `npc.rs`, `world.rs`); Regeln und deterministischer Kampf-/Erkundungsablauf (`fight/`, `exploration.rs`, Sicht `Table`) im Crate `crates/otakusoul-rules5e` (als `stage::rules5e` re-exportiert; `combat5e.rs`/`explore5e.rs` behalten LLM, Erzählung, Speichern) | Game-Master-Modus, Spielleiter-Orchestrierung, D&D 5e-Regelsystem (Klassen, Zauber, Kampf, Erkundung, Spielbrett). Das Regel-Crate nutzt auch OtakuSoul-Android über UniFFI (fester Commit). |
