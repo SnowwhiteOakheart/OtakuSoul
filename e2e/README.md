@@ -62,7 +62,7 @@ Die Suite umfasst über 90 spezialisierte Testmodule:
    - `companion-safety.mjs`, `pet-only-3d.mjs`: HITL-Bestätigungsbanner bei sensiblen Aktionen und Desktop-Pet-Oberfläche (nur 3D: eine Inochi2D-Puppe bekommt den Hinweis, ein GLB die Figur mit Klick-Durchlass). `pet-guest.mjs`: öffnet Pet und Gast-Pet als echte Fenster (eigene Größe, Figur des Gastes, keine Hormonwirkung, Schließen mit dem Pet).
 
 7. **Oberfläche, Zugänglichkeit & Hub:**
-   - `onboarding.mjs`, `home.mjs`, `character-library.mjs`, `character-traits.mjs`, `character-import.mjs`, `startup-character.mjs`, `settings-palette.mjs`, `settings-reset.mjs`, `settings-hints.mjs`, `close-to-tray.mjs`, `background-tasks.mjs`, `ui-layout.mjs`, `hub-updates.mjs`, `hub-collections.mjs`, `hub-nsfw.mjs`, `adult-content-hiding.mjs`, `languages.mjs`, `help.mjs`, `a11y-sweep.mjs`, `dialogs-and-boxes.mjs`, `contrast.mjs`, `keyboard.mjs`, `beginner-journey.mjs`.
+   - `onboarding.mjs`, `onboarding-hints.mjs`, `home.mjs`, `character-library.mjs`, `character-traits.mjs`, `character-import.mjs`, `startup-character.mjs`, `settings-palette.mjs`, `settings-reset.mjs`, `settings-hints.mjs`, `close-to-tray.mjs`, `background-tasks.mjs`, `ui-layout.mjs`, `hub-updates.mjs`, `hub-collections.mjs`, `hub-nsfw.mjs`, `adult-content-hiding.mjs`, `languages.mjs`, `help.mjs`, `a11y-sweep.mjs`, `dialogs-and-boxes.mjs`, `contrast.mjs`, `keyboard.mjs`, `beginner-journey.mjs`.
 
 ## Weitere E2E-Werkzeuge
 

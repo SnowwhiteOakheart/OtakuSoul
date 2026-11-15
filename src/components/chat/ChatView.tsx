@@ -473,14 +473,28 @@ export const ChatView: React.FC = () => {
           </div>}
 
           {selectedBackend === 'local' && serverStatus.state !== 'running' && (
-            <button
-              onClick={() => setActiveTab('settings')}
-              title={t('chat.openSettings')}
-              className="hidden lg:flex items-center gap-1.5 text-xs text-amber-300 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-md whitespace-nowrap hover:bg-amber-500/20 outline-hidden focus-visible:ring-2 focus-visible:ring-amber-400"
-            >
-              <PlugZap className="w-3.5 h-3.5" />
-              {t('chat.serverOffline')}
-            </button>
+            // With a model the first message starts the server: no alarm, just how it works.
+            serverConfig.model_path ? (
+              <button
+                onClick={() => openSettingsSection('server')}
+                title={t('chat.openSettings')}
+                data-chat-ai-badge="on-demand"
+                className="hidden lg:flex items-center gap-1.5 text-xs text-slate-300 bg-slate-800/60 border border-slate-700 px-2 py-0.5 rounded-md whitespace-nowrap hover:bg-slate-800 outline-hidden focus-visible:ring-2 focus-visible:ring-accent-400"
+              >
+                <PlugZap className="w-3.5 h-3.5" />
+                {t('chat.serverOnDemand')}
+              </button>
+            ) : (
+              <button
+                onClick={() => openSettingsSection('hub')}
+                title={t('chat.openSettings')}
+                data-chat-ai-badge="missing"
+                className="hidden lg:flex items-center gap-1.5 text-xs text-amber-300 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-md whitespace-nowrap hover:bg-amber-500/20 outline-hidden focus-visible:ring-2 focus-visible:ring-amber-400"
+              >
+                <PlugZap className="w-3.5 h-3.5" />
+                {t('chat.noModelBadge')}
+              </button>
+            )
           )}
         </div>
 
