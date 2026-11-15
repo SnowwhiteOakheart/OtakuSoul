@@ -104,6 +104,42 @@ describe('FirstRunWizard', () => {
     expect(useAppStore.getState().cloudApiKey).toBe('sk-test');
   });
 
+  /** Goes from the welcome screen to the last step without choosing a model. */
+  const toDoneWithoutModel = async (user: ReturnType<typeof userEvent.setup>) => {
+    for (let i = 0; i < 4; i += 1) await user.click(next());
+    expect(screen.getByRole('heading', { name: 'All set!' })).toBeInTheDocument();
+  };
+
+  it('warns at the end when no local model is chosen and leads back to the model step', async () => {
+    const user = userEvent.setup();
+    render(<FirstRunWizard />);
+    await toDoneWithoutModel(user);
+
+    expect(screen.getByText(/No AI model chosen yet/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Set up a model' }));
+    expect(screen.getByRole('heading', { name: 'What should power the chat?' })).toBeInTheDocument();
+  });
+
+  it('says a chat model is still downloading instead of warning', async () => {
+    useAppStore.setState({ activeDownloads: { 'Qwen3-8B-Q4_K_M.gguf': true } });
+    const user = userEvent.setup();
+    render(<FirstRunWizard />);
+    await toDoneWithoutModel(user);
+
+    expect(screen.getByText(/The chat model is still downloading/)).toBeInTheDocument();
+    expect(screen.queryByText(/No AI model chosen yet/)).not.toBeInTheDocument();
+  });
+
+  it('points to the hub and can finish there', async () => {
+    const user = userEvent.setup();
+    render(<FirstRunWizard />);
+    await toDoneWithoutModel(user);
+
+    await user.click(screen.getByRole('button', { name: 'Open the hub' }));
+    expect(useAppStore.getState().onboardingCompleted).toBe(true);
+    expect(useAppStore.getState().activeTab).toBe('hub');
+  });
+
   it('can be skipped at any point', async () => {
     const user = userEvent.setup();
     render(<FirstRunWizard />);

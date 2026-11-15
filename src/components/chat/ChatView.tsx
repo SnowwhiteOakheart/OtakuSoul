@@ -88,6 +88,8 @@ export const ChatView: React.FC = () => {
     setSelectedBackend,
     expertMode,
     serverStatus,
+    serverConfig,
+    openSettingsSection,
     activeCharacter,
     activePersona,
     loadPresetCharacters,
@@ -106,7 +108,7 @@ export const ChatView: React.FC = () => {
     isGeneratingSceneImage,
   } = useStoreFields(
     'messages', 'storedMessages', 'isGenerating', 'generationChatId', 'generationId', 'isChatLoading', 'chatLoadError', 'clearChat', 'selectedBackend', 'setSelectedBackend', 'expertMode',
-    'serverStatus', 'activeCharacter', 'activePersona', 'loadPresetCharacters', 'chatSidebarOpen',
+    'serverStatus', 'serverConfig', 'openSettingsSection', 'activeCharacter', 'activePersona', 'loadPresetCharacters', 'chatSidebarOpen',
     'setChatSidebarOpen', 'chatSessions', 'activeChatId', 'autoTtsEnabled', 'setAutoTtsEnabled',
     'activeVoiceConfig', 'setActiveTab', 'replyReplacements', 'proactive', 'setProactiveMuted', 'sendSelfie', 'isGeneratingSceneImage',
   );
@@ -674,7 +676,8 @@ export const ChatView: React.FC = () => {
                     </button>
                   }
                 />
-              ) : selectedBackend === 'local' && serverStatus.state !== 'running' ? (
+              ) : selectedBackend === 'local' && serverStatus.state !== 'running' && !serverConfig.model_path ? (
+                // Without a model nothing can answer; with one, the first message starts the server.
                 <EmptyState
                   icon={PlugZap}
                   title={t('chat.serverOfflineTitle')}
@@ -683,7 +686,7 @@ export const ChatView: React.FC = () => {
                   actions={
                     <>
                       <button
-                        onClick={() => setActiveTab('settings')}
+                        onClick={() => openSettingsSection('hub')}
                         className="px-3.5 py-1.5 rounded-xl bg-accent-600 hover:bg-accent-500 text-white text-xs font-semibold flex items-center gap-1.5"
                       >
                         <Settings className="w-4 h-4" />
@@ -703,7 +706,11 @@ export const ChatView: React.FC = () => {
                 <EmptyState
                   icon={MessageCircle}
                   title={t('chat.startTitle')}
-                  description={t('chat.startText', { name: activeCharacter.card.data.name })}
+                  description={
+                    selectedBackend === 'local' && serverStatus.state !== 'running'
+                      ? t('chat.startTextAutoStart', { name: activeCharacter.card.data.name })
+                      : t('chat.startText', { name: activeCharacter.card.data.name })
+                  }
                   className="h-full"
                 />
               )

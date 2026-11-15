@@ -6,6 +6,7 @@ import {
   ArrowRight,
   Check,
   Cloud,
+  Compass,
   Cpu,
   Dice5,
   Download,
@@ -17,6 +18,7 @@ import {
   Mic,
   Palette,
   Sparkles,
+  TriangleAlert,
   UserRound,
   Wand2,
 } from 'lucide-react';
@@ -102,6 +104,7 @@ export const FirstRunWizard: React.FC = () => {
       startServer: s.startServer,
       completeOnboarding: s.completeOnboarding,
       hardware: s.hardware,
+      activeDownloads: s.activeDownloads,
     }))
   );
 
@@ -148,6 +151,20 @@ export const FirstRunWizard: React.FC = () => {
     after?.();
   };
   const bundleRunning = useSetupBundle((s) => s.running);
+  const bundleChatPhase = useSetupBundle((s) => s.status.chat.phase);
+  // A chat model still on its way: it is selected once the download finished.
+  const chatModelDownloading =
+    !isCloud &&
+    !localModel &&
+    (Object.keys(store.activeDownloads).length > 0 || bundleChatPhase === 'runtime' || bundleChatPhase === 'download');
+  const localModelMissing = !isCloud && !localModel && !chatModelDownloading;
+
+  /** Closes the wizard on a tab and starts the local server if wished. */
+  const finishTo = (tab: 'chat' | 'stage' | 'hub') =>
+    finish(() => {
+      store.setActiveTab(tab);
+      if (!isCloud && localModel && startServerNow) void store.startServer().catch(() => {});
+    });
 
   const handleProviderChange = (provider: LlmProviderType) => {
     store.setCloudProvider(provider);
@@ -345,10 +362,13 @@ export const FirstRunWizard: React.FC = () => {
                   )}
                   <SetupBundle />
                   <LocalModelSetup express={false} />
-                  <button type="button" onClick={() => finish(() => store.openSettingsSection('hub'))} className={SECONDARY_BUTTON}>
-                    <Download className="h-4 w-4" />
-                    {t('onboarding.openModelHub')}
-                  </button>
+                  <div className="space-y-1">
+                    <button type="button" onClick={() => finish(() => store.openSettingsSection('hub'))} className={SECONDARY_BUTTON}>
+                      <Download className="h-4 w-4" />
+                      {t('onboarding.openModelHub')}
+                    </button>
+                    <p className="text-xs text-slate-400">{t('onboarding.openModelHubHint')}</p>
+                  </div>
                 </>
               )}
 
@@ -489,6 +509,7 @@ export const FirstRunWizard: React.FC = () => {
                   {t('onboarding.importCharacter')}
                 </button>
               </div>
+              <p className="text-xs text-slate-400">{t('onboarding.hubHint')}</p>
             </>
           )}
 
@@ -567,7 +588,24 @@ export const FirstRunWizard: React.FC = () => {
                 ))}
               </dl>
 
-              {bundleRunning && (
+              {chatModelDownloading && (
+                <p role="status" className="rounded-xl border border-accent-500/30 bg-accent-500/10 p-3 text-xs text-accent-100" data-chat-model-pending>
+                  {t('onboarding.chatModelPending')}
+                </p>
+              )}
+
+              {localModelMissing && (
+                <div role="alert" className="flex flex-wrap items-center gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3" data-local-model-missing>
+                  <TriangleAlert className="h-4 w-4 shrink-0 text-amber-300" />
+                  <p className="min-w-48 flex-1 text-xs text-amber-100">{t('onboarding.noModelWarning')}</p>
+                  <button type="button" onClick={() => goTo('model')} className={SECONDARY_BUTTON}>
+                    <ArrowLeft className="h-4 w-4" />
+                    {t('onboarding.backToModel')}
+                  </button>
+                </div>
+              )}
+
+              {bundleRunning && !chatModelDownloading && (
                 <p role="status" className="rounded-xl border border-accent-500/30 bg-accent-500/10 p-3 text-xs text-accent-100" data-setup-background>
                   {t('setup.background')}
                 </p>
@@ -588,6 +626,14 @@ export const FirstRunWizard: React.FC = () => {
                   {t('onboarding.startServer')}
                 </label>
               )}
+
+              <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-800 bg-app/60 p-3" data-onboarding-hub>
+                <Compass className="h-4 w-4 shrink-0 text-accent-300" />
+                <p className="min-w-48 flex-1 text-xs text-slate-300">{t('home.discoverHint')}</p>
+                <button type="button" onClick={() => finishTo('hub')} className={SECONDARY_BUTTON}>
+                  {t('home.discover')}
+                </button>
+              </div>
             </>
           )}
         </div>
@@ -606,12 +652,7 @@ export const FirstRunWizard: React.FC = () => {
             <div className="flex flex-wrap justify-end gap-2">
               <button
                 type="button"
-                onClick={() =>
-                  finish(() => {
-                    store.setActiveTab('stage');
-                    if (!isCloud && localModel && startServerNow) void store.startServer().catch(() => {});
-                  })
-                }
+                onClick={() => finishTo('stage')}
                 className={SECONDARY_BUTTON}
               >
                 <Dice5 className="h-4 w-4" />
@@ -619,12 +660,7 @@ export const FirstRunWizard: React.FC = () => {
               </button>
               <button
                 type="button"
-                onClick={() =>
-                  finish(() => {
-                    store.setActiveTab('chat');
-                    if (!isCloud && localModel && startServerNow) void store.startServer().catch(() => {});
-                  })
-                }
+                onClick={() => finishTo('chat')}
                 className={PRIMARY_BUTTON}
               >
                 <MessageSquare className="h-4 w-4" />
