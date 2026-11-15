@@ -154,6 +154,7 @@ pub fn build_initial_scene_state(def: &SceneDefinition) -> SceneState {
         turns_since_audit: 0,
         overlays: Vec::new(),
         lore_cards: Vec::new(),
+        gm_secrets: def.gm_secrets.clone(),
         memory_sync: HashMap::new(),
         private_knowledge: HashMap::new(),
         map: None,

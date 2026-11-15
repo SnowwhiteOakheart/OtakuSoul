@@ -117,13 +117,13 @@ pub(super) async fn run_actor_reactions(
             let companion_system = if let Some(npc) = &npc {
                 let localized_npc = npc.localized(lang_code);
                 format!(
-                    "[STAGE — NPC]\nYou are {} ({}).\nPersonality and background: {}\nScene context: {}{lore_section}\nReact in the first person to events you witnessed. Stay in character; keep it concise. Reply in {reply_language}.{}{}",
+                    "[STAGE — NPC]\nYou are {} ({}).\nPersonality and background: {}\nScene context: {}{lore_section}\nReact in the first person to events you witnessed. Stay in character; keep it concise. Reply in {reply_language}.{}{secrets}{}",
                     localized_npc.name,
                     localized_npc.archetype,
                     localized_npc.personality,
                     localized_def.world_context,
                     npc_memory_block(npc, clean_input),
-                    secrets
+                    hidden_agenda_block(state, &npc.name)
                 )
             } else if let Some(ch) = matched_char {
                 let localized_char = ch

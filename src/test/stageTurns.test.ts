@@ -97,6 +97,28 @@ describe('stage turns', () => {
     ]);
   });
 
+  it('media events change place, picture and sound at once without a speech bubble', () => {
+    useAppStore.setState({ stageState: { ...scene, world: { location: 'Tor', time_of_day: 'Tag', weather: 'klar' } } as SceneState });
+    const media = {
+      scene_id: 'scene-1', location: 'Gruft', time_of_day: 'Nacht', weather: 'Nebel',
+      current_bg: 'gruft.png', current_ambient: 'wind.ogg', current_music_mood: 'tension', scene_image: true,
+    };
+    const { applyStageStream } = useAppStore.getState();
+    applyStageStream({ message_id: '', sender_name: '', sender_role: '', avatar_url: null, text: '', done: true, media });
+    const state = useAppStore.getState();
+    expect(state.stageLive).toEqual([]);
+    expect(state.stageState?.world.location).toBe('Gruft');
+    expect(state.stageState?.current_music_mood).toBe('tension');
+    expect(state.stageState?.current_bg).toBe('gruft.png');
+    expect(state.stageSceneImageWanted).toBe(true);
+
+    // Another scene's media are ignored.
+    useAppStore.setState({ stageSceneImageWanted: false });
+    applyStageStream({ message_id: '', sender_name: '', sender_role: '', avatar_url: null, text: '', done: true, media: { ...media, scene_id: 'other', location: 'Anderswo' } });
+    expect(useAppStore.getState().stageState?.world.location).toBe('Gruft');
+    expect(useAppStore.getState().stageSceneImageWanted).toBe(false);
+  });
+
   it('a player turn ends auto-play, continuing is ignored while a turn runs', async () => {
     useAppStore.setState({ stageAutoPlay: true });
     vi.mocked(api.runStageTurn).mockResolvedValue(scene);

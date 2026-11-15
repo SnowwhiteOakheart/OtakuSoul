@@ -47,7 +47,7 @@ Die Suite umfasst über 90 spezialisierte Testmodule:
    - `memory-atlas.mjs`, `memory-journal.mjs`, `memory-branches.mjs`: Beziehungs-Atlas, Tagebuch-Modus (Abend-Reflexion, Gute-Nacht-Nachricht, Monatsrückblick) und Zweige mit eigenem Gedächtnis.
 
 4. **Soul Stage & 5e-Regelsystem:**
-   - `stage-context.mjs`, `stage-npcs.mjs`, `stage-editor.mjs`, `stage-director.mjs`, `stage-voice.mjs`, `stage-world.mjs`, `stage-memory.mjs`, `stage-offscreen.mjs`, `stage-upkeep-abort.mjs`.
+   - `stage-context.mjs`, `stage-npcs.mjs`, `stage-editor.mjs`, `stage-director.mjs`, `stage-voice.mjs`, `stage-world.mjs`, `stage-memory.mjs`, `stage-offscreen.mjs`, `stage-upkeep-abort.mjs`, `stage-gm-screen.mjs`.
    - `stage-5e.mjs`, `stage-board.mjs`, `stage-spells.mjs`, `stage-explore.mjs`, `stage-adventure.mjs`, `stage-gallery.mjs`: Spielbrett, Wegfindung, Sichtlinie, Zauberflächen, Nebel des Krieges, Meilensteine, mehraktige Abenteuer und Story-Sammlungen.
 
 5. **Avatare, 3D-Bühne & Inochi2D:**

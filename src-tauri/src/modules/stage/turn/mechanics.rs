@@ -5,6 +5,8 @@ pub(super) struct MechanicsOutcome {
     pub(super) dice_outcome_text: String,
     pub(super) dice_event_card: Option<StageEventCard>,
     pub(super) secondary_event_cards: Vec<(String, StageEventCard)>,
+    /// Secrets the party uncovers in this beat (the narrator may tell them now).
+    pub(super) revealed_secrets: Vec<GmSecret>,
 }
 
 pub(super) fn apply_mechanics(
@@ -453,6 +455,22 @@ pub(super) fn apply_mechanics(
     apply_fact_updates(state, &gm_plan.fact_updates);
     apply_overlay_updates(state, &gm_plan.overlay_updates);
     apply_lore_card_updates(state, &gm_plan.lore_card_updates);
+    apply_secret_updates(state, &gm_plan.secret_updates);
+    let revealed_secrets = reveal_secrets(state, &gm_plan.reveal_secrets);
+    for secret in &revealed_secrets {
+        let told = gm_plan
+            .discovery
+            .as_deref()
+            .is_some_and(|d| d.contains(secret.text.trim()));
+        if !told {
+            secondary_event_cards.push((
+                secret.text.clone(),
+                StageEventCard::Discovery {
+                    text: secret.text.clone(),
+                },
+            ));
+        }
+    }
 
     if let Some(consequence) = &gm_plan.lasting_consequence
         && !consequence.trim().is_empty()
@@ -474,5 +492,6 @@ pub(super) fn apply_mechanics(
         dice_outcome_text,
         dice_event_card,
         secondary_event_cards,
+        revealed_secrets,
     }
 }

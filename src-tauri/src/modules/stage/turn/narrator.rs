@@ -35,7 +35,26 @@ pub(super) async fn narrate_turn(
         dice_outcome_text,
         dice_event_card,
         secondary_event_cards,
+        revealed_secrets,
     } = outcome;
+    // Uncovered in this beat: the narrator lets the party find it out now.
+    let revealed_text = if revealed_secrets.is_empty() {
+        String::new()
+    } else {
+        format!(
+            "
+Uncovered now (let the party discover this in your narration):
+{}",
+            revealed_secrets
+                .iter()
+                .map(|s| format!("- {}", s.text.trim()))
+                .collect::<Vec<_>>()
+                .join(
+                    "
+"
+                )
+        )
+    };
 
     let executor_system_prompt = format!(
         r#"[STAGE — GAME MASTER NARRATOR]
@@ -48,7 +67,7 @@ Party: {party}
 Player: {user_name}
 
 Plan to follow:
-{narration_plan}
+{narration_plan}{revealed_text}
 {dice_outcome}
 
 RULES:

@@ -187,6 +187,9 @@ Scene lore cards: {lore_titles}
 Lasting consequences (chronicle, oldest first): {chronicle}
 Combat: {combat}
 
+GAME MASTER'S SCREEN (open secrets only you know – hidden motives, traps, threats, off-screen goals):
+{gm_screen}
+
 TASK:
 Analyse the player's latest action and plan the next dramatic beat.
 Reply ONLY with a single valid JSON object in this format:
@@ -219,7 +222,10 @@ Reply ONLY with a single valid JSON object in this format:
   "fact_updates": {{}},
   "overlay_updates": [],
   "lore_card_updates": [],
-  "discovery": null
+  "discovery": null,
+  "secret_updates": [],
+  "reveal_secrets": [],
+  "scene_image": false
 }}
 
 RULES:
@@ -240,6 +246,10 @@ RULES:
 - fact_updates: keep the established facts true: {{"short_key": "new value"}} to add or change one, {{"short_key": null}} when it no longer holds. Short snake_case keys, values in {reply_language}.
 - overlay_updates: when a character's situation in the story changes: {{"name": "Name", "current_role": "…", "arc_stage": "…", "facts": {{"short_key": "value or null"}}}}; omit unchanged fields.
 - lore_card_updates: new or changed scene knowledge worth remembering: {{"title": "…", "content": "…", "keywords": ["word that brings it up"], "audience": "party" or "gm"}}; "gm" for secrets the players must discover. Same title updates a card.
+- secret_updates: keep the screen alive: {{"id": "short_snake_case_id", "kind": "motive|trap|threat|goal|other", "about": "NPC name or place, or empty", "text": "…"}} for a hidden motive, a trap, a threat or what someone pursues off-screen; same id changes one. Texts in {reply_language}.
+- The screen is SECRET: never put an open secret into narration_plan, player_choices, discovery or lasting_consequence. Let it show only through hints, signs and NPC behaviour until the party really uncovers it (a successful check, a confession, springing the trap).
+- reveal_secrets: ids of secrets the party uncovers in this very beat; only then may narration_plan and discovery tell them.
+- scene_image: true only when this beat deserves a new picture (arriving at a striking new place, a dramatic reveal or monster); otherwise false.
 - inventory_add: optional items with name, description, quantity, item_type and optionally hp_restore/stress_restore/clears_condition. inventory_remove holds IDs or names.
 {encounter_rule}
 - Reply ONLY with raw JSON, without explanations or markdown before or after it!"#,
@@ -304,6 +314,7 @@ RULES:
         overlays = overlays_context(state),
         lore_titles = lore_card_titles(state),
         chronicle = chronicle_context(state),
+        gm_screen = gm_screen_context(state),
         combat = combat_context,
         first_party_or_player = state
             .definition
@@ -365,7 +376,8 @@ RULES:
         .with_abort(inference.generate_direct(plan_req))
         .await?;
     let plan_raw = plan_raw.unwrap_or_default();
-    let gm_plan = repair_and_parse_gm_plan(&plan_raw);
+    let mut gm_plan = repair_and_parse_gm_plan(&plan_raw);
+    scrub_secret_leaks(&mut gm_plan, state);
 
     for draft in &gm_plan.spawn_npcs {
         if let Err(error) = upsert_npc(state, draft.clone()) {

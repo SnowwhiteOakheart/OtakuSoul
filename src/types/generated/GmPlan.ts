@@ -9,6 +9,7 @@ import type { PlanLoreCard } from "./PlanLoreCard";
 import type { PlanObjectiveUpdate } from "./PlanObjectiveUpdate";
 import type { PlanOverlayUpdate } from "./PlanOverlayUpdate";
 import type { PlanResourceDelta } from "./PlanResourceDelta";
+import type { PlanSecretUpdate } from "./PlanSecretUpdate";
 import type { StageNpcDraft } from "./StageNpcDraft";
 import type { TaggedChoice } from "./TaggedChoice";
 
@@ -24,4 +25,16 @@ map_change?: string, player_choices: Array<TaggedChoice>, lasting_consequence: s
 /**
  * Established facts to set (`"key": "value"`) or drop (`"key": null`).
  */
-fact_updates: { [key in string]: string | null }, overlay_updates: Array<PlanOverlayUpdate>, lore_card_updates: Array<PlanLoreCard>, discovery: string | null, spawn_npcs: Array<StageNpcDraft>, despawn_npcs: Array<string>, };
+fact_updates: { [key in string]: string | null }, overlay_updates: Array<PlanOverlayUpdate>, lore_card_updates: Array<PlanLoreCard>, discovery: string | null, spawn_npcs: Array<StageNpcDraft>, despawn_npcs: Array<string>, 
+/**
+ * The beat deserves a new scene picture (arrival somewhere striking, a big reveal).
+ */
+scene_image: boolean, 
+/**
+ * Secrets to add or change behind the game master's screen.
+ */
+secret_updates: Array<PlanSecretUpdate>, 
+/**
+ * Ids of secrets the party discovers in this beat.
+ */
+reveal_secrets: Array<string>, };

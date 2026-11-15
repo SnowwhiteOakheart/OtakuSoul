@@ -7,6 +7,7 @@ import type { CharacterOverlay } from "./CharacterOverlay";
 import type { ConsequenceEntry } from "./ConsequenceEntry";
 import type { EncounterState } from "./EncounterState";
 import type { ExploreEvent } from "./ExploreEvent";
+import type { GmSecret } from "./GmSecret";
 import type { InventoryItem } from "./InventoryItem";
 import type { SceneDefinition } from "./SceneDefinition";
 import type { SceneTurnMessage } from "./SceneTurnMessage";
@@ -44,6 +45,10 @@ overlays: Array<CharacterOverlay>,
  * Scene lore with an audience: the party, or only the game master.
  */
 lore_cards: Array<StageLoreCard>, 
+/**
+ * The game master's screen: secrets only the planner sees until it reveals them.
+ */
+gm_secrets: Array<GmSecret>, 
 /**
  * Per character: how much of the log has gone into their Soul Memory.
  */

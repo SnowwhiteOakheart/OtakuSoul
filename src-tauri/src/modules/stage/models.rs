@@ -354,6 +354,10 @@ pub struct SceneDefinition {
     /// Rules of the scene; absent = narrative scene (stress, free checks).
     #[serde(default)]
     pub rules: Option<SceneRules>,
+    /// Secrets the game master starts with (copied into the state when the story begins).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[ts(as = "Option<Vec<GmSecret>>", optional)]
+    pub gm_secrets: Vec<GmSecret>,
 }
 
 impl SceneDefinition {
@@ -433,7 +437,52 @@ pub struct StageStreamEvent {
     pub text: String,
     /// The message is complete.
     pub done: bool,
+    /// Not text but the scene's new look and sound, sent as soon as the plan is applied (the
+    /// other fields are then empty).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub media: Option<StageMedia>,
 }
+
+/// What the plan changed about place, picture and sound, before the narration streams.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct StageMedia {
+    pub scene_id: String,
+    pub location: String,
+    pub time_of_day: String,
+    pub weather: String,
+    pub current_bg: Option<String>,
+    pub current_ambient: Option<String>,
+    pub current_music_mood: Option<String>,
+    /// The game master asks for a new scene picture (the interface decides whether to make one).
+    pub scene_image: bool,
+}
+
+/// Something only the game master knows (the "GM screen"): a hidden motive, a trap, a threat or
+/// an off-screen goal. The narrator and the characters never see it until it is revealed.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct GmSecret {
+    pub id: String,
+    /// `motive`, `trap`, `threat`, `goal` or `other`.
+    #[serde(default = "default_secret_kind")]
+    pub kind: String,
+    /// Whom or what it concerns (an NPC's name, a place); may be empty.
+    #[serde(default)]
+    pub about: String,
+    pub text: String,
+    /// Revealed to the party; the game master keeps it only as background.
+    #[serde(default)]
+    pub revealed: bool,
+}
+
+pub(super) fn default_secret_kind() -> String {
+    "other".to_string()
+}
+
+/// The kinds of secrets the planner and the editor know.
+pub const SECRET_KINDS: [&str; 5] = ["motive", "trap", "threat", "goal", "other"];
 
 /// Receives live text during a turn.
 pub type StageStream<'a> = &'a (dyn Fn(StageStreamEvent) + Send + Sync);
@@ -525,6 +574,9 @@ pub struct SceneState {
     /// Scene lore with an audience: the party, or only the game master.
     #[serde(default)]
     pub lore_cards: Vec<StageLoreCard>,
+    /// The game master's screen: secrets only the planner sees until it reveals them.
+    #[serde(default)]
+    pub gm_secrets: Vec<GmSecret>,
     /// Per character: how much of the log has gone into their Soul Memory.
     #[serde(default)]
     pub memory_sync: HashMap<String, usize>,

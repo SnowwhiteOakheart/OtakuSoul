@@ -210,6 +210,12 @@ export function startMockLlm() {
             lore_card_updates: stats.loreUpdates ?? [],
             spawn_npcs: stats.spawnNpc ? [stats.spawnNpc] : [],
             despawn_npcs: stats.despawnNpc ? [stats.despawnNpc] : [],
+            // Game master's screen, music and the wish for a scene picture (test stage-gm-screen).
+            ...(stats.musicMood ? { music_mood: stats.musicMood } : {}),
+            ...(stats.location ? { location: stats.location } : {}),
+            ...(stats.sceneImage ? { scene_image: true } : {}),
+            ...(stats.secretUpdates ? { secret_updates: stats.secretUpdates } : {}),
+            ...(stats.revealSecrets ? { reveal_secrets: stats.revealSecrets } : {}),
             ...(stats.stageEncounter ? { encounter: stats.stageEncounter } : {}),
             // `calmPlanner`: no damage or condition (screenshots of a peaceful story).
             ...(stats.calmPlanner ? {} : {

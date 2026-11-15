@@ -800,6 +800,13 @@ mod tests {
         ))
         .unwrap();
         let mut state = build_initial_scene_state(&def);
+        state.gm_secrets.push(crate::modules::stage::GmSecret {
+            id: "trap".into(),
+            kind: "trap".into(),
+            about: String::new(),
+            text: "GM_SCREEN_SECRET".into(),
+            revealed: false,
+        });
         let message = |role: &str, name: &str, text: &str, mode: &str| SceneTurnMessage {
             id: "m".into(),
             sender_id: name.into(),
@@ -839,6 +846,10 @@ mod tests {
         assert!(
             !html.contains("&lt;think&gt;") && !html.contains("emotion:"),
             "reasoning does not leak into the page"
+        );
+        assert!(
+            !html.contains("GM_SCREEN_SECRET"),
+            "the game master's screen stays out of the story"
         );
     }
 

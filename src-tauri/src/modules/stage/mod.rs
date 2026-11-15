@@ -30,6 +30,7 @@ mod party;
 mod plan;
 pub use otakusoul_rules5e as rules5e;
 mod scenes;
+mod secrets;
 #[cfg(test)]
 mod tests;
 mod turn;
@@ -48,5 +49,6 @@ pub use offscreen::*;
 pub use party::*;
 pub use plan::*;
 pub use scenes::*;
+pub use secrets::*;
 pub use turn::*;
 pub use world::*;

@@ -53,6 +53,18 @@ pub struct PlanLoreCard {
     pub audience: String,
 }
 
+/// A new or changed secret behind the game master's screen (matched by `id`).
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct PlanSecretUpdate {
+    pub id: String,
+    #[serde(default = "default_secret_kind")]
+    pub kind: String,
+    #[serde(default)]
+    pub about: String,
+    pub text: String,
+}
+
 /// Adds or removes a condition (e.g. "Poisoned") on the player or a companion.
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
@@ -237,6 +249,15 @@ pub struct GmPlan {
     pub spawn_npcs: Vec<StageNpcDraft>,
     #[serde(default)]
     pub despawn_npcs: Vec<String>,
+    /// The beat deserves a new scene picture (arrival somewhere striking, a big reveal).
+    #[serde(default)]
+    pub scene_image: bool,
+    /// Secrets to add or change behind the game master's screen.
+    #[serde(default)]
+    pub secret_updates: Vec<PlanSecretUpdate>,
+    /// Ids of secrets the party discovers in this beat.
+    #[serde(default)]
+    pub reveal_secrets: Vec<String>,
 }
 
 /// Robust JSON repair function that extracts and parses GM JSON plans

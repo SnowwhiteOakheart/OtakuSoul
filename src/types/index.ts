@@ -53,6 +53,8 @@ import type { ArchivedArc } from './generated/ArchivedArc';
 import type { CharacterOverlay } from './generated/CharacterOverlay';
 import type { StageLoreCard } from './generated/StageLoreCard';
 import type { StageStreamEvent } from './generated/StageStreamEvent';
+import type { StageMedia } from './generated/StageMedia';
+import type { GmSecret } from './generated/GmSecret';
 import type { Attachment } from './generated/Attachment';
 import type { TranslateRequest } from './generated/TranslateRequest';
 import type { ReplyIdeasRequest } from './generated/ReplyIdeasRequest';
@@ -215,6 +217,8 @@ export type {
   CharacterOverlay,
   StageLoreCard,
   StageStreamEvent,
+  StageMedia,
+  GmSecret,
   Attachment,
   TranslateRequest,
   ReplyIdeasRequest,
@@ -674,6 +678,8 @@ export interface SceneDefinition {
   last_played?: string | null;
   /** 5e rules engine; absent = narrative scene. */
   rules?: SceneRules | null;
+  /** Secrets the game master starts with (copied into the state when the story begins). */
+  gm_secrets?: GmSecret[];
 }
 
 export interface InventoryItem {
@@ -812,6 +818,8 @@ export interface SceneState {
   turns_since_audit?: number;
   overlays?: CharacterOverlay[];
   lore_cards?: StageLoreCard[];
+  /** The game master's screen: secrets only the planner sees until it reveals them. */
+  gm_secrets?: GmSecret[];
   memory_sync?: Record<string, number>;
   /** What each character was told in private (whispers). */
   private_knowledge?: Record<string, string[]>;

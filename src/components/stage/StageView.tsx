@@ -49,6 +49,7 @@ import {
   MoreHorizontal,
   Music,
   SlidersHorizontal,
+  Sparkles,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { ContributeDialog } from '../hub/ContributeDialog';
@@ -93,11 +94,15 @@ export const StageView: React.FC = () => {
     fetchStageScenes,
     replyLanguage,
     settingsLoaded,
+    stageSceneImageWanted,
+    setStageSceneImageWanted,
+    stageAutoPlay,
   } = useStoreFields(
     'stageState', 'fetchStageState', 'saveStageScene', 'updateWorldState', 'setClockProgress',
     'addClock', 'deleteClock', 'exportStageMarkdown', 'isProcessingStageTurn',
     'generateSceneImage', 'isGeneratingSceneImage', 'stageReadAloud', 'setStageReadAloud', 'setSelectedStageFolder',
     'restoreStageScene', 'stageLastScene', 'loadStageScene', 'fetchStageScenes', 'replyLanguage', 'settingsLoaded',
+    'stageSceneImageWanted', 'setStageSceneImageWanted', 'stageAutoPlay',
   );
   // Gallery (choose a story) or the running story; decided once the remembered scene is restored.
   const [view, setView] = useState<'loading' | 'gallery' | 'play'>('loading');
@@ -190,6 +195,16 @@ export const StageView: React.FC = () => {
   const [showMusic, setShowMusic] = useState(false);
   const music = useStageMusic(stageState, musicWanted);
   const musicOn = musicWanted && music.mood !== null;
+  // Scene pictures the game master asks for: made after the turn, when the language model no
+  // longer computes (auto-play keeps the wish until it ends), only when switched on and the
+  // background may change.
+  const [autoImages, setAutoImages] = usePersistentFlag('otakusoul.stageAutoImages', false);
+  useEffect(() => {
+    if (!stageSceneImageWanted || isProcessingStageTurn || stageAutoPlay) return;
+    setStageSceneImageWanted(false);
+    if (!autoImages || !stageState || stageState.definition.lock_bg || isGeneratingSceneImage) return;
+    void generateSceneImage('stage').catch((error: unknown) => console.warn('Automatic scene picture failed:', error));
+  }, [stageSceneImageWanted, isProcessingStageTurn, stageAutoPlay, autoImages, stageState, isGeneratingSceneImage, generateSceneImage, setStageSceneImageWanted]);
   /* oxlint-disable react/set-state-in-effect -- the synthesized campfire is an external audio source. */
   useEffect(() => {
     // A scene sound replaces the synthesized campfire.
@@ -557,6 +572,12 @@ export const StageView: React.FC = () => {
                 onSelect: () => {
                   if (!isGeneratingSceneImage && stageState) void handleGenerateBackground();
                 },
+              },
+              {
+                label: autoImages ? t('stage.menuAutoImagesOn') : t('stage.menuAutoImagesOff'),
+                description: t('stage.autoImagesHint'),
+                icon: Sparkles,
+                onSelect: () => setAutoImages(!autoImages),
               },
               {
                 label: stageState?.definition.lock_bg ? t('stage.menuUnlockBg') : t('stage.menuLockBg'),

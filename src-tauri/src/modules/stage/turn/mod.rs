@@ -139,7 +139,13 @@ pub async fn execute_stage_turn(
     let Some(plan) = planner::plan_turn(&ctx, &mut state).await else {
         return finish_turn(engine, state);
     };
+    let location_before = state.world.location.clone();
     let outcome = mechanics::apply_mechanics(&ctx, &mut state, &plan.gm_plan, &plan.ambient_files);
+    // Place, picture and sound change now, while the narration is still to come.
+    (ctx.on_stream)(media_event(
+        &state,
+        plan.gm_plan.scene_image && scene_image_due(&state, &location_before),
+    ));
     if !narrator::narrate_turn(&ctx, &mut state, &plan.gm_plan, outcome, continues).await {
         return finish_turn(engine, state);
     }
@@ -201,6 +207,51 @@ pub async fn execute_stage_turn(
     finish_turn(engine, state)
 }
 
+/// Log lines between two scene pictures the game master asks for (a new place is always due).
+const SCENE_IMAGE_MIN_LINES: usize = 12;
+
+/// The planner's wish for a picture counts when the background may change and either the
+/// party arrived somewhere new or the last picture is a while back.
+fn scene_image_due(state: &SceneState, location_before: &str) -> bool {
+    if state.definition.lock_bg {
+        return false;
+    }
+    let moved = !state
+        .world
+        .location
+        .trim()
+        .eq_ignore_ascii_case(location_before.trim());
+    let since_last = state
+        .chat_log
+        .iter()
+        .rev()
+        .take_while(|m| m.images.is_empty())
+        .count();
+    moved || since_last >= SCENE_IMAGE_MIN_LINES
+}
+
+/// The scene's look and sound after the plan, as a `stage-stream` event without text.
+fn media_event(state: &SceneState, scene_image: bool) -> StageStreamEvent {
+    StageStreamEvent {
+        message_id: String::new(),
+        sender_name: String::new(),
+        sender_role: String::new(),
+        avatar_url: None,
+        text: String::new(),
+        done: true,
+        media: Some(StageMedia {
+            scene_id: state.definition.id.clone(),
+            location: state.world.location.clone(),
+            time_of_day: state.world.time_of_day.clone(),
+            weather: state.world.weather.clone(),
+            current_bg: state.current_bg.clone(),
+            current_ambient: state.current_ambient.clone(),
+            current_music_mood: state.current_music_mood.clone(),
+            scene_image,
+        }),
+    }
+}
+
 /// Persists completed work, including the player line when planning was stopped.
 fn finish_turn(engine: &StageEngine, mut state: SceneState) -> Result<SceneState, String> {
     state.current_turn_actor = "PLAYER".to_string();
@@ -227,10 +278,53 @@ pub(super) async fn stream_message(
         avatar_url: avatar_url.clone(),
         text,
         done,
+        media: None,
     };
     let result = inference
         .stream_text(request, |text| on_stream(event(text.to_string(), false)))
         .await;
     on_stream(event(String::new(), true));
     result
+}
+
+#[cfg(test)]
+mod media_tests {
+    use super::*;
+
+    #[test]
+    fn a_picture_is_due_after_moving_or_after_a_while_never_when_locked() {
+        let mut state = StageEngine::new().get_state();
+        let here = state.world.location.clone();
+        state.chat_log.last_mut().unwrap().images = vec!["bild.png".into()];
+        assert!(
+            !scene_image_due(&state, &here),
+            "too soon at the same place"
+        );
+        assert!(
+            scene_image_due(&state, "Elsewhere"),
+            "a new place is always due"
+        );
+        let line = state.chat_log.last().unwrap().clone();
+        for _ in 0..SCENE_IMAGE_MIN_LINES {
+            state.chat_log.push(SceneTurnMessage {
+                images: Vec::new(),
+                ..line.clone()
+            });
+        }
+        assert!(scene_image_due(&state, &here));
+        state.definition.lock_bg = true;
+        assert!(!scene_image_due(&state, "Elsewhere"));
+    }
+
+    #[test]
+    fn the_media_event_carries_the_scene_and_no_text() {
+        let mut state = StageEngine::new().get_state();
+        state.current_music_mood = Some("tension".into());
+        let event = media_event(&state, true);
+        assert!(event.text.is_empty() && event.message_id.is_empty());
+        let media = event.media.unwrap();
+        assert_eq!(media.scene_id, state.definition.id);
+        assert_eq!(media.current_music_mood.as_deref(), Some("tension"));
+        assert!(media.scene_image);
+    }
 }

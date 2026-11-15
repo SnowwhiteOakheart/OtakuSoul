@@ -66,6 +66,9 @@ export interface StageSlice {
   /** Messages of the running turn as they stream in; replaced by the turn result. */
   stageLive: StageStreamEvent[];
   applyStageStream: (event: StageStreamEvent) => void;
+  /** The game master asked for a new scene picture in this turn (the view decides whether to make one). */
+  stageSceneImageWanted: boolean;
+  setStageSceneImageWanted: (wanted: boolean) => void;
   /** Stops the running turn after the current text (remaining speakers are skipped). */
   stopStageTurn: () => Promise<void>;
   /** Lets the story run on without a player action (the game master plans the next beat). */
@@ -159,8 +162,28 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
 
   stageLive: [],
 
+  stageSceneImageWanted: false,
+
+  setStageSceneImageWanted: (wanted) => set({ stageSceneImageWanted: wanted }),
+
   applyStageStream: (event) =>
     set((state) => {
+      // Place, picture and sound of the plan: shown at once, before the narration arrives.
+      if (event.media) {
+        const media = event.media;
+        const scene = state.stageState;
+        if (!scene || scene.definition.id !== media.scene_id) return {};
+        return {
+          stageState: {
+            ...scene,
+            world: { ...scene.world, location: media.location, time_of_day: media.time_of_day, weather: media.weather },
+            current_bg: media.current_bg,
+            current_ambient: media.current_ambient,
+            current_music_mood: media.current_music_mood,
+          },
+          ...(media.scene_image ? { stageSceneImageWanted: true } : {}),
+        };
+      }
       const live = state.stageLive;
       const index = live.findIndex((m) => m.message_id === event.message_id);
       if (index === -1) return { stageLive: [...live, event] };

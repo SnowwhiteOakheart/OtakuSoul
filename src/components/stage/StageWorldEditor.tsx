@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
-import { Plus, Save, Trash2, X } from 'lucide-react';
+import { EyeOff, Plus, Save, Trash2, X } from 'lucide-react';
 import { useStoreFields } from '../../store/useAppStore';
-import { useTranslation } from '../../i18n';
+import { useTranslation, type TranslationKey } from '../../i18n';
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { toast } from '../ui/feedback';
 import { errorMessage } from '../../utils/errors';
-import type { CampaignObjective, CharacterOverlay, InventoryItem, SceneState, StageLoreCard, StageRelationship, StoryArc } from '../../types';
+import type { CampaignObjective, CharacterOverlay, GmSecret, InventoryItem, SceneState, StageLoreCard, StageRelationship, StoryArc } from '../../types';
 
 /** The parts of a scene the world editor changes; everything else stays as the latest state has it. */
 type CampaignDraft = Pick<SceneState, 'arcs' | 'objectives' | 'relationships' | 'inventory'> & {
   facts: [string, string][];
   overlays: CharacterOverlay[];
   lore_cards: StageLoreCard[];
+  gm_secrets: GmSecret[];
 };
+
+/** Kinds of secrets behind the game master's screen (`SECRET_KINDS` in the backend). */
+const SECRET_KINDS = ['motive', 'trap', 'threat', 'goal', 'other'] as const;
 
 /** Overlay facts are edited as `key: value` lines. */
 const factsToText = (facts: Record<string, string>) => Object.entries(facts).map(([k, v]) => `${k}: ${v}`).join('\n');
@@ -75,6 +79,7 @@ export const StageWorldEditor: React.FC<{ onClose: () => void }> = ({ onClose })
           inventory: stageState.inventory.map((i) => ({ ...i })),
           overlays: (stageState.overlays ?? []).map((o) => ({ ...o, facts: { ...o.facts } })),
           lore_cards: (stageState.lore_cards ?? []).map((c) => ({ ...c, keywords: [...c.keywords] })),
+          gm_secrets: (stageState.gm_secrets ?? []).map((secret) => ({ ...secret })),
         }
       : null,
   );
@@ -100,6 +105,7 @@ export const StageWorldEditor: React.FC<{ onClose: () => void }> = ({ onClose })
         inventory: draft.inventory.filter((item) => item.name.trim()),
         overlays: draft.overlays.filter((overlay) => overlay.name.trim()),
         lore_cards: draft.lore_cards.filter((card) => card.title.trim() && card.content.trim()),
+        gm_secrets: draft.gm_secrets.filter((secret) => secret.text.trim()),
       });
     } catch (e) {
       // The draft stays open for another try.
@@ -286,6 +292,47 @@ export const StageWorldEditor: React.FC<{ onClose: () => void }> = ({ onClose })
               </div>
             ))}
           </Section>
+
+          {/* Spoilers: folded until the player opens them on purpose. */}
+          <details className="group rounded-xl border border-slate-800 bg-app/40" data-testid="stage-gm-screen">
+            <summary className="flex items-center gap-2 cursor-pointer select-none px-3 py-2 text-xs font-bold text-slate-200 uppercase tracking-wider">
+              <EyeOff className="w-3.5 h-3.5" aria-hidden="true" /> {t('stageWorld.gmScreen')}
+              <span className="ml-auto normal-case font-normal tracking-normal text-slate-400">
+                {t('stageWorld.gmScreenCount', { open: draft.gm_secrets.filter((s) => !s.revealed).length })}
+              </span>
+            </summary>
+            <div className="p-3 pt-0">
+              <Section
+                title={t('stageWorld.gmSecrets')}
+                addLabel={t('stageWorld.add')}
+                onAdd={() => update('gm_secrets', [...draft.gm_secrets, { id: newId('secret'), kind: 'other', about: '', text: '', revealed: false }])}
+              >
+                <p className="text-xs text-slate-400">{t('stageWorld.gmScreenHint')}</p>
+                {draft.gm_secrets.map((secret, index) => (
+                  <div key={secret.id} className="p-3 rounded-xl bg-app/60 border border-slate-800 space-y-2">
+                    <div className="flex gap-2 items-center">
+                      <select aria-label={t('stageWorld.secretKind')} className={`w-52 ${field}`} value={secret.kind}
+                        onChange={(e) => update('gm_secrets', patch(draft.gm_secrets, index, { kind: e.target.value }))}>
+                        {SECRET_KINDS.map((kind) => (
+                          <option key={kind} value={kind}>{t(`stageWorld.secretKind.${kind}` as TranslationKey)}</option>
+                        ))}
+                      </select>
+                      <input aria-label={t('stageWorld.secretAbout')} className={input} value={secret.about} placeholder={t('stageWorld.secretAbout')}
+                        onChange={(e) => update('gm_secrets', patch(draft.gm_secrets, index, { about: e.target.value }))} />
+                      <RemoveButton label={t('common.delete')} onClick={() => update('gm_secrets', draft.gm_secrets.filter((_, i) => i !== index))} />
+                    </div>
+                    <textarea aria-label={t('stageWorld.secretText')} className={input} rows={2} value={secret.text}
+                      onChange={(e) => update('gm_secrets', patch(draft.gm_secrets, index, { text: e.target.value }))} />
+                    <label className="flex items-center gap-1.5 text-xs text-slate-300">
+                      <input type="checkbox" checked={secret.revealed}
+                        onChange={(e) => update('gm_secrets', patch(draft.gm_secrets, index, { revealed: e.target.checked }))} />
+                      {t('stageWorld.revealed')}
+                    </label>
+                  </div>
+                ))}
+              </Section>
+            </div>
+          </details>
         </div>
 
         <div className="flex justify-end gap-2 p-4 border-t border-slate-800">
