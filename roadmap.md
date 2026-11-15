@@ -161,6 +161,10 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 - [ ] **C8 · Battlemap aus Text:** Improvisiert der Spielleiter einen Ort, erzeugt `stable-diffusion.cpp` eine
   Draufsicht, aus der Wände, Hindernisse und Sichtlinien für die 5e-Engine abgeleitet werden. Ungewiss, ob die
   Erkennung zuverlässig genug wird – zuerst einen kleinen Versuch.
+  - Versuch vorbereitet (15.11.2026): `tools/battlemap_probe.py` erzeugt Draufsichten mit den lokalen Modellen (Flux 1/2,
+    Qwen-Image über `sd-cli`), liest daraus ein Raster im Kartenformat (Pixelverfahren oder Qwen3-VL) und bewertet die
+    Spielbarkeit. Selbsttest mit den drei Karten als verrauschte Bilder: 96–97 % Übereinstimmung (Obergrenze des
+    Pixelverfahrens). Offen: echte Bilder erzeugen und auswerten (GPU frei).
 
 > Alleinstellungsmerkmal: Das Desktop-Pet zusammen mit Gedächtnis und proaktiven Nachrichten –
 > „Deine Figur lebt auf deinem PC.“ Punkte, die das stärken (C6), haben bei gleicher Bewertung Vorrang.
