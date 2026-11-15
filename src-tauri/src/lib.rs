@@ -183,6 +183,12 @@ pub fn run() {
             }
             #[cfg(desktop)]
             commands::desktop_pet::register_shortcut(app.handle());
+            // Linux and the BSDs: a click on a chat notification opens that chat.
+            #[cfg(all(
+                unix,
+                not(any(target_os = "macos", target_os = "android", target_os = "ios"))
+            ))]
+            commands::app::register_notification_click(app.handle());
             // Attachment files left by failed or stopped sends; in the background.
             let db = app.state::<AppState>().memory_db.clone();
             std::thread::spawn(move || match db.attachment_references() {

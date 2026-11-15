@@ -21,8 +21,8 @@ export function notificationBody(text: string): string {
 }
 
 /**
- * Shows a system notification; asks for the permission the first time. With a `chat`, Windows
- * opens that chat on a click (elsewhere the plugin's notification has no click action). Failures
+ * Shows a system notification; asks for the permission the first time. With a `chat`, Windows and
+ * Linux open that chat on a click (on macOS the plugin's notification has no click action). Failures
  * (no notification service, permission denied) are only logged: the message is in the chat anyway.
  */
 export async function notify(title: string, body: string, chat?: ChatTarget): Promise<void> {

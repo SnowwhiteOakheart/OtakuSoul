@@ -176,9 +176,71 @@ pub fn hide_main_window(window: tauri::WebviewWindow) -> Result<(), String> {
 /// Event for the main window when a chat notification was clicked: `{ charId, chatId }`.
 pub const NOTIFICATION_OPEN_CHAT_EVENT: &str = "notification-open-chat";
 
+/// Brings the main window back (also from the tray) and, with a chat target, asks it to open
+/// that chat.
+#[cfg(any(
+    windows,
+    all(
+        unix,
+        not(any(target_os = "macos", target_os = "android", target_os = "ios"))
+    )
+))]
+fn open_chat_from_notification(app: &tauri::AppHandle, target: Option<serde_json::Value>) {
+    use tauri::{Emitter, Manager};
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.unminimize();
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+    if let Some(target) = target {
+        let _ = app.emit_to("main", NOTIFICATION_OPEN_CHAT_EVENT, target);
+    }
+}
+
+/// The chat a clicked notification belongs to, from the `extra` fields `notify_chat` sets.
+#[cfg_attr(
+    not(all(
+        unix,
+        not(any(target_os = "macos", target_os = "android", target_os = "ios"))
+    )),
+    allow(dead_code)
+)]
+fn chat_target(
+    extra: &std::collections::HashMap<String, serde_json::Value>,
+) -> Option<serde_json::Value> {
+    let char_id = extra.get("charId")?.as_str()?;
+    let chat_id = extra.get("chatId")?.as_str()?;
+    Some(serde_json::json!({ "charId": char_id, "chatId": chat_id }))
+}
+
+/// Linux and the BSDs: the notification plugin reports a click over D-Bus once a handler exists.
+/// A click on a chat notification opens that chat, on any other one the main window comes back.
+/// Called once from `setup`.
+#[cfg(all(
+    unix,
+    not(any(target_os = "macos", target_os = "android", target_os = "ios"))
+))]
+pub fn register_notification_click(app: &tauri::AppHandle) {
+    use tauri_plugin_notification::NotificationExt;
+    let handle = app.clone();
+    let _ = app.notification().on_action(move |performed| {
+        if performed.action_id() != "tap" {
+            return;
+        }
+        let target = performed
+            .notification()
+            .and_then(|n| chat_target(n.extra()));
+        // The handler runs on the plugin's signal thread; window calls belong on the main thread.
+        let app = handle.clone();
+        let _ = handle.run_on_main_thread(move || open_chat_from_notification(&app, target));
+    });
+}
+
 /// Shows a desktop notification for a message in a chat; a click on it brings the main window
-/// back (also from the tray) and opens that chat. Only Windows reports the click: elsewhere, and
-/// when the toast cannot be shown, `false` lets the webview fall back to the notification plugin.
+/// back (also from the tray) and opens that chat. Windows shows a toast of its own, Linux and the
+/// BSDs go through the notification plugin, whose click `register_notification_click` receives.
+/// On macOS, and when the notification cannot be shown, `false` lets the webview fall back to the
+/// plugin without a click action.
 #[tauri::command]
 pub fn notify_chat(
     app: tauri::AppHandle,
@@ -189,7 +251,6 @@ pub fn notify_chat(
 ) -> bool {
     #[cfg(windows)]
     {
-        use tauri::{Emitter, Manager};
         use tauri_winrt_notification::Toast;
         let target = serde_json::json!({ "charId": char_id, "chatId": chat_id });
         let handle = app.clone();
@@ -197,12 +258,7 @@ pub fn notify_chat(
             .title(&title)
             .text1(&body)
             .on_activated(move |_| {
-                if let Some(window) = handle.get_webview_window("main") {
-                    let _ = window.unminimize();
-                    let _ = window.show();
-                    let _ = window.set_focus();
-                }
-                let _ = handle.emit_to("main", NOTIFICATION_OPEN_CHAT_EVENT, target.clone());
+                open_chat_from_notification(&handle, Some(target.clone()));
                 Ok(())
             })
             .show();
@@ -211,10 +267,55 @@ pub fn notify_chat(
         }
         shown.is_ok()
     }
-    #[cfg(not(windows))]
+    #[cfg(all(
+        unix,
+        not(any(target_os = "macos", target_os = "android", target_os = "ios"))
+    ))]
+    {
+        use tauri_plugin_notification::NotificationExt;
+        let shown = app
+            .notification()
+            .builder()
+            .title(title)
+            .body(body)
+            .extra("charId", char_id)
+            .extra("chatId", chat_id)
+            .show();
+        if let Err(e) = &shown {
+            tracing::warn!("Benachrichtigung nicht angezeigt: {e}");
+        }
+        shown.is_ok()
+    }
+    #[cfg(not(any(
+        windows,
+        all(
+            unix,
+            not(any(target_os = "macos", target_os = "android", target_os = "ios"))
+        )
+    )))]
     {
         let _ = (app, title, body, char_id, chat_id);
         false
+    }
+}
+
+#[cfg(test)]
+mod notification_tests {
+    use super::chat_target;
+    use std::collections::HashMap;
+
+    #[test]
+    fn chat_target_needs_both_ids() {
+        let mut extra = HashMap::new();
+        extra.insert("charId".to_string(), serde_json::json!("c1"));
+        assert_eq!(chat_target(&extra), None);
+        extra.insert("chatId".to_string(), serde_json::json!("chat-7"));
+        assert_eq!(
+            chat_target(&extra),
+            Some(serde_json::json!({ "charId": "c1", "chatId": "chat-7" }))
+        );
+        extra.insert("chatId".to_string(), serde_json::json!(7));
+        assert_eq!(chat_target(&extra), None);
     }
 }
 
