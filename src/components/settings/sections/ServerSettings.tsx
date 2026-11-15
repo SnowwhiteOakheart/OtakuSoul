@@ -104,7 +104,6 @@ export const ServerSettings = ({ onNavigate }: { onNavigate?: (section: Settings
       : 0;
 
   const handleRecommendLayers = () => {
-    const selectedModel = scannedModels.find((model) => model.path === serverConfig.model_path);
     const modelName = (selectedModel?.name || serverConfig.model_path).toLowerCase();
     // Only a guess for files without a readable header; the backend reads size and layers itself.
     const isLarge = modelName.includes('27b') || modelName.includes('32b');

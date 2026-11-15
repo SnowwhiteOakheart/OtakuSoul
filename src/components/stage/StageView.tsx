@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { ClockWidget } from './ClockWidget';
 import { DiceRoller } from './DiceRoller';
@@ -60,6 +60,16 @@ import { confirmDialog, toast } from '../ui/feedback';
 import { errorMessage } from '../../utils/errors';
 import { languageCode, localizeSceneHeader } from '../../utils/cardI18n';
 
+/** Short windows (e.g. 960×640) leave little room below the headers: the turn controls go compact there. */
+const SHORT_WINDOW = '(max-height: 720px)';
+const subscribeShortWindow = (onChange: () => void) => {
+  if (typeof window.matchMedia !== 'function') return () => undefined;
+  const query = window.matchMedia(SHORT_WINDOW);
+  query.addEventListener('change', onChange);
+  return () => query.removeEventListener('change', onChange);
+};
+const isShortWindow = () => typeof window.matchMedia === 'function' && window.matchMedia(SHORT_WINDOW).matches;
+
 export const StageView: React.FC = () => {
   const { t } = useTranslation();
   const {
@@ -104,6 +114,7 @@ export const StageView: React.FC = () => {
   const activeTab = selectedTab === 'board' && !hasBoard ? 'adventure' : selectedTab;
   const boardFocused = activeTab === 'board';
   const splitAdventure = hasBoard && !boardFocused;
+  const shortWindow = useSyncExternalStore(subscribeShortWindow, isShortWindow, () => false);
   const [showLobbyModal, setShowLobbyModal] = useState(false);
   const [lobbyRules, setLobbyRules] = useState<LobbyRules>('all');
 
@@ -483,7 +494,7 @@ export const StageView: React.FC = () => {
         </div>
 
         {/* Right: Scene Lobby, Export & Ambiance Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <div
             className={`hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-semibold ${
               isProcessingStageTurn
@@ -673,7 +684,7 @@ export const StageView: React.FC = () => {
                 </div>
 
                 {!hasBoard && <Combat5ePanel />}
-                <TurnControlBar compact={splitAdventure} />
+                <TurnControlBar compact={splitAdventure || shortWindow} />
               </div>
               {hasBoard && <StageBoardView focused={boardFocused} onToggleFocus={() => setActiveTab(boardFocused ? 'adventure' : 'board')} />}
             </div>

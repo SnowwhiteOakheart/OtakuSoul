@@ -107,9 +107,15 @@ try {
   await browser.execute((button) => button.click(), speakButtons.at(-1));
   await browser.waitUntil(() => mock.stats.tts > before, { timeout: 10_000, timeoutMsg: 'Vorlese-Knopf nutzt nicht die App-Stimme' });
 
-  // Muting stops the ambient loop.
-  await browser.$('button[aria-label="Stummschalten"]').click();
-  await browser.waitUntil(async () => (await ambientPlayers()).every((a) => a.paused), { timeout: 5000, timeoutMsg: 'Stummschalten stoppt den Ambient-Ton nicht' });
+  // Switching the atmosphere off stops the ambient loop (muting music and voices lives in the volume popover).
+  const switchedOff = await browser.execute(() => {
+    const button = [...document.querySelectorAll('button[aria-pressed="true"]')]
+      .find((b) => b.textContent?.includes('Atmosphäre an'));
+    button?.click();
+    return !!button;
+  });
+  assert.ok(switchedOff, 'Knopf „Atmosphäre an“ fehlt');
+  await browser.waitUntil(async () => (await ambientPlayers()).every((a) => a.paused), { timeout: 5000, timeoutMsg: 'Atmosphäre aus stoppt den Ambient-Ton nicht' });
   console.log(`Stimme & Atmosphäre: ${mock.stats.tts} Sprachausgaben, Ambient-Schleife, Wechsel durch den Planer und Stummschalten bestanden.`);
 } finally {
   await close();
