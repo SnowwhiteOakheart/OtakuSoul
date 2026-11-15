@@ -556,6 +556,7 @@ pub fn run() {
             commands::voice::synthesize_speech,
             commands::voice::transcribe_speech,
             commands::voice::list_tts_models,
+            commands::voice::omnivoice_voice_terms,
             commands::voice::download_tts_model,
             commands::voice::cancel_tts_model_download,
             commands::voice::delete_tts_model,

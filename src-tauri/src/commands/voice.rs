@@ -35,6 +35,12 @@ pub fn list_tts_models() -> Vec<crate::modules::tts_local::TtsModelInfo> {
     crate::modules::tts_local::list_models()
 }
 
+/// The OmniVoice terms a free voice description becomes (live preview in the voice dialog).
+#[tauri::command]
+pub fn omnivoice_voice_terms(description: String) -> String {
+    crate::modules::tts_local::omnivoice_instruct(&description)
+}
+
 #[tauri::command]
 pub async fn download_tts_model(app: tauri::AppHandle, model_id: String) -> Result<(), String> {
     crate::modules::tts_local::download_model(&app, &model_id).await

@@ -30,6 +30,7 @@ pub use models::{
     DesignedVoice, TtsLocalSettings, TtsModelInfo, TtsVoiceInfo, VoicePrompt, list_models,
     load_settings, save_settings,
 };
+pub use voice_terms::omnivoice_instruct;
 
 #[cfg(test)]
 use catalog::{CATALOG, Role, catalog_model};

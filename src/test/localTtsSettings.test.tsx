@@ -97,6 +97,25 @@ describe('LocalTtsSettings', () => {
     expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ openai_instructions: 'A calm voice' }));
   });
 
+  it('shows which OmniVoice terms a description becomes', async () => {
+    const omni: TtsModelInfo = { ...qwen, id: 'omnivoice', name: 'OmniVoice', voice_design: true, cloning: false, voices: [] };
+    vi.mocked(api.listTtsModels).mockResolvedValue([omni]);
+    vi.mocked(api.omnivoiceVoiceTerms).mockImplementation(async (d: string) => (d.includes('woman') ? 'female, young adult' : ''));
+    const base = { ...config, local_model_id: omni.id, voice_id: '', openai_instructions: 'A young woman' } as VoiceConfig;
+    const { rerender } = render(<LocalTtsSettings config={base} onChange={vi.fn()} />);
+    expect(await screen.findByText(/only understands keywords/)).toBeInTheDocument();
+    expect(await screen.findByText('Understood as: female, young adult')).toBeInTheDocument();
+    rerender(<LocalTtsSettings config={{ ...base, openai_instructions: 'A calm voice' }} onChange={vi.fn()} />);
+    expect(await screen.findByText(/No keywords recognised/)).toBeInTheDocument();
+  });
+
+  it('explains that a clone-only model needs a cloned voice', async () => {
+    const vox: TtsModelInfo = { ...qwen, id: 'voxcpm2', name: 'VoxCPM2', needs_clone: true, voices: [] };
+    vi.mocked(api.listTtsModels).mockResolvedValue([vox]);
+    render(<LocalTtsSettings config={{ ...config, local_model_id: vox.id, voice_id: '' } as VoiceConfig} onChange={vi.fn()} />);
+    expect(await screen.findByText(/only speaks with a cloned voice/)).toBeInTheDocument();
+  });
+
   it('designs named voices once and assigns them to characters', async () => {
     const design: TtsModelInfo = { ...qwen, id: 'qwen3-tts-1.7b-voicedesign', name: 'VoiceDesign', voice_design: true, cloning: false, voices: [] };
     vi.mocked(api.listTtsModels).mockResolvedValue([design]);

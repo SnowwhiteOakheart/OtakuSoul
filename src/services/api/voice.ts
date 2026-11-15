@@ -49,6 +49,11 @@ export const voiceApi = {
     return await invoke<TtsModelInfo[]>('list_tts_models');
   },
 
+  /** The OmniVoice terms a free voice description becomes (empty: none recognised). */
+  omnivoiceVoiceTerms: async (description: string): Promise<string> => {
+    return await invoke<string>('omnivoice_voice_terms', { description });
+  },
+
   downloadTtsModel: async (modelId: string): Promise<void> => {
     await invoke('download_tts_model', { modelId });
   },

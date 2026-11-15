@@ -290,6 +290,11 @@ export const LocalTtsSettings = ({ config, onChange }: LocalTtsSettingsProps) =>
                 <option value="">{t('localTts.designOwn')}</option>
               </select>
             </label>
+            {selected.id === OMNIVOICE_ID && (
+              <p className="text-[11px] text-slate-400" data-omnivoice-hint>
+                {t('localTts.omnivoiceHint')}
+              </p>
+            )}
             {designed ? (
               <p className="text-xs text-slate-400">
                 <span className="text-slate-300">{designed.description}</span>
@@ -308,6 +313,9 @@ export const LocalTtsSettings = ({ config, onChange }: LocalTtsSettingsProps) =>
                 <span className="mt-1 block text-[11px] text-slate-400">{t('localTts.voiceDescriptionHint')}</span>
               </label>
             )}
+            {selected.id === OMNIVOICE_ID && (
+              <OmniVoiceTerms description={designed ? designed.description : config.openai_instructions} />
+            )}
             {settings && (
               <DesignedVoicesSection
                 settings={settings}
@@ -320,6 +328,8 @@ export const LocalTtsSettings = ({ config, onChange }: LocalTtsSettingsProps) =>
           </div>
         );
       })()}
+
+      {selected?.needs_clone && <p className="text-xs text-slate-400" data-clone-hint>{t('localTts.cloneOnlyHint')}</p>}
 
       {selected?.sound_tags && <p className="text-xs text-emerald-300/90">{t('localTts.soundTagsHint')}</p>}
 
@@ -387,6 +397,38 @@ export const LocalTtsSettings = ({ config, onChange }: LocalTtsSettingsProps) =>
 
       <VoiceCloneSection sttConfig={config.stt} onChanged={() => void refresh()} />
     </div>
+  );
+};
+
+/** OmniVoice only knows fixed terms; the backend turns a description into them. */
+const OMNIVOICE_ID = 'omnivoice';
+
+/** Live preview of the OmniVoice terms a description becomes. */
+const OmniVoiceTerms = ({ description }: { description: string }) => {
+  const { t } = useTranslation();
+  const [terms, setTerms] = useState<string | null>(null);
+  useEffect(() => {
+    let current = true;
+    const timer = window.setTimeout(() => {
+      api
+        .omnivoiceVoiceTerms(description)
+        .then((result) => current && setTerms(result))
+        .catch(() => current && setTerms(null));
+    }, 250);
+    return () => {
+      current = false;
+      window.clearTimeout(timer);
+    };
+  }, [description]);
+  if (terms === null) return null;
+  return (
+    <p className="text-xs" role="status" data-omnivoice-terms>
+      {terms ? (
+        <span className="text-emerald-300/90">{t('localTts.omnivoiceTerms', { terms })}</span>
+      ) : (
+        <span className="text-amber-300/90">{t('localTts.omnivoiceNoTerms')}</span>
+      )}
+    </p>
   );
 };
 

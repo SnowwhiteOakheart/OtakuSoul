@@ -7,7 +7,7 @@
 //! write their own descriptions in German (only unambiguous ones: "junge" is young, not a boy).
 
 /// One item per category, in the spelling OmniVoice expects (lowercase, comma-separated).
-pub(super) fn omnivoice_instruct(description: &str) -> String {
+pub fn omnivoice_instruct(description: &str) -> String {
     let text = description.to_lowercase();
     let words: Vec<(usize, &str)> = word_spans(&text);
     let mut items = Vec::new();
