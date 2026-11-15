@@ -6,8 +6,8 @@
 //! cloned from their own recording.
 //!
 //! The repository is public, so licensing is explicit: models with a non-commercial licence
-//! (F5-TTS) stay locked until the user allows them, and cloned voices always carry the consent
-//! statement the user confirmed. CrispASR watermarks the audio itself (EU AI Act, Art. 50).
+//! (F5-TTS, OmniVoice) stay locked until the user allows them, and cloned voices always carry
+//! the consent statement the user confirmed. CrispASR watermarks the audio itself (EU AI Act, Art. 50).
 
 mod catalog;
 mod cloning;
@@ -16,6 +16,7 @@ mod engine;
 mod models;
 #[cfg(test)]
 mod tests;
+mod voice_terms;
 
 pub use catalog::speaks_sound_tags;
 pub use cloning::{

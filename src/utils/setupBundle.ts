@@ -11,6 +11,8 @@ export const DESKTOP_RESERVE_MB = 1536;
  */
 const TTS_ORDER = [
   'qwen3-tts-1.7b-voicedesign',
+  // Non-commercial: only a candidate once the user allowed such models.
+  'omnivoice',
   'qwen3-tts-customvoice-1.7b',
   'qwen3-tts-customvoice-0.6b',
   'chatterbox-multilingual',

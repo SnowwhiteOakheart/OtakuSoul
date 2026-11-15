@@ -366,7 +366,10 @@ impl LocalTtsEngine {
                 "The OtakuSoul user turned the spoken AI label off and discloses AI-generated audio themselves."
                     .into();
         }
-        if model.voice_design {
+        if model.voice_design && model.backend == "omnivoice" {
+            // OmniVoice only knows a closed list of terms and rejects free text.
+            body["instructions"] = super::voice_terms::omnivoice_instruct(&description).into();
+        } else if model.voice_design {
             body["instructions"] = description.as_str().into();
         } else if model.style_control && !style.trim().is_empty() {
             body["instructions"] = style.trim().into();

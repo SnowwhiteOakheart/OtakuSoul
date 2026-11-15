@@ -56,6 +56,16 @@ const CHATTERBOX_LANGS: &[&str] = &[
     "ar", "da", "de", "el", "en", "es", "fi", "fr", "he", "hi", "it", "ja", "ko", "ms", "nl", "no",
     "pl", "pt", "ru", "sv", "sw", "tr", "zh",
 ];
+/// OmniVoice covers 600+ languages; these are the common ones (de/en/ru/ja/fr tested).
+const OMNIVOICE_LANGS: &[&str] = &[
+    "ar", "da", "de", "el", "en", "es", "fi", "fr", "he", "hi", "it", "ja", "ko", "nl", "no", "pl",
+    "pt", "ru", "sv", "tr", "uk", "zh",
+];
+/// The 30 languages of the VoxCPM2 model card.
+const VOXCPM2_LANGS: &[&str] = &[
+    "ar", "da", "de", "el", "en", "es", "fi", "fr", "he", "hi", "id", "it", "ja", "km", "ko", "lo",
+    "ms", "my", "nl", "no", "pl", "pt", "ru", "sv", "sw", "th", "tl", "tr", "vi", "zh",
+];
 
 /// The nine built-in speakers of Qwen3-TTS CustomVoice (0.6B and 1.7B).
 const QWEN_PRESET_VOICES: &[PresetVoice] = &[
@@ -279,6 +289,82 @@ pub(super) const CATALOG: &[TtsModel] = &[
                 },
             },
         ],
+        voices: &[],
+        start_language: None,
+    },
+    // OmniVoice (k2-fsa, Qwen3-0.6B backbone): voice design from a closed list of 48 terms
+    // (gender, age, pitch, whisper, accent); `voice_terms` turns the free description into them,
+    // free text gets HTTP 400. Tested 15.11.2026 (CrispASR 0.8.54, RTX 5090): de/en/ru/ja/fr
+    // read back word for word by Whisper, ~0.5 s per second of audio, ~1.3 GB VRAM; "female,
+    // young adult, high pitch" ~340 Hz vs "male, elderly, low pitch" ~155 Hz, the same terms keep
+    // the same voice. The tokenizer stays f16 (CrispASR: the q8_0 one breaks clone encoding).
+    TtsModel {
+        id: "omnivoice",
+        name: "OmniVoice (Stimme per Beschreibung, schnell)",
+        backend: "omnivoice",
+        license: "CC-BY-NC (Gewichte) + Boson Higgs Audio 2 Community License (Tokenizer)",
+        noncommercial: true,
+        languages: OMNIVOICE_LANGS,
+        cloning: false,
+        needs_clone: false,
+        clone_experimental: false,
+        voice_design: true,
+        style_control: false,
+        vram_mb: 1_600,
+        files: &[
+            TtsFile {
+                role: Role::Main,
+                file: RemoteFile {
+                    repo: "cstr/omnivoice-GGUF",
+                    path: "omnivoice-q8_0.gguf",
+                    size: 817_748_544,
+                    sha256: Some(
+                        "9d8835c80d50cce6ba66bed60c31e94836a7f990c40d2e22496c0b6710c98bb5",
+                    ),
+                },
+            },
+            TtsFile {
+                role: Role::Codec,
+                file: RemoteFile {
+                    repo: "cstr/omnivoice-GGUF",
+                    path: "omnivoice-tokenizer-f16.gguf",
+                    size: 403_183_616,
+                    sha256: Some(
+                        "710ef610e1f2845c6b7333d5432376b24f2d20d2c54a8cec9bc118d183ecea63",
+                    ),
+                },
+            },
+        ],
+        voices: &[],
+        start_language: None,
+    },
+    // VoxCPM2 (OpenBMB, 2B, 48 kHz). CrispASR ignores `instructions` for it, and without a
+    // reference the voice changes from sentence to sentence (170 → 135 Hz), so it is clone-only.
+    // Tested 15.11.2026 (CrispASR 0.8.54, RTX 5090): German clone kept the reference pitch
+    // (238 Hz → 229–245 Hz), Whisper read every sentence back, ~1.3 s per second of audio,
+    // ~4 GB VRAM.
+    TtsModel {
+        id: "voxcpm2",
+        name: "VoxCPM2 (Stimmklon, 48 kHz)",
+        backend: "voxcpm2-tts",
+        license: "Apache-2.0",
+        noncommercial: false,
+        languages: VOXCPM2_LANGS,
+        cloning: true,
+        needs_clone: true,
+        clone_experimental: false,
+        voice_design: false,
+        style_control: false,
+        vram_mb: 4_000,
+        files: &[TtsFile {
+            role: Role::Main,
+            file: RemoteFile {
+                repo: "cstr/voxcpm2-GGUF",
+                path: "voxcpm2-q8_0.gguf",
+                size: 2_827_049_792,
+                sha256: Some("142f29c4dff1c0ad3f71d9353a03f7cbf08080bee3ab73c577c0219e4094fc4b"),
+            },
+        }],
         voices: &[],
         start_language: None,
     },
