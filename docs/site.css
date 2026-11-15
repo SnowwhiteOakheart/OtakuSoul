@@ -66,6 +66,9 @@ h3 { font-size: 1.21rem; }
 .pet-feature p, .hardware p { max-width: 70ch; }
 .pet-feature p:last-child, .hardware p:last-child, .story-extras p { margin-bottom: 0; }
 .story-extras article { border-top: 1px solid var(--line); padding-top: .9rem; }
+.studios { margin-top: 3rem; }
+.studios .feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 1rem; }
+.studios .section-intro { margin-bottom: 0; }
 .demo { background: radial-gradient(ellipse at 75% 50%, #322043, #191124 72%); border-block: 1px solid var(--line); }
 .split { display: grid; grid-template-columns: .82fr 1.18fr; gap: clamp(1.5rem, 5vw, 4rem); align-items: center; }
 video, figure img { width: 100%; border: 1px solid #655076; border-radius: .6rem; background: var(--bg); }
@@ -105,7 +108,7 @@ figcaption { font-size: .85rem; color: var(--muted); margin-top: .4rem; }
   .hero-art { inset: 0 0 auto; height: 16rem; opacity: 1; background-size: max(185%, 32rem) auto; }
   .hero-art::after { background: linear-gradient(0deg, var(--bg), transparent 55%); }
   .hero-content { padding-top: 14rem; padding-bottom: 2.7rem; }
-  .feature-grid, .split, .help-layout, .choice-grid { grid-template-columns: 1fr; }
+  .feature-grid, .studios .feature-grid, .split, .help-layout, .choice-grid { grid-template-columns: 1fr; }
   .help-layout { gap: 2rem; padding-block: 2rem 3rem; }
   .toc { position: static; grid-template-columns: 1fr 1fr; }
   .toc strong { grid-column: 1 / -1; }

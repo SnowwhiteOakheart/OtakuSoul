@@ -1,7 +1,7 @@
 // Screenshots for the READMEs (not part of `npm run e2e`): start page, stories, chat, characters,
-// help, settings, setup and a 5e fight, each in a fresh profile against the mock LLM.
+// help, settings, setup, a 5e fight and the Song/Image Studio, each in a fresh profile against the mock LLM.
 // Usage: `xvfb-run -a node e2e/readme-screenshots.mjs [de|en]` → docs/assets/screenshots/<lang>/.
-import { mkdirSync, readFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readFileSync, truncateSync, utimesSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { launch } from './harness.mjs';
@@ -35,6 +35,24 @@ const TEXT = {
       narration: 'Fackellicht flackert über die Grabnischen. Aus der Dunkelheit kratzen Krallen – zwei Goblins und ein Skelett stellen sich euch in den Weg!' },
     stageReply:
       '*Shiori atmet tief durch und nickt dir dankbar zu.* „Okay … okay. Wie eine Heldin im letzten Kapitel. Hältst du mir das Heft?“',
+    studio: {
+      // [title, style, lyrics, bpm, seconds]
+      songs: [
+        ['Kirschblüten über der Bühne', 'J-Pop, verträumt, Klavier, warme Frauenstimme', '[Verse]\nRosa Blätter auf der Bühne\nUnd mein Herz schlägt viel zu laut\n\n[Chorus]\nLies einfach weiter, Shiori\nJeder Satz ein kleiner Mut', 92, 150],
+        ['Neon über Kepler-9', 'Synthwave, treibend, analoge Synthesizer', '', 118, 180],
+        ['Lagerfeuer in Frostweiler', 'Folk, Laute und Flöte, ruhig', '[Verse]\nSchnee auf den Dächern\nGlut in der Hand', 76, 120],
+      ],
+      // [source, title, description]
+      images: [
+        ['presets/characters/shiori_amane.png', 'Shiori in der Bibliothek', 'anime girl with glasses in a sunny school library, warm light'],
+        ['presets/characters/lirwen.png', 'Lirwen im Elfenwald', 'elven mage in an ancient forest, soft green light'],
+        ['presets/characters/sota_minase.png', 'Sota am Schulfest', 'cheerful anime boy at a school festival, cherry blossoms'],
+        ['presets/characters/faelion.png', 'Faelion', 'elven ranger portrait, silver hair, autumn forest'],
+        ['presets/crypt-of-shadows/althea.png', 'Althea', 'paladin with a glowing shield, fantasy portrait'],
+        ['presets/crypt-of-shadows/lyra.png', 'Lyra', 'rogue with a hooded cloak, candlelight'],
+      ],
+      newImage: ['Abend am Leuchtturm', 'anime girl reading a letter by a lighthouse at sunset, wind, soft colors, detailed'],
+    },
   },
   en: {
     reply: 'English',
@@ -52,6 +70,22 @@ const TEXT = {
       narration: 'Torchlight flickers over the burial niches. Claws scrape in the dark – two goblins and a skeleton block your way!' },
     stageReply:
       '*Shiori takes a deep breath and gives you a grateful nod.* "Okay … okay. Like a heroine in the final chapter. Will you hold the booklet for me?"',
+    studio: {
+      songs: [
+        ['Cherry Blossoms on Stage', 'J-pop, dreamy, piano, warm female vocals', '[Verse]\nPink petals on the stage\nAnd my heart beats far too loud\n\n[Chorus]\nJust keep reading, Shiori\nEvery line a little brave', 92, 150],
+        ['Neon over Kepler-9', 'synthwave, driving, analog synths', '', 118, 180],
+        ['Campfire in Frostweiler', 'folk, lute and flute, calm', '[Verse]\nSnow on the rooftops\nEmbers in my hand', 76, 120],
+      ],
+      images: [
+        ['presets/characters/shiori_amane.png', 'Shiori in the library', 'anime girl with glasses in a sunny school library, warm light'],
+        ['presets/characters/lirwen.png', 'Lirwen in the elven wood', 'elven mage in an ancient forest, soft green light'],
+        ['presets/characters/sota_minase.png', 'Sota at the school festival', 'cheerful anime boy at a school festival, cherry blossoms'],
+        ['presets/characters/faelion.png', 'Faelion', 'elven ranger portrait, silver hair, autumn forest'],
+        ['presets/crypt-of-shadows/althea.png', 'Althea', 'paladin with a glowing shield, fantasy portrait'],
+        ['presets/crypt-of-shadows/lyra.png', 'Lyra', 'rogue with a hooded cloak, candlelight'],
+      ],
+      newImage: ['Evening at the lighthouse', 'anime girl reading a letter by a lighthouse at sunset, wind, soft colors, detailed'],
+    },
   },
 }[lang];
 if (!TEXT) throw new Error(`Nur de oder en, nicht ${lang}`);
@@ -206,6 +240,89 @@ await session({}, async ({ browser, mock, shot, invoke }) => {
   await browser.waitUntil(() => browser.execute(() => !document.querySelector('[data-testid="combat-5e"][data-busy="true"]')), { timeout: 60_000 });
   await browser.$(`button=${t('stage.stopTurn')}`).waitForExist({ reverse: true, timeout: 60_000 }).catch(() => {});
   await shot('stage-5e-board');
+});
+
+// 4. Song Studio and Image Studio with a few finished works in their folders.
+await session({}, async ({ browser, home, shot, click, invoke }) => {
+  await browser.$('nav').waitForExist({ timeout: 20_000 });
+  const S = TEXT.studio;
+  // Like an installed setup: the sd.cpp runtime and one image model (a sparse file of the catalog
+  // size is enough to count as installed; nothing is started here).
+  const runtime = path.join(home, 'data', 'runtimes', 'sd.cpp');
+  const server = path.join(runtime, 'master-vulkan', process.platform === 'win32' ? 'sd-server.exe' : 'sd-server');
+  mkdirSync(path.dirname(server), { recursive: true });
+  writeFileSync(server, '');
+  writeFileSync(path.join(runtime, 'current.json'), JSON.stringify({ build: 'master-1104-5dcfa79', backend: 'vulkan', server_path: server, library_dirs: [] }));
+  const models = path.join(home, 'data', 'image-models');
+  mkdirSync(models, { recursive: true });
+  const model = path.join(models, 'animagine-xl-4.0-opt.safetensors');
+  writeFileSync(model, '');
+  truncateSync(model, 6_938_350_040);
+  await invoke('save_persona', { persona: { id: 'default_user', name: TEXT.persona, description: '', avatar_data_url: null } });
+  await browser.refresh();
+  await browser.pause(1000);
+  await browser.$('nav').waitForExist({ timeout: 20_000 });
+  // Toasts (e.g. "settings loaded") would sit over the pictures.
+  const closeToasts = () => browser.execute((label) => {
+    for (const button of document.querySelectorAll(`[role="status"] button[aria-label="${label}"]`)) button.click();
+  }, t('common.close'));
+
+  // Songs: the files only need to exist; title, request and lyrics come from the origin JSON.
+  const songs = path.join(home, 'songs');
+  mkdirSync(songs, { recursive: true });
+  await invoke('set_studio_folder', { kind: 'songs', path: songs });
+  S.songs.forEach(([title, caption, lyrics, bpm, duration], index) => {
+    const file = path.join(songs, `${title}.mp3`);
+    writeFileSync(file, Buffer.from('ID3'));
+    writeFileSync(`${file}.json`, JSON.stringify({
+      title, lyrics, seed: 1000 + index,
+      request: { title, caption, lyrics, vocal_language: lang, duration, bpm, versions: 1, model_id: 'standard' },
+    }));
+    const age = Date.now() / 1000 - index * 600;
+    utimesSync(file, age, age);
+  });
+  await click(await browser.$(`button=${t('nav.music')}`));
+  const list = await browser.$('[data-testid="song-list"]');
+  await list.waitForDisplayed({ timeout: 15_000 });
+  await browser.waitUntil(() => browser.execute((el, title) => el.textContent.includes(title), list, S.songs[0][0]), { timeout: 10_000 });
+  await click((await list.$$(`button[aria-label="${t('songStudio.reuse')}"]`))[0]);
+  await browser.waitUntil(async () => (await browser.$('#song-title').getValue()) === S.songs[0][0], { timeout: 5000 });
+  await closeToasts();
+  await shot('song-studio');
+
+  // Images: the starter portraits with a request each.
+  const images = path.join(home, 'images');
+  mkdirSync(images, { recursive: true });
+  await invoke('set_studio_folder', { kind: 'images', path: images });
+  S.images.forEach(([source, title, prompt], index) => {
+    const file = path.join(images, `${title}.png`);
+    copyFileSync(path.join(root, source), file);
+    writeFileSync(`${file}.json`, JSON.stringify({
+      title, seed: 4200 + index, width: 832, height: 1216, license: 'CreativeML Open RAIL++-M',
+      request: { title, prompt, negative: '', model_id: 'animagine-xl-4', aspect: '2:3', count: 1 },
+    }));
+    const age = Date.now() / 1000 - index * 600;
+    utimesSync(file, age, age);
+  });
+  await click(await browser.$(`button=${t('nav.images')}`));
+  const gallery = await browser.$('[data-testid="image-gallery"]');
+  await gallery.waitForDisplayed({ timeout: 15_000 });
+  await browser.$('#image-title').setValue(S.newImage[0]);
+  await browser.$('#image-prompt').setValue(S.newImage[1]);
+  // Thumbnails load once in view (blob URLs: the folder is outside the asset scope).
+  await browser.waitUntil(
+    () => browser.execute((el) => [...el.querySelectorAll('img')].filter((img) => img.complete && img.naturalWidth > 0).length >= 6, gallery),
+    { timeout: 20_000, timeoutMsg: 'Vorschaubilder laden nicht' },
+  );
+  await closeToasts();
+  // Typing scrolled the form down: back to the top, so model and gallery are in view.
+  await browser.execute(() => {
+    document.activeElement?.blur();
+    for (const el of document.querySelectorAll('[data-testid="image-studio"], [data-testid="image-studio"] *')) {
+      if (el.scrollTop > 0) el.scrollTop = 0;
+    }
+  });
+  await shot('image-studio');
 });
 
 console.log(`README-Screenshots (${lang}) nach ${path.relative(root, outDir)} geschrieben.`);
