@@ -512,6 +512,8 @@
   "settings.serverNoModel": "No chat model installed yet? Download one of the recommended models – the app then picks context and graphics memory to fit.",
   "settings.serverVisionOn": "This model can see attached images.",
   "settings.serverModelUnknown": "Your own model – no description from the catalogue.",
+  "settings.modelPathHint": "The language model your characters answer with. Get new ones under “Download chat models”.",
+  "settings.contextSizeHint": "How much of the conversation the model keeps in view at once. More context needs more VRAM.",
   "settings.hubViews": "View",
   "settings.hubRecommended": "Recommendations",
   "settings.hubInstalled": "My models ({{count}})",

@@ -512,6 +512,8 @@
   "settings.serverNoModel": "Noch kein Chat-Modell installiert? Lade eines der empfohlenen Modelle – die App wählt Kontext und Grafikspeicher dann passend.",
   "settings.serverVisionOn": "Dieses Modell kann angehängte Bilder sehen.",
   "settings.serverModelUnknown": "Eigenes Modell – keine Beschreibung aus dem Katalog.",
+  "settings.modelPathHint": "Das Sprachmodell, mit dem Deine Figuren antworten. Neue Modelle lädst Du unter „Chat-Modelle herunterladen“.",
+  "settings.contextSizeHint": "Wie viel vom Gespräch das Modell auf einmal im Blick behält. Mehr Kontext braucht mehr Grafikspeicher.",
   "settings.hubViews": "Ansicht",
   "settings.hubRecommended": "Empfehlungen",
   "settings.hubInstalled": "Meine Modelle ({{count}})",

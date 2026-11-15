@@ -279,6 +279,7 @@ export const ServerSettings = ({ onNavigate }: { onNavigate?: (section: Settings
           <div className="flex gap-2">
             <select
               id="settings-model"
+              aria-describedby="settings-model-hint"
               value={serverConfig.model_path}
               onChange={(e) => selectLocalModel(e.target.value)}
               className="flex-1 bg-app border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 focus:outline-hidden focus:border-accent-500"
@@ -301,7 +302,7 @@ export const ServerSettings = ({ onNavigate }: { onNavigate?: (section: Settings
             </button>
           </div>
           {selectedStarter ? (
-            <div className="rounded-lg border border-slate-800 bg-app/60 p-3 space-y-1 text-xs" data-server-model-description>
+            <div id="settings-model-hint" className="rounded-lg border border-slate-800 bg-app/60 p-3 space-y-1 text-xs" data-server-model-description>
               {description && <p className="text-slate-200">{description}</p>}
               <p className="text-slate-400">
                 {t('onboarding.starterMeta', {
@@ -321,7 +322,9 @@ export const ServerSettings = ({ onNavigate }: { onNavigate?: (section: Settings
               {!selectedStarter.fits_gpu && <p className="text-amber-300/90">{t('onboarding.starterTooBig')}</p>}
             </div>
           ) : (
-            selectedModel && <p className="text-[11px] text-slate-500">{t('settings.serverModelUnknown')}</p>
+            <p id="settings-model-hint" className="text-[11px] text-slate-500">
+              {t(selectedModel ? 'settings.serverModelUnknown' : 'settings.modelPathHint')}
+            </p>
           )}
           {expertMode && (() => {
             if (!selectedModel) return null;
@@ -404,6 +407,7 @@ export const ServerSettings = ({ onNavigate }: { onNavigate?: (section: Settings
             </label>
             <select
               id="settings-ctx"
+              aria-describedby="settings-ctx-hint"
               value={serverConfig.context_size}
               onChange={(e) => setServerConfig({ context_size: parseInt(e.target.value) })}
               className="w-full bg-app border border-slate-800 rounded-lg px-3 py-1.5 text-slate-200 font-mono focus:outline-hidden focus:border-accent-500"
@@ -425,10 +429,12 @@ export const ServerSettings = ({ onNavigate }: { onNavigate?: (section: Settings
                 </option>
               ))}
             </select>
-            {trainedContext > 0 && (
-              <p className="text-[11px] text-slate-500" data-trained-context={trainedContext}>
+            {trainedContext > 0 ? (
+              <p id="settings-ctx-hint" className="text-[11px] text-slate-500" data-trained-context={trainedContext}>
                 {t('settings.ctxTrained', { count: trainedContext.toLocaleString() })}
               </p>
+            ) : (
+              <p id="settings-ctx-hint" className="text-[11px] text-slate-500">{t('settings.contextSizeHint')}</p>
             )}
           </div>
 

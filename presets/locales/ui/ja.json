@@ -513,6 +513,8 @@
   "settings.serverNoModel": "チャットモデルがまだありませんか？おすすめのモデルをダウンロードすると、コンテキストとVRAMはアプリが自動で合わせます。",
   "settings.serverVisionOn": "このモデルは添付画像を認識できます。",
   "settings.serverModelUnknown": "独自のモデル – カタログの説明はありません。",
+  "settings.modelPathHint": "キャラクターの返答に使う言語モデルです。新しいモデルは「チャットモデルのダウンロード」から入手できます。",
+  "settings.contextSizeHint": "モデルが一度に把握できる会話の量です。コンテキストを増やすほどVRAMが必要になります。",
   "settings.hubViews": "表示",
   "settings.hubRecommended": "おすすめ",
   "settings.hubInstalled": "マイモデル ({{count}})",

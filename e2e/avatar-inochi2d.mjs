@@ -143,6 +143,12 @@ try {
   assert.match(await mouthSelect.$('option[value="auto"]').getText(), /Mouth:: Open/);
   // Toasts sit at the bottom right: bring each control to the middle first.
   const operate = async (selector, action) => {
+    // At the end of the list the control cannot scroll above them (smaller windows, WebKitGTK): close them.
+    await browser.execute(() => {
+      for (const toast of document.querySelectorAll('[role="status"], [role="alert"]')) {
+        toast.querySelector('button[aria-label="Schließen"]')?.click();
+      }
+    });
     const el = await browser.$(selector);
     await el.scrollIntoView({ block: 'center' });
     try {
