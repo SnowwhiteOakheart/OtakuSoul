@@ -55,17 +55,7 @@ pub struct EmotionResult {
 
 /// Portrait slots a card may bring besides the six moods (`extensions.expressions`); usable by
 /// every card, the last four are meant for romance and adult cards.
-pub const EXTRA_PORTRAITS: [&str; 9] = [
-    "blush",
-    "teasing",
-    "fear",
-    "disgust",
-    "crying",
-    "seductive",
-    "aroused",
-    "ecstasy",
-    "afterglow",
-];
+pub use otakusoul_prompt::EXTRA_PORTRAITS;
 
 /// The GoEmotion an extra portrait stands for (drives VRM and Live2D, which have no such slot).
 fn emotion_of_portrait(portrait: &str) -> &'static str {
@@ -134,7 +124,7 @@ static ASTERISK_ACTION_RE: LazyLock<regex::Regex> =
     LazyLock::new(|| regex::Regex::new(r"\*([^*]+)\*").expect("static regex is valid"));
 
 /// The six moods every portrait set, VRM and Live2D know; the chat prompt offers them as tags.
-pub const MOODS: [&str; 6] = ["neutral", "happy", "sad", "angry", "surprised", "relaxed"];
+pub use otakusoul_prompt::MOODS;
 
 /// The GoEmotion a mood tag stands for.
 fn emotion_of_mood(mood: &str) -> &'static str {

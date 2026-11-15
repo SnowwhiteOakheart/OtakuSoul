@@ -13,6 +13,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+/** Shared crates under `crates/` besides rules5e (which keeps its own steps). */
+const SHARED_CRATES = ['otakusoul-paths', 'otakusoul-stream', 'otakusoul-macros', 'otakusoul-prompt'];
+
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const nodeBin = (relPath) => path.join(root, 'node_modules', relPath);
 
@@ -31,7 +34,7 @@ if (flags.has('--help') || flags.has('-h')) {
 Optionen:
   --fast            Docs, Oxlint, tsc und cargo check
   --web             Docs, Oxlint, tsc und Vitest
-  --rust            cargo fmt, cargo clippy und cargo test (rules5e + src-tauri)
+  --rust            cargo fmt, cargo clippy und cargo test (gemeinsame Crates, rules5e, src-tauri)
   --i18n            Zusätzlich i18n:check ausführen
   --keep-going, -k  Bei Fehlern verbleibende Schritte trotzdem prüfen
   --verbose, -v     Live-Ausgabe ohne Kompaktfilter
@@ -164,6 +167,14 @@ if (onlyFast) {
     extractError: extractCargoFailure,
   });
 } else if (!onlyWeb) {
+  // Shared crates next to the app (`crates/`), checked as one group.
+  const shared = SHARED_CRATES.flatMap((name) => ['-p', name]);
+  steps.push({
+    name: 'cargo fmt (gemeinsame Crates)',
+    cmd: 'cargo',
+    args: ['fmt', ...shared, '--check'],
+    summarize: () => 'formatiert',
+  });
   steps.push({
     name: 'cargo fmt (rules5e)',
     cmd: 'cargo',
@@ -184,6 +195,13 @@ if (onlyFast) {
     extractError: extractCargoFailure,
   });
   steps.push({
+    name: 'cargo clippy (gemeinsame Crates)',
+    cmd: 'cargo',
+    args: ['clippy', ...shared, '--all-targets', '--message-format=short', '--', '-D', 'warnings'],
+    summarize: () => '0 Warnungen',
+    extractError: extractCargoFailure,
+  });
+  steps.push({
     name: 'cargo clippy (src-tauri)',
     cmd: 'cargo',
     args: ['clippy', '--manifest-path', 'src-tauri/Cargo.toml', '--all-targets', '--message-format=short', '--', '-D', 'warnings'],
@@ -194,6 +212,13 @@ if (onlyFast) {
     name: 'cargo test (rules5e)',
     cmd: 'cargo',
     args: ['test', '-q', '--manifest-path', 'crates/otakusoul-rules5e/Cargo.toml'],
+    summarize: summarizeCargoTests,
+    extractError: extractCargoFailure,
+  });
+  steps.push({
+    name: 'cargo test (gemeinsame Crates)',
+    cmd: 'cargo',
+    args: ['test', '-q', ...shared],
     summarize: summarizeCargoTests,
     extractError: extractCargoFailure,
   });

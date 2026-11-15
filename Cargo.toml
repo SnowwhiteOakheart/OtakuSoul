@@ -1,5 +1,5 @@
 [workspace]
-members = ["src-tauri", "crates/otakusoul-rules5e", "crates/otakusoul-paths", "crates/otakusoul-stream"]
+members = ["src-tauri", "crates/otakusoul-rules5e", "crates/otakusoul-paths", "crates/otakusoul-stream", "crates/otakusoul-macros", "crates/otakusoul-prompt"]
 resolver = "2"
 
 [profile.release]

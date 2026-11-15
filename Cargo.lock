@@ -4175,7 +4175,9 @@ dependencies = [
  "libc",
  "ndarray",
  "ort",
+ "otakusoul-macros",
  "otakusoul-paths",
+ "otakusoul-prompt",
  "otakusoul-rules5e",
  "otakusoul-stream",
  "parking_lot 0.13.0",
@@ -4218,10 +4220,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "otakusoul-macros"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "rand 0.10.3",
+ "serde",
+ "ts-rs",
+]
+
+[[package]]
 name = "otakusoul-paths"
 version = "0.1.0"
 dependencies = [
  "directories",
+]
+
+[[package]]
+name = "otakusoul-prompt"
+version = "0.1.0"
+dependencies = [
+ "otakusoul-macros",
+ "serde",
+ "serde_json",
+ "ts-rs",
 ]
 
 [[package]]
