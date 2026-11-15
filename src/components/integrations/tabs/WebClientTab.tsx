@@ -336,9 +336,11 @@ export const WebClientTab: React.FC = () => {
         </div>
 
         {webServerStatus?.is_running && webServerStatus.qr_code_svg ? (
-          <div className="p-4 bg-white rounded-2xl shadow-xl border border-slate-700">
+          <div className="p-3 bg-white rounded-2xl shadow-xl border border-slate-700">
+            {/* The SVG comes with a fixed pixel size (and a viewBox): fit it into the frame. */}
             <div
-              className="w-48 h-48"
+              className="w-48 h-48 [&>svg]:block [&>svg]:h-full [&>svg]:w-full"
+              data-testid="web-qr"
               dangerouslySetInnerHTML={{ __html: webServerStatus.qr_code_svg }}
             />
           </div>

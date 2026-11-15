@@ -243,8 +243,9 @@ impl WebServerManager {
         if let Ok(code) = QrCode::new(url.as_bytes()) {
             code.render::<svg::Color>()
                 .min_dimensions(200, 200)
-                .dark_color(svg::Color("#38bdf8"))
-                .light_color(svg::Color("#090d16"))
+                // Dark modules on light: many phone cameras can't read inverted codes.
+                .dark_color(svg::Color("#090d16"))
+                .light_color(svg::Color("#ffffff"))
                 .build()
         } else {
             String::new()
