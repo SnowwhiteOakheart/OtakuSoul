@@ -3079,8 +3079,6 @@
   "int.tokenTitle": "トークン認証",
   "int.tokenText": "すべてのアクセスにはランダム生成された256ビットのトークンが必要で、接続アドレスやQRコードに含まれています。このアドレスを知っている人は誰でもチャットできます。ご自身のデバイスのみと共有し、必要に応じて新しいトークンを生成してください。Webクライアントは最新のモバイルブラウザ（iOS Safari、Android Chrome/Firefox）で動作します。",
   "int.qrTitle": "スマートフォン クイックアクセス",
-  "int.serverStopped": "サーバー停止中",
-  "int.qrHint": "QRコードを表示するにはサーバーを起動してください",
   "int.qrText": "スマートフォンやタブレットのカメラでQRコードをスキャンすると、OtakuSoulに直接接続できます。",
   "int.rpcTitle": "Discord Rich Presence (RPC)",
   "int.rpcIntro": "Discord上のフレンドに現在のアクティビティを表示します",

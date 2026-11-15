@@ -3078,8 +3078,6 @@
   "int.tokenTitle": "Token-Authentifizierung",
   "int.tokenText": "Jeder Zugriff erfordert ein zufällig erzeugtes 256-Bit-Token, das in der Verbindungs-Adresse und im QR-Code enthalten ist. Wer die Adresse kennt, kann chatten – teile sie nur mit deinen eigenen Geräten und erzeuge bei Bedarf ein neues Token. Der Web-Client läuft in jedem modernen mobilen Browser (iOS Safari, Android Chrome/Firefox).",
   "int.qrTitle": "Smartphone Schnellzugriff",
-  "int.serverStopped": "Server gestoppt",
-  "int.qrHint": "Starte den Server für den QR-Code",
   "int.qrText": "Öffne die Kamera auf deinem Smartphone oder Tablet und scanne den QR-Code, um dich direkt mit OtakuSoul zu verbinden.",
   "int.rpcTitle": "Discord Rich Presence (RPC)",
   "int.rpcIntro": "Zeige deinen Freunden auf Discord deinen aktuellen Status",

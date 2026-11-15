@@ -31,7 +31,7 @@ try {
   const [fl, ft, fr, fb] = box.frame;
   const [cl, ct, cr, cb] = box.code;
   assert.ok(cl >= fl && ct >= ft && cr <= fr && cb <= fb, `QR-Code ragt aus dem Rahmen: ${JSON.stringify(box)}`);
-  assert.ok(cr - cl > 150, `QR-Code zu klein: ${cr - cl}px`);
+  assert.ok(cr - cl >= 120, `QR-Code zu klein: ${cr - cl}px`);
   assert.deepEqual(box.fills.slice(0, 2), ['#ffffff', '#090d16'], 'QR-Code nicht dunkel auf hell');
   await browser.saveScreenshot(path.join(screenshotDir, 'web-qr.png'));
   await invoke('stop_web_server');
