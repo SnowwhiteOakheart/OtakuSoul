@@ -177,6 +177,7 @@ def classify(img, cols, rows):
     # Brightness threshold of this picture (Otsu on cell brightness): darker part = walls/foliage.
     threshold = otsu(val.ravel())
     dark = val < min(threshold, 0.42)
+    wall_indoor = indoor_walls(f, water)
     grid = []
     for y in range(rows):
         row = []
@@ -195,12 +196,27 @@ def classify(img, cols, rows):
                 else:
                     row.append(',')
             else:
-                if dark[y, x]:
-                    row.append('#')
-                else:
-                    row.append('.')
+                row.append('#' if wall_indoor[y, x] else '.')
         grid.append(row)
     return grid, ('forest' if outdoor else 'dungeon')
+
+
+def indoor_walls(f, water):
+    """Indoor: the floor is what fills the middle of the picture (it may be darker than the walls);
+    cells clearly unlike it are walls or solid rock. Colour (brightness, saturation, warmth, texture) by 3-means."""
+    rows, cols = f.shape[:2]
+    feats = np.stack([f[..., 2], f[..., 1] * 0.6, (f[..., 5] - f[..., 6]) * 1.5, f[..., 3] * 2], axis=-1).reshape(-1, 4)
+    rng = np.random.default_rng(0)
+    centers = feats[rng.choice(len(feats), 3, replace=False)]
+    for _ in range(25):
+        labels = np.argmin(((feats[:, None, :] - centers[None]) ** 2).sum(-1), axis=1)
+        centers = np.array([feats[labels == k].mean(0) if (labels == k).any() else centers[k] for k in range(3)])
+    labels = labels.reshape(rows, cols)
+    middle = labels[rows // 4: rows - rows // 4, cols // 4: cols - cols // 4]
+    floor = np.bincount(middle.ravel(), minlength=3).argmax()
+    # A second cluster close to the floor's colour is floor too (light and shadow on the same ground).
+    near = [k for k in range(3) if k != floor and np.linalg.norm(centers[k] - centers[floor]) < 0.12]
+    return ~np.isin(labels, [floor, *near]) & ~water
 
 
 def otsu(values, bins=64):

@@ -31,7 +31,7 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 | C1 | Zugriff von unterwegs (Relay), danach Handy-App | ★★★ | XL | Relay-Dienst, Sicherheitskonzept |
 | C6 | Mehrere Pets gleichzeitig | ★ | L | – |
 | C7 | Mitguck-Modus (Bildschirm/Webcam) | ★★ | L | Vision-Modell, Datenschutzkonzept |
-| C8 | Battlemap aus Text erzeugen | ★ | L | Bildmodell, ungewisse Qualität |
+| C8 | Battlemap aus Text erzeugen (Versuch gemacht, Einbau offen) | ★ | M | Flux-Modell, starke GPU |
 | **D** | **Plattformen & Technik – nur mit Hardware oder bei Gelegenheit** | | | |
 | D1 | Desktop-Pet unter macOS | ★★ | M | Mac |
 | D2 | Apple Metal: richtiger GPU-Speicher | ★★ | S | Mac |
@@ -161,10 +161,10 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 - [ ] **C8 · Battlemap aus Text:** Improvisiert der Spielleiter einen Ort, erzeugt `stable-diffusion.cpp` eine
   Draufsicht, aus der Wände, Hindernisse und Sichtlinien für die 5e-Engine abgeleitet werden. Ungewiss, ob die
   Erkennung zuverlässig genug wird – zuerst einen kleinen Versuch.
-  - Versuch vorbereitet (15.11.2026): `tools/battlemap_probe.py` erzeugt Draufsichten mit den lokalen Modellen (Flux 1/2,
-    Qwen-Image über `sd-cli`), liest daraus ein Raster im Kartenformat (Pixelverfahren oder Qwen3-VL) und bewertet die
-    Spielbarkeit. Selbsttest mit den drei Karten als verrauschte Bilder: 96–97 % Übereinstimmung (Obergrenze des
-    Pixelverfahrens). Offen: echte Bilder erzeugen und auswerten (GPU frei).
+  - Versuch gemacht (15.11.2026, `docs/battlemap-versuch-2026-11-15.md`, `tools/battlemap_probe.py`): Flux 2 malt echte
+    Draufsichten (~95 s je Karte), das Pixelverfahren liest daraus bei 5 von 6 Orten ein brauchbares Raster; Flux 1 ist
+    schräger, Qwen-Image karg, das Vision-Modell (Qwen3-VL 8B) kann keine Raster. Empfehlung: optionaler Einbau mit
+    Flux im Hintergrund, Prüfung der Spielbarkeit und Rückfall auf mitgelieferte Karten (Aufwand M) – Entscheidung offen.
 
 > Alleinstellungsmerkmal: Das Desktop-Pet zusammen mit Gedächtnis und proaktiven Nachrichten –
 > „Deine Figur lebt auf deinem PC.“ Punkte, die das stärken (C6), haben bei gleicher Bewertung Vorrang.
