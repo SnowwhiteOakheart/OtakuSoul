@@ -333,6 +333,8 @@ impl WebServerManager {
             .route("/api/ws", get(handle_ws))
             .route("/overlay", get(handle_overlay))
             .route("/api/overlay-ws", get(handle_overlay_ws))
+            .route("/overlay/3d.js", get(handle_overlay_script))
+            .route("/overlay/model", get(handle_overlay_model))
             .with_state(state);
 
         tokio::spawn(async move {
@@ -429,7 +431,7 @@ async fn handle_overlay() -> impl IntoResponse {
     let mut headers = HeaderMap::new();
     headers.insert(
         header::CONTENT_SECURITY_POLICY,
-        HeaderValue::from_static("default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self' ws: wss:; img-src data:; base-uri 'none'; form-action 'none'"),
+        HeaderValue::from_static("default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self' ws: wss: blob: data:; img-src data: blob:; base-uri 'none'; form-action 'none'"),
     );
     headers.insert(
         header::REFERRER_POLICY,
@@ -437,6 +439,53 @@ async fn handle_overlay() -> impl IntoResponse {
     );
     headers.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
     (headers, Html(crate::modules::overlay::PAGE))
+}
+
+/// The overlay's 3D figure (three.js and three-vrm, `src/overlay3d/`), from the app's embedded
+/// assets (in `tauri dev` from `dist/`, so it needs one `npm run build`). Code only, no token.
+async fn handle_overlay_script() -> Response {
+    let script = crate::modules::mobile::app()
+        .and_then(|app| app.asset_resolver().get("overlay/overlay3d.js".into()));
+    match script {
+        Some(asset) => {
+            let mut headers = HeaderMap::new();
+            headers.insert(
+                header::CONTENT_TYPE,
+                HeaderValue::from_static("text/javascript; charset=utf-8"),
+            );
+            headers.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-cache"));
+            (headers, asset.bytes).into_response()
+        }
+        None => (StatusCode::NOT_FOUND, "overlay script not built").into_response(),
+    }
+}
+
+/// The active figure's 3D model for the overlay (only the file the main window named, see
+/// `overlay::OverlayHub::model_bytes`); needs the overlay token.
+async fn handle_overlay_model(
+    State(ctx): State<AppStateContext>,
+    headers: HeaderMap,
+    Query(params): Query<AuthParams>,
+) -> Response {
+    if !check_auth(&headers, &params, &ctx.overlay_token.read().await) {
+        return unauthorized();
+    }
+    match tokio::task::spawn_blocking(|| crate::modules::overlay::hub().model_bytes())
+        .await
+        .ok()
+        .flatten()
+    {
+        Some(bytes) => {
+            let mut out = HeaderMap::new();
+            out.insert(
+                header::CONTENT_TYPE,
+                HeaderValue::from_static("model/gltf-binary"),
+            );
+            out.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+            (out, bytes).into_response()
+        }
+        None => (StatusCode::NOT_FOUND, "no model").into_response(),
+    }
 }
 
 async fn handle_overlay_ws(

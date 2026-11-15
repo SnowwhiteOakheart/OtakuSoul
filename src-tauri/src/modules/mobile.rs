@@ -40,6 +40,11 @@ pub fn set_app(app: AppHandle) {
     let _ = APP.set(app);
 }
 
+/// The app, once started (the web server reads the embedded overlay script through it).
+pub fn app() -> Option<&'static AppHandle> {
+    APP.get()
+}
+
 fn emit(event: &str, payload: Value) -> Result<(), String> {
     let app = APP.get().ok_or("no app handle")?;
     app.emit(event, payload).map_err(|e| e.to_string())

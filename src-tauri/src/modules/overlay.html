@@ -14,6 +14,8 @@
   #root.right { justify-content: flex-end; }
   #figure { position: relative; display: flex; flex-direction: column; align-items: center; max-width: 100%; max-height: 100%; transform-origin: bottom center; }
   #portrait { display: none; max-width: 100%; max-height: 78vh; object-fit: contain; transform-origin: bottom center; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, .45)); transition: transform .08s linear; }
+  #model3d { display: none; width: calc(78vh * .62); height: 78vh; max-width: 96vw; }
+  #model3d.show { display: block; }
   #placeholder { display: none; width: 22vh; height: 22vh; border-radius: 50%; align-items: center; justify-content: center; font-size: 11vh; background: rgba(15, 23, 42, .75); border: 2px solid rgba(103, 232, 249, .5); }
   #portrait.idle { animation: breathe 4.2s ease-in-out infinite; }
   @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.012, 1.02); } }
@@ -36,6 +38,7 @@
   <div id="figure">
     <div id="bubble"><span id="text"></span><span id="dots"><i></i><i></i><i></i></span></div>
     <img id="portrait" alt="">
+    <canvas id="model3d"></canvas>
     <div id="placeholder"></div>
     <div id="tag"></div>
   </div>
@@ -60,7 +63,46 @@
   $('root').className = align;
   $('figure').style.transform = 'scale(' + scale + ')';
 
-  var state = { characterName: '', emotion: '', portrait: '', thinking: false };
+  var state = { characterName: '', emotion: '', expression: '', portrait: '', thinking: false, model: '' };
+  // 3D figure (VRM/GLB from the app, `/overlay/3d.js`); `model3d=0` in the address keeps the portrait.
+  var allow3d = q.get('model3d') !== '0';
+  var shownModel = '';
+  var has3d = false;
+  var scriptLoading = null;
+  function load3d() {
+    if (window.OtakuOverlay3D) return Promise.resolve(true);
+    if (!scriptLoading) {
+      scriptLoading = new Promise(function (resolve) {
+        var s = document.createElement('script');
+        s.src = '/overlay/3d.js';
+        s.onload = function () { resolve(!!window.OtakuOverlay3D); };
+        s.onerror = function () { resolve(false); };
+        document.head.appendChild(s);
+      });
+    }
+    return scriptLoading;
+  }
+  function showModel() {
+    var wanted = allow3d ? (state.model || '') : '';
+    if (wanted === shownModel) return;
+    shownModel = wanted;
+    if (!wanted) {
+      if (window.OtakuOverlay3D) window.OtakuOverlay3D.clear();
+      has3d = false;
+      render();
+      return;
+    }
+    load3d().then(function (ok) {
+      if (!ok || shownModel !== wanted) return null;
+      $('model3d').className = 'show';
+      return window.OtakuOverlay3D.show($('model3d'), '/overlay/model?token=' + encodeURIComponent(token) + '&v=' + encodeURIComponent(wanted));
+    }).then(function (shown) {
+      if (shownModel !== wanted) return;
+      has3d = !!shown;
+      if (has3d) window.OtakuOverlay3D.setMood(state.expression || '', state.emotion || '');
+      render();
+    });
+  }
   var gotState = false;
   var bubbleTimer = 0;
   var speakingUntil = 0;
@@ -72,10 +114,11 @@
 
   function render() {
     var img = $('portrait');
-    var hasPortrait = !!state.portrait;
+    var hasPortrait = !!state.portrait && !has3d;
+    $('model3d').className = has3d ? 'show' : '';
     if (hasPortrait && img.getAttribute('src') !== state.portrait) img.src = state.portrait;
     img.style.display = hasPortrait ? 'block' : 'none';
-    $('placeholder').style.display = !hasPortrait && gotState ? 'flex' : 'none';
+    $('placeholder').style.display = !hasPortrait && !has3d && gotState ? 'flex' : 'none';
     $('placeholder').textContent = (state.characterName || '?').charAt(0).toUpperCase();
     var parts = [];
     if (showName && state.characterName) parts.push(state.characterName);
@@ -98,7 +141,7 @@
     }, ms);
   }
 
-  // The mouth: the figure swells a little with the voice (portrait only, no model here).
+  // The mouth: the portrait swells a little with the voice (the 3D figure opens its mouth itself).
   function tick() {
     var talking = Date.now() < speakingUntil;
     var img = $('portrait');
@@ -114,6 +157,8 @@
     if (msg.type === 'state') {
       for (var key in msg) if (key !== 'type') state[key] = msg[key];
       if (!gotState) { gotState = true; waitText(''); }
+      if (has3d) window.OtakuOverlay3D.setMood(state.expression || '', state.emotion || '');
+      showModel();
       render();
     } else if (msg.type === 'say') {
       say(msg.text, Math.min(20000, Math.max(4000, msg.text.length * 70)));
@@ -122,6 +167,7 @@
       say(msg.text, Math.max(2500, msg.ms + 1200));
     } else if (msg.type === 'audio') {
       amplitude = Math.max(amplitude, msg.amplitude);
+      if (has3d) window.OtakuOverlay3D.setVoice(msg.amplitude);
       if (msg.amplitude > 0.02) speakingUntil = Date.now() + 250;
     }
   }

@@ -26,7 +26,6 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 | T2 | Stage: separates Spielleiter-Modell (früher E8) | – | M–L | Nutzerfeedback, Messung |
 | **B** | **Als Nächstes – baut auf Vorhandenem auf** | | | |
 | B4 | Teilen: erster echter Durchlauf über ein Issue | ★★ | S | dein GitHub-Konto, Repo-Einstellung |
-| B6 | OBS-Overlay: 3D-/Live2D-Modell statt Porträt | ★ | M | – |
 | B7 | Benachrichtigungsklick unter macOS (Windows und Linux erledigt) | ★ | M | Mac |
 | **C** | **Später – größere Vorhaben** | | | |
 | C1 | Zugriff von unterwegs (Relay), danach Handy-App | ★★★ | XL | Relay-Dienst, Sicherheitskonzept |
@@ -147,9 +146,6 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
   Lorebook-Ansicht, `check_lorebook`, Paket nach `lorebooks_gateway/`, Prüfung und Aufnahme in beiden Daten-Repos; E2E
   `lorebook-contribute.mjs`, dessen Paket `check_submission.py` annimmt). *Risiko:* Inhaltsprüfung und Moderation bleiben beim
   Betreiber.
-- [ ] **B6 · OBS-Overlay mit Modell:** Das Overlay (`/overlay`) zeigt heute das Porträt mit Sprechblase und Stimmung. Offen: das
-  3D-/Live2D-Modell selbst als Browser-Quelle; dafür müssten Modelldateien über den Web-Server ausgeliefert und die Viewer
-  ohne Tauri-Fensteraufrufe laufen.
 - [ ] **B7 · Klick auf die Benachrichtigung öffnet den Chat – macOS:** Windows (`notify_chat`, Toast) und Linux/BSD
   (15.11.2026: Plugin-Benachrichtigung mit `charId`/`chatId`, Klick über `on_action`/D-Bus, `register_notification_click`)
   erledigt. Unter Linux noch einmal in einer echten Sitzung (GNOME, KDE, dunst) klicken. macOS: das Plugin meldet Klicks
@@ -172,7 +168,7 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
   (z. B. QuickJS als WebAssembly im Worker), weil importierte Skripte fremder Herkunft sein können.
 
 > Alleinstellungsmerkmal: Das Desktop-Pet zusammen mit Gedächtnis und proaktiven Nachrichten –
-> „Deine Figur lebt auf deinem PC.“ Punkte, die das stärken (B6, C6), haben bei gleicher Bewertung Vorrang.
+> „Deine Figur lebt auf deinem PC.“ Punkte, die das stärken (C6), haben bei gleicher Bewertung Vorrang.
 
 ## D. Plattformen & Technik – nur mit Hardware oder bei Gelegenheit
 

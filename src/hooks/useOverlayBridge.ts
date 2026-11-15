@@ -7,6 +7,7 @@ import { APP_DEFAULT_COMPANION_NAME } from '../constants/branding';
 import { bubbleText } from '../components/companion/petBehavior';
 import { watchNewReplies } from './replyWatcher';
 import { followPortrait } from './portraitFeed';
+import { petModels } from './useDesktopPetBridge';
 
 /** The overlay's picture is at most this large (px); the page scales it to its own size. */
 const PORTRAIT_PX = 512;
@@ -43,6 +44,8 @@ export function useOverlayBridge(enabled = true) {
         emotion: s.currentEmotion.emotion,
         expression: s.currentEmotion.vrm_expression,
         thinking: s.isGenerating,
+        // The backend serves it only if it is a VRM/GLB in the model folders (not VRoid Hub).
+        model: petModels(s).modelPath,
       };
       const key = JSON.stringify(state);
       if (key === lastState) return;
@@ -51,7 +54,13 @@ export function useOverlayBridge(enabled = true) {
     };
 
     const stopStore = useAppStore.subscribe((s, prev) => {
-      if (s.activeCharacter !== prev.activeCharacter || s.currentEmotion !== prev.currentEmotion || s.isGenerating !== prev.isGenerating) {
+      if (
+        s.activeCharacter !== prev.activeCharacter ||
+        s.currentEmotion !== prev.currentEmotion ||
+        s.isGenerating !== prev.isGenerating ||
+        s.activeVrmPath !== prev.activeVrmPath ||
+        s.scannedVrms !== prev.scannedVrms
+      ) {
         sendState();
       }
     });
