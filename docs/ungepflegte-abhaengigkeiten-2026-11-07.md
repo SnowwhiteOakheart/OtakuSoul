@@ -46,3 +46,17 @@ Die drei D-Bus-Warnungen betreffen in zbus zusammengeführte Einzelpakete; sie b
 - Oxlint, Syntaxprüfung und Parität der beiden E2E-Skripte geprüft. Der neue PDF-Test ist Bestandteil der regulären Suite (**101 Szenarien**). Die vollständige Desktop-Suite und die unveränderten React-Unit-Tests wurden in diesem Backend-Schritt nicht erneut ausgeführt.
 
 Lokale Protokolle liegen unter `target/unmaintained-*`. Quellcode und Golden-Tests der Kokoro-Portierung sowie Herkunft der synthetischen PDF-Fixtures sind im Repository dokumentiert.
+
+## Nachprüfung 15.11.2026 (Linux, WSL2, cargo-audit 0.23.0)
+
+Unverändert: **0 Schwachstellen**, die vier Wartungswarnungen (`proc-macro-error`, `zbus_names`, `zvariant`, `zvariant_derive`) und RUSTSEC-2024-0429 (glib 0.18.5). Neu ist nur, dass notify-rust 4.19 und ashpd 0.14 auf **zbus 6** umgestiegen sind; zbus 5 bleibt über
+
+- `tauri-plugin-notification` 2.8.1, `tauri-plugin-opener` 2.7.3, `tauri-plugin-single-instance` 2.5.5 (neuere Linie nur `3.0.0-alpha.3`),
+- `keyring` 4.2.0 → `zbus-secret-service-keyring-store` 1.0.1 → `secret-service` 5.2.0 (6.x nur als `6.0.0-rc.1`),
+- unsere eigene direkte Abhängigkeit (`desktop_windows.rs`: Sperrbildschirm, `kwin_bridge.rs`: KWin-Skript-Brücke).
+
+`cargo update --dry-run` bietet für keinen dieser Eltern eine stabile Version mit zbus 6 an. `proc-macro-error` und glib 0.18 stecken in den GTK-3-Bindings von Tauri 2/Wry (gtk 0.18); beides löst erst die GTK-Linie von Tauri 3 (derzeit `3.0.0-alpha.6`).
+
+Versuch, nur unsere eigene Abhängigkeit auf zbus 6 zu heben: **zurückgenommen**. zbus 6 hat die blockierende API entfernt (`zbus::blocking` fehlt, Changelog „Remove the blocking API“), Sperrbildschirm-Abfrage und KWin-Brücke müssten auf die asynchrone API umgeschrieben werden. Das ändert die Audit-Befunde nicht, solange Plugins und keyring zbus 5 mitbringen, und die KWin-Brücke lässt sich nur in einer echten KDE-Wayland-Sitzung prüfen. Der Umbau gehört deshalb in denselben Schritt wie der Wechsel der Eltern.
+
+**Auslöser zum Wiederaufnehmen** (Roadmap E9): stabile Tauri-Plugins mit zbus 6, stabiles `secret-service` 6 hinter `keyring`, oder Tauri 3 stabil. Dann gemeinsam: Plugins/keyring heben, `zbus = "6"` mit asynchroner Sperrbildschirm-Abfrage und KWin-Brücke, Prüfung unter KDE Wayland (Pet: Cursor, Fenster, Vollbild) und GNOME (Sperre), danach `cargo audit` unter Linux.

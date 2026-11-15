@@ -40,7 +40,6 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 | D3 | Desktop-Pet unter Linux – Folgestufe | ★ | M | X11-, GNOME-, KDE-Systeme |
 | D4 | E2E-Test fürs Pet-Fenster, Speicher des Pet-Webviews | ★ | M | – |
 | D5 | Wackelige E2E-Tests beobachten | ★ | – | – |
-| D6 | Nicht mehr gepflegte Linux-Abhängigkeiten ersetzen: GTK-Makros (`proc-macro-error`), D-Bus-Eltern gemeinsam auf zbus 6; glib-Speicherfehler berücksichtigen | ★★ | M | Linux-Prüfplatz, abgestimmte Tauri-/Plugin-/Schlüsselbund-Updates; Details `docs/ungepflegte-abhaengigkeiten-2026-11-07.md` |
 | **E** | **Geparkt – wartet auf andere oder nur bei Bedarf** | | | |
 | E1 | `tauri-specta` (wartet auf stabile 2.0) | – | L | – |
 | E2 | TADA 3B Deutsch (wartet auf CrispASR) | – | S | – |
@@ -49,6 +48,7 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 | E5 | Lokale Embeddings fürs Gedächtnis | – | M | Messung, dass FTS5 nicht reicht |
 | E6 | VRoid-Anmeldung über `otakusoul://`-Link | – | S | Berichte über belegten Port |
 | E7 | Hörbuch-Export (vorerst gestrichen, 02.11.2026) | ★ | M | – |
+| E9 | Linux-Abhängigkeiten ohne Wartung (früher D6): wartet auf zbus-6-Plugins, keyring bzw. Tauri 3 | ★★ | M | stabile Upstream-Versionen, KDE-/GNOME-Prüfplatz |
 
 ## Leitlinien für neue Oberflächen
 
@@ -216,6 +216,13 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 
 - [ ] **E7 · Hörbuch-Export** – vorerst gestrichen (Entscheidung 02.11.2026), niedrigste Priorität: Sprachclips eines
   Kapitels (Erzähler- und Charakterstimmen) zu einer Audiodatei mit Kapitelmarken zusammenfügen.
+
+- [ ] **E9 · Nicht mehr gepflegte Linux-Abhängigkeiten** (früher D6, geparkt 15.11.2026): `proc-macro-error` und glib 0.18
+  (RUSTSEC-2024-0429) kommen aus den GTK-3-Bindings von Tauri 2, `zbus_names`/`zvariant`/`zvariant_derive` aus zbus 5 über die
+  Tauri-Plugins notification/opener/single-instance, keyring/secret-service und unsere eigene Abhängigkeit. Für keinen Elternteil
+  gibt es eine stabile Version mit zbus 6 bzw. neuer GTK-Linie (nur 3.0-Alpha bzw. secret-service 6.0-rc). Wiederaufnehmen, sobald
+  eine davon stabil ist; dann zusammen mit dem Umbau auf zbus 6, das keine blockierende API mehr hat (Sperrbildschirm in
+  `desktop_windows.rs`, KWin-Brücke `kwin_bridge.rs`). Details und Prüfliste: `docs/ungepflegte-abhaengigkeiten-2026-11-07.md`.
 
 ---
 
