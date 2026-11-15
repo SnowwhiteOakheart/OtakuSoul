@@ -38,7 +38,6 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 | D1 | Desktop-Pet unter macOS | ★★ | M | Mac |
 | D2 | Apple Metal: richtiger GPU-Speicher | ★★ | S | Mac |
 | D3 | Desktop-Pet unter Linux – Folgestufe | ★ | M | X11-, GNOME-, KDE-Systeme |
-| D4 | E2E-Test fürs Pet-Fenster, Speicher des Pet-Webviews | ★ | M | – |
 | D5 | Wackelige E2E-Tests beobachten | ★ | – | – |
 | **E** | **Geparkt – wartet auf andere oder nur bei Bedarf** | | | |
 | E1 | `tauri-specta` (wartet auf stabile 2.0) | – | L | – |
@@ -162,7 +161,7 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
   Portfreigabe, mit Push-Benachrichtigungen; danach eine eigene Handy-App über Tauri 2 (Android/iOS) prüfen. *Nutzen:*
   größte Lücke gegenüber Character.AI, Kindroid und Replika; *aber:* braucht einen Relay-Dienst und ein Sicherheitskonzept.
 - [ ] **C6 · Mehrere Pets:** Bei Gruppenchats mehrere Figuren gleichzeitig, die sich anschauen und nacheinander sprechen
-  (eigene Fenster, gemeinsame Physik). Erst nach D4 (Speicherbedarf des Pet-Webviews).
+  (eigene Fenster, gemeinsame Physik). Speicher je Pet-Webview: ~57 MB JS-Heap mit VRM-Figur (D4, 15.11.2026).
 - [ ] **C7 · Mitguck-Modus:** Optionaler Live-Blick bei Sprachanrufen oder fürs Pet: ein verkleinerter Schnappschuss
   des aktiven Fensters oder der Webcam für Vision-Modelle. Nur mit deutlicher Anzeige und Freigabe je Sitzung.
 - [ ] **C8 · Battlemap aus Text:** Improvisiert der Spielleiter einen Ort, erzeugt `stable-diffusion.cpp` eine
@@ -191,9 +190,6 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 - [ ] **D3 · Desktop-Pet unter Linux – Folgestufe:** Grundstufe und KDE Wayland erledigt (30.10.2026). Offen:
   Fensterkanten in X11-Sitzungen über `_NET_CLIENT_LIST_STACKING`; GNOME-Wayland (bleibt ohne Click-Through und Kanten);
   Musik/Takt über den PipeWire-Monitor; Stehen auf Fenstern und Werfen von Hand unter KDE prüfen.
-- [ ] **D4 · Pet-Fenster absichern:** E2E-Test mit tauri-driver und zweitem Fenster (Öffnen, Zustand vom Hauptfenster,
-  Ausblenden, Wiederkehr beim Start); Speicher des zweiten Webviews messen und ggf. Modelldaten aus dem Hauptfenster
-  übergeben statt erneut zu lesen.
 - [ ] **D5 · Wackelige E2E-Tests beobachten:** 15.11.2026 einmal wackelig: `chat-emotion-tag`, `stage-gallery`,
   `stage-npcs` (Windows), `chat-narrator-voice` (Linux); unter WSL2 starten Ambient-Klänge nicht (`stage-voice`,
   `chat-style`, schon mit 0.7.8 – Audio-Umgebung von WSL/xvfb, unter Windows grün). Ältere Fälle: `chat-sidebar-errors` (einmal Entwurfsvergleich) und `stage-5e` (einmal
