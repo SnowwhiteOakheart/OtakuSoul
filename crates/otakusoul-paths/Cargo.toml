@@ -1,0 +1,10 @@
+[package]
+name = "otakusoul-paths"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+license = "GPL-3.0-only"
+description = "Gemeinsame Auflösung der OtakuSoul-Profilpfade"
+
+[dependencies]
+directories = "6.0"

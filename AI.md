@@ -16,7 +16,7 @@ Nutzer mit „Du“ ansprechen. Antworten, Commits und Doku auf Deutsch.
   Der Nutzer erlaubt Commit und Push für die beauftragte Projektarbeit dauerhaft; keine erneute Rückfrage nötig.
 - Der Nutzer arbeitet parallel im Repo: fremde uncommittete Änderungen nie mitcommitten.
 - `roadmap.md` (offene Punkte) im selben Commit abhaken, Erledigtes nach `roadmap_abgeschlossen.md` verschieben (nur lokal, in `.gitignore`, nie committen); `README.md` und betroffene Doku in `AI.md` / `docs/ai/` bei neuen Modulen/Features anpassen.
-- Pfade nur über `paths::base_dirs()` (ProjectDirs bzw. `$OTAKUSOUL_HOME/config|data`); OS-Code mit `#[cfg]`.
+- Pfade nur über `paths::base_dirs()` (Re-Export aus `crates/otakusoul-paths`; ProjectDirs bzw. `$OTAKUSOUL_HOME/config|data`); OS-Code mit `#[cfg]`.
 - Modelle grundsätzlich von der Quelle laden (SHA-256). Ausnahme: Avatare/Puppen dürfen zu 1–2 je Art mitgeliefert
   werden, wenn Lizenz (Weitergabe erlaubt) und Größe es zulassen – mit `lizenzen.txt` im Asset-Ordner und Hinweis in
   den READMEs (Beispiele: `assets/vrm/`, `assets/inochi2d/Aka.inx`); alle weiteren gehören als Registry-Eintrag ins
