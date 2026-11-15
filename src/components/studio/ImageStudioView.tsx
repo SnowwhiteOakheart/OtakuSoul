@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronDown, FolderOpen, ImageIcon, Images, Loader2, RefreshCw, RotateCcw, Square, Trash2, Undo2, Wand2, X } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, FolderOpen, ImageIcon, Images, Loader2, RefreshCw, RotateCcw, Square, Trash2, Undo2, Wand2, X } from 'lucide-react';
 import { api } from '../../services/api';
 import { useTranslation, type TranslationKey } from '../../i18n';
 import { useStoreFields } from '../../store/useAppStore';
@@ -441,6 +441,10 @@ const Gallery = ({ images, onRefresh, onReuse }: GalleryProps) => {
   const { t } = useTranslation();
   const [shown, setShown] = useState(PAGE);
   const [open, setOpen] = useState<StudioImage | null>(null);
+  // Position in the whole list (also past the shown page), found by path: the list is reloaded.
+  const index = open && images ? images.findIndex((i) => i.path === open.path) : -1;
+  const previous = index > 0 ? images?.[index - 1] : undefined;
+  const next = index >= 0 ? images?.[index + 1] : undefined;
 
   const remove = async (image: StudioImage) => {
     const ok = await confirmDialog({
@@ -452,7 +456,8 @@ const Gallery = ({ images, onRefresh, onReuse }: GalleryProps) => {
     if (!ok) return;
     try {
       await api.deleteStudioFile('images', image.file_name);
-      setOpen(null);
+      // Stay in the preview with the neighbour, so a row of images can be sorted out in one go.
+      setOpen(next ?? previous ?? null);
       await onRefresh();
     } catch (error) {
       toast.error(errorMessage(error));
@@ -490,21 +495,57 @@ const Gallery = ({ images, onRefresh, onReuse }: GalleryProps) => {
           )}
         </>
       )}
-      {open && <ImagePreview image={open} onClose={() => setOpen(null)} onReuse={() => { onReuse(open); setOpen(null); }} onDelete={() => void remove(open)} />}
+      {open && (
+        <ImagePreview
+          image={open}
+          position={index >= 0 && images ? { index: index + 1, count: images.length } : null}
+          onPrevious={previous ? () => setOpen(previous) : undefined}
+          onNext={next ? () => setOpen(next) : undefined}
+          onClose={() => setOpen(null)}
+          onReuse={() => {
+            onReuse(open);
+            setOpen(null);
+          }}
+          onDelete={() => void remove(open)}
+        />
+      )}
     </section>
   );
 };
 
 interface ImagePreviewProps {
   image: StudioImage;
+  /** 1-based place in the gallery. */
+  position: { index: number; count: number } | null;
+  /** Missing at the first or last image. */
+  onPrevious?: () => void;
+  onNext?: () => void;
   onClose: () => void;
   onReuse: () => void;
   onDelete: () => void;
 }
 
-const ImagePreview = ({ image, onClose, onReuse, onDelete }: ImagePreviewProps) => {
+const ImagePreview = ({ image, position, onPrevious, onNext, onClose, onReuse, onDelete }: ImagePreviewProps) => {
   const { t } = useTranslation();
   const url = useBlobUrl(image.path);
+  const box = useRef<HTMLDivElement>(null);
+  // Arrow keys on the window: a nav button that disappears at the first or last image takes the
+  // focus with it. Keys inside another dialog (the delete confirmation above) stay its own.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      const go = event.key === 'ArrowLeft' ? onPrevious : event.key === 'ArrowRight' ? onNext : undefined;
+      if (!go) return;
+      const own = box.current?.closest('[role="dialog"]');
+      const inDialog = event.target instanceof Element ? event.target.closest('[role="dialog"]') : null;
+      if (inDialog && inDialog !== own) return;
+      event.preventDefault();
+      go();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [onPrevious, onNext]);
+  const arrow = 'absolute top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-2 text-white hover:bg-black/80 focus-visible:ring-2 focus-visible:ring-accent-400 outline-hidden';
   return (
     <ModalOverlay
       onClose={onClose}
@@ -512,9 +553,14 @@ const ImagePreview = ({ image, onClose, onReuse, onDelete }: ImagePreviewProps) 
       aria-label={image.title}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
     >
-      <div className="flex max-h-full w-full max-w-5xl flex-col gap-3 rounded-2xl border border-slate-800 bg-slate-950 p-3" data-testid="image-preview">
+      <div ref={box} className="flex max-h-full w-full max-w-5xl flex-col gap-3 rounded-2xl border border-slate-800 bg-slate-950 p-3" data-testid="image-preview">
         <div className="flex items-center gap-2">
           <p className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-100">{image.title}</p>
+          {position && position.count > 1 && (
+            <span className="shrink-0 text-xs tabular-nums text-slate-400" data-testid="image-position">
+              {t('imageStudio.position', { index: position.index, count: position.count })}
+            </span>
+          )}
           {image.request && (
             <button type="button" onClick={onReuse} className="flex items-center gap-1.5 rounded-lg bg-slate-800 px-2.5 py-1.5 text-xs hover:bg-slate-700">
               <Undo2 className="w-3.5 h-3.5" /> {t('studio.reuse')}
@@ -527,8 +573,19 @@ const ImagePreview = ({ image, onClose, onReuse, onDelete }: ImagePreviewProps) 
             <X className="w-4 h-4" />
           </button>
         </div>
-        <div className="flex min-h-0 flex-1 items-center justify-center">
+        <div className="relative flex min-h-0 flex-1 items-center justify-center">
           {url ? <img src={url} alt={image.request?.prompt ?? image.title} className="max-h-[70vh] max-w-full rounded-lg object-contain" /> : <Loader2 className="w-6 h-6 animate-spin text-slate-400" />}
+          {/* Fixed white on dark like the thumbnails: readable over any image and theme. */}
+          {onPrevious && (
+            <button type="button" onClick={onPrevious} aria-label={t('imageStudio.previous')} title={t('imageStudio.previous')} className={`${arrow} left-2`}>
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+          )}
+          {onNext && (
+            <button type="button" onClick={onNext} aria-label={t('imageStudio.next')} title={t('imageStudio.next')} className={`${arrow} right-2`}>
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          )}
         </div>
         {image.request && (
           <div className="space-y-1 text-xs text-slate-400">

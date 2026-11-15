@@ -3,7 +3,7 @@
 // the image folder can be changed, images in it show up in the gallery with their request,
 // the preview loads the settings back and deletes with confirmation.
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync, truncateSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, truncateSync, utimesSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { launch, screenshotDir, studioDefaultDir } from './harness.mjs';
 
@@ -61,11 +61,16 @@ try {
   await openStudio();
   await browser.waitUntil(async () => (await value('[data-testid="image-model"] select')) === 'animagine-xl-4', { timeout: 5000, timeoutMsg: 'Modellwahl nicht behalten' });
 
-  // A folder of the test with an image of the studio.
+  // A folder of the test with an image of the studio and two older ones (newest first).
   const folder = path.join(home, 'meine-bilder');
   assert.equal((await invoke('set_studio_folder', { kind: 'images', path: folder })).is_default, false);
   mkdirSync(folder, { recursive: true });
   writeFileSync(path.join(folder, 'Abendrot.png'), PNG);
+  const now = Date.now() / 1000;
+  for (const [name, age] of [['Morgentau', 60], ['Nachthimmel', 120]]) {
+    writeFileSync(path.join(folder, `${name}.png`), PNG);
+    utimesSync(path.join(folder, `${name}.png`), now - age, now - age);
+  }
   writeFileSync(
     path.join(folder, 'Abendrot.png.json'),
     JSON.stringify({
@@ -91,6 +96,24 @@ try {
   await preview.waitForDisplayed({ timeout: 5000 });
   assert.ok((await text(preview)).includes('sunset over the sea'));
   await browser.waitUntil(async () => (await browser.execute((el) => !!el.querySelector('img')?.src.startsWith('blob:'), preview)), { timeout: 5000, timeoutMsg: 'Bild nicht geladen' });
+  // Browse to the neighbours: buttons only where there is one, and the arrow keys.
+  const position = () => browser.execute(() => document.querySelector('[data-testid="image-position"]')?.textContent ?? '');
+  const title = () => browser.execute(() => document.querySelector('[data-testid="image-preview"] p')?.textContent ?? '');
+  const showing = (name, place) =>
+    browser.waitUntil(async () => (await title()) === name && (await position()) === place, { timeout: 5000, timeoutMsg: `${name} (${place}) wird nicht gezeigt` });
+  await showing('Abendrot', '1 / 3');
+  assert.equal(await preview.$('button[aria-label^="Vorheriges Bild"]').isExisting(), false);
+  await jsClick(await preview.$('button[aria-label^="Nächstes Bild"]'));
+  await showing('Morgentau', '2 / 3');
+  await browser.keys('ArrowRight');
+  await showing('Nachthimmel', '3 / 3');
+  assert.equal(await preview.$('button[aria-label^="Nächstes Bild"]').isExisting(), false);
+  await browser.keys('ArrowRight');
+  await showing('Nachthimmel', '3 / 3');
+  await browser.keys('ArrowLeft');
+  await showing('Morgentau', '2 / 3');
+  await jsClick(await preview.$('button[aria-label^="Vorheriges Bild"]'));
+  await showing('Abendrot', '1 / 3');
   await jsClick(await preview.$('button=Einstellungen übernehmen'));
   await browser.waitUntil(async () => (await value('#image-prompt')) === 'sunset over the sea', { timeout: 5000, timeoutMsg: 'Einstellungen nicht übernommen' });
 
@@ -104,12 +127,13 @@ try {
   const confirm = await dialogs[dialogs.length - 1].$('button=Löschen');
   await confirm.waitForDisplayed({ timeout: 5000 });
   await jsClick(confirm);
-  await browser.$('p=Noch keine Bilder in diesem Ordner.').waitForDisplayed({ timeout: 5000 });
+  // The preview stays open with the next image.
+  await showing('Morgentau', '1 / 2');
   assert.equal(existsSync(path.join(folder, 'Abendrot.png')), false);
   assert.equal(existsSync(path.join(folder, 'Abendrot.png.json')), false);
 
   assert.deepEqual(await invoke('set_studio_folder', { kind: 'images', path: null }), { path: defaultDir, is_default: true });
-  console.log('Bild-Studio: Modellwahl (keins/eins/mehrere), Ordner, Galerie, Vorschau, Übernehmen und Löschen bestanden.');
+  console.log('Bild-Studio: Modellwahl (keins/eins/mehrere), Ordner, Galerie, Vorschau mit Vor/Zurück, Übernehmen und Löschen bestanden.');
 } finally {
   await close();
 }
