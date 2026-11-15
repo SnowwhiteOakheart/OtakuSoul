@@ -124,7 +124,7 @@ export const LorebookSidebar = ({ onCreate, onImport }: LorebookSidebarProps) =>
                     </span>
                   )}
                   <span className="px-1.5 py-0.5 rounded text-[11px] font-mono bg-slate-800 text-slate-400 border border-slate-700">
-                    {lb.entries.length} Einträge
+                    {tPlural('lore.entryCount', lb.entries.length)}
                   </span>
                 </div>
               </div>

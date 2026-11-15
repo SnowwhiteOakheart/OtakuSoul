@@ -33,7 +33,7 @@ export const CharacterEditorModal = ({
   onClose,
   onSaved,
 }: CharacterEditorModalProps) => {
-  const { t, tOptional } = useTranslation();
+  const { t, tOptional, tPlural } = useTranslation();
   const fieldId = useId();
   const { refreshCharacters, allLorebooks, scannedVrms, scannedLive2ds, scannedInochi2ds } = useStoreFields(
     'refreshCharacters', 'allLorebooks', 'scannedVrms', 'scannedLive2ds', 'scannedInochi2ds',
@@ -891,7 +891,7 @@ export const CharacterEditorModal = ({
                           <span className="text-xs font-bold text-slate-100">{lb.name}</span>
                         </div>
                         <span className="px-1.5 py-0.5 rounded text-[11px] bg-slate-800 text-slate-400 font-mono border border-slate-700">
-                          {t('editor.entryCount', { count: lb.entries.length })}
+                          {tPlural('lore.entryCount', lb.entries.length)}
                         </span>
                       </div>
                       <p className="text-xs text-slate-400 line-clamp-2">
