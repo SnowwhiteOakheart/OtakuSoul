@@ -37,7 +37,6 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 | D1 | Desktop-Pet unter macOS | ★★ | M | Mac |
 | D2 | Apple Metal: richtiger GPU-Speicher | ★★ | S | Mac |
 | D3 | Desktop-Pet unter Linux – Folgestufe | ★ | M | X11-, GNOME-, KDE-Systeme |
-| D5 | Wackelige E2E-Tests beobachten | ★ | – | – |
 | **E** | **Geparkt – wartet auf andere oder nur bei Bedarf** | | | |
 | E1 | `tauri-specta` (wartet auf stabile 2.0) | – | L | – |
 | E2 | TADA 3B Deutsch (wartet auf CrispASR) | – | S | – |
@@ -186,10 +185,6 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 - [ ] **D3 · Desktop-Pet unter Linux – Folgestufe:** Grundstufe und KDE Wayland erledigt (30.10.2026). Offen:
   Fensterkanten in X11-Sitzungen über `_NET_CLIENT_LIST_STACKING`; GNOME-Wayland (bleibt ohne Click-Through und Kanten);
   Musik/Takt über den PipeWire-Monitor; Stehen auf Fenstern und Werfen von Hand unter KDE prüfen.
-- [ ] **D5 · Wackelige E2E-Tests beobachten:** 15.11.2026 einmal wackelig: `chat-emotion-tag`, `stage-gallery`,
-  `stage-npcs` (Windows), `chat-narrator-voice` (Linux); unter WSL2 starten Ambient-Klänge nicht (`stage-voice`,
-  `chat-style`, schon mit 0.7.8 – Audio-Umgebung von WSL/xvfb, unter Windows grün). Ältere Fälle: `chat-sidebar-errors` (einmal Entwurfsvergleich) und `stage-5e` (einmal
-  veraltetes Element `button[aria-label*="gegen"]`, 16.10.2026). Bei erneutem Auftreten Ursache suchen.
 
 ## E. Geparkt – wartet auf andere oder nur bei Bedarf
 
