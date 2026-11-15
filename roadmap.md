@@ -27,6 +27,8 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 | B5 | ~~Webtoon-Export~~ erledigt (05.11.2026) | – | – | – |
 | B6 | OBS-Overlay: 3D-/Live2D-Modell statt Porträt | ★ | M | – |
 | B7 | Benachrichtigungsklick unter macOS (Windows und Linux erledigt) | ★ | M | Mac |
+| B8 | Stage: Musik/Hintergrund schon während des Zugs, Szenenbild auf Wunsch des Planers | ★★ | S–M | – |
+| B9 | Stage: Spielleiter-Schirm (geheime Motive, Fallen, Bedrohungen) | ★★★ | M | – |
 | **C** | **Später – größere Vorhaben** | | | |
 | C1 | Zugriff von unterwegs (Relay), danach Handy-App | ★★★ | XL | Relay-Dienst, Sicherheitskonzept |
 | C2 | ~~Beziehungs-Atlas~~ erledigt (05.11.2026) | – | – | – |
@@ -53,6 +55,7 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 | E5 | Lokale Embeddings fürs Gedächtnis | – | M | Messung, dass FTS5 nicht reicht |
 | E6 | VRoid-Anmeldung über `otakusoul://`-Link | – | S | Berichte über belegten Port |
 | E7 | Hörbuch-Export (vorerst gestrichen, 02.11.2026) | ★ | M | – |
+| E8 | Stage: separates Spielleiter-Modell | – | M–L | Nutzerfeedback, Messung |
 
 ## Leitlinien für neue Oberflächen
 
@@ -149,6 +152,20 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
   (15.11.2026: Plugin-Benachrichtigung mit `charId`/`chatId`, Klick über `on_action`/D-Bus, `register_notification_click`)
   erledigt. Unter Linux noch einmal in einer echten Sitzung (GNOME, KDE, dunst) klicken. macOS: das Plugin meldet Klicks
   dort ebenfalls über `on_action` – mit einem Mac ausprobieren, sonst `UNUserNotificationCenter`-Delegate.
+- [ ] **B8 · Stage-Medien schon während des Zugs:** Stimmung (`GmPlan.music_mood` → `current_music_mood`), Hintergrund und
+  Ambient erreichen das Frontend heute erst mit dem fertigen `SceneState` am Zugende, weil `StageStreamEvent` nur Text trägt.
+  Nach `apply_mechanics` (`stage/turn/mechanics.rs`) ein eigenes Event (z. B. `stage-media`) senden, damit `useStageMusic.ts`
+  schon beim Erzählen überblendet. Zweiter Schritt: Der Planer darf ein Szenenbild anfordern (neues optionales `GmPlan`-Feld
+  mit `serde(default)`, `npm run types:gen`); heute startet `generateSceneImage('stage')` nur über den Knopf in `StageView`.
+  Abschaltbar, gedrosselt (nicht jede Runde), `lock_bg` beachten; lokale Bildgenerierung wegen VRAM erst nach dem Streaming.
+  Mock-LLM und `e2e/stage-world.mjs` bzw. `stage-director.mjs` ergänzen.
+- [ ] **B9 · Spielleiter-Schirm:** Geheime NPC-Motive, verdeckte Fallen/Bedrohungen und Off-Screen-Ziele als `hidden_state`
+  am `SceneState` (`serde(default)` für alte Spielstände), nur im Planer-Prompt. Baut auf `Audience`/`line_for` (`party.rs`),
+  Lorekarten mit `audience: "gm"` und den Zusammenfassungen je Publikum (`history_summaries`) auf. Hauptleck ist
+  `GmPlan.narration_plan`: Der Planer darf Geheimnisse dort erst nennen, wenn er sie enthüllt (z. B. Plan-Feld `reveal`, das
+  den Eintrag aus `hidden_state` in Fakten/Chronik überführt). Kein Leck in `replay_export.rs`, Webtoon und Stage-Log; im
+  `StageWorldEditor` als Spoiler einklappen; Story-Assistent und Szenen-JSON können Geheimnisse vorbelegen. Doku in
+  `docs/ai/stage-and-5e.md` nachziehen.
 
 ## C. Später – größere Vorhaben
 
@@ -262,6 +279,11 @@ Texturgrenzen bei konkreten Befunden als Referenz für die vorhandenen Tauri-Imp
 
 - [ ] **E7 · Hörbuch-Export** – vorerst gestrichen (Entscheidung 02.11.2026), niedrigste Priorität: Sprachclips eines
   Kapitels (Erzähler- und Charakterstimmen) zu einer Audiodatei mit Kapitelmarken zusammenfügen.
+- [ ] **E8 · Separates Spielleiter-Modell** – zurückgestellt (15.11.2026), Plan in `roadmap_spielleiter_als_seperates_modell.md`
+  (lokal). Steuernde Stage-Aufrufe (Planer, Routing, Kampfwahl, Archiv, Faktenprüfung) an ein eigenes Instruct-Modell statt ans
+  Erzählmodell. Lohnt vor allem bei RP-Fine-Tunes als Erzählmodell oder für „lokal erzählen, Cloud plant“. Erst messen
+  (Reparatur-/Fehlerquote des Planer-JSON, Ersatzwahl beim Routing, Planer-Latenz je Modell), dann nur Phase A (zweiter
+  Endpoint über `StageLlm`); ein zweiter lokaler llama-server kostet auf 8–12-GB-Karten mehr, als er bringt.
 
 ---
 
