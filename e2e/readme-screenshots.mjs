@@ -141,7 +141,9 @@ await session({ start_tab: 'home', stage_last_scene: '', active_character_id: 's
   await tab(5);
   await browser.pause(800);
   await shot('character-library');
-  await click(await browser.$('[data-index="0"] button'));
+  // The preview button of the first card (each card has several buttons).
+  const previewLabel = t('characterPreview.open').split('{{')[0];
+  await click((await browser.$$(`[data-index="0"] button[aria-label^="${previewLabel}"]`))[0]);
   await browser.$('[data-character-preview]').waitForDisplayed({ timeout: 10_000 });
   await shot('character-preview');
   await browser.keys('Escape');

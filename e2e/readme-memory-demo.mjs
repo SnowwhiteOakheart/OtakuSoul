@@ -1,5 +1,5 @@
 // Takes localized chat screenshots and creates a short README GIF and a shareable MP4.
-// Usage after e2e:build: node e2e/readme-memory-demo.mjs [en|de|ru]
+// Usage after e2e:build: node e2e/readme-memory-demo.mjs [en|de]
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
@@ -21,13 +21,8 @@ const scenes = {
     'Kai hat morgen ein Klavierkonzert und ist vor dem ersten Stück nervös.',
     'Hey Shiori, ich bin wieder da!', 'Schön, dass du wieder da bist, Kai! Wie lief dein Klavierkonzert?',
     'Heute · Erzähl Shiori von deinen Plänen', 'Später · Starte einen neuen Chat'],
-  ru: ['Русский', 'Завтра я выступаю на концерте. Волнуюсь перед первой пьесой на фортепиано.',
-    'Ты столько репетировал. Глубоко вдохни перед первой нотой. Я буду за тебя болеть!',
-    'Кай завтра играет на концерте и волнуется перед первой пьесой на фортепиано.',
-    'Привет, Сиори! Я вернулся.', 'С возвращением, Кай! Как прошёл твой концерт?',
-    'Сегодня · Расскажи Сиори о своих планах', 'Позже · Начни новый чат'],
 };
-assert.ok(Object.hasOwn(scenes, lang), 'Sprache muss en, de oder ru sein');
+assert.ok(Object.hasOwn(scenes, lang), 'Sprache muss en oder de sein');
 const [language, first, answer, memory, later, recall, firstCaption, laterCaption] = scenes[lang];
 const t = JSON.parse(await readFile(path.join(root, 'presets/locales/ui', lang + '.json'), 'utf8'));
 const temp = await mkdtemp(path.join(tmpdir(), 'otakusoul-memory-demo-'));
@@ -83,7 +78,7 @@ try {
 
     await input().waitForDisplayed({ timeout: 30_000 });
     await invoke('save_persona', {
-      persona: { id: 'default_user', name: lang === 'ru' ? 'Кай' : 'Kai', description: '', avatar_data_url: null },
+      persona: { id: 'default_user', name: 'Kai', description: '', avatar_data_url: null },
     });
     await browser.refresh();
     await caption(firstCaption);
