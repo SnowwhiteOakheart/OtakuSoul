@@ -222,6 +222,36 @@ mod tests {
     }
 
     #[test]
+    fn a_new_story_starts_with_the_secrets_of_its_definition() {
+        let def: SceneDefinition = serde_json::from_value(serde_json::json!({
+            "id": "story_own_1",
+            "title": "T",
+            "description": "D",
+            "gm_secrets": [{"id": "secret_1", "kind": "threat", "about": "Lighthouse", "text": "A cult below."}],
+        }))
+        .unwrap();
+        let state = build_initial_scene_state(&def);
+        assert_eq!(state.gm_secrets.len(), 1);
+        assert_eq!(state.gm_secrets[0].kind, "threat");
+        assert!(!state.gm_secrets[0].revealed);
+        assert!(
+            gm_screen_context(&state)
+                .contains("[secret_1] threat, about Lighthouse: A cult below.")
+        );
+        // Scenes without secrets keep their file format.
+        let plain: SceneDefinition = serde_json::from_value(
+            serde_json::json!({"id": "x", "title": "T", "description": "D"}),
+        )
+        .unwrap();
+        assert!(
+            serde_json::to_value(&plain)
+                .unwrap()
+                .get("gm_secrets")
+                .is_none()
+        );
+    }
+
+    #[test]
     fn ids_are_normalized_and_updates_merge() {
         let mut state = StageEngine::new().get_state();
         apply_secret_updates(

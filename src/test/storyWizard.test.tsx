@@ -8,7 +8,7 @@ vi.mock('../services/api', async () => (await import('./mockApi')).apiModule);
 
 import { api } from '../services/api';
 import { useAppStore } from '../store/useAppStore';
-import { PREMISES_PER_GENRE, StoryWizard, WIZARD_GENRES, buildStoryDefinition } from '../components/stage/StoryWizard';
+import { MAX_WIZARD_SECRETS, PREMISES_PER_GENRE, StoryWizard, WIZARD_GENRES, buildStoryDefinition, storySecrets } from '../components/stage/StoryWizard';
 import { resetApiMocks } from './mockApi';
 import { translate } from '../i18n';
 import { BACKGROUND_VOCALS, GENRE_MUSIC } from '../services/storyMusicDraft';
@@ -124,6 +124,39 @@ describe('StoryWizard', () => {
     expect(music.moods.calm?.lyrics).toBe(BACKGROUND_VOCALS);
     expect(music.moods.calm?.vocal_language).toBe('en');
     expect(Object.keys(music.moods)).toEqual(['calm', 'mystery']);
+  });
+
+  it('hands written secrets to the game master and drops empty ones', () => {
+    expect(storySecrets([
+      { kind: 'trap', about: '', text: '  A pressure plate.  ' },
+      { kind: 'motive', about: ' Mira ', text: '   ' },
+      { kind: 'motive', about: ' Mira ', text: 'Mira owes the guild.' },
+    ])).toEqual([
+      { id: 'secret_1', kind: 'trap', about: '', text: 'A pressure plate.', revealed: false },
+      { id: 'secret_2', kind: 'motive', about: 'Mira', text: 'Mira owes the guild.', revealed: false },
+    ]);
+    const many = Array.from({ length: MAX_WIZARD_SECRETS + 2 }, (_, i) => ({ kind: 'other' as const, about: '', text: `S${i}` }));
+    expect(storySecrets(many)).toHaveLength(MAX_WIZARD_SECRETS);
+    const plain = buildStoryDefinition({ genre: 'fantasy', playerName: '', playerDescription: '', party: [], premise: 0, ownIdea: '', ownLocation: '' });
+    expect(plain).not.toHaveProperty('gm_secrets');
+  });
+
+  it('secrets written in the start step reach the new story', async () => {
+    const user = userEvent.setup();
+    vi.mocked(api.createStageScene).mockImplementation(async (definition) => ({ definition }) as SceneState);
+    render(<StoryWizard onClose={vi.fn()} onCreated={vi.fn()} onAdvanced={vi.fn()} />);
+    for (let i = 0; i < 3; i += 1) await user.click(screen.getByRole('button', { name: 'Next' }));
+    await user.click(screen.getByText(/Secrets for the game master/));
+    await user.click(screen.getByRole('button', { name: 'Add a secret' }));
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Kind' }), 'threat');
+    await user.type(screen.getByRole('textbox', { name: 'Concerns (name or place)' }), 'The lighthouse');
+    await user.type(screen.getByRole('textbox', { name: 'Secret' }), 'A drowned cult gathers below it.');
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    await user.click(screen.getByRole('button', { name: 'Start story' }));
+    await waitFor(() => expect(api.createStageScene).toHaveBeenCalled());
+    expect(vi.mocked(api.createStageScene).mock.calls[0]![0].gm_secrets).toEqual([
+      { id: 'secret_1', kind: 'threat', about: 'The lighthouse', text: 'A drowned cult gathers below it.', revealed: false },
+    ]);
   });
 
   it('a story without own music has no music section', async () => {

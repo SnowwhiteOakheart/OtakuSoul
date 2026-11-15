@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { radioGroupKeyDown, radioTabIndex } from '../../utils/radioGroup';
-import { ArrowLeft, ArrowRight, Check, Dices, Loader2, Music, Play, Settings2, User, Users, Wand2, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Dices, EyeOff, Loader2, Music, Play, Plus, Settings2, Trash2, User, Users, Wand2, X } from 'lucide-react';
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { llmTarget } from '../../store/helpers';
 import { api } from '../../services/api';
@@ -14,7 +14,7 @@ import {
   type StoryMusicDraft,
 } from '../../services/storyMusicDraft';
 import { translate, useTranslation, type TranslationKey } from '../../i18n';
-import type { SceneDefinition } from '../../types';
+import type { GmSecret, SceneDefinition } from '../../types';
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { errorMessage } from '../../utils/errors';
 import { KINDS, type StoryKind } from './StoryGallery';
@@ -26,6 +26,16 @@ export type WizardGenre = (typeof WIZARD_GENRES)[number];
 export const PREMISES_PER_GENRE = 2;
 const MAX_COMPANIONS = 4;
 const STEPS = ['genre', 'you', 'companions', 'start', 'music'] as const;
+/** Secrets the wizard lets the author hand the game master (more come up during play). */
+export const MAX_WIZARD_SECRETS = 3;
+const SECRET_KINDS = ['motive', 'trap', 'threat', 'goal', 'other'] as const;
+
+/** A secret for the game master's screen, as the author writes it. */
+export interface WizardSecret {
+  kind: (typeof SECRET_KINDS)[number];
+  about: string;
+  text: string;
+}
 
 const premiseKey = (genre: WizardGenre, index: number, field: 'title' | 'hook' | 'location' | 'opening') =>
   `storyWizard.premise.${genre}.${index}.${field}` as TranslationKey;
@@ -42,6 +52,22 @@ interface StoryDraft {
   /** Music of the story (`otakusoul_music`); without it the Stage plays the general pool. */
   music?: StoryMusicDraft;
   musicOff?: boolean;
+  /** Secrets only the game master knows from the start (empty ones are dropped). */
+  secrets?: WizardSecret[];
+}
+
+/** The written secrets as the scene's starting screen (`gm_secrets`). */
+export function storySecrets(secrets: WizardSecret[] = []): GmSecret[] {
+  return secrets
+    .filter((secret) => secret.text.trim())
+    .slice(0, MAX_WIZARD_SECRETS)
+    .map((secret, index) => ({
+      id: `secret_${index + 1}`,
+      kind: secret.kind,
+      about: secret.about.trim(),
+      text: secret.text.trim(),
+      revealed: false,
+    }));
 }
 
 /** Title, place and situation of the story (also the chat model's context for music). */
@@ -66,6 +92,7 @@ export function buildStoryDefinition(draft: StoryDraft): SceneDefinition {
   const id = `story_own_${Date.now()}`;
   // One set per story: its id names the music folder.
   const music = draft.music && !draft.musicOff ? musicSection(draft.music, id) : null;
+  const secrets = storySecrets(draft.secrets);
   const player = draft.playerName.trim() || t('sceneNew.personaDefault');
   const who = draft.playerDescription.trim();
   return {
@@ -97,6 +124,7 @@ export function buildStoryDefinition(draft: StoryDraft): SceneDefinition {
       ...(music ? { otakusoul_music: music } : {}),
     },
     rules: null,
+    ...(secrets.length > 0 ? { gm_secrets: secrets } : {}),
   } as SceneDefinition;
 }
 
@@ -126,12 +154,16 @@ export const StoryWizard: React.FC<StoryWizardProps> = ({ onClose, onCreated, on
     ownIdea: '',
     ownLocation: '',
     music: genreMusic('fantasy'),
+    secrets: [],
   }));
   const [suggesting, setSuggesting] = useState(false);
   const [musicError, setMusicError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const update = (patch: Partial<StoryDraft>) => setDraft((current) => ({ ...current, ...patch }));
+  const secrets = draft.secrets ?? [];
+  const setSecret = (index: number, change: Partial<WizardSecret>) =>
+    update({ secrets: secrets.map((secret, i) => (i === index ? { ...secret, ...change } : secret)) });
   const stepId = STEPS[step]!;
   const canContinue = stepId !== 'start' || draft.premise !== null || draft.ownIdea.trim().length > 0;
   const canCreate = draft.premise !== null || draft.ownIdea.trim().length > 0;
@@ -391,6 +423,65 @@ export const StoryWizard: React.FC<StoryWizardProps> = ({ onClose, onCreated, on
                   />
                 </div>
               )}
+              {/* Spoilers for the author only: folded, optional. */}
+              <details className="rounded-xl border border-slate-700" data-testid="wizard-secrets" open={secrets.length > 0 || undefined}>
+                <summary className="flex cursor-pointer select-none items-center gap-2 px-3 py-2 text-sm font-semibold text-slate-200">
+                  <EyeOff className="w-4 h-4" aria-hidden="true" />
+                  {t('storyWizard.secrets.title')}
+                </summary>
+                <div className="space-y-3 px-3 pb-3">
+                  <p className="text-xs text-slate-400">{t('storyWizard.secrets.hint')}</p>
+                  {secrets.map((secret, index) => (
+                    <div key={index} className="space-y-2 rounded-lg border border-slate-800 bg-app/60 p-2">
+                      <div className="flex items-center gap-2">
+                        <select
+                          aria-label={t('stageWorld.secretKind')}
+                          value={secret.kind}
+                          onChange={(e) => setSecret(index, { kind: e.target.value as WizardSecret['kind'] })}
+                          className="w-52 rounded-lg border border-slate-700 bg-app px-2 py-1.5 text-xs text-slate-100"
+                        >
+                          {SECRET_KINDS.map((kind) => (
+                            <option key={kind} value={kind}>{t(`stageWorld.secretKind.${kind}` as TranslationKey)}</option>
+                          ))}
+                        </select>
+                        <input
+                          value={secret.about}
+                          onChange={(e) => setSecret(index, { about: e.target.value })}
+                          aria-label={t('stageWorld.secretAbout')}
+                          placeholder={t('stageWorld.secretAbout')}
+                          className="min-w-0 flex-1 rounded-lg border border-slate-700 bg-app px-2 py-1.5 text-xs text-slate-100"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => update({ secrets: secrets.filter((_, i) => i !== index) })}
+                          aria-label={t('common.delete')}
+                          title={t('common.delete')}
+                          className="p-1.5 text-slate-400 hover:text-rose-400"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <textarea
+                        value={secret.text}
+                        onChange={(e) => setSecret(index, { text: e.target.value })}
+                        aria-label={t('stageWorld.secretText')}
+                        placeholder={t('storyWizard.secrets.placeholder')}
+                        className="w-full min-h-14 rounded-lg border border-slate-700 bg-app px-2 py-1.5 text-xs text-slate-100"
+                      />
+                    </div>
+                  ))}
+                  {secrets.length < MAX_WIZARD_SECRETS && (
+                    <button
+                      type="button"
+                      onClick={() => update({ secrets: [...secrets, { kind: 'motive', about: '', text: '' }] })}
+                      className="inline-flex items-center gap-1.5 text-xs text-accent-300 hover:text-accent-200"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      {t('storyWizard.secrets.add')}
+                    </button>
+                  )}
+                </div>
+              </details>
             </>
           )}
           {stepId === 'music' && (

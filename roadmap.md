@@ -157,7 +157,7 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
   dem Zug entsteht, wenn der Schalter „Szenenbilder automatisch“ im Menü „Mehr“ an ist.
 - [x] **B9 · Spielleiter-Schirm:** erledigt (15.11.2026). `gm_secrets` nur im Planer-Prompt, NPCs kennen ihre eigenen Motive,
   `secret_updates`/`reveal_secrets` im Plan, Aufdecken → Gruppen-Lorekarte und Entdeckungskarte, Leck-Schutz, eingeklappt im
-  Weltzustand-Editor (`stage/secrets.rs`, E2E `stage-gm-screen.mjs`). Offen: Geheimnisse im Story-Assistenten vorbelegen.
+  Weltzustand-Editor (`stage/secrets.rs`, E2E `stage-gm-screen.mjs`); im Story-Assistenten vorbelegbar (Schritt „Start“).
 
 ## C. Später – größere Vorhaben
 
