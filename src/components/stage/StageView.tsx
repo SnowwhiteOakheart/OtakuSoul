@@ -92,11 +92,12 @@ export const StageView: React.FC = () => {
     loadStageScene,
     fetchStageScenes,
     replyLanguage,
+    settingsLoaded,
   } = useStoreFields(
     'stageState', 'fetchStageState', 'saveStageScene', 'updateWorldState', 'setClockProgress',
     'addClock', 'deleteClock', 'exportStageMarkdown', 'isProcessingStageTurn',
     'generateSceneImage', 'isGeneratingSceneImage', 'stageReadAloud', 'setStageReadAloud', 'setSelectedStageFolder',
-    'restoreStageScene', 'stageLastScene', 'loadStageScene', 'fetchStageScenes', 'replyLanguage',
+    'restoreStageScene', 'stageLastScene', 'loadStageScene', 'fetchStageScenes', 'replyLanguage', 'settingsLoaded',
   );
   // Gallery (choose a story) or the running story; decided once the remembered scene is restored.
   const [view, setView] = useState<'loading' | 'gallery' | 'play'>('loading');
@@ -206,6 +207,8 @@ export const StageView: React.FC = () => {
   const [newClockType, setNewClockType] = useState<'danger' | 'progress' | 'mystery'>('danger');
 
   useEffect(() => {
+    // The remembered scene comes with the settings: opened right after the start, wait for them.
+    if (!settingsLoaded) return undefined;
     let active = true;
     void (async () => {
       await fetchStageState();
@@ -220,7 +223,7 @@ export const StageView: React.FC = () => {
     return () => {
       active = false;
     };
-  }, [fetchStageState, restoreStageScene]);
+  }, [fetchStageState, restoreStageScene, settingsLoaded]);
 
   const handleToggleWorldEditor = () => {
     if (!isEditingWorld && stageState?.world) {
