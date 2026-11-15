@@ -129,6 +129,42 @@ describe('local model selection', () => {
   });
 });
 
+describe('starting the local server', () => {
+  const missing = (code: string) => new Error(JSON.stringify({ code }));
+
+  beforeEach(() => {
+    useAppStore.setState({ serverConfig: { ...initialState.serverConfig, model_path: '/copied.gguf' } });
+    vi.mocked(api.getRuntime).mockResolvedValue(null);
+    vi.mocked(api.listRuntimeVariants).mockResolvedValue([
+      { backend: 'cpu', recommended: false },
+      { backend: 'cuda', recommended: true },
+    ] as Awaited<ReturnType<typeof api.listRuntimeVariants>>);
+  });
+
+  it('installs a missing llama.cpp runtime once and starts again', async () => {
+    vi.mocked(api.startLlamaServer).mockRejectedValueOnce(missing('backend.server.binaryMissing')).mockResolvedValueOnce(undefined as never);
+
+    await useAppStore.getState().startServer();
+    expect(api.installRuntime).toHaveBeenCalledExactlyOnceWith('llama', 'cuda');
+    expect(api.startLlamaServer).toHaveBeenCalledTimes(2);
+  });
+
+  it('installs the PrismML runtime for a model that needs it', async () => {
+    vi.mocked(api.startLlamaServer).mockRejectedValueOnce(missing('backend.server.prismRequired')).mockResolvedValueOnce(undefined as never);
+
+    await useAppStore.getState().startServer();
+    expect(api.installRuntime).toHaveBeenCalledExactlyOnceWith('prism', 'cuda');
+  });
+
+  it('installs nothing when the start fails for another reason', async () => {
+    vi.mocked(api.startLlamaServer).mockRejectedValueOnce(missing('backend.server.notEnoughVram'));
+
+    await expect(useAppStore.getState().startServer({ quiet: true })).rejects.toThrow('notEnoughVram');
+    expect(api.installRuntime).not.toHaveBeenCalled();
+    expect(api.startLlamaServer).toHaveBeenCalledOnce();
+  });
+});
+
 describe('writing on their own in a chat that is not open', () => {
   const lirwen = { id: 'lirwen', card: { data: { name: 'Lirwen', extensions: {} } } };
   const session = { id: 'c-lirwen', character_id: 'lirwen', title: '', created_at: 0, updated_at: 0, author_note: '', author_note_depth: 0,

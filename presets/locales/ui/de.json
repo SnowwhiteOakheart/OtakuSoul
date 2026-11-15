@@ -4005,6 +4005,7 @@
   "task.image": "Bild: {{prompt}}",
   "task.model": "Modell laden: {{name}}",
   "task.modelLoading": "Das Modell wird in den Grafikspeicher geladen; der Chat antwortet, sobald es bereit ist.",
+  "task.runtimeInstalling": "Die KI-Laufzeit (llama.cpp) fehlt noch und wird einmalig eingerichtet; danach wird das Modell geladen.",
   "task.download": "Download: {{name}}",
   "chat.compact": "Kompakt",
   "chat.compactHint": "Kompakte Chatansicht: dichtere Nachrichten, schmalere Leisten",

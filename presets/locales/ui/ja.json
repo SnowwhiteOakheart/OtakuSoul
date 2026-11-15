@@ -4006,6 +4006,7 @@
   "task.image": "画像生成: {{prompt}}",
   "task.model": "モデル読み込み中: {{name}}",
   "task.modelLoading": "モデルをVRAMに読み込んでいます。準備ができ次第チャットの応答が始まります。",
+  "task.runtimeInstalling": "AIランタイム（llama.cpp）がまだないため、一度だけセットアップします。その後モデルを読み込みます。",
   "task.download": "ダウンロード: {{name}}",
   "chat.compact": "コンパクト",
   "chat.compactHint": "コンパクト表示: メッセージの間隔を詰め、バーをスリムにします",

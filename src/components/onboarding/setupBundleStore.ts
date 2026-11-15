@@ -5,8 +5,9 @@ import { errorMessage } from '../../utils/errors';
 import { DEFAULT_IMG_CONFIG } from '../settings/sections/ImageSettings';
 import { downloadStarter } from './OnboardingParts';
 import { withCardVoice } from '../../services/characterVoice';
+import { ensureRuntime } from '../../services/runtimeSetup';
 import { DEFAULT_VOICE_DESCRIPTION } from '../../utils/setupBundle';
-import type { RuntimeKind, StarterModel, TtsModelInfo, ImageModelInfo } from '../../types';
+import type { StarterModel, TtsModelInfo, ImageModelInfo } from '../../types';
 
 export type BundleKind = 'chat' | 'image' | 'tts';
 
@@ -51,15 +52,6 @@ export interface BundleChoice {
   chat: StarterModel | null;
   image: ImageModelInfo | null;
   tts: { model: TtsModelInfo; voiceId: string } | null;
-}
-
-/** Installs the recommended build of a runtime unless one is installed. */
-async function ensureRuntime(kind: RuntimeKind) {
-  if (await api.getRuntime(kind).catch(() => null)) return;
-  const variants = await api.listRuntimeVariants(kind);
-  const variant = variants.find((v) => v.recommended) ?? variants[0];
-  if (!variant) throw new Error(`no ${kind} runtime for this system`);
-  await api.installRuntime(kind, variant.backend);
 }
 
 async function setUpChat(starter: StarterModel) {

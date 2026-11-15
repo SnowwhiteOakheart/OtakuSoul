@@ -4005,6 +4005,7 @@
   "task.image": "Image: {{prompt}}",
   "task.model": "Loading model: {{name}}",
   "task.modelLoading": "The model is being loaded into video memory; the chat answers once it is ready.",
+  "task.runtimeInstalling": "The AI runtime (llama.cpp) is still missing and is set up once; then the model is loaded.",
   "task.download": "Download: {{name}}",
   "chat.compact": "Compact",
   "chat.compactHint": "Compact chat view: denser messages, slimmer bars",

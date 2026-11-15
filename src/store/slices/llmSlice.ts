@@ -1,4 +1,5 @@
 import { api } from '../../services/api';
+import { ensureRuntime, missingChatRuntime } from '../../services/runtimeSetup';
 import { projectorFor } from '../../utils/visionProjector';
 import { CLOUD_PROVIDER_DEFAULTS } from '../helpers';
 import type {
@@ -321,7 +322,17 @@ export const createLlmSlice: SliceCreator<LlmSlice> = (set, get) => ({
     });
     serverTaskId = id;
     try {
-      await api.startLlamaServer(get().serverConfig);
+      try {
+        await api.startLlamaServer(get().serverConfig);
+      } catch (e) {
+        const runtime = missingChatRuntime(e);
+        if (!runtime) throw e;
+        // A model without its runtime: install the recommended build once and try again.
+        get().updateTask(id, { detail: translate('task.runtimeInstalling') });
+        await ensureRuntime(runtime);
+        get().updateTask(id, { detail: translate('task.modelLoading') });
+        await api.startLlamaServer(get().serverConfig);
+      }
       await get().fetchServerStatus();
       await get().fetchHardware();
     } catch (e) {

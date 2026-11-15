@@ -73,7 +73,12 @@ try {
     await toDone();
   }
 
-  // Finish on the hub.
+  // Finish on the hub. With a model found the wizard would start the server, and a profile
+  // without the runtime would download it first: not in a test.
+  if (hasModels) {
+    const startNow = await browser.$('[role="dialog"]').$('input[type="checkbox"]');
+    if (await startNow.isSelected()) await startNow.click();
+  }
   await browser.$('[data-onboarding-hub]').$('button=Zum Hub').click();
   await browser.$('h1=Community Hub').waitForDisplayed({ timeout: 15_000, timeoutMsg: 'Hub nach der Einrichtung nicht geöffnet' });
   assert.ok(!(await browser.$('[role="dialog"]').isExisting()), 'Assistent nach „Zum Hub“ noch offen');

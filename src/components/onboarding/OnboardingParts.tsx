@@ -2,6 +2,7 @@ import { openUrl } from '@tauri-apps/plugin-opener';
 import { useEffect, useState } from 'react';
 import { CheckCircle2, Cpu, Download, Eye, Loader2, MessageCircle, PlugZap, RefreshCw, Wand2, XCircle } from 'lucide-react';
 import { api } from '../../services/api';
+import { ensureRuntime } from '../../services/runtimeSetup';
 import { useStoreFields, useAppStore } from '../../store/useAppStore';
 import { llmTarget } from '../../store/helpers';
 import { translate, useTranslation } from '../../i18n';
@@ -335,11 +336,7 @@ export const LocalModelSetup = ({ express: showExpress = true }: { express?: boo
     try {
       setExpress({ phase: 'runtime' });
       for (const kind of starter.file.runtime === 'prism' ? (['llama', 'prism'] as const) : (['llama'] as const)) {
-        const installed = await api.getRuntime(kind).catch(() => null);
-        if (installed) continue;
-        const variants = await api.listRuntimeVariants(kind);
-        const variant = variants.find((v) => v.recommended) ?? variants[0];
-        if (variant) await api.installRuntime(kind, variant.backend);
+        await ensureRuntime(kind);
       }
       setExpress({ phase: 'model' });
       const path = pathOf(starter);
