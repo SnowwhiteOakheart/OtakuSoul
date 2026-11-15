@@ -1,9 +1,10 @@
-//! Contributing own characters and stories to the hub (`otakusoul-data`): a check of what the
-//! hub needs, a ZIP package in the repository's layout (card or scene, manifest with licence and
+//! Contributing own characters, stories and lorebooks to the hub (`otakusoul-data`): a check of what the
+//! hub needs, a ZIP package in the repository's layout (card, scene or lorebook, manifest with licence and
 //! age mark, instructions) and the address of a prefilled issue in the data repository. The app
 //! holds no GitHub token: the user attaches the package to the issue, the maintainers review it.
 
 use crate::modules::characters::{CharacterProfile, card_png_bytes};
+use crate::modules::lorebook::Lorebook;
 use crate::modules::stage::SceneDefinition;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -69,6 +70,7 @@ pub struct ContributionResult {
 pub enum Kind {
     Character,
     Story,
+    Lorebook,
 }
 
 impl Kind {
@@ -76,6 +78,7 @@ impl Kind {
         match kind {
             "character" => Ok(Self::Character),
             "story" => Ok(Self::Story),
+            "lorebook" => Ok(Self::Lorebook),
             _ => Err(crate::err!("backend.contribution.kind", kind = kind)),
         }
     }
@@ -84,6 +87,7 @@ impl Kind {
         match self {
             Self::Character => "character",
             Self::Story => "story",
+            Self::Lorebook => "lorebook",
         }
     }
 }
@@ -167,6 +171,90 @@ pub fn check_story(def: &SceneDefinition) -> Vec<Finding> {
         found.push(warning("partyMustExist", &def.party.join(", ")));
     }
     found
+}
+
+/// Trigger types the hub accepts (the data repository's `validate_content.py` checks the same).
+const TRIGGERS: [&str; 4] = ["keyword", "regex", "always_on", "tension"];
+
+pub fn check_lorebook(book: &Lorebook) -> Vec<Finding> {
+    let mut found = Vec::new();
+    if blank(&book.name) {
+        found.push(error("nameMissing"));
+    }
+    if book.entries.is_empty() {
+        found.push(error("entriesMissing"));
+    }
+    for entry in &book.entries {
+        let label = if blank(&entry.name) {
+            "?"
+        } else {
+            entry.name.trim()
+        };
+        if blank(&entry.content) {
+            found.push(Finding {
+                error: true,
+                code: "entryEmpty".into(),
+                detail: label.into(),
+            });
+        }
+        if !TRIGGERS.contains(&entry.trigger_type.as_str()) {
+            found.push(Finding {
+                error: true,
+                code: "triggerUnknown".into(),
+                detail: format!("{label}: {}", entry.trigger_type),
+            });
+        } else if entry.trigger_type == "keyword" && entry.key.iter().all(|k| blank(k)) {
+            found.push(Finding {
+                error: true,
+                code: "keywordsMissing".into(),
+                detail: label.into(),
+            });
+        }
+    }
+    let targets = chain_targets(book);
+    for entry in &book.entries {
+        for required in &entry.chain_requires {
+            if !targets.contains_key(required.trim()) {
+                found.push(Finding {
+                    error: true,
+                    code: "chainUnknown".into(),
+                    detail: format!("{}: {required}", entry.name.trim()),
+                });
+            }
+        }
+    }
+    if blank(&book.description) {
+        found.push(warning("descriptionMissing", ""));
+    }
+    if !has_english(&book.extensions) {
+        found.push(warning("noEnglish", ""));
+    }
+    found
+}
+
+/// What a chain reference may name: an entry's name or its uid (as text), mapped to its index.
+/// A name or uid used by several entries is left out (it points nowhere for sure).
+fn chain_targets(book: &Lorebook) -> std::collections::HashMap<String, usize> {
+    let mut targets = std::collections::HashMap::new();
+    let mut ambiguous = std::collections::HashSet::new();
+    for (index, entry) in book.entries.iter().enumerate() {
+        let mut keys = vec![entry.name.trim().to_string()];
+        if let Some(uid) = entry.uid {
+            keys.push(uid.to_string());
+        }
+        for key in keys.into_iter().filter(|k| !k.is_empty()) {
+            if targets
+                .insert(key.clone(), index)
+                .is_some_and(|other| other != index)
+            {
+                ambiguous.insert(key);
+            }
+        }
+    }
+    for key in ambiguous {
+        targets.remove(&key);
+    }
+    targets
 }
 
 fn validate_info(info: &SubmissionInfo) -> Result<(), String> {
@@ -257,6 +345,48 @@ pub fn story_files(
     Ok(vec![(
         format!("stages_gateway/{name}.json"),
         json.into_bytes(),
+    )])
+}
+
+/// The lorebook as the repository wants it: uids 1…n, chains pointing to uids, no local traces.
+pub fn lorebook_files(
+    book: &Lorebook,
+    info: &SubmissionInfo,
+) -> Result<Vec<(String, Vec<u8>)>, String> {
+    let targets = chain_targets(book);
+    let mut book = book.clone();
+    stamp(&mut book.extensions, info);
+    let uid_of = |reference: &String| {
+        targets
+            .get(reference.trim())
+            .map_or_else(|| reference.clone(), |index| (index + 1).to_string())
+    };
+    let entries: Vec<_> = book
+        .entries
+        .iter()
+        .enumerate()
+        .map(|(index, entry)| {
+            let mut entry = entry.clone();
+            entry.uid = Some(index as u64 + 1);
+            entry.chain_requires = entry.chain_requires.iter().map(uid_of).collect();
+            entry.chain_activates = entry.chain_activates.iter().map(uid_of).collect();
+            entry
+        })
+        .collect();
+    book.entries = entries;
+    let name = slug(&book.name).to_lowercase();
+    // The hub's lorebooks carry neither an id (the file name is one) nor a path on this computer.
+    let mut json = serde_json::to_value(&book)
+        .map_err(|e| crate::err!("backend.contribution.serialize", error = e))?;
+    if let Some(object) = json.as_object_mut() {
+        object.remove("id");
+        object.remove("file_path");
+    }
+    let text = serde_json::to_string_pretty(&json)
+        .map_err(|e| crate::err!("backend.contribution.serialize", error = e))?;
+    Ok(vec![(
+        format!("lorebooks_gateway/{name}.json"),
+        text.into_bytes(),
     )])
 }
 
@@ -460,6 +590,73 @@ mod tests {
         assert!(url.contains("Lirwen%20%26%20Co%20%3C3%3E"));
         assert!(!url.contains(' ') && !url.contains('<'));
         assert!(issue_url(Kind::Story, "x", &info(true), &[]).contains("otakusoul-data-nsfw"));
+    }
+
+    fn lorebook() -> Lorebook {
+        serde_json::from_value(serde_json::json!({
+            "id": "lorebook_1", "name": "Café am Fluss", "description": "Ein ruhiger Ort.",
+            "file_path": "C:/Users/someone/lorebooks/cafe.json",
+            "entries": [
+                { "name": "Ort", "content": "Das Café liegt am Fluss.", "trigger_type": "always_on" },
+                { "uid": 7, "name": "Jonas", "key": ["Jonas"], "content": "Jonas führt das Café.",
+                  "chain_requires": ["Ort"], "chain_activates": ["7"] }
+            ]
+        }))
+        .unwrap()
+    }
+
+    #[test]
+    fn a_lorebook_needs_entries_with_text_keywords_and_known_chains() {
+        let book = lorebook();
+        assert!(!check_lorebook(&book).iter().any(|f| f.error));
+        let mut broken = book.clone();
+        broken.name = String::new();
+        broken.entries[0].content = " ".into();
+        broken.entries[1].key = vec![" ".into()];
+        broken.entries[1].chain_requires = vec!["Nirgendwo".into()];
+        let codes: Vec<_> = check_lorebook(&broken)
+            .into_iter()
+            .filter(|f| f.error)
+            .map(|f| f.code)
+            .collect();
+        assert_eq!(
+            codes,
+            [
+                "nameMissing",
+                "entryEmpty",
+                "keywordsMissing",
+                "chainUnknown"
+            ]
+        );
+        broken.entries.clear();
+        assert!(
+            check_lorebook(&broken)
+                .iter()
+                .any(|f| f.code == "entriesMissing")
+        );
+    }
+
+    #[test]
+    fn the_lorebook_package_numbers_entries_and_drops_local_traces() {
+        let files = lorebook_files(&lorebook(), &info(false)).unwrap();
+        assert_eq!(files[0].0, "lorebooks_gateway/caf_am_fluss.json");
+        let book: serde_json::Value = serde_json::from_slice(&files[0].1).unwrap();
+        assert!(book.get("id").is_none() && book.get("file_path").is_none());
+        assert_eq!(book["extensions"]["otakusoul_license"], "CC0-1.0");
+        assert_eq!(book["entries"][0]["uid"], 1);
+        assert_eq!(book["entries"][1]["uid"], 2);
+        // Chains name entries by name or old uid; the package points them to the new uids.
+        assert_eq!(
+            book["entries"][1]["chain_requires"],
+            serde_json::json!(["1"])
+        );
+        assert_eq!(
+            book["entries"][1]["chain_activates"],
+            serde_json::json!(["2"])
+        );
+        let (_, result) =
+            prepare(Kind::Lorebook, "Café am Fluss", &info(false), &[], files).unwrap();
+        assert!(result.issue_url.contains("otakusoul-data/issues/new"));
     }
 
     #[test]

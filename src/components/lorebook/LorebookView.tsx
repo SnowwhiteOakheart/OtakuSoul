@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useCallback, useMemo, useState, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useAppStore, useStoreFields } from '../../store/useAppStore';
 import { Lorebook, LorebookEntry } from '../../types';
@@ -12,6 +12,7 @@ import {
   Globe,
   Flame,
   Check,
+  Share2,
 } from 'lucide-react';
 import { EntryEditorModal } from './EntryEditorModal';
 import { EntryCard } from './EntryCard';
@@ -22,6 +23,7 @@ import { translate, useTranslation } from '../../i18n';
 import { confirmDialog, toast } from '../ui/feedback';
 import { errorMessage } from '../../utils/errors';
 import { useDragScroll } from '../../hooks/useDragScroll';
+import { ContributeDialog } from '../hub/ContributeDialog';
 
 export const LorebookView: React.FC = () => {
   const { t } = useTranslation();
@@ -49,6 +51,10 @@ export const LorebookView: React.FC = () => {
   const [triggerFilter, setTriggerFilter] = useState<'all' | 'keyword' | 'regex' | 'always_on' | 'tension'>('all');
   const [editingEntry, setEditingEntry] = useState<{ entry: LorebookEntry; isNew: boolean } | null>(null);
   const [isSavingBook, setIsSavingBook] = useState(false);
+  // The book as shown (unsaved edits included); stable objects, so the dialog checks it once.
+  const [contributing, setContributing] = useState<Lorebook | null>(null);
+  const contributingTarget = useMemo(() => (contributing ? { kind: 'lorebook' as const, lorebook: contributing } : null), [contributing]);
+  const closeContribute = useCallback(() => setContributing(null), []);
   const showStatus = (text: string, type: 'success' | 'error' = 'success') =>
     type === 'success' ? toast.success(text) : toast.error(text);
 
@@ -275,6 +281,16 @@ export const LorebookView: React.FC = () => {
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>{t('lore.export')}</span>
+                </button>
+
+                <button
+                  onClick={() => setContributing(activeLorebook)}
+                  title={t('contribute.menuLorebookHint')}
+                  data-contribute-lorebook
+                  className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-medium flex items-center gap-1.5 transition-colors"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  <span>{t('contribute.menuStory')}</span>
                 </button>
 
                 <button
@@ -527,6 +543,8 @@ export const LorebookView: React.FC = () => {
           onClose={() => setEditingEntry(null)}
         />
       )}
+
+      {contributing && <ContributeDialog target={contributingTarget!} onClose={closeContribute} />}
     </div>
   );
 };

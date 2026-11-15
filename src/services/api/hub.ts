@@ -154,4 +154,13 @@ export const hubApi = {
   exportStoryContribution: async (sceneId: string, info: SubmissionInfo, targetPath: string): Promise<ContributionResult> => {
     return await invoke<ContributionResult>('export_story_contribution', { sceneId, info, targetPath });
   },
+
+  /** What the hub needs of a lorebook (as it is shown, unsaved edits included) before it is contributed. */
+  checkLorebookContribution: async (lorebook: Lorebook): Promise<Finding[]> => {
+    return await invoke<Finding[]>('check_lorebook_contribution', { lorebook });
+  },
+
+  exportLorebookContribution: async (lorebook: Lorebook, info: SubmissionInfo, targetPath: string): Promise<ContributionResult> => {
+    return await invoke<ContributionResult>('export_lorebook_contribution', { lorebook, info, targetPath });
+  },
 };

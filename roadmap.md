@@ -25,7 +25,7 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 | T1 | Nutzertests mit 2–3 Einsteigern (früher A4) | ★★★ | S | Testpersonen |
 | T2 | Stage: separates Spielleiter-Modell (früher E8) | – | M–L | Nutzerfeedback, Messung |
 | **B** | **Als Nächstes – baut auf Vorhandenem auf** | | | |
-| B4 | Teilen: Lorebooks, automatische Prüfung der Einreichung | ★★ | M | Prüfablauf im Daten-Repo |
+| B4 | Teilen: erster echter Durchlauf über ein Issue | ★★ | S | dein GitHub-Konto, Repo-Einstellung |
 | B6 | OBS-Overlay: 3D-/Live2D-Modell statt Porträt | ★ | M | – |
 | B7 | Benachrichtigungsklick unter macOS (Windows und Linux erledigt) | ★ | M | Mac |
 | **C** | **Später – größere Vorhaben** | | | |
@@ -138,13 +138,15 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 
 ## B. Als Nächstes – baut auf Vorhandenem auf
 
-- [ ] **B4 · Eigene Figuren und Geschichten teilen – Rest:** Der Weg „Paket + vorbefülltes Issue“ steht (Prüfung, ZIP im Repo-Layout,
+- [ ] **B4 · Eigene Figuren, Geschichten und Lorebooks teilen – Rest:** Der Weg „Paket + vorbefülltes Issue“ steht (Prüfung, ZIP im Repo-Layout,
   Lizenzwahl, Altersmarke, Issue-Vorlagen in beiden Daten-Repos; siehe `roadmap_abgeschlossen.md`). Seit 04.11.2026 prüft der
   Workflow `einreichung.yml` in beiden Daten-Repos jedes Issue „Beitrag: …“ automatisch (`tools/check_submission.py`: Archiv,
   Prüfsummen, Lizenz, Altersmarke/Repository, lokale Pfade, `vroid:`, Dubletten, Repo-Regeln) und kommentiert das Ergebnis; das
   Label `aufnehmen` legt Branch und Pull Request an. Offen: der erste echte Durchlauf mit einem Issue (dabei sehen, ob GitHub
   Anhänge ohne Anmeldung ausliefert und ob die Vorlage per `template=` greift), die Einstellung „Allow GitHub Actions to create and
-  approve pull requests“ (sonst nur Ein-Klick-Link) und Lorebooks beisteuern. *Risiko:* Inhaltsprüfung und Moderation bleiben beim
+  approve pull requests“ (sonst nur Ein-Klick-Link). Lorebooks beisteuern ist seit 15.11.2026 da (Knopf in der
+  Lorebook-Ansicht, `check_lorebook`, Paket nach `lorebooks_gateway/`, Prüfung und Aufnahme in beiden Daten-Repos; E2E
+  `lorebook-contribute.mjs`, dessen Paket `check_submission.py` annimmt). *Risiko:* Inhaltsprüfung und Moderation bleiben beim
   Betreiber.
 - [ ] **B6 · OBS-Overlay mit Modell:** Das Overlay (`/overlay`) zeigt heute das Porträt mit Sprechblase und Stimmung. Offen: das
   3D-/Live2D-Modell selbst als Browser-Quelle; dafür müssten Modelldateien über den Web-Server ausgeliefert und die Viewer

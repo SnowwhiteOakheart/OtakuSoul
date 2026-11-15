@@ -540,6 +540,8 @@ pub fn run() {
             commands::hub::check_story_contribution,
             commands::hub::export_character_contribution,
             commands::hub::export_story_contribution,
+            commands::hub::check_lorebook_contribution,
+            commands::hub::export_lorebook_contribution,
             commands::chat::import_chat_jsonl,
             commands::chat::set_chat_members,
             commands::chat::route_group_chat,

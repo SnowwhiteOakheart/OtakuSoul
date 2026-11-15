@@ -9,20 +9,25 @@ import { errorMessage } from '../../utils/errors';
 import { Button, Select } from '../ui';
 import { ModalOverlay } from '../ui/ModalOverlay';
 import { toast } from '../ui/feedback';
-import type { CharacterProfile } from '../../types';
+import type { CharacterProfile, Lorebook } from '../../types';
 import type { Finding } from '../../types/generated/Finding';
 
-/** What is contributed: a character card or a story (scene) of the Stage. */
+/** What is contributed: a character card, a story (scene) of the Stage or a lorebook. */
 export type ContributionTarget =
   | { kind: 'character'; profile: CharacterProfile }
-  | { kind: 'story'; sceneId: string; title: string };
+  | { kind: 'story'; sceneId: string; title: string }
+  | { kind: 'lorebook'; lorebook: Lorebook };
 
 const LICENSES = ['CC0-1.0', 'CC-BY-4.0', 'CC-BY-SA-4.0'] as const;
 
-const targetTitle = (target: ContributionTarget) => (target.kind === 'character' ? target.profile.card.data.name : target.title);
+const targetTitle = (target: ContributionTarget) =>
+  target.kind === 'character' ? target.profile.card.data.name : target.kind === 'lorebook' ? target.lorebook.name : target.title;
 
-const targetIsAdult = (target: ContributionTarget) =>
-  target.kind === 'character' && (target.profile.card.data.extensions as Record<string, unknown> | null)?.otakusoul_nsfw === true;
+const targetIsAdult = (target: ContributionTarget) => {
+  const extensions =
+    target.kind === 'character' ? target.profile.card.data.extensions : target.kind === 'lorebook' ? target.lorebook.extensions : null;
+  return (extensions as Record<string, unknown> | null | undefined)?.otakusoul_nsfw === true;
+};
 
 /**
  * Contributing to the hub: checks what the hub needs, then writes a ZIP package in the data
@@ -41,7 +46,11 @@ export const ContributeDialog: React.FC<{ target: ContributionTarget; onClose: (
   useEffect(() => {
     let alive = true;
     const check =
-      target.kind === 'character' ? api.checkCharacterContribution(target.profile) : api.checkStoryContribution(target.sceneId);
+      target.kind === 'character'
+        ? api.checkCharacterContribution(target.profile)
+        : target.kind === 'lorebook'
+          ? api.checkLorebookContribution(target.lorebook)
+          : api.checkStoryContribution(target.sceneId);
     check
       .then((result) => alive && setFindings(result))
       .catch((e: unknown) => {
@@ -72,7 +81,9 @@ export const ContributeDialog: React.FC<{ target: ContributionTarget; onClose: (
       const result =
         target.kind === 'character'
           ? await api.exportCharacterContribution(target.profile, info, targetPath)
-          : await api.exportStoryContribution(target.sceneId, info, targetPath);
+          : target.kind === 'lorebook'
+            ? await api.exportLorebookContribution(target.lorebook, info, targetPath)
+            : await api.exportStoryContribution(target.sceneId, info, targetPath);
       if (openIssue) {
         await openUrl(result.issue_url);
         toast.success(t('contribute.done'));

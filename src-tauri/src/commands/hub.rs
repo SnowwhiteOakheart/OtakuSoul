@@ -197,3 +197,26 @@ pub fn export_story_contribution(
     std::fs::write(&target_path, bytes).map_err(|e| e.to_string())?;
     Ok(result)
 }
+
+/// What the hub needs of a lorebook, before it is contributed.
+#[tauri::command(async)]
+pub fn check_lorebook_contribution(
+    lorebook: crate::modules::lorebook::Lorebook,
+) -> Vec<crate::modules::contribution::Finding> {
+    crate::modules::contribution::check_lorebook(&lorebook)
+}
+
+/// Writes the contribution package of a lorebook to `target_path` (a ZIP).
+#[tauri::command(async)]
+pub fn export_lorebook_contribution(
+    lorebook: crate::modules::lorebook::Lorebook,
+    info: crate::modules::contribution::SubmissionInfo,
+    target_path: String,
+) -> Result<crate::modules::contribution::ContributionResult, String> {
+    use crate::modules::contribution::{Kind, check_lorebook, lorebook_files, prepare};
+    let findings = check_lorebook(&lorebook);
+    let files = lorebook_files(&lorebook, &info)?;
+    let (bytes, result) = prepare(Kind::Lorebook, &lorebook.name, &info, &findings, files)?;
+    std::fs::write(&target_path, bytes).map_err(|e| e.to_string())?;
+    Ok(result)
+}
