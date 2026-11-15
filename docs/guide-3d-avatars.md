@@ -1,6 +1,6 @@
 # Your own 3D model with animations in OtakuSoul
 
-[🇬🇧 English](guide-3d-avatars.md) • [🇩🇪 Deutsch](guide-3d-avatars.de.md) • [🇷🇺 Русский](guide-3d-avatars.ru.md)
+[🇬🇧 English](guide-3d-avatars.md) • [🇩🇪 Deutsch](guide-3d-avatars.de.md)
 
 Besides VRM and MMD models, OtakuSoul shows **glTF/GLB avatars** – and plays the animations stored inside the GLB
 file. This guide shows how to prepare a model in **Blender** so that you end up with a single `.glb` file containing

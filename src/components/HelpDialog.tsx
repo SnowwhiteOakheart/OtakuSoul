@@ -16,7 +16,7 @@ export const GUIDE_STEPS = [1, 2, 3, 4, 5, 6] as const;
 
 const GUIDE_URL = 'https://github.com/SnowwhiteOakheart/OtakuSoul/blob/main/docs/guide-getting-started';
 /** Languages with their own guide file; the others link the English one. */
-const GUIDE_LANGUAGES = ['de', 'ru'];
+const GUIDE_LANGUAGES = ['de'];
 
 /** Help for beginners: the first steps through the app and a searchable glossary of its terms. */
 export const HelpDialog: React.FC<{ onClose: () => void; initialTab?: 'guide' | 'glossary' }> = ({ onClose, initialTab = 'guide' }) => {

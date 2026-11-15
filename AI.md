@@ -17,6 +17,7 @@ Nutzer mit „Du“ ansprechen. Antworten, Commits und Doku auf Deutsch.
 - Der Nutzer arbeitet parallel im Repo: fremde uncommittete Änderungen nie mitcommitten.
 - `roadmap.md` (offene Punkte) im selben Commit abhaken, Erledigtes nach `roadmap_abgeschlossen.md` verschieben (nur lokal, in `.gitignore`, nie committen); `README.md` und betroffene Doku in `AI.md` / `docs/ai/` bei neuen Modulen/Features anpassen.
 - Pfade nur über `paths::base_dirs()` (Re-Export aus `crates/otakusoul-paths`; ProjectDirs bzw. `$OTAKUSOUL_HOME/config|data`); OS-Code mit `#[cfg]`.
+- Gemeinsame Crates ohne Tauri (`crates/`): `otakusoul-paths`, `otakusoul-stream` (SSE/`<think>`), `otakusoul-macros`, `otakusoul-prompt` (Golden-Prompts `tests/fixtures/rich-*.txt`, nie zur Anpassung neu erzeugen), `otakusoul-lore`; die `modules/`-Dateien bleiben Adapter. `check:agent`/`check:rust`/`types:gen` decken sie ab.
 - Modelle grundsätzlich von der Quelle laden (SHA-256). Ausnahme: Avatare/Puppen dürfen zu 1–2 je Art mitgeliefert
   werden, wenn Lizenz (Weitergabe erlaubt) und Größe es zulassen – mit `lizenzen.txt` im Asset-Ordner und Hinweis in
   den READMEs (Beispiele: `assets/vrm/`, `assets/inochi2d/Aka.inx`); alle weiteren gehören als Registry-Eintrag ins
@@ -38,7 +39,7 @@ Nutzer mit „Du“ ansprechen. Antworten, Commits und Doku auf Deutsch.
 | E2E-Rauchtest (baut nach `target/e2e`, tauri-driver + Mock-LLM) | `npm run e2e` (`e2e:run` ohne Build, `npm run e2e:filter -- <muster>` gezielt) |
 | Linux-Tests & `cargo audit` (Windows-Host via WSL2, siehe [app-ui-i18n.md](docs/ai/app-ui-i18n.md)) | `wsl -e bash -lc 'cd ~/Development/OtakuSoul && git pull --ff-only && xvfb-run -a npm run e2e:filter -- <muster>'` |
 | Langchat-Messung (1000 Nachrichten) | `npm run e2e:perf` |
-| README-Screenshots (nach `e2e:build`, nicht Teil von `e2e`) | `xvfb-run -a node e2e/readme-screenshots.mjs de\|en\|ru` → `docs/assets/screenshots/<lang>/` |
+| README-Screenshots (nach `e2e:build`, nicht Teil von `e2e`) | `xvfb-run -a node e2e/readme-screenshots.mjs de\|en` → `docs/assets/screenshots/<lang>/` |
 | GPU-Tests mit echten Modellen (lädt GBs, nur auf Wunsch; GPU muss frei sein) | `cargo test --test gpu_e2e -- --ignored --nocapture` in `src-tauri/` (`llm` = Chat-Modelle aus `assets/models` mit empfohlenem Kontext) |
 
 ## Karte

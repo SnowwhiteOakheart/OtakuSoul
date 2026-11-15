@@ -1,6 +1,6 @@
 // Screenshots for the READMEs (not part of `npm run e2e`): start page, stories, chat, characters,
 // help, settings, setup and a 5e fight, each in a fresh profile against the mock LLM.
-// Usage: `xvfb-run -a node e2e/readme-screenshots.mjs [de|en|ru]` → docs/assets/screenshots/<lang>/.
+// Usage: `xvfb-run -a node e2e/readme-screenshots.mjs [de|en]` → docs/assets/screenshots/<lang>/.
 import { mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -53,23 +53,8 @@ const TEXT = {
     stageReply:
       '*Shiori takes a deep breath and gives you a grateful nod.* "Okay … okay. Like a heroine in the final chapter. Will you hold the booklet for me?"',
   },
-  ru: {
-    reply: 'Русский',
-    persona: 'Кай',
-    chatMessage: 'Привет, Сиори! Посоветуешь книгу на весенние каникулы?',
-    chatReply:
-      '*Сиори поправляет очки, и глаза её загораются.* «Одну? У меня есть список. Нет, подожди – три списка». ' +
-      '*Она достаёт из кармана кофты потрёпанную книжку в мягкой обложке.* «Начни с этой. Смотритель маяка, шторм ' +
-      'и письмо, которое пришло на сорок лет позже… Прости, я отвлеклась. Ты ведь вернёшь её, да?»',
-    narration:
-      'Сиори глубоко вдыхает и цепляется за твои слова, как за спасательный круг. «Просто прочитать… да». ' +
-      'Тем временем Сота разложил стопку брошюр на двух столах и сортирует страницы в темпе спидрана. ' +
-      'Снаружи заполняются последние ряды стульев, а лепестки сакуры залетают прямо за сцену.',
-    crypt: { title: 'Зал склепа', location: 'Под старым монастырём', time: 'Полночь', tone: 'Мрачное фэнтези', action: 'Я вхожу в склеп.',
-      narration: 'Свет факела дрожит на погребальных нишах. Во тьме скребут когти – два гоблина и скелет преграждают вам путь!' },
-    stageReply: '*Сиори глубоко вдыхает и благодарно кивает тебе.* «Ладно… ладно. Как героиня в последней главе. Подержишь мне брошюру?»',
-  },
 }[lang];
+if (!TEXT) throw new Error(`Nur de oder en, nicht ${lang}`);
 
 // A neutral model name instead of "mock" in the title bar; the mock answers whatever is asked for.
 const base = { app_language: lang, reply_language: TEXT.reply, cloud_model: 'mistral-small' };

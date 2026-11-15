@@ -1,6 +1,6 @@
 # Getting started with OtakuSoul
 
-[🇬🇧 English](guide-getting-started.md) • [🇩🇪 Deutsch](guide-getting-started.de.md) • [🇷🇺 Русский](guide-getting-started.ru.md)
+[🇬🇧 English](guide-getting-started.md) • [🇩🇪 Deutsch](guide-getting-started.de.md)
 
 OtakuSoul is an app for conversations and stories with AI characters. This guide takes you to the first reply in a
 few minutes – no prior knowledge of AI models needed.

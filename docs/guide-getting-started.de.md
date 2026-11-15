@@ -1,6 +1,6 @@
 # Erste Schritte mit OtakuSoul
 
-[🇬🇧 English](guide-getting-started.md) • [🇩🇪 Deutsch](guide-getting-started.de.md) • [🇷🇺 Русский](guide-getting-started.ru.md)
+[🇬🇧 English](guide-getting-started.md) • [🇩🇪 Deutsch](guide-getting-started.de.md)
 
 OtakuSoul ist eine App für Gespräche und Geschichten mit KI-Figuren. Diese Anleitung bringt Dich in wenigen Minuten
 zur ersten Antwort – ganz ohne Vorwissen über KI-Modelle.

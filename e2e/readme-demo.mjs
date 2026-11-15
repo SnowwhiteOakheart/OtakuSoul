@@ -1,7 +1,7 @@
 // Animated tour for the top of the READMEs (not part of `npm run e2e`): start page, a chat reply
 // streaming in, a story turn, a 3D avatar and a 5e fight, each scene with a short caption.
 // Frames are screenshots with their real timestamps; ffmpeg turns them into a GIF.
-// Usage: `node e2e/readme-demo.mjs [de|en|ru]` (Linux: `xvfb-run -a …`) → docs/assets/demo/<lang>.gif.
+// Usage: `node e2e/readme-demo.mjs [de|en]` (Linux: `xvfb-run -a …`) → docs/assets/demo/<lang>.gif.
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -66,29 +66,8 @@ const TEXT = {
     crypt: { title: 'The Crypt Hall', location: 'Beneath the old monastery', time: 'Midnight', tone: 'Dark fantasy', action: 'I enter the crypt.',
       narration: 'Torchlight flickers over the burial niches. Claws scrape in the dark – two goblins and a skeleton block your way!' },
   },
-  ru: {
-    reply: 'Русский',
-    persona: 'Кай',
-    captions: {
-      home: 'ИИ-персонажи – приватно на твоём ПК',
-      chat: 'Общайся с персонажами, которые тебя помнят',
-      story: 'Играй в истории с ИИ-ведущим',
-      avatar: '3D-, Live2D- и Inochi2D-аватары',
-      dice: 'Кубики как за столом: правила 5e на игровом поле',
-    },
-    chatMessage: 'Привет, Сиори! Посоветуешь книгу на каникулы?',
-    chatReply:
-      '*Сиори поправляет очки, и глаза её загораются.* «Одну? У меня есть список. Нет, подожди – три списка». ' +
-      '*Она достаёт из кармана кофты потрёпанную книжку.* «Начни с этой. Смотритель маяка, шторм ' +
-      'и письмо, которое пришло на сорок лет позже…»',
-    narration:
-      'Сиори глубоко вдыхает и цепляется за твои слова, как за спасательный круг. «Просто прочитать… да». ' +
-      'Тем временем Сота раскладывает брошюры на два стола, а лепестки сакуры залетают прямо за сцену.',
-    stageReply: '*Сиори глубоко вдыхает и благодарно кивает тебе.* «Ладно… ладно. Как героиня в последней главе».',
-    crypt: { title: 'Зал склепа', location: 'Под старым монастырём', time: 'Полночь', tone: 'Мрачное фэнтези', action: 'Я вхожу в склеп.',
-      narration: 'Свет факела дрожит на погребальных нишах. Во тьме скребут когти – два гоблина и скелет преграждают вам путь!' },
-  },
 }[lang];
+if (!TEXT) throw new Error(`Nur de oder en, nicht ${lang}`);
 
 // A neutral model name instead of "mock" in the title bar; the mock answers whatever is asked for.
 const base = { app_language: lang, reply_language: TEXT.reply, cloud_model: 'mistral-small' };
