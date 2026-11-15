@@ -5,8 +5,7 @@ use tauri::State;
 
 #[tauri::command(async)]
 pub fn load_lorebook(file_path: String) -> Result<crate::modules::lorebook::Lorebook, String> {
-    let book =
-        crate::modules::lorebook::Lorebook::load_from_file(std::path::Path::new(&file_path))?;
+    let book = crate::modules::lorebook::load_from_file(std::path::Path::new(&file_path))?;
     crate::modules::nsfw::ensure_visible(&book.extensions)?;
     Ok(book)
 }

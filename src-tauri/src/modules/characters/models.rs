@@ -83,26 +83,7 @@ pub fn invalid_model_links(extensions: &serde_json::Value) -> Vec<String> {
         .collect()
 }
 
-/// The translation for `lang` in an `otakusoul_i18n` extension: the language's own, otherwise
-/// the English one (understood most widely) – unless `lang` is the declared source language, whose
-/// text is the base itself. `None` keeps the base text.
-pub fn i18n_translation<'a>(
-    i18n: Option<&'a serde_json::Value>,
-    lang: &str,
-) -> Option<&'a serde_json::Value> {
-    let i18n = i18n?;
-    let translations = i18n.get("translations")?;
-    if let Some(own) = translations.get(lang) {
-        return Some(own);
-    }
-    let source = i18n
-        .get("source_language")
-        .and_then(serde_json::Value::as_str)?;
-    if source == lang || source == "en" || lang == "en" {
-        return None;
-    }
-    translations.get("en")
-}
+pub use otakusoul_prompt::i18n_translation;
 
 /// Text fields a translation may override; empty or missing ones fall back to the base card.
 const TRANSLATABLE_TEXT: [&str; 9] = [

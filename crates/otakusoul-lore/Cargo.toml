@@ -1,0 +1,16 @@
+[package]
+name = "otakusoul-lore"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+license = "GPL-3.0-only"
+description = "Gemeinsamer Lorebook-Import und gemeinsame Regelauswertung"
+
+[dependencies]
+otakusoul-prompt = { path = "../otakusoul-prompt" }
+parking_lot = "0.13"
+rand = "0.10"
+regex = "1.13"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+ts-rs = { version = "12", features = ["serde-json-impl", "no-serde-warnings"] }

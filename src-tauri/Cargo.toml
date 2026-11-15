@@ -19,6 +19,7 @@ tauri-build = { version = "2.7", features = [] }
 [dependencies]
 otakusoul-macros = { path = "../crates/otakusoul-macros" }
 otakusoul-prompt = { path = "../crates/otakusoul-prompt" }
+otakusoul-lore = { path = "../crates/otakusoul-lore" }
 flate2 = "1"
 tar = "0.4"
 ts-rs = { version = "12", features = ["serde-json-impl", "no-serde-warnings"] }

@@ -41,7 +41,7 @@ const runCargo = (cargoArgs) =>
 const steps = [
   ['test', '-q', '--manifest-path', 'src-tauri/Cargo.toml', '--lib', 'export_bindings'],
   ['test', '-q', '--manifest-path', 'crates/otakusoul-rules5e/Cargo.toml', '--lib', 'export_bindings'],
-  ['test', '-q', '-p', 'otakusoul-macros', '-p', 'otakusoul-prompt', '--lib', 'export_bindings'],
+  ['test', '-q', '-p', 'otakusoul-macros', '-p', 'otakusoul-prompt', '-p', 'otakusoul-lore', '--lib', 'export_bindings'],
 ];
 
 for (const args of steps) {

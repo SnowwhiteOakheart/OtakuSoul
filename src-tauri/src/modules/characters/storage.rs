@@ -100,7 +100,7 @@ pub fn extract_and_save_embedded_lorebook(
     let paths = resolve_app_paths();
     let fallback_name = format!("Lore_{}", char_name);
     if let Ok(lorebook) =
-        crate::modules::lorebook::Lorebook::import_from_json_string(&json_str, Some(&fallback_name))
+        crate::modules::lorebook::import_from_json_string(&json_str, Some(&fallback_name))
         && !lorebook.entries.is_empty()
     {
         let slug = if !lorebook.id.trim().is_empty() {
@@ -113,7 +113,7 @@ pub fn extract_and_save_embedded_lorebook(
                 .replace(|c: char| !c.is_alphanumeric() && c != '-' && c != '_', "_")
         };
         let target_path = PathBuf::from(&paths.lorebooks_dir).join(format!("{}.json", slug));
-        let _ = lorebook.save_to_file(&target_path);
+        let _ = crate::modules::lorebook::save_to_file(&lorebook, &target_path);
         return Some(lorebook.name);
     }
     None

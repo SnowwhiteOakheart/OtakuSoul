@@ -14,7 +14,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /** Shared crates under `crates/` besides rules5e (which keeps its own steps). */
-const SHARED_CRATES = ['otakusoul-paths', 'otakusoul-stream', 'otakusoul-macros', 'otakusoul-prompt'];
+const SHARED_CRATES = ['otakusoul-paths', 'otakusoul-stream', 'otakusoul-macros', 'otakusoul-prompt', 'otakusoul-lore'];
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const nodeBin = (relPath) => path.join(root, 'node_modules', relPath);

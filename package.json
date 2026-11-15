@@ -21,13 +21,13 @@
     "check": "npm run check:rust && npm run check:web",
     "check:agent": "node tools/check_agent.mjs",
     "check:fast": "node tools/docs_check.mjs && oxlint && tsc --noEmit && cargo check --manifest-path src-tauri/Cargo.toml --message-format=short",
-    "types:gen": "cargo test --manifest-path src-tauri/Cargo.toml --lib export_bindings && cargo test -p otakusoul-rules5e --lib export_bindings && cargo test -p otakusoul-macros -p otakusoul-prompt --lib export_bindings",
+    "types:gen": "cargo test --manifest-path src-tauri/Cargo.toml --lib export_bindings && cargo test -p otakusoul-rules5e --lib export_bindings && cargo test -p otakusoul-macros -p otakusoul-prompt -p otakusoul-lore --lib export_bindings",
     "types:check": "node tools/types_check.mjs",
     "lint": "oxlint",
     "docs:check": "node tools/docs_check.mjs",
     "i18n:check": "node tools/i18n_check.mjs",
     "check:web": "node tools/docs_check.mjs && oxlint && tsc --noEmit && vitest run",
-    "check:rust": "cargo fmt -p otakusoul-paths -p otakusoul-stream -p otakusoul-macros -p otakusoul-prompt --check && cargo fmt --manifest-path src-tauri/Cargo.toml --check && cargo clippy -p otakusoul-paths -p otakusoul-stream -p otakusoul-macros -p otakusoul-prompt --all-targets -- -D warnings && cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings && cargo test -p otakusoul-paths -p otakusoul-stream -p otakusoul-macros -p otakusoul-prompt && cargo test --manifest-path src-tauri/Cargo.toml"
+    "check:rust": "cargo fmt -p otakusoul-paths -p otakusoul-stream -p otakusoul-macros -p otakusoul-prompt -p otakusoul-lore --check && cargo fmt --manifest-path src-tauri/Cargo.toml --check && cargo clippy -p otakusoul-paths -p otakusoul-stream -p otakusoul-macros -p otakusoul-prompt -p otakusoul-lore --all-targets -- -D warnings && cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings && cargo test -p otakusoul-paths -p otakusoul-stream -p otakusoul-macros -p otakusoul-prompt -p otakusoul-lore && cargo test --manifest-path src-tauri/Cargo.toml"
   },
   "dependencies": {
     "@moeru/three-mmd": "^0.1.2",
