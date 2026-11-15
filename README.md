@@ -14,7 +14,7 @@
 
 Free and open source for Windows, Linux and macOS. Run AI locally or connect a cloud provider.
 
-**[Download the latest release](https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest)** · [See it in action](#demo) · [First steps](#quick-start)
+**[Download the latest release](https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest)** · **[Website: features, help & setup guide](https://snowwhiteoakheart.github.io/OtakuSoul/)** · [See it in action](#demo) · [First steps](#quick-start)
 
 <a name="demo"></a>
 
@@ -76,7 +76,7 @@ OtakuSoul updates itself: when a new version is out, a button appears in the tit
   <img src="docs/assets/screenshots/en/setup-ai.png" alt="Setup assistant: cloud providers" width="48%" />
 </p>
 
-Stuck? The **question mark** at the top right opens *First steps* and a **glossary** that explains every technical term in one sentence. Common errors come with a fix button (“Check API key”, “Choose a smaller model”, “Start local AI”). The full guide: **[Getting started with OtakuSoul](docs/guide-getting-started.md)**.
+Stuck? The **question mark** at the top right opens *First steps* and a **glossary** that explains every technical term in one sentence. Common errors come with a fix button (“Check API key”, “Choose a smaller model”, “Start local AI”). The full guide: **[Getting started with OtakuSoul](docs/guide-getting-started.md)** – more help and an overview of all features are on the **[OtakuSoul website](https://snowwhiteoakheart.github.io/OtakuSoul/help.html)**.
 
 ---
 

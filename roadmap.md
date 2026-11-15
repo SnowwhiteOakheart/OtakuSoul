@@ -44,7 +44,7 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 | D4 | E2E-Test fürs Pet-Fenster, Speicher des Pet-Webviews | ★ | M | – |
 | D5 | Wackelige E2E-Tests beobachten | ★ | – | – |
 | D6 | Nicht mehr gepflegte Linux-Abhängigkeiten ersetzen: GTK-Makros (`proc-macro-error`), D-Bus-Eltern gemeinsam auf zbus 6; glib-Speicherfehler berücksichtigen | ★★ | M | Linux-Prüfplatz, abgestimmte Tauri-/Plugin-/Schlüsselbund-Updates; Details `docs/ungepflegte-abhaengigkeiten-2026-11-07.md` |
-| D7 | [Rust-Kern aus dem nativen GUI-Prototyp übernehmen](#d7-rust-kern-aus-dem-nativen-gui-prototyp-übernehmen) | ★★ | Gestuft | Windows-E2E, gezielte Plattformprüfungen |
+| D7 | ~~Rust-Kern aus dem nativen GUI-Prototyp übernehmen~~ erledigt (15.11.2026, D7.1–D7.4) | – | – | – |
 | **E** | **Geparkt – wartet auf andere oder nur bei Bedarf** | | | |
 | E1 | `tauri-specta` (wartet auf stabile 2.0) | – | L | – |
 | E2 | TADA 3B Deutsch (wartet auf CrispASR) | – | S | – |
@@ -209,7 +209,9 @@ zugänglicher oder verlässlicher, und was baut auf schon Vorhandenem auf?*
 - [ ] **D4 · Pet-Fenster absichern:** E2E-Test mit tauri-driver und zweitem Fenster (Öffnen, Zustand vom Hauptfenster,
   Ausblenden, Wiederkehr beim Start); Speicher des zweiten Webviews messen und ggf. Modelldaten aus dem Hauptfenster
   übergeben statt erneut zu lesen.
-- [ ] **D5 · Wackelige E2E-Tests beobachten:** `chat-sidebar-errors` (einmal Entwurfsvergleich) und `stage-5e` (einmal
+- [ ] **D5 · Wackelige E2E-Tests beobachten:** 15.11.2026 einmal wackelig: `chat-emotion-tag`, `stage-gallery`,
+  `stage-npcs` (Windows), `chat-narrator-voice` (Linux); unter WSL2 starten Ambient-Klänge nicht (`stage-voice`,
+  `chat-style`, schon mit 0.7.8 – Audio-Umgebung von WSL/xvfb, unter Windows grün). Ältere Fälle: `chat-sidebar-errors` (einmal Entwurfsvergleich) und `stage-5e` (einmal
   veraltetes Element `button[aria-label*="gegen"]`, 16.10.2026). Bei erneutem Auftreten Ursache suchen.
 
 ### D7. Rust-Kern aus dem nativen GUI-Prototyp übernehmen
@@ -222,29 +224,19 @@ ist das Vorbild für die Trennung zwischen Fachlogik und App-Anbindung.
 - [x] **D7.1 · Profilpfade.** Erledigt (15.11.2026): Crate `crates/otakusoul-paths` (aus `4748a6d`, ohne
   `native_data_dir` des Prototyps) mit `base_dirs`, `production_dirs`, `isolated_home`; `paths.rs` exportiert
   `base_dirs`/`isolated_home` weiter, App-Kennung `com.snowwhite.otakusoul` und `OTAKUSOUL_HOME` unverändert.
-- [ ] **D7.2 · Streaming.** `otakusoul-stream` aus `c46de2b` samt späteren Decoder-Korrekturen
-  aus `53de0c2` prüfen. OpenAI-kompatible und Anthropic-SSE-Deltas, getrennte Gedanken und
-  UTF-8-Stückgrenzen gemeinsam dekodieren. `providers.rs` und `inference.rs` behalten
-  Anfrage, Abbruch, Zeitlimits und App-Ereignisse als Adapter.
-  **Abnahme:** Decoder-Tests für geteilte Zeichen und Think-Tags, Endmarker und Restdaten.
-  Danach Chat mit Mock-LLM auf Teilantwort, Abbruch und Providerfehler prüfen
-  (`e2e/partial-reply.mjs`, `e2e/chat-sessions-abort.mjs`, `e2e/chat-generation-errors.mjs`).
-- [ ] **D7.3 · Makros und Prompt-Aufbau.** `otakusoul-macros` und `otakusoul-prompt` aus
-  `d1eedaa` in getrennten Schritten einführen. Zuerst das Verhalten auf `main` in
-  Referenzfällen festhalten. Zeit, Zufall und Sprachauflösung für die Vergleiche kontrollieren.
-  Karten, Gedächtnis, Kontextbudget, Dateizugriff und Generierungsablauf bleiben über die
-  bestehenden Adapter angebunden.
-  **Abnahme:** Systemprompt und Anweisung nach dem Verlauf für DE und EN vergleichen.
-  Einzel- und Gruppenchat, OOC, Makro-Zufall und Sprach-Fallback prüfen. Typen neu erzeugen
-  und bestehende Frontend-Aufrufer per TypeScript- und Command-Check prüfen.
-- [ ] **D7.4 · Lorebooks.** Parser und Regelauswertung aus `otakusoul-lore` (`b9d70c3`)
-  in den Tauri-Adapter übernehmen. Der App-Code behält Katalog, Persistenz und Anbindung
-  an den Chat-Zustand. Bei Importen die bestehende Behandlung älterer Felder und
-  Inhaltsübersetzungen absichern.
-  **Abnahme:** Alte und aktuelle Lorebooks einlesen und auswerten. Schlüsselwort- und
-  Regex-Regeln, Ketten, Scan-Tiefe, Injektionsreihenfolge sowie globale und an Figuren
-  gebundene Einträge vergleichen. Prompt-Treffer anschließend im Tauri-Chat prüfen
-  (`e2e/chat-prompt-hits.mjs`).
+- [x] **D7.2 · Streaming.** Erledigt (15.11.2026): Crate `crates/otakusoul-stream` (aus `c46de2b`/`53de0c2`):
+  SSE-Zeilen mit UTF-8 erst an Zeilenenden, OpenAI-/Anthropic-Deltas, `<think>`-Filter, Endmarker; `inference.rs`
+  und `providers.rs` bleiben Adapter. Neu gegenüber vorher: ein Gedanken-Delta in der letzten, unterminierten Zeile
+  geht nicht mehr verloren. Abnahme: 6 Decoder-Tests, `partial-reply`, `chat-sessions-abort`,
+  `chat-generation-errors` unter Windows und Linux grün.
+- [x] **D7.3 · Makros und Prompt-Aufbau.** Erledigt (15.11.2026): zuerst der Golden-Test (`rich-de.txt`,
+  `rich-en.txt`) gegen den alten Renderer (`0b38304`), dann `crates/otakusoul-macros` und `crates/otakusoul-prompt`
+  (aus `d1eedaa`); Systemprompt und Nachspann bleiben bytegenau gleich. `types:gen`/`types:check`, `check:agent` und
+  `check:rust` erfassen die gemeinsamen Crates.
+- [x] **D7.4 · Lorebooks.** Erledigt (15.11.2026): `crates/otakusoul-lore` (aus `b9d70c3`); laden, importieren und
+  speichern sind freie Funktionen, auch in den inzwischen aufgeteilten Modulen `characters/` und `hub/`;
+  `i18n_translation` kommt aus `otakusoul-prompt`. Abnahme: Crate-Tests, Lore-/Hub-Rust-Tests, `chat-prompt-hits` und
+  `hub-updates` unter Windows und Linux grün.
 
 Die Änderungen werden gegen den jeweiligen Stand von `main` umgesetzt. Pro Schritt folgt
 ein eigener Commit nach den betroffenen Rust- und E2E-Prüfungen, zuerst unter Windows.

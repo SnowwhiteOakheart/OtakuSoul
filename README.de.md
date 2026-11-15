@@ -14,7 +14,7 @@
 
 Kostenlos und quelloffen für Windows, Linux und macOS. Nutze lokale KI oder verbinde einen Cloud-Anbieter.
 
-**[Aktuelle Version herunterladen](https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest)** · [App in Aktion](#demo) · [Erste Schritte](#quick-start)
+**[Aktuelle Version herunterladen](https://github.com/SnowwhiteOakheart/OtakuSoul/releases/latest)** · **[Website: Funktionen, Hilfe & Einrichtung](https://snowwhiteoakheart.github.io/OtakuSoul/de/)** · [App in Aktion](#demo) · [Erste Schritte](#quick-start)
 
 <a name="demo"></a>
 
@@ -76,7 +76,7 @@ OtakuSoul aktualisiert sich selbst: Gibt es eine neue Version, erscheint ein Kno
   <img src="docs/assets/screenshots/de/setup-ai.png" alt="Einrichtungsassistent: Cloud-Anbieter" width="48%" />
 </p>
 
-Nicht weitergekommen? Das **Fragezeichen** oben rechts öffnet *Erste Schritte* und ein **Glossar**, das jeden Fachbegriff in einem Satz erklärt. Häufige Fehler bringen einen Lösungsknopf mit („API-Schlüssel prüfen“, „Kleineres Modell wählen“, „Lokale KI starten“). Die ausführliche Anleitung: **[Erste Schritte mit OtakuSoul](docs/guide-getting-started.de.md)**.
+Nicht weitergekommen? Das **Fragezeichen** oben rechts öffnet *Erste Schritte* und ein **Glossar**, das jeden Fachbegriff in einem Satz erklärt. Häufige Fehler bringen einen Lösungsknopf mit („API-Schlüssel prüfen“, „Kleineres Modell wählen“, „Lokale KI starten“). Die ausführliche Anleitung: **[Erste Schritte mit OtakuSoul](docs/guide-getting-started.de.md)** – weitere Hilfe und alle Funktionen im Überblick stehen auf der **[OtakuSoul-Website](https://snowwhiteoakheart.github.io/OtakuSoul/de/help.html)**.
 
 ---
 
