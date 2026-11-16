@@ -203,6 +203,32 @@
      "damage_type": "piercing"
     },
     {
+     "id": "dagger",
+     "name": {
+      "de": "Dolch",
+      "en": "Dagger",
+      "ru": "Кинжал"
+     },
+     "kind": "melee",
+     "ability": "finesse",
+     "damage": "1d4",
+     "damage_type": "piercing"
+    },
+    {
+     "id": "dagger_thrown",
+     "name": {
+      "de": "Dolch (geworfen)",
+      "en": "Dagger (thrown)",
+      "ru": "Кинжал (бросок)"
+     },
+     "kind": "ranged",
+     "ability": "finesse",
+     "damage": "1d4",
+     "damage_type": "piercing",
+     "range_ft": 20,
+     "long_range_ft": 60
+    },
+    {
      "id": "shortbow",
      "name": {
       "de": "Kurzbogen",
@@ -232,6 +258,7 @@
    "equipment": [
     "leather",
     "shortsword",
+    "dagger",
     "shortbow"
    ]
   },

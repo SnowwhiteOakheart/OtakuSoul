@@ -51,6 +51,10 @@ pub struct WeaponData {
     pub thrown_only: bool,
     #[serde(default)]
     pub two_handed: bool,
+    /// Light: a second light melee weapon can strike as a bonus action (two-weapon fighting).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    #[ts(as = "Option<bool>", optional)]
+    pub light: bool,
     #[serde(default)]
     pub range_ft: u32,
     #[serde(default)]

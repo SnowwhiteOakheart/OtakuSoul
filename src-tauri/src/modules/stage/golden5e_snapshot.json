@@ -304,6 +304,34 @@
                 "to_hit": 4
               },
               {
+                "damage": "1d4+2",
+                "damage_type": "piercing",
+                "id": "dagger",
+                "kind": "melee",
+                "long_range_ft": 0,
+                "name": {
+                  "de": "Dolch",
+                  "en": "Dagger",
+                  "ru": "Кинжал"
+                },
+                "range_ft": 0,
+                "to_hit": 4
+              },
+              {
+                "damage": "1d4+2",
+                "damage_type": "piercing",
+                "id": "dagger_thrown",
+                "kind": "ranged",
+                "long_range_ft": 60,
+                "name": {
+                  "de": "Dolch (geworfen)",
+                  "en": "Dagger (thrown)",
+                  "ru": "Кинжал (бросок)"
+                },
+                "range_ft": 20,
+                "to_hit": 4
+              },
+              {
                 "damage": "1d6+2",
                 "damage_type": "piercing",
                 "id": "shortbow",
@@ -330,6 +358,7 @@
             "equipped": [
               "leather",
               "shortsword",
+              "dagger",
               "shortbow"
             ],
             "hit_dice_left": 2,
@@ -505,6 +534,34 @@
                   "to_hit": 4
                 },
                 {
+                  "damage": "1d4+2",
+                  "damage_type": "piercing",
+                  "id": "dagger",
+                  "kind": "melee",
+                  "long_range_ft": 0,
+                  "name": {
+                    "de": "Dolch",
+                    "en": "Dagger",
+                    "ru": "Кинжал"
+                  },
+                  "range_ft": 0,
+                  "to_hit": 4
+                },
+                {
+                  "damage": "1d4+2",
+                  "damage_type": "piercing",
+                  "id": "dagger_thrown",
+                  "kind": "ranged",
+                  "long_range_ft": 60,
+                  "name": {
+                    "de": "Dolch (geworfen)",
+                    "en": "Dagger (thrown)",
+                    "ru": "Кинжал (бросок)"
+                  },
+                  "range_ft": 20,
+                  "to_hit": 4
+                },
+                {
                   "damage": "1d6+2",
                   "damage_type": "piercing",
                   "id": "shortbow",
@@ -531,6 +588,7 @@
               "equipped": [
                 "leather",
                 "shortsword",
+                "dagger",
                 "shortbow"
               ],
               "hit_dice_left": 2,
@@ -3725,6 +3783,34 @@
                   "to_hit": 4
                 },
                 {
+                  "damage": "1d4+2",
+                  "damage_type": "piercing",
+                  "id": "dagger",
+                  "kind": "melee",
+                  "long_range_ft": 0,
+                  "name": {
+                    "de": "Dolch",
+                    "en": "Dagger",
+                    "ru": "Кинжал"
+                  },
+                  "range_ft": 0,
+                  "to_hit": 4
+                },
+                {
+                  "damage": "1d4+2",
+                  "damage_type": "piercing",
+                  "id": "dagger_thrown",
+                  "kind": "ranged",
+                  "long_range_ft": 60,
+                  "name": {
+                    "de": "Dolch (geworfen)",
+                    "en": "Dagger (thrown)",
+                    "ru": "Кинжал (бросок)"
+                  },
+                  "range_ft": 20,
+                  "to_hit": 4
+                },
+                {
                   "damage": "1d6+2",
                   "damage_type": "piercing",
                   "id": "shortbow",
@@ -3751,6 +3837,7 @@
               "equipped": [
                 "leather",
                 "shortsword",
+                "dagger",
                 "shortbow"
               ],
               "hit_dice_left": 2,
@@ -6972,6 +7059,34 @@
                     "to_hit": 4
                   },
                   {
+                    "damage": "1d4+2",
+                    "damage_type": "piercing",
+                    "id": "dagger",
+                    "kind": "melee",
+                    "long_range_ft": 0,
+                    "name": {
+                      "de": "Dolch",
+                      "en": "Dagger",
+                      "ru": "Кинжал"
+                    },
+                    "range_ft": 0,
+                    "to_hit": 4
+                  },
+                  {
+                    "damage": "1d4+2",
+                    "damage_type": "piercing",
+                    "id": "dagger_thrown",
+                    "kind": "ranged",
+                    "long_range_ft": 60,
+                    "name": {
+                      "de": "Dolch (geworfen)",
+                      "en": "Dagger (thrown)",
+                      "ru": "Кинжал (бросок)"
+                    },
+                    "range_ft": 20,
+                    "to_hit": 4
+                  },
+                  {
                     "damage": "1d6+2",
                     "damage_type": "piercing",
                     "id": "shortbow",
@@ -6998,6 +7113,7 @@
                 "equipped": [
                   "leather",
                   "shortsword",
+                  "dagger",
                   "shortbow"
                 ],
                 "hit_dice_left": 1,
@@ -8854,6 +8970,34 @@
                   "to_hit": 4
                 },
                 {
+                  "damage": "1d4+2",
+                  "damage_type": "piercing",
+                  "id": "dagger",
+                  "kind": "melee",
+                  "long_range_ft": 0,
+                  "name": {
+                    "de": "Dolch",
+                    "en": "Dagger",
+                    "ru": "Кинжал"
+                  },
+                  "range_ft": 0,
+                  "to_hit": 4
+                },
+                {
+                  "damage": "1d4+2",
+                  "damage_type": "piercing",
+                  "id": "dagger_thrown",
+                  "kind": "ranged",
+                  "long_range_ft": 60,
+                  "name": {
+                    "de": "Dolch (geworfen)",
+                    "en": "Dagger (thrown)",
+                    "ru": "Кинжал (бросок)"
+                  },
+                  "range_ft": 20,
+                  "to_hit": 4
+                },
+                {
                   "damage": "1d6+2",
                   "damage_type": "piercing",
                   "id": "shortbow",
@@ -8880,6 +9024,7 @@
               "equipped": [
                 "leather",
                 "shortsword",
+                "dagger",
                 "shortbow"
               ],
               "hit_dice_left": 2,
@@ -10875,6 +11020,34 @@
                     "to_hit": 4
                   },
                   {
+                    "damage": "1d4+2",
+                    "damage_type": "piercing",
+                    "id": "dagger",
+                    "kind": "melee",
+                    "long_range_ft": 0,
+                    "name": {
+                      "de": "Dolch",
+                      "en": "Dagger",
+                      "ru": "Кинжал"
+                    },
+                    "range_ft": 0,
+                    "to_hit": 4
+                  },
+                  {
+                    "damage": "1d4+2",
+                    "damage_type": "piercing",
+                    "id": "dagger_thrown",
+                    "kind": "ranged",
+                    "long_range_ft": 60,
+                    "name": {
+                      "de": "Dolch (geworfen)",
+                      "en": "Dagger (thrown)",
+                      "ru": "Кинжал (бросок)"
+                    },
+                    "range_ft": 20,
+                    "to_hit": 4
+                  },
+                  {
                     "damage": "1d6+2",
                     "damage_type": "piercing",
                     "id": "shortbow",
@@ -10901,6 +11074,7 @@
                 "equipped": [
                   "leather",
                   "shortsword",
+                  "dagger",
                   "shortbow"
                 ],
                 "hit_dice_left": 2,

@@ -8,4 +8,8 @@ category: string, damage: string, damage_type: string, finesse: boolean, ranged:
 /**
  * Used as a thrown weapon only (javelin): one ranged attack under the weapon's id.
  */
-thrown_only: boolean, two_handed: boolean, range_ft: number, long_range_ft: number, };
+thrown_only: boolean, two_handed: boolean, 
+/**
+ * Light: a second light melee weapon can strike as a bonus action (two-weapon fighting).
+ */
+light?: boolean, range_ft: number, long_range_ft: number, };
