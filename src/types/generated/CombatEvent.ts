@@ -34,4 +34,4 @@ slot_level: number, } | { "type": "save", target_id: string, target_name: string
 /**
  * The d20; 0 when a hit at 0 hit points counted as failure.
  */
-roll: number, successes: number, failures: number, outcome: DeathSaveOutcome, } | { "type": "concentration_lost", caster_id: string, caster_name: string, spell_id: string, } | { "type": "teleport", actor_id: string, actor_name: string, to: GridPos, };
+roll: number, successes: number, failures: number, outcome: DeathSaveOutcome, } | { "type": "concentration_lost", caster_id: string, caster_name: string, spell_id: string, } | { "type": "teleport", actor_id: string, actor_name: string, to: GridPos, } | { "type": "maneuver", actor_id: string, actor_name: string, maneuver: string, target_id?: string, target_name?: string, total?: number, against?: number, success: boolean, };

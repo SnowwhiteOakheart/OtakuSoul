@@ -18,6 +18,9 @@ pub enum TurnDecision {
     Cast(String),
     /// A class feature by id (`second_wind`, `turn_undead` …).
     Feature(String),
+    /// A standard action by option id (`help:…`, `hide`, `grapple:…`, `stand_up` …, see
+    /// [`crate::maneuver_options`]).
+    Maneuver(String),
 }
 
 fn best_attack(stats: &Stats5e) -> Option<&Attack> {
@@ -74,16 +77,17 @@ pub fn hero_fallback_decision(actor: &Combatant, combatants: &[Combatant]) -> Tu
     }
 }
 
-/// Reads an action id (`attack:<attack>:<target>` or `dodge`) if it is one of the legal
-/// options; anything else is `None`.
+/// Reads an action id (`attack:<attack>:<target>`, `dodge` or a standard action) if it is one
+/// of the legal options; anything else is `None`.
 pub fn parse_action(id: &str, options: &[ActionOption]) -> Option<TurnDecision> {
     let id = id.trim();
     let option = options.iter().find(|option| option.id == id)?;
     Some(match (&option.attack_id, &option.target_id) {
-        (Some(attack_id), Some(target_id)) => TurnDecision::Attack {
+        (Some(attack_id), Some(target_id)) if id.starts_with("attack:") => TurnDecision::Attack {
             attack_id: attack_id.clone(),
             target_id: target_id.clone(),
         },
-        _ => TurnDecision::Dodge,
+        _ if id == "dodge" => TurnDecision::Dodge,
+        _ => TurnDecision::Maneuver(id.to_string()),
     })
 }

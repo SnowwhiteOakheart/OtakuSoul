@@ -60,6 +60,10 @@ pub enum EnginePlan {
 /// follow the engine's AI; a companion heals the dying without asking, otherwise chooses among
 /// the attacks it can set up this turn (moving there first), up to three casts and Dodge.
 pub fn engine_plan(combat: &EncounterState, map: Option<&BattleMap>) -> EnginePlan {
+    // The prelude already used the action (a healing potion for a dying ally).
+    if combat.turn.action_used {
+        return EnginePlan::Decided(PlannedTurn::InPlace(TurnDecision::Pass));
+    }
     let actor = &combat.combatants[combat.current_turn_index];
     let combatants = &combat.combatants;
     let budget = combat.turn.movement_left_ft;
@@ -155,6 +159,8 @@ pub fn engine_plan(combat: &EncounterState, map: Option<&BattleMap>) -> EnginePl
 /// Before an engine turn is planned: a badly hurt hero catches their Second Wind (bonus
 /// action).
 pub fn engine_turn_prelude<R: Rng + ?Sized>(t: &mut Table, rng: &mut R) -> Vec<CombatEvent> {
+    // Standing up from prone; a healing potion for a dying ally.
+    let mut events = engine_maneuvers(t, rng);
     let actor = &t.combat.combatants[t.combat.current_turn_index];
     if !is_enemy(actor)
         && actor.hp * 2 < actor.max_hp
@@ -162,9 +168,9 @@ pub fn engine_turn_prelude<R: Rng + ?Sized>(t: &mut Table, rng: &mut R) -> Vec<C
             .iter()
             .any(|o| o.id == SECOND_WIND)
     {
-        return use_feature(t, SECOND_WIND, rng);
+        events.extend(use_feature(t, SECOND_WIND, rng));
     }
-    Vec::new()
+    events
 }
 
 /// Carries out a planned engine turn.

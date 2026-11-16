@@ -115,6 +115,22 @@ export function combatEventText(event: CombatEvent, language: Language): string 
       });
     case 'concentration_lost':
       return translate('fight.event.concentrationLost', { name: event.caster_name, spell: spellName(event.spell_id, language) });
+    case 'maneuver': {
+      const params = {
+        name: event.actor_name,
+        target: event.target_name ?? '',
+        total: event.total ?? '–',
+        against: event.against ?? '–',
+      };
+      // Checks say whether they worked; potions name who drinks.
+      const checked = ['hide', 'grapple', 'shove_prone', 'shove_push', 'escape'].includes(event.maneuver);
+      const key = event.maneuver === 'potion' && event.target_id === event.actor_id
+        ? 'fight.event.maneuver.potionSelf'
+        : checked
+          ? `fight.event.maneuver.${event.maneuver}.${event.success ? 'ok' : 'fail'}`
+          : `fight.event.maneuver.${event.maneuver}`;
+      return translate(key as TranslationKey, params);
+    }
     case 'teleport':
       return translate('fight.event.teleport', { name: event.actor_name, x: event.to.x + 1, y: event.to.y + 1 });
     case 'combat_end':

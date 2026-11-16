@@ -65,6 +65,17 @@ try {
   assert.equal(player.stats5e.class_id, 'fighter');
   assertEngineHitPoints(started);
 
+  // Standard actions besides attacking: the first turn shoves a goblin (Athletics contest).
+  const shove = await panel.$('[data-maneuver^="shove_prone:"]');
+  await shove.waitForClickable({ timeout: 30_000, timeoutMsg: 'Keine Zusatzaktionen im Kampfpanel' });
+  assert.ok(await panel.$('[data-maneuver^="grapple:"]').isExisting(), 'Packen fehlt');
+  assert.ok(await panel.$('[data-maneuver^="help:"]').isExisting(), 'Helfen fehlt');
+  await shove.click();
+  await browser.waitUntil(
+    async () => (await invoke('get_stage_state')).combat.events.some((e) => e.type === 'maneuver' && e.maneuver === 'shove_prone'),
+    { timeout: 30_000, timeoutMsg: 'Stoßen kommt nicht in den Ereignissen an' },
+  );
+
   // Fight from the panel until the engine declares the end.
   let rounds = 0;
   while ((await invoke('get_stage_state')).combat.is_active && rounds < 25) {

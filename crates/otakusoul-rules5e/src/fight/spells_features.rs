@@ -47,6 +47,7 @@ pub(super) fn cast<R: Rng + ?Sized>(
         CastingTime::Reaction => {}
     }
     let heroic = t.heroic_death();
+    let revealed = reveal_hidden(&mut t.combat.combatants[index]);
     let mut events = cast_spell(
         t.map.as_ref(),
         &mut t.combat.combatants,
@@ -58,6 +59,7 @@ pub(super) fn cast<R: Rng + ?Sized>(
         rng,
     );
     events.extend(settle(t.combat));
+    events.extend(revealed);
     events
 }
 
@@ -107,6 +109,9 @@ pub fn feature_options(combat: &EncounterState, map: Option<&BattleMap>) -> Vec<
     if has_feature(stats, CUNNING_ACTION) && !turn.bonus_action_used && map.is_some() {
         options.push(option("cunning_dash", "bonus", None));
         options.push(option("cunning_disengage", "bonus", None));
+        if can_hide(map, actor, &combat.combatants) {
+            options.push(option(CUNNING_HIDE, "bonus", None));
+        }
     }
     options
 }
@@ -150,6 +155,12 @@ pub fn use_feature<R: Rng + ?Sized>(t: &mut Table, id: &str, rng: &mut R) -> Vec
         "cunning_disengage" => {
             combat.turn.bonus_action_used = true;
             combat.turn.disengaged = true;
+        }
+        CUNNING_HIDE => {
+            combat.turn.bonus_action_used = true;
+            // The Stealth check's own event says what happened.
+            events.clear();
+            events.extend(hide(combat, index, rng));
         }
         TURN_UNDEAD => {
             spend(stats, id);

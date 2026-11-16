@@ -34,6 +34,16 @@ pub const NO_HEAL: &str = "no_heal";
 pub const TURNED: &str = "turned";
 /// Shield: +5 AC until the start of the caster's next turn.
 pub const SHIELDED: &str = "shielded";
+/// Hide action succeeded: own attacks have advantage, attacks against it disadvantage; ends
+/// when it attacks or casts a spell.
+pub const HIDDEN: &str = "hidden";
+/// Help action: the next attack against this creature has advantage. Lasts until the start of
+/// its second turn from now (the SRD says "until the helper's next turn"; the engine does not
+/// remember the helper, so the mark outlives the target's own next turn once).
+pub const HELPED: &str = "helped";
+/// Ready action: the creature strikes with a reaction when a foe steps into its reach (until
+/// its next turn).
+pub const READIED: &str = "readied";
 
 /// Rounds a condition lasts when a spell gives no other number (1 minute = 10 rounds).
 pub const ONE_MINUTE: u32 = 10;
@@ -114,9 +124,12 @@ pub fn attack_conditions(
     let prone_target = has_condition(target, PRONE);
     let advantage = any(target, &ATTACKED_WITH_ADVANTAGE)
         || has_condition(target, GUIDED)
+        || has_condition(target, HELPED)
+        || has_condition(attacker, HIDDEN)
         || (prone_target && close);
     let disadvantage = any(attacker, &ATTACKS_WITH_DISADVANTAGE)
         || has_condition(target, DODGING) && !incapacitated(target)
+        || has_condition(target, HIDDEN)
         || (prone_target && !close);
     let auto_crit = close && any(target, &[PARALYZED, UNCONSCIOUS, ASLEEP]);
     (RollMode::combine(advantage, disadvantage), auto_crit)

@@ -292,6 +292,55 @@ pub fn hero_board_plan(
         })
 }
 
+/// A reaction strike at a moving creature (opportunity attack, readied strike) with the
+/// striker's best melee attack; `announce` says which. Uses the striker's reaction.
+fn reaction_strike<R: Rng + ?Sized>(
+    combatants: &mut [Combatant],
+    striker: usize,
+    mover_index: usize,
+    announce: CombatEvent,
+    reactions_used: &mut Vec<String>,
+    rng: &mut R,
+) -> Vec<CombatEvent> {
+    let attacker = combatants[striker].clone();
+    let Some(attack) = attacker
+        .stats5e
+        .as_ref()
+        .and_then(|s| {
+            s.attacks
+                .iter()
+                .filter(|a| a.kind == AttackKind::Melee)
+                .max_by_key(|a| expected_damage(a))
+        })
+        .cloned()
+    else {
+        return Vec::new();
+    };
+    reactions_used.push(attacker.id.clone());
+    let mut events = vec![announce];
+    let mover_id = combatants[mover_index].id.clone();
+    let situation = AttackSituation {
+        target_can_react: !reactions_used.contains(&mover_id),
+        ..Default::default()
+    };
+    let attack_events = resolve_attack_with(
+        &attacker,
+        &attack,
+        &mut combatants[mover_index],
+        &situation,
+        rng,
+    );
+    if attack_events
+        .iter()
+        .any(|e| matches!(e, CombatEvent::Feature { feature, .. } if feature == "shield"))
+    {
+        reactions_used.push(mover_id);
+    }
+    events.extend(attack_events);
+    events.extend(reveal_hidden(&mut combatants[striker]));
+    events
+}
+
 /// Walks `path` square by square. Leaving an enemy's reach provokes its opportunity attack
 /// (once per round, melee, not after Disengage); a mover who drops stops there.
 pub fn walk<R: Rng + ?Sized>(
@@ -325,44 +374,19 @@ pub fn walk<R: Rng + ?Sized>(
                 })
                 .collect();
             for threat in threats {
-                let attacker = combatants[threat].clone();
-                let Some(attack) = attacker
-                    .stats5e
-                    .as_ref()
-                    .and_then(|s| {
-                        s.attacks
-                            .iter()
-                            .filter(|a| a.kind == AttackKind::Melee)
-                            .max_by_key(|a| expected_damage(a))
-                    })
-                    .cloned()
-                else {
-                    continue;
-                };
-                reactions_used.push(attacker.id.clone());
-                events.push(CombatEvent::OpportunityAttack {
-                    attacker_id: attacker.id.clone(),
-                    attacker_name: attacker.name.clone(),
+                let announce = CombatEvent::OpportunityAttack {
+                    attacker_id: combatants[threat].id.clone(),
+                    attacker_name: combatants[threat].name.clone(),
                     target_name: combatants[mover_index].name.clone(),
-                });
-                let mover_id = combatants[mover_index].id.clone();
-                let situation = AttackSituation {
-                    target_can_react: !reactions_used.contains(&mover_id),
-                    ..Default::default()
                 };
-                let attack_events = resolve_attack_with(
-                    &attacker,
-                    &attack,
-                    &mut combatants[mover_index],
-                    &situation,
+                events.extend(reaction_strike(
+                    combatants,
+                    threat,
+                    mover_index,
+                    announce,
+                    reactions_used,
                     rng,
-                );
-                if attack_events.iter().any(
-                    |e| matches!(e, CombatEvent::Feature { feature, .. } if feature == "shield"),
-                ) {
-                    reactions_used.push(mover_id);
-                }
-                events.extend(attack_events);
+                ));
                 if !is_up(&combatants[mover_index]) {
                     break;
                 }
@@ -373,6 +397,49 @@ pub fn walk<R: Rng + ?Sized>(
         }
         combatants[mover_index].position = Some(next);
         walked.push(next);
+        // Ready: a foe holding a strike ready hits as the mover steps into its reach (also
+        // after Disengage, which only covers leaving reach).
+        let mover_side = is_enemy(&combatants[mover_index]);
+        let readied: Vec<usize> = (0..combatants.len())
+            .filter(|&i| {
+                let c = &combatants[i];
+                i != mover_index
+                    && is_up(c)
+                    && !incapacitated(c)
+                    && is_enemy(c) != mover_side
+                    && has_condition(c, READIED)
+                    && !reactions_used.contains(&c.id)
+                    && c.position
+                        .is_some_and(|p| p.squares_to(next) <= 1 && p.squares_to(here) > 1)
+            })
+            .collect();
+        for striker in readied {
+            remove_condition(&mut combatants[striker], READIED);
+            let announce = CombatEvent::Maneuver {
+                actor_id: combatants[striker].id.clone(),
+                actor_name: combatants[striker].name.clone(),
+                maneuver: READIED_ATTACK.to_string(),
+                target_id: Some(combatants[mover_index].id.clone()),
+                target_name: Some(combatants[mover_index].name.clone()),
+                total: None,
+                against: None,
+                success: true,
+            };
+            events.extend(reaction_strike(
+                combatants,
+                striker,
+                mover_index,
+                announce,
+                reactions_used,
+                rng,
+            ));
+            if !is_up(&combatants[mover_index]) {
+                break;
+            }
+        }
+        if !is_up(&combatants[mover_index]) {
+            break;
+        }
     }
     if !walked.is_empty() {
         let mover = &combatants[mover_index];

@@ -1210,6 +1210,36 @@
                 "disadvantage": false,
                 "id": "dodge",
                 "target_id": null
+              },
+              {
+                "attack_id": null,
+                "disadvantage": false,
+                "id": "help:enemy_1700000000003_0",
+                "target_id": "enemy_1700000000003_0"
+              },
+              {
+                "attack_id": null,
+                "disadvantage": false,
+                "id": "grapple:enemy_1700000000003_0",
+                "target_id": "enemy_1700000000003_0"
+              },
+              {
+                "attack_id": null,
+                "disadvantage": false,
+                "id": "shove_prone:enemy_1700000000003_0",
+                "target_id": "enemy_1700000000003_0"
+              },
+              {
+                "attack_id": null,
+                "disadvantage": false,
+                "id": "shove_push:enemy_1700000000003_0",
+                "target_id": "enemy_1700000000003_0"
+              },
+              {
+                "attack_id": null,
+                "disadvantage": false,
+                "id": "ready",
+                "target_id": null
               }
             ],
             "actor_id": "comb_player",
@@ -3501,8 +3531,8 @@
             "max_stress": 100,
             "name": "Lyra",
             "position": {
-              "x": 8,
-              "y": 2
+              "x": 12,
+              "y": 7
             },
             "role": "companion",
             "skills": {},
@@ -3589,7 +3619,7 @@
                   0
                 ],
                 "slots_used": [
-                  0,
+                  1,
                   0,
                   0,
                   0,
@@ -3618,7 +3648,7 @@
           },
           {
             "conditions": [],
-            "hp": 10,
+            "hp": 1,
             "id": "comb_player",
             "initiative": 0,
             "max_hp": 15,
@@ -3718,7 +3748,7 @@
                   0
                 ],
                 "slots_used": [
-                  1,
+                  0,
                   0,
                   0,
                   0,
@@ -3752,8 +3782,8 @@
             "max_stress": 100,
             "name": "Finn",
             "position": {
-              "x": 12,
-              "y": 7
+              "x": 9,
+              "y": 4
             },
             "role": "companion",
             "skills": {},
@@ -3865,7 +3895,7 @@
             "stress": 0
           }
         ],
-        "current_turn_index": 3,
+        "current_turn_index": 2,
         "difficulty": "easy",
         "effects": [],
         "events": [
@@ -3913,7 +3943,7 @@
         ],
         "is_active": false,
         "reactions_used": [],
-        "round": 6,
+        "round": 5,
         "turn": {
           "action_used": true,
           "bonus_action_used": false,
@@ -4210,6 +4240,54 @@
                 "disadvantage": false,
                 "id": "dodge",
                 "target_id": null
+              },
+              {
+                "attack_id": null,
+                "disadvantage": false,
+                "id": "help:enemy_1700000000003_0",
+                "target_id": "enemy_1700000000003_0"
+              },
+              {
+                "attack_id": null,
+                "disadvantage": false,
+                "id": "grapple:enemy_1700000000003_0",
+                "target_id": "enemy_1700000000003_0"
+              },
+              {
+                "attack_id": null,
+                "disadvantage": false,
+                "id": "shove_prone:enemy_1700000000003_0",
+                "target_id": "enemy_1700000000003_0"
+              },
+              {
+                "attack_id": null,
+                "disadvantage": false,
+                "id": "shove_push:enemy_1700000000003_0",
+                "target_id": "enemy_1700000000003_0"
+              },
+              {
+                "attack_id": null,
+                "disadvantage": false,
+                "id": "ready",
+                "target_id": null
+              },
+              {
+                "attack_id": null,
+                "disadvantage": false,
+                "id": "potion:item_potion_of_healing_1700000000002:companion_0",
+                "target_id": "companion_0"
+              },
+              {
+                "attack_id": null,
+                "disadvantage": false,
+                "id": "potion:item_potion_of_healing_1700000000002:comb_player",
+                "target_id": "comb_player"
+              },
+              {
+                "attack_id": null,
+                "disadvantage": false,
+                "id": "potion:item_potion_of_healing_1700000000002:companion_1",
+                "target_id": "companion_1"
               }
             ],
             "actor_id": "comb_player",
@@ -5883,6 +5961,43 @@
             {
               "actor_id": "companion_1",
               "actor_name": "Finn",
+              "maneuver": "potion",
+              "success": true,
+              "target_id": "companion_0",
+              "target_name": "Lyra",
+              "type": "maneuver"
+            },
+            {
+              "amount": 7,
+              "hp_after": 7,
+              "target_id": "companion_0",
+              "target_name": "Lyra",
+              "type": "heal"
+            },
+            {
+              "condition": "unconscious",
+              "target_id": "companion_0",
+              "target_name": "Lyra",
+              "type": "condition_end"
+            }
+          ]
+        },
+        {
+          "next": [
+            {
+              "actor_id": "companion_0",
+              "actor_name": "Lyra",
+              "round": 2,
+              "type": "turn_start"
+            }
+          ]
+        },
+        {
+          "engine": "companion_0",
+          "events": [
+            {
+              "actor_id": "companion_0",
+              "actor_name": "Lyra",
               "feet": 30,
               "path": [
                 {
@@ -5915,7 +6030,7 @@
             {
               "attacker_id": "enemy_1700000000003_0",
               "attacker_name": "Goblin 1",
-              "target_name": "Finn",
+              "target_name": "Lyra",
               "type": "opportunity_attack"
             },
             {
@@ -5929,88 +6044,68 @@
               "attacker_name": "Goblin 1",
               "bonus_die": null,
               "critical": false,
-              "hit": false,
-              "roll": {
-                "mode": "normal",
-                "natural": 4,
-                "rolls": [
-                  4
-                ]
-              },
-              "target_ac": 13,
-              "target_id": "companion_1",
-              "target_name": "Finn",
-              "to_hit": 4,
-              "total": 8,
-              "type": "attack"
-            },
-            {
-              "attack_id": "shortbow",
-              "attack_name": {
-                "de": "Kurzbogen",
-                "en": "Shortbow",
-                "ru": "Короткий лук"
-              },
-              "attacker_id": "companion_1",
-              "attacker_name": "Finn",
-              "bonus_die": null,
-              "critical": false,
               "hit": true,
               "roll": {
                 "mode": "normal",
-                "natural": 19,
+                "natural": 17,
                 "rolls": [
-                  19
+                  17
+                ]
+              },
+              "target_ac": 12,
+              "target_id": "companion_0",
+              "target_name": "Lyra",
+              "to_hit": 4,
+              "total": 21,
+              "type": "attack"
+            },
+            {
+              "amount": 3,
+              "damage_type": "slashing",
+              "hp_after": 4,
+              "roll": {
+                "modifier": 2,
+                "rolls": [
+                  1
+                ],
+                "total": 3
+              },
+              "scaling": "normal",
+              "target_id": "companion_0",
+              "target_name": "Lyra",
+              "tier": "badly_wounded",
+              "type": "damage"
+            },
+            {
+              "attack_id": "fire_bolt",
+              "attack_name": {
+                "de": "Feuerpfeil",
+                "en": "Fire bolt",
+                "ru": "Огненный снаряд"
+              },
+              "attacker_id": "companion_0",
+              "attacker_name": "Lyra",
+              "bonus_die": null,
+              "critical": false,
+              "hit": false,
+              "roll": {
+                "mode": "normal",
+                "natural": 7,
+                "rolls": [
+                  7
                 ]
               },
               "target_ac": 15,
               "target_id": "enemy_1700000000003_1",
               "target_name": "Goblin 2",
               "to_hit": 4,
-              "total": 23,
+              "total": 11,
               "type": "attack"
-            },
-            {
-              "amount": 7,
-              "damage_type": "piercing",
-              "hp_after": 0,
-              "roll": {
-                "modifier": 2,
-                "rolls": [
-                  5
-                ],
-                "total": 7
-              },
-              "scaling": "normal",
-              "target_id": "enemy_1700000000003_1",
-              "target_name": "Goblin 2",
-              "tier": "down",
-              "type": "damage"
-            },
-            {
-              "target_id": "enemy_1700000000003_1",
-              "target_name": "Goblin 2",
-              "type": "down"
             }
           ]
         },
         {
           "next": [
-            {
-              "actor_id": "companion_0",
-              "actor_name": "Lyra",
-              "round": 2,
-              "type": "turn_start"
-            },
-            {
-              "actor_id": "companion_0",
-              "actor_name": "Lyra",
-              "failures": 2,
-              "outcome": "ongoing",
-              "roll": 1,
-              "successes": 0,
-              "type": "death_save"
-            },
             {
               "actor_id": "enemy_1700000000003_0",
               "actor_name": "Goblin 1",
@@ -6025,7 +6120,7 @@
             {
               "actor_id": "enemy_1700000000003_0",
               "actor_name": "Goblin 1",
-              "feet": 10,
+              "feet": 15,
               "path": [
                 {
                   "x": 10,
@@ -6033,6 +6128,10 @@
                 },
                 {
                   "x": 11,
+                  "y": 4
+                },
+                {
+                  "x": 12,
                   "y": 4
                 }
               ],
@@ -6058,17 +6157,23 @@
               "hit": false,
               "roll": {
                 "mode": "normal",
-                "natural": 7,
+                "natural": 10,
                 "rolls": [
-                  7
+                  10
                 ]
               },
               "target_ac": 15,
               "target_id": "enemy_1700000000003_0",
               "target_name": "Goblin 1",
               "to_hit": 4,
-              "total": 11,
+              "total": 14,
               "type": "attack"
+            },
+            {
+              "actor_id": "companion_0",
+              "actor_name": "Lyra",
+              "feature": "shield",
+              "type": "feature"
             },
             {
               "attack_id": "shortbow",
@@ -6081,41 +6186,102 @@
               "attacker_name": "Goblin 1",
               "bonus_die": null,
               "critical": false,
+              "hit": false,
+              "roll": {
+                "mode": "normal",
+                "natural": 8,
+                "rolls": [
+                  8
+                ]
+              },
+              "target_ac": 17,
+              "target_id": "companion_0",
+              "target_name": "Lyra",
+              "to_hit": 4,
+              "total": 12,
+              "type": "attack"
+            }
+          ]
+        },
+        {
+          "next": [
+            {
+              "actor_id": "enemy_1700000000003_1",
+              "actor_name": "Goblin 2",
+              "round": 2,
+              "type": "turn_start"
+            }
+          ]
+        },
+        {
+          "engine": "enemy_1700000000003_1",
+          "events": [
+            {
+              "actor_id": "enemy_1700000000003_1",
+              "actor_name": "Goblin 2",
+              "feet": 15,
+              "path": [
+                {
+                  "x": 12,
+                  "y": 3
+                },
+                {
+                  "x": 12,
+                  "y": 4
+                },
+                {
+                  "x": 11,
+                  "y": 4
+                }
+              ],
+              "type": "move"
+            },
+            {
+              "attack_id": "shortbow",
+              "attack_name": {
+                "de": "Kurzbogen",
+                "en": "Shortbow",
+                "ru": "Короткий лук"
+              },
+              "attacker_id": "enemy_1700000000003_1",
+              "attacker_name": "Goblin 2",
+              "bonus_die": null,
+              "critical": false,
               "hit": true,
               "roll": {
                 "mode": "normal",
-                "natural": 10,
+                "natural": 16,
                 "rolls": [
-                  10
+                  16
                 ]
               },
-              "target_ac": 13,
-              "target_id": "companion_1",
-              "target_name": "Finn",
+              "target_ac": 17,
+              "target_id": "companion_0",
+              "target_name": "Lyra",
               "to_hit": 4,
-              "total": 14,
+              "total": 20,
               "type": "attack"
             },
             {
-              "amount": 5,
+              "amount": 6,
               "damage_type": "piercing",
               "hp_after": 0,
               "roll": {
                 "modifier": 2,
                 "rolls": [
-                  3
+                  4
                 ],
-                "total": 5
+                "total": 6
               },
               "scaling": "normal",
-              "target_id": "companion_1",
-              "target_name": "Finn",
+              "target_id": "companion_0",
+              "target_name": "Lyra",
               "tier": "down",
               "type": "damage"
             },
             {
-              "target_id": "companion_1",
-              "target_name": "Finn",
+              "target_id": "companion_0",
+              "target_name": "Lyra",
               "type": "down"
             }
           ]
@@ -6150,19 +6316,36 @@
               "dc": 12,
               "roll": {
                 "mode": "normal",
-                "natural": 11,
+                "natural": 3,
                 "rolls": [
-                  11
+                  3
                 ]
               },
-              "success": true,
-              "target_id": "enemy_1700000000003_0",
-              "target_name": "Goblin 1",
-              "total": 13,
+              "success": false,
+              "target_id": "enemy_1700000000003_1",
+              "target_name": "Goblin 2",
+              "total": 5,
               "type": "save"
+            },
+            {
+              "amount": 1,
+              "damage_type": "radiant",
+              "hp_after": 6,
+              "roll": {
+                "modifier": 0,
+                "rolls": [
+                  1
+                ],
+                "total": 1
+              },
+              "scaling": "normal",
+              "target_id": "enemy_1700000000003_1",
+              "target_name": "Goblin 2",
+              "tier": "wounded",
+              "type": "damage"
             }
           ],
-          "player": "cast:sacred_flame:0:enemy_1700000000003_0",
+          "player": "cast:sacred_flame:0:enemy_1700000000003_1",
           "turn_over": false
         },
         {
@@ -6195,51 +6378,37 @@
               "actor_name": "Finn",
               "round": 2,
               "type": "turn_start"
-            },
-            {
-              "actor_id": "companion_1",
-              "actor_name": "Finn",
-              "failures": 1,
-              "outcome": "ongoing",
-              "roll": 2,
-              "successes": 0,
-              "type": "death_save"
-            },
-            {
-              "actor_id": "companion_0",
-              "actor_name": "Lyra",
-              "round": 3,
-              "type": "turn_start"
-            },
-            {
-              "actor_id": "companion_0",
-              "actor_name": "Lyra",
-              "failures": 3,
-              "outcome": "out",
-              "roll": 3,
-              "successes": 0,
-              "type": "death_save"
-            },
-            {
-              "actor_id": "enemy_1700000000003_0",
-              "actor_name": "Goblin 1",
-              "round": 3,
-              "type": "turn_start"
             }
           ]
         },
         {
-          "engine": "enemy_1700000000003_0",
+          "engine": "companion_1",
           "events": [
             {
-              "attack_id": "scimitar",
+              "actor_id": "companion_1",
+              "actor_name": "Finn",
+              "feet": 10,
+              "path": [
+                {
+                  "x": 9,
+                  "y": 2
+                },
+                {
+                  "x": 9,
+                  "y": 3
+                }
+              ],
+              "type": "move"
+            },
+            {
+              "attack_id": "shortbow",
               "attack_name": {
-                "de": "Krummsäbel",
-                "en": "Scimitar",
-                "ru": "Скимитар"
+                "de": "Kurzbogen",
+                "en": "Shortbow",
+                "ru": "Короткий лук"
               },
-              "attacker_id": "enemy_1700000000003_0",
-              "attacker_name": "Goblin 1",
+              "attacker_id": "companion_1",
+              "attacker_name": "Finn",
               "bonus_die": null,
               "critical": false,
               "hit": false,
@@ -6250,9 +6419,9 @@
                   10
                 ]
               },
-              "target_ac": 16,
-              "target_id": "comb_player",
-              "target_name": "Hiroki",
+              "target_ac": 15,
+              "target_id": "enemy_1700000000003_1",
+              "target_name": "Goblin 2",
               "to_hit": 4,
               "total": 14,
               "type": "attack"
@@ -6262,91 +6431,24 @@
         {
           "next": [
             {
-              "actor_id": "comb_player",
-              "actor_name": "Hiroki",
-              "round": 3,
-              "type": "turn_start"
-            }
-          ]
-        },
-        {
-          "events": [
-            {
-              "caster_id": "comb_player",
-              "caster_name": "Hiroki",
-              "slot_level": 0,
-              "spell_id": "sacred_flame",
-              "spell_name": {
-                "de": "Heilige Flamme",
-                "en": "Sacred flame",
-                "ru": "Священное пламя"
-              },
-              "type": "spell_cast"
-            },
-            {
-              "ability": "dex",
-              "bonus": 2,
-              "dc": 12,
-              "roll": {
-                "mode": "normal",
-                "natural": 7,
-                "rolls": [
-                  7
-                ]
-              },
-              "success": false,
-              "target_id": "enemy_1700000000003_0",
-              "target_name": "Goblin 1",
-              "total": 9,
-              "type": "save"
-            },
-            {
-              "amount": 1,
-              "damage_type": "radiant",
-              "hp_after": 6,
-              "roll": {
-                "modifier": 0,
-                "rolls": [
-                  1
-                ],
-                "total": 1
-              },
-              "scaling": "normal",
-              "target_id": "enemy_1700000000003_0",
-              "target_name": "Goblin 1",
-              "tier": "wounded",
-              "type": "damage"
-            }
-          ],
-          "player": "cast:sacred_flame:0:enemy_1700000000003_0",
-          "turn_over": false
-        },
-        {
-          "events": [],
-          "player": "end_turn",
-          "turn_over": true
-        },
-        {
-          "next": [
-            {
-              "actor_id": "companion_1",
-              "actor_name": "Finn",
+              "actor_id": "companion_0",
+              "actor_name": "Lyra",
               "round": 3,
               "type": "turn_start"
             },
             {
-              "actor_id": "companion_1",
-              "actor_name": "Finn",
-              "failures": 2,
+              "actor_id": "companion_0",
+              "actor_name": "Lyra",
+              "failures": 1,
               "outcome": "ongoing",
-              "roll": 8,
+              "roll": 2,
               "successes": 0,
               "type": "death_save"
             },
             {
               "actor_id": "enemy_1700000000003_0",
               "actor_name": "Goblin 1",
-              "round": 4,
+              "round": 3,
               "type": "turn_start"
             }
           ]
@@ -6354,6 +6456,22 @@
         {
           "engine": "enemy_1700000000003_0",
           "events": [
+            {
+              "actor_id": "enemy_1700000000003_0",
+              "actor_name": "Goblin 1",
+              "feet": 10,
+              "path": [
+                {
+                  "x": 11,
+                  "y": 4
+                },
+                {
+                  "x": 10,
+                  "y": 4
+                }
+              ],
+              "type": "move"
+            },
             {
               "attack_id": "scimitar",
               "attack_name": {
@@ -6368,14 +6486,99 @@
               "hit": false,
               "roll": {
                 "mode": "normal",
+                "natural": 7,
+                "rolls": [
+                  7
+                ]
+              },
+              "target_ac": 13,
+              "target_id": "companion_1",
+              "target_name": "Finn",
+              "to_hit": 4,
+              "total": 11,
+              "type": "attack"
+            }
+          ]
+        },
+        {
+          "next": [
+            {
+              "actor_id": "enemy_1700000000003_1",
+              "actor_name": "Goblin 2",
+              "round": 3,
+              "type": "turn_start"
+            }
+          ]
+        },
+        {
+          "engine": "enemy_1700000000003_1",
+          "events": [
+            {
+              "actor_id": "enemy_1700000000003_1",
+              "actor_name": "Goblin 2",
+              "feet": 5,
+              "path": [
+                {
+                  "x": 10,
+                  "y": 5
+                }
+              ],
+              "type": "move"
+            },
+            {
+              "attacker_id": "comb_player",
+              "attacker_name": "Hiroki",
+              "target_name": "Goblin 2",
+              "type": "opportunity_attack"
+            },
+            {
+              "attack_id": "mace",
+              "attack_name": {
+                "de": "Streitkolben",
+                "en": "Mace",
+                "ru": "Булава"
+              },
+              "attacker_id": "comb_player",
+              "attacker_name": "Hiroki",
+              "bonus_die": null,
+              "critical": false,
+              "hit": false,
+              "roll": {
+                "mode": "normal",
                 "natural": 8,
                 "rolls": [
                   8
                 ]
               },
-              "target_ac": 16,
-              "target_id": "comb_player",
-              "target_name": "Hiroki",
+              "target_ac": 15,
+              "target_id": "enemy_1700000000003_1",
+              "target_name": "Goblin 2",
+              "to_hit": 4,
+              "total": 12,
+              "type": "attack"
+            },
+            {
+              "attack_id": "shortbow",
+              "attack_name": {
+                "de": "Kurzbogen",
+                "en": "Shortbow",
+                "ru": "Короткий лук"
+              },
+              "attacker_id": "enemy_1700000000003_1",
+              "attacker_name": "Goblin 2",
+              "bonus_die": null,
+              "critical": false,
+              "hit": false,
+              "roll": {
+                "mode": "normal",
+                "natural": 8,
+                "rolls": [
+                  8
+                ]
+              },
+              "target_ac": 13,
+              "target_id": "companion_1",
+              "target_name": "Finn",
               "to_hit": 4,
               "total": 12,
               "type": "attack"
@@ -6387,7 +6590,7 @@
             {
               "actor_id": "comb_player",
               "actor_name": "Hiroki",
-              "round": 4,
+              "round": 3,
               "type": "turn_start"
             }
           ]
@@ -6437,16 +6640,282 @@
             {
               "actor_id": "companion_1",
               "actor_name": "Finn",
+              "round": 3,
+              "type": "turn_start"
+            }
+          ]
+        },
+        {
+          "engine": "companion_1",
+          "events": [
+            {
+              "actor_id": "companion_1",
+              "actor_name": "Finn",
+              "feet": 5,
+              "path": [
+                {
+                  "x": 9,
+                  "y": 4
+                }
+              ],
+              "type": "move"
+            },
+            {
+              "attack_id": "shortsword",
+              "attack_name": {
+                "de": "Kurzschwert",
+                "en": "Shortsword",
+                "ru": "Короткий меч"
+              },
+              "attacker_id": "companion_1",
+              "attacker_name": "Finn",
+              "bonus_die": null,
+              "critical": false,
+              "hit": false,
+              "roll": {
+                "mode": "normal",
+                "natural": 1,
+                "rolls": [
+                  1
+                ]
+              },
+              "target_ac": 15,
+              "target_id": "enemy_1700000000003_1",
+              "target_name": "Goblin 2",
+              "to_hit": 4,
+              "total": 5,
+              "type": "attack"
+            }
+          ]
+        },
+        {
+          "next": [
+            {
+              "actor_id": "companion_0",
+              "actor_name": "Lyra",
+              "round": 4,
+              "type": "turn_start"
+            },
+            {
+              "actor_id": "companion_0",
+              "actor_name": "Lyra",
+              "failures": 1,
+              "outcome": "ongoing",
+              "roll": 15,
+              "successes": 1,
+              "type": "death_save"
+            },
+            {
+              "actor_id": "enemy_1700000000003_0",
+              "actor_name": "Goblin 1",
+              "round": 4,
+              "type": "turn_start"
+            }
+          ]
+        },
+        {
+          "engine": "enemy_1700000000003_0",
+          "events": [
+            {
+              "attack_id": "scimitar",
+              "attack_name": {
+                "de": "Krummsäbel",
+                "en": "Scimitar",
+                "ru": "Скимитар"
+              },
+              "attacker_id": "enemy_1700000000003_0",
+              "attacker_name": "Goblin 1",
+              "bonus_die": null,
+              "critical": false,
+              "hit": true,
+              "roll": {
+                "mode": "normal",
+                "natural": 15,
+                "rolls": [
+                  15
+                ]
+              },
+              "target_ac": 13,
+              "target_id": "companion_1",
+              "target_name": "Finn",
+              "to_hit": 4,
+              "total": 19,
+              "type": "attack"
+            },
+            {
+              "amount": 8,
+              "damage_type": "slashing",
+              "hp_after": 0,
+              "roll": {
+                "modifier": 2,
+                "rolls": [
+                  6
+                ],
+                "total": 8
+              },
+              "scaling": "normal",
+              "target_id": "companion_1",
+              "target_name": "Finn",
+              "tier": "down",
+              "type": "damage"
+            },
+            {
+              "target_id": "companion_1",
+              "target_name": "Finn",
+              "type": "down"
+            }
+          ]
+        },
+        {
+          "next": [
+            {
+              "actor_id": "enemy_1700000000003_1",
+              "actor_name": "Goblin 2",
+              "round": 4,
+              "type": "turn_start"
+            }
+          ]
+        },
+        {
+          "engine": "enemy_1700000000003_1",
+          "events": [
+            {
+              "actor_id": "enemy_1700000000003_1",
+              "actor_name": "Goblin 2",
+              "feet": 5,
+              "path": [
+                {
+                  "x": 9,
+                  "y": 4
+                }
+              ],
+              "type": "move"
+            },
+            {
+              "attack_id": "scimitar",
+              "attack_name": {
+                "de": "Krummsäbel",
+                "en": "Scimitar",
+                "ru": "Скимитар"
+              },
+              "attacker_id": "enemy_1700000000003_1",
+              "attacker_name": "Goblin 2",
+              "bonus_die": null,
+              "critical": false,
+              "hit": false,
+              "roll": {
+                "mode": "normal",
+                "natural": 6,
+                "rolls": [
+                  6
+                ]
+              },
+              "target_ac": 16,
+              "target_id": "comb_player",
+              "target_name": "Hiroki",
+              "to_hit": 4,
+              "total": 10,
+              "type": "attack"
+            }
+          ]
+        },
+        {
+          "next": [
+            {
+              "actor_id": "comb_player",
+              "actor_name": "Hiroki",
+              "round": 4,
+              "type": "turn_start"
+            }
+          ]
+        },
+        {
+          "events": [
+            {
+              "caster_id": "comb_player",
+              "caster_name": "Hiroki",
+              "slot_level": 0,
+              "spell_id": "sacred_flame",
+              "spell_name": {
+                "de": "Heilige Flamme",
+                "en": "Sacred flame",
+                "ru": "Священное пламя"
+              },
+              "type": "spell_cast"
+            },
+            {
+              "ability": "dex",
+              "bonus": 2,
+              "dc": 12,
+              "roll": {
+                "mode": "normal",
+                "natural": 4,
+                "rolls": [
+                  4
+                ]
+              },
+              "success": false,
+              "target_id": "enemy_1700000000003_0",
+              "target_name": "Goblin 1",
+              "total": 6,
+              "type": "save"
+            },
+            {
+              "amount": 2,
+              "damage_type": "radiant",
+              "hp_after": 5,
+              "roll": {
+                "modifier": 0,
+                "rolls": [
+                  2
+                ],
+                "total": 2
+              },
+              "scaling": "normal",
+              "target_id": "enemy_1700000000003_0",
+              "target_name": "Goblin 1",
+              "tier": "wounded",
+              "type": "damage"
+            }
+          ],
+          "player": "cast:sacred_flame:0:enemy_1700000000003_0",
+          "turn_over": false
+        },
+        {
+          "events": [],
+          "player": "end_turn",
+          "turn_over": true
+        },
+        {
+          "next": [
+            {
+              "actor_id": "companion_1",
+              "actor_name": "Finn",
               "round": 4,
               "type": "turn_start"
             },
             {
               "actor_id": "companion_1",
               "actor_name": "Finn",
-              "failures": 3,
-              "outcome": "out",
-              "roll": 1,
-              "successes": 0,
+              "failures": 0,
+              "outcome": "ongoing",
+              "roll": 15,
+              "successes": 1,
+              "type": "death_save"
+            },
+            {
+              "actor_id": "companion_0",
+              "actor_name": "Lyra",
+              "round": 5,
+              "type": "turn_start"
+            },
+            {
+              "actor_id": "companion_0",
+              "actor_name": "Lyra",
+              "failures": 2,
+              "outcome": "ongoing",
+              "roll": 6,
+              "successes": 1,
               "type": "death_save"
             },
             {
@@ -6474,28 +6943,28 @@
               "hit": true,
               "roll": {
                 "mode": "normal",
-                "natural": 15,
+                "natural": 12,
                 "rolls": [
-                  15
+                  12
                 ]
               },
               "target_ac": 16,
               "target_id": "comb_player",
               "target_name": "Hiroki",
               "to_hit": 4,
-              "total": 19,
+              "total": 16,
               "type": "attack"
             },
             {
-              "amount": 7,
+              "amount": 5,
               "damage_type": "slashing",
-              "hp_after": 1,
+              "hp_after": 3,
               "roll": {
                 "modifier": 2,
                 "rolls": [
-                  5
+                  3
                 ],
-                "total": 7
+                "total": 5
               },
               "scaling": "normal",
               "target_id": "comb_player",
@@ -6508,107 +6977,15 @@
         {
           "next": [
             {
-              "actor_id": "comb_player",
-              "actor_name": "Hiroki",
+              "actor_id": "enemy_1700000000003_1",
+              "actor_name": "Goblin 2",
               "round": 5,
               "type": "turn_start"
             }
           ]
         },
         {
-          "events": [
-            {
-              "caster_id": "comb_player",
-              "caster_name": "Hiroki",
-              "slot_level": 1,
-              "spell_id": "healing_word",
-              "spell_name": {
-                "de": "Heilendes Wort",
-                "en": "Healing word",
-                "ru": "Лечащее слово"
-              },
-              "type": "spell_cast"
-            },
-            {
-              "amount": 9,
-              "hp_after": 10,
-              "target_id": "comb_player",
-              "target_name": "Hiroki",
-              "type": "heal"
-            }
-          ],
-          "player": "cast:healing_word:1:comb_player",
-          "turn_over": false
-        },
-        {
-          "events": [
-            {
-              "caster_id": "comb_player",
-              "caster_name": "Hiroki",
-              "slot_level": 0,
-              "spell_id": "sacred_flame",
-              "spell_name": {
-                "de": "Heilige Flamme",
-                "en": "Sacred flame",
-                "ru": "Священное пламя"
-              },
-              "type": "spell_cast"
-            },
-            {
-              "ability": "dex",
-              "bonus": 2,
-              "dc": 12,
-              "roll": {
-                "mode": "normal",
-                "natural": 5,
-                "rolls": [
-                  5
-                ]
-              },
-              "success": false,
-              "target_id": "enemy_1700000000003_0",
-              "target_name": "Goblin 1",
-              "total": 7,
-              "type": "save"
-            },
-            {
-              "amount": 3,
-              "damage_type": "radiant",
-              "hp_after": 3,
-              "roll": {
-                "modifier": 0,
-                "rolls": [
-                  3
-                ],
-                "total": 3
-              },
-              "scaling": "normal",
-              "target_id": "enemy_1700000000003_0",
-              "target_name": "Goblin 1",
-              "tier": "badly_wounded",
-              "type": "damage"
-            }
-          ],
-          "player": "cast:sacred_flame:0:enemy_1700000000003_0",
-          "turn_over": false
-        },
-        {
-          "events": [],
-          "player": "end_turn",
-          "turn_over": true
-        },
-        {
-          "next": [
-            {
-              "actor_id": "enemy_1700000000003_0",
-              "actor_name": "Goblin 1",
-              "round": 6,
-              "type": "turn_start"
-            }
-          ]
-        },
-        {
-          "engine": "enemy_1700000000003_0",
+          "engine": "enemy_1700000000003_1",
           "events": [
             {
               "attack_id": "scimitar",
@@ -6617,96 +6994,51 @@
                 "en": "Scimitar",
                 "ru": "Скимитар"
               },
-              "attacker_id": "enemy_1700000000003_0",
-              "attacker_name": "Goblin 1",
+              "attacker_id": "enemy_1700000000003_1",
+              "attacker_name": "Goblin 2",
               "bonus_die": null,
               "critical": false,
-              "hit": false,
+              "hit": true,
               "roll": {
                 "mode": "normal",
-                "natural": 4,
+                "natural": 19,
                 "rolls": [
-                  4
+                  19
                 ]
               },
               "target_ac": 16,
               "target_id": "comb_player",
               "target_name": "Hiroki",
               "to_hit": 4,
-              "total": 8,
+              "total": 23,
               "type": "attack"
-            }
-          ]
-        },
-        {
-          "next": [
-            {
-              "actor_id": "comb_player",
-              "actor_name": "Hiroki",
-              "round": 6,
-              "type": "turn_start"
-            }
-          ]
-        },
-        {
-          "events": [
-            {
-              "caster_id": "comb_player",
-              "caster_name": "Hiroki",
-              "slot_level": 0,
-              "spell_id": "sacred_flame",
-              "spell_name": {
-                "de": "Heilige Flamme",
-                "en": "Sacred flame",
-                "ru": "Священное пламя"
-              },
-              "type": "spell_cast"
-            },
-            {
-              "ability": "dex",
-              "bonus": 2,
-              "dc": 12,
-              "roll": {
-                "mode": "normal",
-                "natural": 6,
-                "rolls": [
-                  6
-                ]
-              },
-              "success": false,
-              "target_id": "enemy_1700000000003_0",
-              "target_name": "Goblin 1",
-              "total": 8,
-              "type": "save"
             },
             {
               "amount": 6,
-              "damage_type": "radiant",
+              "damage_type": "slashing",
               "hp_after": 0,
               "roll": {
-                "modifier": 0,
+                "modifier": 2,
                 "rolls": [
-                  6
+                  4
                 ],
                 "total": 6
               },
               "scaling": "normal",
-              "target_id": "enemy_1700000000003_0",
-              "target_name": "Goblin 1",
+              "target_id": "comb_player",
+              "target_name": "Hiroki",
               "tier": "down",
               "type": "damage"
             },
             {
-              "target_id": "enemy_1700000000003_0",
-              "target_name": "Goblin 1",
+              "target_id": "comb_player",
+              "target_name": "Hiroki",
               "type": "down"
             }
-          ],
-          "player": "cast:sacred_flame:0:enemy_1700000000003_0",
-          "turn_over": false
+          ]
         },
         {
-          "outcome": "victory"
+          "outcome": "defeat"
         }
       ]
     },
@@ -6716,16 +7048,17 @@
     },
     {
       "short_rest": [
-        "Lyra: 1 → 10 HP",
-        "Hiroki: 10 → 15 HP",
-        "Finn: 1 → 16 HP"
+        "Lyra: Arcane Recovery restores spell slots of level [1]",
+        "Lyra: 1 → 12 HP",
+        "Hiroki: 1 → 8 HP",
+        "Finn: 1 → 15 HP"
       ]
     },
     {
       "long_rest": [
-        "Lyra: 10 → 12 HP",
-        "Hiroki: 15 → 15 HP",
-        "Finn: 16 → 17 HP"
+        "Lyra: 12 → 12 HP",
+        "Hiroki: 8 → 15 HP",
+        "Finn: 15 → 17 HP"
       ]
     },
     {
@@ -6749,10 +7082,6 @@
             "ru": "Глубины"
           },
           "type": "goal"
-        },
-        {
-          "next_scene": "next_act",
-          "type": "act_complete"
         }
       ],
       "map_change": {
@@ -6963,7 +7292,7 @@
                   "mace",
                   "light_crossbow"
                 ],
-                "hit_dice_left": 2,
+                "hit_dice_left": 1,
                 "hit_die": 8,
                 "immunities": [],
                 "level": 2,
@@ -7141,7 +7470,7 @@
               "stress": 0
             }
           ],
-          "current_turn_index": 3,
+          "current_turn_index": 2,
           "difficulty": "easy",
           "effects": [],
           "events": [
@@ -7189,7 +7518,7 @@
           ],
           "is_active": false,
           "reactions_used": [],
-          "round": 6,
+          "round": 5,
           "turn": {
             "action_used": true,
             "bonus_action_used": false,
@@ -7222,38 +7551,6 @@
               }
             ],
             "type": "loot"
-          },
-          {
-            "items": [
-              {
-                "name": {
-                  "de": "Kurzschwert",
-                  "en": "Shortsword",
-                  "ru": "Короткий меч"
-                },
-                "quantity": 1,
-                "srd_id": "shortsword"
-              },
-              {
-                "name": {
-                  "de": "Goldmünze",
-                  "en": "Gold piece",
-                  "ru": "Золотая монета"
-                },
-                "quantity": 8,
-                "srd_id": "gold_piece"
-              }
-            ],
-            "type": "loot"
-          },
-          {
-            "goal_id": "goal_hall",
-            "title": {
-              "de": "Halle",
-              "en": "Hall",
-              "ru": "Зал"
-            },
-            "type": "goal"
           }
         ],
         "inventory": [
@@ -7266,17 +7563,6 @@
             "name": "Rapier",
             "quantity": 1,
             "srd_id": "rapier",
-            "stress_restore": 0
-          },
-          {
-            "clears_condition": null,
-            "description": "",
-            "hp_restore": 7,
-            "id": "item_potion_of_healing_1700000000002",
-            "item_type": "consumable",
-            "name": "Potion of healing",
-            "quantity": 1,
-            "srd_id": "potion_of_healing",
             "stress_restore": 0
           },
           {
@@ -7297,19 +7583,8 @@
             "id": "item_gold_piece_1700000000002",
             "item_type": "treasure",
             "name": "Gold piece",
-            "quantity": 33,
+            "quantity": 25,
             "srd_id": "gold_piece",
-            "stress_restore": 0
-          },
-          {
-            "clears_condition": null,
-            "description": "",
-            "hp_restore": 0,
-            "id": "item_shortsword_1700000000001",
-            "item_type": "equipment",
-            "name": "Shortsword",
-            "quantity": 1,
-            "srd_id": "shortsword",
             "stress_restore": 0
           }
         ],
@@ -8786,11 +9061,11 @@
         },
         "objectives": [
           {
-            "current": 1,
+            "current": 0,
             "description": "",
             "id": "goal_hall",
             "max": 1,
-            "status": "completed",
+            "status": "active",
             "title": "goal_hall"
           },
           {
@@ -8935,6 +9210,127 @@
           },
           {
             "conditions": [],
+            "hp": 1,
+            "id": "companion_0",
+            "initiative": 0,
+            "max_hp": 12,
+            "max_stress": 100,
+            "name": "Lyra",
+            "position": null,
+            "role": "companion",
+            "skills": {},
+            "stats5e": {
+              "abilities": [
+                8,
+                14,
+                13,
+                15,
+                12,
+                10
+              ],
+              "armor_class": 12,
+              "attacks": [
+                {
+                  "damage": "1d6-1",
+                  "damage_type": "bludgeoning",
+                  "id": "quarterstaff",
+                  "kind": "melee",
+                  "long_range_ft": 0,
+                  "name": {
+                    "de": "Kampfstab",
+                    "en": "Quarterstaff",
+                    "ru": "Боевой посох"
+                  },
+                  "range_ft": 0,
+                  "to_hit": 1
+                },
+                {
+                  "damage": "1d10",
+                  "damage_type": "fire",
+                  "id": "fire_bolt",
+                  "kind": "spell",
+                  "long_range_ft": 0,
+                  "name": {
+                    "de": "Feuerpfeil",
+                    "en": "Fire bolt",
+                    "ru": "Огненный снаряд"
+                  },
+                  "range_ft": 120,
+                  "to_hit": 4
+                }
+              ],
+              "class_id": "wizard",
+              "concentration": null,
+              "creature_type": "humanoid",
+              "death_saves": {
+                "dead": false,
+                "failures": 0,
+                "stable": false,
+                "successes": 0
+              },
+              "equipped": [
+                "quarterstaff"
+              ],
+              "hit_dice_left": 2,
+              "hit_die": 6,
+              "immunities": [],
+              "level": 2,
+              "monster_id": "",
+              "never_flees": true,
+              "resistances": [],
+              "resources_used": {},
+              "save_proficiencies": [
+                "int",
+                "wis"
+              ],
+              "skill_proficiencies": [
+                "arcana",
+                "history"
+              ],
+              "speed_ft": 30,
+              "spellcasting": {
+                "ability": "int",
+                "slots_max": [
+                  3,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "slots_used": [
+                  1,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "spells": [
+                  "ray_of_frost",
+                  "chill_touch",
+                  "acid_splash",
+                  "magic_missile",
+                  "burning_hands",
+                  "thunderwave",
+                  "sleep",
+                  "mage_armor",
+                  "shocking_grasp",
+                  "shield"
+                ]
+              },
+              "vulnerabilities": []
+            },
+            "stress": 0
+          },
+          {
+            "conditions": [],
             "hp": 17,
             "id": "companion_1",
             "initiative": 0,
@@ -9050,189 +9446,69 @@
               "vulnerabilities": []
             },
             "stress": 0
-          },
-          {
-            "conditions": [],
-            "hp": 1,
-            "id": "companion_0",
-            "initiative": 0,
-            "max_hp": 12,
-            "max_stress": 100,
-            "name": "Lyra",
-            "position": null,
-            "role": "companion",
-            "skills": {},
-            "stats5e": {
-              "abilities": [
-                8,
-                14,
-                13,
-                15,
-                12,
-                10
-              ],
-              "armor_class": 12,
-              "attacks": [
-                {
-                  "damage": "1d6-1",
-                  "damage_type": "bludgeoning",
-                  "id": "quarterstaff",
-                  "kind": "melee",
-                  "long_range_ft": 0,
-                  "name": {
-                    "de": "Kampfstab",
-                    "en": "Quarterstaff",
-                    "ru": "Боевой посох"
-                  },
-                  "range_ft": 0,
-                  "to_hit": 1
-                },
-                {
-                  "damage": "1d10",
-                  "damage_type": "fire",
-                  "id": "fire_bolt",
-                  "kind": "spell",
-                  "long_range_ft": 0,
-                  "name": {
-                    "de": "Feuerpfeil",
-                    "en": "Fire bolt",
-                    "ru": "Огненный снаряд"
-                  },
-                  "range_ft": 120,
-                  "to_hit": 4
-                }
-              ],
-              "class_id": "wizard",
-              "concentration": null,
-              "creature_type": "humanoid",
-              "death_saves": {
-                "dead": false,
-                "failures": 0,
-                "stable": false,
-                "successes": 0
-              },
-              "equipped": [
-                "quarterstaff"
-              ],
-              "hit_dice_left": 2,
-              "hit_die": 6,
-              "immunities": [],
-              "level": 2,
-              "monster_id": "",
-              "never_flees": true,
-              "resistances": [],
-              "resources_used": {},
-              "save_proficiencies": [
-                "int",
-                "wis"
-              ],
-              "skill_proficiencies": [
-                "arcana",
-                "history"
-              ],
-              "speed_ft": 30,
-              "spellcasting": {
-                "ability": "int",
-                "slots_max": [
-                  3,
-                  0,
-                  0,
-                  0,
-                  0,
-                  0,
-                  0,
-                  0,
-                  0
-                ],
-                "slots_used": [
-                  3,
-                  0,
-                  0,
-                  0,
-                  0,
-                  0,
-                  0,
-                  0,
-                  0
-                ],
-                "spells": [
-                  "ray_of_frost",
-                  "chill_touch",
-                  "acid_splash",
-                  "magic_missile",
-                  "burning_hands",
-                  "thunderwave",
-                  "sleep",
-                  "mage_armor",
-                  "shocking_grasp",
-                  "shield"
-                ]
-              },
-              "vulnerabilities": []
-            },
-            "stress": 0
           }
         ],
-        "current_turn_index": 4,
+        "current_turn_index": 2,
         "difficulty": "easy",
         "effects": [],
         "events": [
           {
             "order": [
               {
-                "id": "enemy_1700000000000_2",
-                "name": "Wolf 3",
-                "roll": 20,
-                "total": 22
-              },
-              {
-                "id": "enemy_1700000000000_0",
-                "name": "Wolf 1",
-                "roll": 16,
-                "total": 18
-              },
-              {
                 "id": "comb_player",
                 "name": "Hiroki",
-                "roll": 14,
-                "total": 14
-              },
-              {
-                "id": "enemy_1700000000000_1",
-                "name": "Wolf 2",
-                "roll": 8,
-                "total": 10
-              },
-              {
-                "id": "companion_1",
-                "name": "Finn",
-                "roll": 7,
-                "total": 9
+                "roll": 20,
+                "total": 20
               },
               {
                 "id": "companion_0",
                 "name": "Lyra",
-                "roll": 5,
-                "total": 7
+                "roll": 17,
+                "total": 19
+              },
+              {
+                "id": "companion_1",
+                "name": "Finn",
+                "roll": 13,
+                "total": 15
+              },
+              {
+                "id": "enemy_1700000000000_1",
+                "name": "Wolf 2",
+                "roll": 10,
+                "total": 12
+              },
+              {
+                "id": "enemy_1700000000000_0",
+                "name": "Wolf 1",
+                "roll": 7,
+                "total": 9
+              },
+              {
+                "id": "enemy_1700000000000_2",
+                "name": "Wolf 3",
+                "roll": 4,
+                "total": 6
               }
             ],
             "type": "initiative"
           },
           {
-            "actor_id": "enemy_1700000000000_2",
-            "actor_name": "Wolf 3",
+            "actor_id": "comb_player",
+            "actor_name": "Hiroki",
             "round": 1,
             "type": "turn_start"
           }
         ],
         "is_active": false,
         "reactions_used": [],
-        "round": 6,
+        "round": 7,
         "turn": {
           "action_used": true,
           "bonus_action_used": false,
           "disengaged": false,
           "movement_left_ft": 0,
+          "offhand_from": "shortsword",
           "sneak_used": true
         }
       },
@@ -9243,150 +9519,44 @@
             {
               "order": [
                 {
-                  "id": "enemy_1700000000000_2",
-                  "name": "Wolf 3",
-                  "roll": 20,
-                  "total": 22
-                },
-                {
-                  "id": "enemy_1700000000000_0",
-                  "name": "Wolf 1",
-                  "roll": 16,
-                  "total": 18
-                },
-                {
                   "id": "comb_player",
                   "name": "Hiroki",
-                  "roll": 14,
-                  "total": 14
-                },
-                {
-                  "id": "enemy_1700000000000_1",
-                  "name": "Wolf 2",
-                  "roll": 8,
-                  "total": 10
-                },
-                {
-                  "id": "companion_1",
-                  "name": "Finn",
-                  "roll": 7,
-                  "total": 9
+                  "roll": 20,
+                  "total": 20
                 },
                 {
                   "id": "companion_0",
                   "name": "Lyra",
-                  "roll": 5,
-                  "total": 7
+                  "roll": 17,
+                  "total": 19
+                },
+                {
+                  "id": "companion_1",
+                  "name": "Finn",
+                  "roll": 13,
+                  "total": 15
+                },
+                {
+                  "id": "enemy_1700000000000_1",
+                  "name": "Wolf 2",
+                  "roll": 10,
+                  "total": 12
+                },
+                {
+                  "id": "enemy_1700000000000_0",
+                  "name": "Wolf 1",
+                  "roll": 7,
+                  "total": 9
+                },
+                {
+                  "id": "enemy_1700000000000_2",
+                  "name": "Wolf 3",
+                  "roll": 4,
+                  "total": 6
                 }
               ],
               "type": "initiative"
             },
-            {
-              "actor_id": "enemy_1700000000000_2",
-              "actor_name": "Wolf 3",
-              "round": 1,
-              "type": "turn_start"
-            }
-          ]
-        },
-        {
-          "engine": "enemy_1700000000000_2",
-          "events": [
-            {
-              "attack_id": "bite",
-              "attack_name": {
-                "de": "Biss",
-                "en": "Bite",
-                "ru": "Укус"
-              },
-              "attacker_id": "enemy_1700000000000_2",
-              "attacker_name": "Wolf 3",
-              "bonus_die": null,
-              "critical": false,
-              "hit": true,
-              "roll": {
-                "mode": "normal",
-                "natural": 17,
-                "rolls": [
-                  17
-                ]
-              },
-              "target_ac": 12,
-              "target_id": "companion_0",
-              "target_name": "Lyra",
-              "to_hit": 4,
-              "total": 21,
-              "type": "attack"
-            },
-            {
-              "amount": 7,
-              "damage_type": "piercing",
-              "hp_after": 5,
-              "roll": {
-                "modifier": 2,
-                "rolls": [
-                  3,
-                  2
-                ],
-                "total": 7
-              },
-              "scaling": "normal",
-              "target_id": "companion_0",
-              "target_name": "Lyra",
-              "tier": "badly_wounded",
-              "type": "damage"
-            }
-          ]
-        },
-        {
-          "next": [
-            {
-              "actor_id": "enemy_1700000000000_0",
-              "actor_name": "Wolf 1",
-              "round": 1,
-              "type": "turn_start"
-            }
-          ]
-        },
-        {
-          "engine": "enemy_1700000000000_0",
-          "events": [
-            {
-              "actor_id": "companion_0",
-              "actor_name": "Lyra",
-              "feature": "shield",
-              "type": "feature"
-            },
-            {
-              "attack_id": "bite",
-              "attack_name": {
-                "de": "Biss",
-                "en": "Bite",
-                "ru": "Укус"
-              },
-              "attacker_id": "enemy_1700000000000_0",
-              "attacker_name": "Wolf 1",
-              "bonus_die": null,
-              "critical": false,
-              "hit": false,
-              "roll": {
-                "mode": "normal",
-                "natural": 10,
-                "rolls": [
-                  10
-                ]
-              },
-              "target_ac": 17,
-              "target_id": "companion_0",
-              "target_name": "Lyra",
-              "to_hit": 4,
-              "total": 14,
-              "type": "attack"
-            }
-          ]
-        },
-        {
-          "next": [
             {
               "actor_id": "comb_player",
               "actor_name": "Hiroki",
@@ -9402,14 +9572,14 @@
               {
                 "attack_id": "mace",
                 "disadvantage": false,
-                "id": "attack:mace:enemy_1700000000000_2",
-                "target_id": "enemy_1700000000000_2"
+                "id": "attack:mace:enemy_1700000000000_1",
+                "target_id": "enemy_1700000000000_1"
               },
               {
                 "attack_id": "light_crossbow",
                 "disadvantage": false,
-                "id": "attack:light_crossbow:enemy_1700000000000_2",
-                "target_id": "enemy_1700000000000_2"
+                "id": "attack:light_crossbow:enemy_1700000000000_1",
+                "target_id": "enemy_1700000000000_1"
               },
               {
                 "attack_id": "mace",
@@ -9426,20 +9596,74 @@
               {
                 "attack_id": "mace",
                 "disadvantage": false,
-                "id": "attack:mace:enemy_1700000000000_1",
-                "target_id": "enemy_1700000000000_1"
+                "id": "attack:mace:enemy_1700000000000_2",
+                "target_id": "enemy_1700000000000_2"
               },
               {
                 "attack_id": "light_crossbow",
                 "disadvantage": false,
-                "id": "attack:light_crossbow:enemy_1700000000000_1",
-                "target_id": "enemy_1700000000000_1"
+                "id": "attack:light_crossbow:enemy_1700000000000_2",
+                "target_id": "enemy_1700000000000_2"
               },
               {
                 "attack_id": null,
                 "disadvantage": false,
                 "id": "dodge",
                 "target_id": null
+              },
+              {
+                "attack_id": null,
+                "disadvantage": false,
+                "id": "help:enemy_1700000000000_1",
+                "target_id": "enemy_1700000000000_1"
+              },
+              {
+                "attack_id": null,
+                "disadvantage": false,
+                "id": "grapple:enemy_1700000000000_1",
+                "target_id": "enemy_1700000000000_1"
+              },
+              {
+                "attack_id": null,
+                "disadvantage": false,
+                "id": "shove_prone:enemy_1700000000000_1",
+                "target_id": "enemy_1700000000000_1"
+              },
+              {
+                "attack_id": null,
+                "disadvantage": false,
+                "id": "help:enemy_1700000000000_0",
+                "target_id": "enemy_1700000000000_0"
+              },
+              {
+                "attack_id": null,
+                "disadvantage": false,
+                "id": "grapple:enemy_1700000000000_0",
+                "target_id": "enemy_1700000000000_0"
+              },
+              {
+                "attack_id": null,
+                "disadvantage": false,
+                "id": "shove_prone:enemy_1700000000000_0",
+                "target_id": "enemy_1700000000000_0"
+              },
+              {
+                "attack_id": null,
+                "disadvantage": false,
+                "id": "help:enemy_1700000000000_2",
+                "target_id": "enemy_1700000000000_2"
+              },
+              {
+                "attack_id": null,
+                "disadvantage": false,
+                "id": "grapple:enemy_1700000000000_2",
+                "target_id": "enemy_1700000000000_2"
+              },
+              {
+                "attack_id": null,
+                "disadvantage": false,
+                "id": "shove_prone:enemy_1700000000000_2",
+                "target_id": "enemy_1700000000000_2"
               }
             ],
             "actor_id": "comb_player",
@@ -9464,9 +9688,9 @@
                 ],
                 "spell_id": "sacred_flame",
                 "targets": [
-                  "enemy_1700000000000_2",
+                  "enemy_1700000000000_1",
                   "enemy_1700000000000_0",
-                  "enemy_1700000000000_1"
+                  "enemy_1700000000000_2"
                 ]
               },
               {
@@ -9486,8 +9710,8 @@
                 "spell_id": "cure_wounds",
                 "targets": [
                   "comb_player",
-                  "companion_1",
-                  "companion_0"
+                  "companion_0",
+                  "companion_1"
                 ]
               },
               {
@@ -9507,8 +9731,8 @@
                 "spell_id": "healing_word",
                 "targets": [
                   "comb_player",
-                  "companion_1",
-                  "companion_0"
+                  "companion_0",
+                  "companion_1"
                 ]
               },
               {
@@ -9527,9 +9751,9 @@
                 ],
                 "spell_id": "guiding_bolt",
                 "targets": [
-                  "enemy_1700000000000_2",
+                  "enemy_1700000000000_1",
                   "enemy_1700000000000_0",
-                  "enemy_1700000000000_1"
+                  "enemy_1700000000000_2"
                 ]
               },
               {
@@ -9548,9 +9772,9 @@
                 ],
                 "spell_id": "inflict_wounds",
                 "targets": [
-                  "enemy_1700000000000_2",
+                  "enemy_1700000000000_1",
                   "enemy_1700000000000_0",
-                  "enemy_1700000000000_1"
+                  "enemy_1700000000000_2"
                 ]
               },
               {
@@ -9570,8 +9794,8 @@
                 "spell_id": "bless",
                 "targets": [
                   "comb_player",
-                  "companion_1",
-                  "companion_0"
+                  "companion_0",
+                  "companion_1"
                 ]
               },
               {
@@ -9591,12 +9815,764 @@
                 "spell_id": "shield_of_faith",
                 "targets": [
                   "comb_player",
-                  "companion_1",
-                  "companion_0"
+                  "companion_0",
+                  "companion_1"
                 ]
               }
             ]
           }
+        },
+        {
+          "events": [
+            {
+              "caster_id": "comb_player",
+              "caster_name": "Hiroki",
+              "slot_level": 0,
+              "spell_id": "sacred_flame",
+              "spell_name": {
+                "de": "Heilige Flamme",
+                "en": "Sacred flame",
+                "ru": "Священное пламя"
+              },
+              "type": "spell_cast"
+            },
+            {
+              "ability": "dex",
+              "bonus": 2,
+              "dc": 12,
+              "roll": {
+                "mode": "normal",
+                "natural": 8,
+                "rolls": [
+                  8
+                ]
+              },
+              "success": false,
+              "target_id": "enemy_1700000000000_1",
+              "target_name": "Wolf 2",
+              "total": 10,
+              "type": "save"
+            },
+            {
+              "amount": 8,
+              "damage_type": "radiant",
+              "hp_after": 3,
+              "roll": {
+                "modifier": 0,
+                "rolls": [
+                  8
+                ],
+                "total": 8
+              },
+              "scaling": "normal",
+              "target_id": "enemy_1700000000000_1",
+              "target_name": "Wolf 2",
+              "tier": "badly_wounded",
+              "type": "damage"
+            }
+          ],
+          "player": "cast:sacred_flame:0:enemy_1700000000000_1",
+          "turn_over": true
+        },
+        {
+          "next": [
+            {
+              "actor_id": "companion_0",
+              "actor_name": "Lyra",
+              "round": 1,
+              "type": "turn_start"
+            }
+          ]
+        },
+        {
+          "engine": "companion_0",
+          "events": [
+            {
+              "attack_id": "fire_bolt",
+              "attack_name": {
+                "de": "Feuerpfeil",
+                "en": "Fire bolt",
+                "ru": "Огненный снаряд"
+              },
+              "attacker_id": "companion_0",
+              "attacker_name": "Lyra",
+              "bonus_die": null,
+              "critical": false,
+              "hit": true,
+              "roll": {
+                "mode": "normal",
+                "natural": 16,
+                "rolls": [
+                  16
+                ]
+              },
+              "target_ac": 13,
+              "target_id": "enemy_1700000000000_1",
+              "target_name": "Wolf 2",
+              "to_hit": 4,
+              "total": 20,
+              "type": "attack"
+            },
+            {
+              "amount": 8,
+              "damage_type": "fire",
+              "hp_after": 0,
+              "roll": {
+                "modifier": 0,
+                "rolls": [
+                  8
+                ],
+                "total": 8
+              },
+              "scaling": "normal",
+              "target_id": "enemy_1700000000000_1",
+              "target_name": "Wolf 2",
+              "tier": "down",
+              "type": "damage"
+            },
+            {
+              "target_id": "enemy_1700000000000_1",
+              "target_name": "Wolf 2",
+              "type": "down"
+            }
+          ]
+        },
+        {
+          "next": [
+            {
+              "actor_id": "companion_1",
+              "actor_name": "Finn",
+              "round": 1,
+              "type": "turn_start"
+            }
+          ]
+        },
+        {
+          "engine": "companion_1",
+          "events": [
+            {
+              "attack_id": "shortsword",
+              "attack_name": {
+                "de": "Kurzschwert",
+                "en": "Shortsword",
+                "ru": "Короткий меч"
+              },
+              "attacker_id": "companion_1",
+              "attacker_name": "Finn",
+              "bonus_die": null,
+              "critical": false,
+              "hit": true,
+              "roll": {
+                "mode": "normal",
+                "natural": 18,
+                "rolls": [
+                  18
+                ]
+              },
+              "target_ac": 13,
+              "target_id": "enemy_1700000000000_0",
+              "target_name": "Wolf 1",
+              "to_hit": 4,
+              "total": 22,
+              "type": "attack"
+            },
+            {
+              "actor_id": "companion_1",
+              "actor_name": "Finn",
+              "feature": "sneak_attack",
+              "type": "feature"
+            },
+            {
+              "amount": 5,
+              "damage_type": "piercing",
+              "hp_after": 6,
+              "roll": {
+                "modifier": 2,
+                "rolls": [
+                  2,
+                  1
+                ],
+                "total": 5
+              },
+              "scaling": "normal",
+              "target_id": "enemy_1700000000000_0",
+              "target_name": "Wolf 1",
+              "tier": "wounded",
+              "type": "damage"
+            }
+          ]
+        },
+        {
+          "next": [
+            {
+              "actor_id": "enemy_1700000000000_0",
+              "actor_name": "Wolf 1",
+              "round": 1,
+              "type": "turn_start"
+            }
+          ]
+        },
+        {
+          "engine": "enemy_1700000000000_0",
+          "events": [
+            {
+              "attack_id": "bite",
+              "attack_name": {
+                "de": "Biss",
+                "en": "Bite",
+                "ru": "Укус"
+              },
+              "attacker_id": "enemy_1700000000000_0",
+              "attacker_name": "Wolf 1",
+              "bonus_die": null,
+              "critical": false,
+              "hit": false,
+              "roll": {
+                "mode": "normal",
+                "natural": 4,
+                "rolls": [
+                  4
+                ]
+              },
+              "target_ac": 12,
+              "target_id": "companion_0",
+              "target_name": "Lyra",
+              "to_hit": 4,
+              "total": 8,
+              "type": "attack"
+            }
+          ]
+        },
+        {
+          "next": [
+            {
+              "actor_id": "enemy_1700000000000_2",
+              "actor_name": "Wolf 3",
+              "round": 1,
+              "type": "turn_start"
+            }
+          ]
+        },
+        {
+          "engine": "enemy_1700000000000_2",
+          "events": [
+            {
+              "actor_id": "companion_0",
+              "actor_name": "Lyra",
+              "feature": "shield",
+              "type": "feature"
+            },
+            {
+              "attack_id": "bite",
+              "attack_name": {
+                "de": "Biss",
+                "en": "Bite",
+                "ru": "Укус"
+              },
+              "attacker_id": "enemy_1700000000000_2",
+              "attacker_name": "Wolf 3",
+              "bonus_die": null,
+              "critical": false,
+              "hit": false,
+              "roll": {
+                "mode": "normal",
+                "natural": 10,
+                "rolls": [
+                  10
+                ]
+              },
+              "target_ac": 17,
+              "target_id": "companion_0",
+              "target_name": "Lyra",
+              "to_hit": 4,
+              "total": 14,
+              "type": "attack"
+            }
+          ]
+        },
+        {
+          "next": [
+            {
+              "actor_id": "comb_player",
+              "actor_name": "Hiroki",
+              "round": 2,
+              "type": "turn_start"
+            }
+          ]
+        },
+        {
+          "events": [
+            {
+              "caster_id": "comb_player",
+              "caster_name": "Hiroki",
+              "slot_level": 0,
+              "spell_id": "sacred_flame",
+              "spell_name": {
+                "de": "Heilige Flamme",
+                "en": "Sacred flame",
+                "ru": "Священное пламя"
+              },
+              "type": "spell_cast"
+            },
+            {
+              "ability": "dex",
+              "bonus": 2,
+              "dc": 12,
+              "roll": {
+                "mode": "normal",
+                "natural": 2,
+                "rolls": [
+                  2
+                ]
+              },
+              "success": false,
+              "target_id": "enemy_1700000000000_0",
+              "target_name": "Wolf 1",
+              "total": 4,
+              "type": "save"
+            },
+            {
+              "amount": 3,
+              "damage_type": "radiant",
+              "hp_after": 3,
+              "roll": {
+                "modifier": 0,
+                "rolls": [
+                  3
+                ],
+                "total": 3
+              },
+              "scaling": "normal",
+              "target_id": "enemy_1700000000000_0",
+              "target_name": "Wolf 1",
+              "tier": "badly_wounded",
+              "type": "damage"
+            }
+          ],
+          "player": "cast:sacred_flame:0:enemy_1700000000000_0",
+          "turn_over": true
+        },
+        {
+          "next": [
+            {
+              "actor_id": "companion_0",
+              "actor_name": "Lyra",
+              "round": 2,
+              "type": "turn_start"
+            }
+          ]
+        },
+        {
+          "engine": "companion_0",
+          "events": [
+            {
+              "attack_id": "fire_bolt",
+              "attack_name": {
+                "de": "Feuerpfeil",
+                "en": "Fire bolt",
+                "ru": "Огненный снаряд"
+              },
+              "attacker_id": "companion_0",
+              "attacker_name": "Lyra",
+              "bonus_die": null,
+              "critical": false,
+              "hit": false,
+              "roll": {
+                "mode": "normal",
+                "natural": 1,
+                "rolls": [
+                  1
+                ]
+              },
+              "target_ac": 13,
+              "target_id": "enemy_1700000000000_0",
+              "target_name": "Wolf 1",
+              "to_hit": 4,
+              "total": 5,
+              "type": "attack"
+            }
+          ]
+        },
+        {
+          "next": [
+            {
+              "actor_id": "companion_1",
+              "actor_name": "Finn",
+              "round": 2,
+              "type": "turn_start"
+            }
+          ]
+        },
+        {
+          "engine": "companion_1",
+          "events": [
+            {
+              "attack_id": "shortsword",
+              "attack_name": {
+                "de": "Kurzschwert",
+                "en": "Shortsword",
+                "ru": "Короткий меч"
+              },
+              "attacker_id": "companion_1",
+              "attacker_name": "Finn",
+              "bonus_die": null,
+              "critical": false,
+              "hit": false,
+              "roll": {
+                "mode": "normal",
+                "natural": 7,
+                "rolls": [
+                  7
+                ]
+              },
+              "target_ac": 13,
+              "target_id": "enemy_1700000000000_0",
+              "target_name": "Wolf 1",
+              "to_hit": 4,
+              "total": 11,
+              "type": "attack"
+            }
+          ]
+        },
+        {
+          "next": [
+            {
+              "actor_id": "enemy_1700000000000_0",
+              "actor_name": "Wolf 1",
+              "round": 2,
+              "type": "turn_start"
+            }
+          ]
+        },
+        {
+          "engine": "enemy_1700000000000_0",
+          "events": [
+            {
+              "attack_id": "bite",
+              "attack_name": {
+                "de": "Biss",
+                "en": "Bite",
+                "ru": "Укус"
+              },
+              "attacker_id": "enemy_1700000000000_0",
+              "attacker_name": "Wolf 1",
+              "bonus_die": null,
+              "critical": false,
+              "hit": true,
+              "roll": {
+                "mode": "normal",
+                "natural": 13,
+                "rolls": [
+                  13
+                ]
+              },
+              "target_ac": 12,
+              "target_id": "companion_0",
+              "target_name": "Lyra",
+              "to_hit": 4,
+              "total": 17,
+              "type": "attack"
+            },
+            {
+              "amount": 8,
+              "damage_type": "piercing",
+              "hp_after": 4,
+              "roll": {
+                "modifier": 2,
+                "rolls": [
+                  4,
+                  2
+                ],
+                "total": 8
+              },
+              "scaling": "normal",
+              "target_id": "companion_0",
+              "target_name": "Lyra",
+              "tier": "badly_wounded",
+              "type": "damage"
+            }
+          ]
+        },
+        {
+          "next": [
+            {
+              "actor_id": "enemy_1700000000000_2",
+              "actor_name": "Wolf 3",
+              "round": 2,
+              "type": "turn_start"
+            }
+          ]
+        },
+        {
+          "engine": "enemy_1700000000000_2",
+          "events": [
+            {
+              "attack_id": "bite",
+              "attack_name": {
+                "de": "Biss",
+                "en": "Bite",
+                "ru": "Укус"
+              },
+              "attacker_id": "enemy_1700000000000_2",
+              "attacker_name": "Wolf 3",
+              "bonus_die": null,
+              "critical": false,
+              "hit": false,
+              "roll": {
+                "mode": "normal",
+                "natural": 2,
+                "rolls": [
+                  2
+                ]
+              },
+              "target_ac": 12,
+              "target_id": "companion_0",
+              "target_name": "Lyra",
+              "to_hit": 4,
+              "total": 6,
+              "type": "attack"
+            }
+          ]
+        },
+        {
+          "next": [
+            {
+              "actor_id": "comb_player",
+              "actor_name": "Hiroki",
+              "round": 3,
+              "type": "turn_start"
+            }
+          ]
+        },
+        {
+          "events": [
+            {
+              "caster_id": "comb_player",
+              "caster_name": "Hiroki",
+              "slot_level": 0,
+              "spell_id": "sacred_flame",
+              "spell_name": {
+                "de": "Heilige Flamme",
+                "en": "Sacred flame",
+                "ru": "Священное пламя"
+              },
+              "type": "spell_cast"
+            },
+            {
+              "ability": "dex",
+              "bonus": 2,
+              "dc": 12,
+              "roll": {
+                "mode": "normal",
+                "natural": 2,
+                "rolls": [
+                  2
+                ]
+              },
+              "success": false,
+              "target_id": "enemy_1700000000000_0",
+              "target_name": "Wolf 1",
+              "total": 4,
+              "type": "save"
+            },
+            {
+              "amount": 2,
+              "damage_type": "radiant",
+              "hp_after": 1,
+              "roll": {
+                "modifier": 0,
+                "rolls": [
+                  2
+                ],
+                "total": 2
+              },
+              "scaling": "normal",
+              "target_id": "enemy_1700000000000_0",
+              "target_name": "Wolf 1",
+              "tier": "badly_wounded",
+              "type": "damage"
+            }
+          ],
+          "player": "cast:sacred_flame:0:enemy_1700000000000_0",
+          "turn_over": true
+        },
+        {
+          "next": [
+            {
+              "actor_id": "companion_0",
+              "actor_name": "Lyra",
+              "round": 3,
+              "type": "turn_start"
+            }
+          ]
+        },
+        {
+          "engine": "companion_0",
+          "events": [
+            {
+              "attack_id": "fire_bolt",
+              "attack_name": {
+                "de": "Feuerpfeil",
+                "en": "Fire bolt",
+                "ru": "Огненный снаряд"
+              },
+              "attacker_id": "companion_0",
+              "attacker_name": "Lyra",
+              "bonus_die": null,
+              "critical": false,
+              "hit": true,
+              "roll": {
+                "mode": "normal",
+                "natural": 16,
+                "rolls": [
+                  16
+                ]
+              },
+              "target_ac": 13,
+              "target_id": "enemy_1700000000000_0",
+              "target_name": "Wolf 1",
+              "to_hit": 4,
+              "total": 20,
+              "type": "attack"
+            },
+            {
+              "amount": 6,
+              "damage_type": "fire",
+              "hp_after": 0,
+              "roll": {
+                "modifier": 0,
+                "rolls": [
+                  6
+                ],
+                "total": 6
+              },
+              "scaling": "normal",
+              "target_id": "enemy_1700000000000_0",
+              "target_name": "Wolf 1",
+              "tier": "down",
+              "type": "damage"
+            },
+            {
+              "target_id": "enemy_1700000000000_0",
+              "target_name": "Wolf 1",
+              "type": "down"
+            }
+          ]
+        },
+        {
+          "next": [
+            {
+              "actor_id": "companion_1",
+              "actor_name": "Finn",
+              "round": 3,
+              "type": "turn_start"
+            }
+          ]
+        },
+        {
+          "engine": "companion_1",
+          "events": [
+            {
+              "attack_id": "shortsword",
+              "attack_name": {
+                "de": "Kurzschwert",
+                "en": "Shortsword",
+                "ru": "Короткий меч"
+              },
+              "attacker_id": "companion_1",
+              "attacker_name": "Finn",
+              "bonus_die": null,
+              "critical": false,
+              "hit": false,
+              "roll": {
+                "mode": "normal",
+                "natural": 4,
+                "rolls": [
+                  4
+                ]
+              },
+              "target_ac": 13,
+              "target_id": "enemy_1700000000000_2",
+              "target_name": "Wolf 3",
+              "to_hit": 4,
+              "total": 8,
+              "type": "attack"
+            }
+          ]
+        },
+        {
+          "next": [
+            {
+              "actor_id": "enemy_1700000000000_2",
+              "actor_name": "Wolf 3",
+              "round": 3,
+              "type": "turn_start"
+            }
+          ]
+        },
+        {
+          "engine": "enemy_1700000000000_2",
+          "events": [
+            {
+              "attack_id": "bite",
+              "attack_name": {
+                "de": "Biss",
+                "en": "Bite",
+                "ru": "Укус"
+              },
+              "attacker_id": "enemy_1700000000000_2",
+              "attacker_name": "Wolf 3",
+              "bonus_die": null,
+              "critical": false,
+              "hit": true,
+              "roll": {
+                "mode": "normal",
+                "natural": 13,
+                "rolls": [
+                  13
+                ]
+              },
+              "target_ac": 12,
+              "target_id": "companion_0",
+              "target_name": "Lyra",
+              "to_hit": 4,
+              "total": 17,
+              "type": "attack"
+            },
+            {
+              "amount": 7,
+              "damage_type": "piercing",
+              "hp_after": 0,
+              "roll": {
+                "modifier": 2,
+                "rolls": [
+                  1,
+                  4
+                ],
+                "total": 7
+              },
+              "scaling": "normal",
+              "target_id": "companion_0",
+              "target_name": "Lyra",
+              "tier": "down",
+              "type": "damage"
+            },
+            {
+              "target_id": "companion_0",
+              "target_name": "Lyra",
+              "type": "down"
+            }
+          ]
+        },
+        {
+          "next": [
+            {
+              "actor_id": "comb_player",
+              "actor_name": "Hiroki",
+              "round": 4,
+              "type": "turn_start"
+            }
+          ]
         },
         {
           "events": [
@@ -9636,50 +10612,24 @@
         {
           "next": [
             {
-              "actor_id": "enemy_1700000000000_1",
-              "actor_name": "Wolf 2",
-              "round": 1,
+              "actor_id": "companion_0",
+              "actor_name": "Lyra",
+              "round": 4,
               "type": "turn_start"
-            }
-          ]
-        },
-        {
-          "engine": "enemy_1700000000000_1",
-          "events": [
+            },
             {
-              "attack_id": "bite",
-              "attack_name": {
-                "de": "Biss",
-                "en": "Bite",
-                "ru": "Укус"
-              },
-              "attacker_id": "enemy_1700000000000_1",
-              "attacker_name": "Wolf 2",
-              "bonus_die": null,
-              "critical": false,
-              "hit": false,
-              "roll": {
-                "mode": "normal",
-                "natural": 8,
-                "rolls": [
-                  8
-                ]
-              },
-              "target_ac": 17,
-              "target_id": "companion_0",
-              "target_name": "Lyra",
-              "to_hit": 4,
-              "total": 12,
-              "type": "attack"
-            }
-          ]
-        },
-        {
-          "next": [
+              "actor_id": "companion_0",
+              "actor_name": "Lyra",
+              "failures": 1,
+              "outcome": "ongoing",
+              "roll": 8,
+              "successes": 0,
+              "type": "death_save"
+            },
             {
               "actor_id": "companion_1",
               "actor_name": "Finn",
-              "round": 1,
+              "round": 4,
               "type": "turn_start"
             }
           ]
@@ -9698,89 +10648,19 @@
               "attacker_name": "Finn",
               "bonus_die": null,
               "critical": false,
-              "hit": true,
-              "roll": {
-                "mode": "normal",
-                "natural": 16,
-                "rolls": [
-                  16
-                ]
-              },
-              "target_ac": 13,
-              "target_id": "enemy_1700000000000_0",
-              "target_name": "Wolf 1",
-              "to_hit": 4,
-              "total": 20,
-              "type": "attack"
-            },
-            {
-              "actor_id": "companion_1",
-              "actor_name": "Finn",
-              "feature": "sneak_attack",
-              "type": "feature"
-            },
-            {
-              "amount": 13,
-              "damage_type": "piercing",
-              "hp_after": 0,
-              "roll": {
-                "modifier": 2,
-                "rolls": [
-                  5,
-                  6
-                ],
-                "total": 13
-              },
-              "scaling": "normal",
-              "target_id": "enemy_1700000000000_0",
-              "target_name": "Wolf 1",
-              "tier": "down",
-              "type": "damage"
-            },
-            {
-              "target_id": "enemy_1700000000000_0",
-              "target_name": "Wolf 1",
-              "type": "down"
-            }
-          ]
-        },
-        {
-          "next": [
-            {
-              "actor_id": "companion_0",
-              "actor_name": "Lyra",
-              "round": 1,
-              "type": "turn_start"
-            }
-          ]
-        },
-        {
-          "engine": "companion_0",
-          "events": [
-            {
-              "attack_id": "fire_bolt",
-              "attack_name": {
-                "de": "Feuerpfeil",
-                "en": "Fire bolt",
-                "ru": "Огненный снаряд"
-              },
-              "attacker_id": "companion_0",
-              "attacker_name": "Lyra",
-              "bonus_die": null,
-              "critical": false,
               "hit": false,
               "roll": {
                 "mode": "normal",
-                "natural": 5,
+                "natural": 8,
                 "rolls": [
-                  5
+                  8
                 ]
               },
               "target_ac": 13,
-              "target_id": "enemy_1700000000000_1",
-              "target_name": "Wolf 2",
+              "target_id": "enemy_1700000000000_2",
+              "target_name": "Wolf 3",
               "to_hit": 4,
-              "total": 9,
+              "total": 12,
               "type": "attack"
             }
           ]
@@ -9790,7 +10670,7 @@
             {
               "actor_id": "enemy_1700000000000_2",
               "actor_name": "Wolf 3",
-              "round": 2,
+              "round": 4,
               "type": "turn_start"
             }
           ]
@@ -9812,16 +10692,16 @@
               "hit": false,
               "roll": {
                 "mode": "normal",
-                "natural": 3,
+                "natural": 8,
                 "rolls": [
-                  3
+                  8
                 ]
               },
-              "target_ac": 12,
-              "target_id": "companion_0",
-              "target_name": "Lyra",
+              "target_ac": 13,
+              "target_id": "companion_1",
+              "target_name": "Finn",
               "to_hit": 4,
-              "total": 7,
+              "total": 12,
               "type": "attack"
             }
           ]
@@ -9831,7 +10711,7 @@
             {
               "actor_id": "comb_player",
               "actor_name": "Hiroki",
-              "round": 2,
+              "round": 5,
               "type": "turn_start"
             }
           ]
@@ -9874,50 +10754,24 @@
         {
           "next": [
             {
-              "actor_id": "enemy_1700000000000_1",
-              "actor_name": "Wolf 2",
-              "round": 2,
+              "actor_id": "companion_0",
+              "actor_name": "Lyra",
+              "round": 5,
               "type": "turn_start"
-            }
-          ]
-        },
-        {
-          "engine": "enemy_1700000000000_1",
-          "events": [
+            },
             {
-              "attack_id": "bite",
-              "attack_name": {
-                "de": "Biss",
-                "en": "Bite",
-                "ru": "Укус"
-              },
-              "attacker_id": "enemy_1700000000000_1",
-              "attacker_name": "Wolf 2",
-              "bonus_die": null,
-              "critical": false,
-              "hit": false,
-              "roll": {
-                "mode": "normal",
-                "natural": 6,
-                "rolls": [
-                  6
-                ]
-              },
-              "target_ac": 12,
-              "target_id": "companion_0",
-              "target_name": "Lyra",
-              "to_hit": 4,
-              "total": 10,
-              "type": "attack"
-            }
-          ]
-        },
-        {
-          "next": [
+              "actor_id": "companion_0",
+              "actor_name": "Lyra",
+              "failures": 2,
+              "outcome": "ongoing",
+              "roll": 2,
+              "successes": 0,
+              "type": "death_save"
+            },
             {
               "actor_id": "companion_1",
               "actor_name": "Finn",
-              "round": 2,
+              "round": 5,
               "type": "turn_start"
             }
           ]
@@ -9936,45 +10790,69 @@
               "attacker_name": "Finn",
               "bonus_die": null,
               "critical": false,
-              "hit": false,
+              "hit": true,
               "roll": {
                 "mode": "normal",
-                "natural": 2,
+                "natural": 9,
                 "rolls": [
-                  2
+                  9
                 ]
               },
               "target_ac": 13,
-              "target_id": "enemy_1700000000000_1",
-              "target_name": "Wolf 2",
+              "target_id": "enemy_1700000000000_2",
+              "target_name": "Wolf 3",
               "to_hit": 4,
-              "total": 6,
+              "total": 13,
               "type": "attack"
+            },
+            {
+              "actor_id": "companion_1",
+              "actor_name": "Finn",
+              "feature": "sneak_attack",
+              "type": "feature"
+            },
+            {
+              "amount": 7,
+              "damage_type": "piercing",
+              "hp_after": 4,
+              "roll": {
+                "modifier": 2,
+                "rolls": [
+                  4,
+                  1
+                ],
+                "total": 7
+              },
+              "scaling": "normal",
+              "target_id": "enemy_1700000000000_2",
+              "target_name": "Wolf 3",
+              "tier": "badly_wounded",
+              "type": "damage"
             }
           ]
         },
         {
           "next": [
             {
-              "actor_id": "companion_0",
-              "actor_name": "Lyra",
-              "round": 2,
+              "actor_id": "enemy_1700000000000_2",
+              "actor_name": "Wolf 3",
+              "round": 5,
               "type": "turn_start"
             }
           ]
         },
         {
-          "engine": "companion_0",
+          "engine": "enemy_1700000000000_2",
           "events": [
             {
-              "attack_id": "fire_bolt",
+              "attack_id": "bite",
               "attack_name": {
-                "de": "Feuerpfeil",
-                "en": "Fire bolt",
-                "ru": "Огненный снаряд"
+                "de": "Biss",
+                "en": "Bite",
+                "ru": "Укус"
               },
-              "attacker_id": "companion_0",
-              "attacker_name": "Lyra",
+              "attacker_id": "enemy_1700000000000_2",
+              "attacker_name": "Wolf 3",
               "bonus_die": null,
               "critical": false,
               "hit": false,
@@ -9986,8 +10864,8 @@
                 ]
               },
               "target_ac": 13,
-              "target_id": "enemy_1700000000000_1",
-              "target_name": "Wolf 2",
+              "target_id": "companion_1",
+              "target_name": "Finn",
               "to_hit": 4,
               "total": 5,
               "type": "attack"
@@ -9997,50 +10875,9 @@
         {
           "next": [
             {
-              "actor_id": "enemy_1700000000000_2",
-              "actor_name": "Wolf 3",
-              "round": 3,
-              "type": "turn_start"
-            }
-          ]
-        },
-        {
-          "engine": "enemy_1700000000000_2",
-          "events": [
-            {
-              "attack_id": "bite",
-              "attack_name": {
-                "de": "Biss",
-                "en": "Bite",
-                "ru": "Укус"
-              },
-              "attacker_id": "enemy_1700000000000_2",
-              "attacker_name": "Wolf 3",
-              "bonus_die": null,
-              "critical": false,
-              "hit": false,
-              "roll": {
-                "mode": "normal",
-                "natural": 7,
-                "rolls": [
-                  7
-                ]
-              },
-              "target_ac": 12,
-              "target_id": "companion_0",
-              "target_name": "Lyra",
-              "to_hit": 4,
-              "total": 11,
-              "type": "attack"
-            }
-          ]
-        },
-        {
-          "next": [
-            {
               "actor_id": "comb_player",
               "actor_name": "Hiroki",
-              "round": 3,
+              "round": 6,
               "type": "turn_start"
             }
           ]
@@ -10065,15 +10902,15 @@
               "dc": 12,
               "roll": {
                 "mode": "normal",
-                "natural": 18,
+                "natural": 15,
                 "rolls": [
-                  18
+                  15
                 ]
               },
               "success": true,
               "target_id": "enemy_1700000000000_2",
               "target_name": "Wolf 3",
-              "total": 20,
+              "total": 17,
               "type": "save"
             }
           ],
@@ -10083,56 +10920,24 @@
         {
           "next": [
             {
-              "actor_id": "enemy_1700000000000_1",
-              "actor_name": "Wolf 2",
-              "round": 3,
+              "actor_id": "companion_0",
+              "actor_name": "Lyra",
+              "round": 6,
               "type": "turn_start"
-            }
-          ]
-        },
-        {
-          "engine": "enemy_1700000000000_1",
-          "events": [
+            },
             {
               "actor_id": "companion_0",
               "actor_name": "Lyra",
-              "feature": "shield",
-              "type": "feature"
+              "failures": 2,
+              "outcome": "ongoing",
+              "roll": 16,
+              "successes": 1,
+              "type": "death_save"
             },
-            {
-              "attack_id": "bite",
-              "attack_name": {
-                "de": "Biss",
-                "en": "Bite",
-                "ru": "Укус"
-              },
-              "attacker_id": "enemy_1700000000000_1",
-              "attacker_name": "Wolf 2",
-              "bonus_die": null,
-              "critical": false,
-              "hit": false,
-              "roll": {
-                "mode": "normal",
-                "natural": 10,
-                "rolls": [
-                  10
-                ]
-              },
-              "target_ac": 17,
-              "target_id": "companion_0",
-              "target_name": "Lyra",
-              "to_hit": 4,
-              "total": 14,
-              "type": "attack"
-            }
-          ]
-        },
-        {
-          "next": [
             {
               "actor_id": "companion_1",
               "actor_name": "Finn",
-              "round": 3,
+              "round": 6,
               "type": "turn_start"
             }
           ]
@@ -10154,16 +10959,16 @@
               "hit": false,
               "roll": {
                 "mode": "normal",
-                "natural": 2,
+                "natural": 6,
                 "rolls": [
-                  2
+                  6
                 ]
               },
               "target_ac": 13,
-              "target_id": "enemy_1700000000000_1",
-              "target_name": "Wolf 2",
+              "target_id": "enemy_1700000000000_2",
+              "target_name": "Wolf 3",
               "to_hit": 4,
-              "total": 6,
+              "total": 10,
               "type": "attack"
             }
           ]
@@ -10171,25 +10976,25 @@
         {
           "next": [
             {
-              "actor_id": "companion_0",
-              "actor_name": "Lyra",
-              "round": 3,
+              "actor_id": "enemy_1700000000000_2",
+              "actor_name": "Wolf 3",
+              "round": 6,
               "type": "turn_start"
             }
           ]
         },
         {
-          "engine": "companion_0",
+          "engine": "enemy_1700000000000_2",
           "events": [
             {
-              "attack_id": "fire_bolt",
+              "attack_id": "bite",
               "attack_name": {
-                "de": "Feuerpfeil",
-                "en": "Fire bolt",
-                "ru": "Огненный снаряд"
+                "de": "Biss",
+                "en": "Bite",
+                "ru": "Укус"
               },
-              "attacker_id": "companion_0",
-              "attacker_name": "Lyra",
+              "attacker_id": "enemy_1700000000000_2",
+              "attacker_name": "Wolf 3",
               "bonus_die": null,
               "critical": false,
               "hit": false,
@@ -10201,8 +11006,8 @@
                 ]
               },
               "target_ac": 13,
-              "target_id": "enemy_1700000000000_1",
-              "target_name": "Wolf 2",
+              "target_id": "companion_1",
+              "target_name": "Finn",
               "to_hit": 4,
               "total": 9,
               "type": "attack"
@@ -10212,50 +11017,9 @@
         {
           "next": [
             {
-              "actor_id": "enemy_1700000000000_2",
-              "actor_name": "Wolf 3",
-              "round": 4,
-              "type": "turn_start"
-            }
-          ]
-        },
-        {
-          "engine": "enemy_1700000000000_2",
-          "events": [
-            {
-              "attack_id": "bite",
-              "attack_name": {
-                "de": "Biss",
-                "en": "Bite",
-                "ru": "Укус"
-              },
-              "attacker_id": "enemy_1700000000000_2",
-              "attacker_name": "Wolf 3",
-              "bonus_die": null,
-              "critical": false,
-              "hit": false,
-              "roll": {
-                "mode": "normal",
-                "natural": 2,
-                "rolls": [
-                  2
-                ]
-              },
-              "target_ac": 12,
-              "target_id": "companion_0",
-              "target_name": "Lyra",
-              "to_hit": 4,
-              "total": 6,
-              "type": "attack"
-            }
-          ]
-        },
-        {
-          "next": [
-            {
               "actor_id": "comb_player",
               "actor_name": "Hiroki",
-              "round": 4,
+              "round": 7,
               "type": "turn_start"
             }
           ]
@@ -10280,15 +11044,15 @@
               "dc": 12,
               "roll": {
                 "mode": "normal",
-                "natural": 12,
+                "natural": 16,
                 "rolls": [
-                  12
+                  16
                 ]
               },
               "success": true,
               "target_id": "enemy_1700000000000_2",
               "target_name": "Wolf 3",
-              "total": 14,
+              "total": 18,
               "type": "save"
             }
           ],
@@ -10298,495 +11062,24 @@
         {
           "next": [
             {
-              "actor_id": "enemy_1700000000000_1",
-              "actor_name": "Wolf 2",
-              "round": 4,
+              "actor_id": "companion_0",
+              "actor_name": "Lyra",
+              "round": 7,
               "type": "turn_start"
-            }
-          ]
-        },
-        {
-          "engine": "enemy_1700000000000_1",
-          "events": [
-            {
-              "attack_id": "bite",
-              "attack_name": {
-                "de": "Biss",
-                "en": "Bite",
-                "ru": "Укус"
-              },
-              "attacker_id": "enemy_1700000000000_1",
-              "attacker_name": "Wolf 2",
-              "bonus_die": null,
-              "critical": false,
-              "hit": false,
-              "roll": {
-                "mode": "normal",
-                "natural": 4,
-                "rolls": [
-                  4
-                ]
-              },
-              "target_ac": 12,
-              "target_id": "companion_0",
-              "target_name": "Lyra",
-              "to_hit": 4,
-              "total": 8,
-              "type": "attack"
-            }
-          ]
-        },
-        {
-          "next": [
-            {
-              "actor_id": "companion_1",
-              "actor_name": "Finn",
-              "round": 4,
-              "type": "turn_start"
-            }
-          ]
-        },
-        {
-          "engine": "companion_1",
-          "events": [
-            {
-              "attack_id": "shortsword",
-              "attack_name": {
-                "de": "Kurzschwert",
-                "en": "Shortsword",
-                "ru": "Короткий меч"
-              },
-              "attacker_id": "companion_1",
-              "attacker_name": "Finn",
-              "bonus_die": null,
-              "critical": false,
-              "hit": true,
-              "roll": {
-                "mode": "normal",
-                "natural": 13,
-                "rolls": [
-                  13
-                ]
-              },
-              "target_ac": 13,
-              "target_id": "enemy_1700000000000_1",
-              "target_name": "Wolf 2",
-              "to_hit": 4,
-              "total": 17,
-              "type": "attack"
             },
-            {
-              "actor_id": "companion_1",
-              "actor_name": "Finn",
-              "feature": "sneak_attack",
-              "type": "feature"
-            },
-            {
-              "amount": 8,
-              "damage_type": "piercing",
-              "hp_after": 3,
-              "roll": {
-                "modifier": 2,
-                "rolls": [
-                  1,
-                  5
-                ],
-                "total": 8
-              },
-              "scaling": "normal",
-              "target_id": "enemy_1700000000000_1",
-              "target_name": "Wolf 2",
-              "tier": "badly_wounded",
-              "type": "damage"
-            }
-          ]
-        },
-        {
-          "next": [
             {
               "actor_id": "companion_0",
               "actor_name": "Lyra",
-              "round": 4,
-              "type": "turn_start"
-            }
-          ]
-        },
-        {
-          "engine": "companion_0",
-          "events": [
-            {
-              "attack_id": "fire_bolt",
-              "attack_name": {
-                "de": "Feuerpfeil",
-                "en": "Fire bolt",
-                "ru": "Огненный снаряд"
-              },
-              "attacker_id": "companion_0",
-              "attacker_name": "Lyra",
-              "bonus_die": null,
-              "critical": false,
-              "hit": true,
-              "roll": {
-                "mode": "normal",
-                "natural": 12,
-                "rolls": [
-                  12
-                ]
-              },
-              "target_ac": 13,
-              "target_id": "enemy_1700000000000_1",
-              "target_name": "Wolf 2",
-              "to_hit": 4,
-              "total": 16,
-              "type": "attack"
+              "failures": 2,
+              "outcome": "ongoing",
+              "roll": 19,
+              "successes": 2,
+              "type": "death_save"
             },
-            {
-              "amount": 10,
-              "damage_type": "fire",
-              "hp_after": 0,
-              "roll": {
-                "modifier": 0,
-                "rolls": [
-                  10
-                ],
-                "total": 10
-              },
-              "scaling": "normal",
-              "target_id": "enemy_1700000000000_1",
-              "target_name": "Wolf 2",
-              "tier": "down",
-              "type": "damage"
-            },
-            {
-              "target_id": "enemy_1700000000000_1",
-              "target_name": "Wolf 2",
-              "type": "down"
-            }
-          ]
-        },
-        {
-          "next": [
-            {
-              "actor_id": "enemy_1700000000000_2",
-              "actor_name": "Wolf 3",
-              "round": 5,
-              "type": "turn_start"
-            }
-          ]
-        },
-        {
-          "engine": "enemy_1700000000000_2",
-          "events": [
-            {
-              "actor_id": "companion_0",
-              "actor_name": "Lyra",
-              "feature": "shield",
-              "type": "feature"
-            },
-            {
-              "attack_id": "bite",
-              "attack_name": {
-                "de": "Biss",
-                "en": "Bite",
-                "ru": "Укус"
-              },
-              "attacker_id": "enemy_1700000000000_2",
-              "attacker_name": "Wolf 3",
-              "bonus_die": null,
-              "critical": false,
-              "hit": false,
-              "roll": {
-                "mode": "normal",
-                "natural": 8,
-                "rolls": [
-                  8
-                ]
-              },
-              "target_ac": 17,
-              "target_id": "companion_0",
-              "target_name": "Lyra",
-              "to_hit": 4,
-              "total": 12,
-              "type": "attack"
-            }
-          ]
-        },
-        {
-          "next": [
-            {
-              "actor_id": "comb_player",
-              "actor_name": "Hiroki",
-              "round": 5,
-              "type": "turn_start"
-            }
-          ]
-        },
-        {
-          "events": [
-            {
-              "caster_id": "comb_player",
-              "caster_name": "Hiroki",
-              "slot_level": 0,
-              "spell_id": "sacred_flame",
-              "spell_name": {
-                "de": "Heilige Flamme",
-                "en": "Sacred flame",
-                "ru": "Священное пламя"
-              },
-              "type": "spell_cast"
-            },
-            {
-              "ability": "dex",
-              "bonus": 2,
-              "dc": 12,
-              "roll": {
-                "mode": "normal",
-                "natural": 8,
-                "rolls": [
-                  8
-                ]
-              },
-              "success": false,
-              "target_id": "enemy_1700000000000_2",
-              "target_name": "Wolf 3",
-              "total": 10,
-              "type": "save"
-            },
-            {
-              "amount": 3,
-              "damage_type": "radiant",
-              "hp_after": 8,
-              "roll": {
-                "modifier": 0,
-                "rolls": [
-                  3
-                ],
-                "total": 3
-              },
-              "scaling": "normal",
-              "target_id": "enemy_1700000000000_2",
-              "target_name": "Wolf 3",
-              "tier": "wounded",
-              "type": "damage"
-            }
-          ],
-          "player": "cast:sacred_flame:0:enemy_1700000000000_2",
-          "turn_over": true
-        },
-        {
-          "next": [
             {
               "actor_id": "companion_1",
               "actor_name": "Finn",
-              "round": 5,
-              "type": "turn_start"
-            }
-          ]
-        },
-        {
-          "engine": "companion_1",
-          "events": [
-            {
-              "attack_id": "shortsword",
-              "attack_name": {
-                "de": "Kurzschwert",
-                "en": "Shortsword",
-                "ru": "Короткий меч"
-              },
-              "attacker_id": "companion_1",
-              "attacker_name": "Finn",
-              "bonus_die": null,
-              "critical": false,
-              "hit": false,
-              "roll": {
-                "mode": "normal",
-                "natural": 2,
-                "rolls": [
-                  2
-                ]
-              },
-              "target_ac": 13,
-              "target_id": "enemy_1700000000000_2",
-              "target_name": "Wolf 3",
-              "to_hit": 4,
-              "total": 6,
-              "type": "attack"
-            }
-          ]
-        },
-        {
-          "next": [
-            {
-              "actor_id": "companion_0",
-              "actor_name": "Lyra",
-              "round": 5,
-              "type": "turn_start"
-            }
-          ]
-        },
-        {
-          "engine": "companion_0",
-          "events": [
-            {
-              "attack_id": "fire_bolt",
-              "attack_name": {
-                "de": "Feuerpfeil",
-                "en": "Fire bolt",
-                "ru": "Огненный снаряд"
-              },
-              "attacker_id": "companion_0",
-              "attacker_name": "Lyra",
-              "bonus_die": null,
-              "critical": false,
-              "hit": true,
-              "roll": {
-                "mode": "normal",
-                "natural": 10,
-                "rolls": [
-                  10
-                ]
-              },
-              "target_ac": 13,
-              "target_id": "enemy_1700000000000_2",
-              "target_name": "Wolf 3",
-              "to_hit": 4,
-              "total": 14,
-              "type": "attack"
-            },
-            {
-              "amount": 1,
-              "damage_type": "fire",
-              "hp_after": 7,
-              "roll": {
-                "modifier": 0,
-                "rolls": [
-                  1
-                ],
-                "total": 1
-              },
-              "scaling": "normal",
-              "target_id": "enemy_1700000000000_2",
-              "target_name": "Wolf 3",
-              "tier": "wounded",
-              "type": "damage"
-            }
-          ]
-        },
-        {
-          "next": [
-            {
-              "actor_id": "enemy_1700000000000_2",
-              "actor_name": "Wolf 3",
-              "round": 6,
-              "type": "turn_start"
-            }
-          ]
-        },
-        {
-          "engine": "enemy_1700000000000_2",
-          "events": [
-            {
-              "attack_id": "bite",
-              "attack_name": {
-                "de": "Biss",
-                "en": "Bite",
-                "ru": "Укус"
-              },
-              "attacker_id": "enemy_1700000000000_2",
-              "attacker_name": "Wolf 3",
-              "bonus_die": null,
-              "critical": false,
-              "hit": true,
-              "roll": {
-                "mode": "normal",
-                "natural": 9,
-                "rolls": [
-                  9
-                ]
-              },
-              "target_ac": 12,
-              "target_id": "companion_0",
-              "target_name": "Lyra",
-              "to_hit": 4,
-              "total": 13,
-              "type": "attack"
-            },
-            {
-              "amount": 6,
-              "damage_type": "piercing",
-              "hp_after": 0,
-              "roll": {
-                "modifier": 2,
-                "rolls": [
-                  3,
-                  1
-                ],
-                "total": 6
-              },
-              "scaling": "normal",
-              "target_id": "companion_0",
-              "target_name": "Lyra",
-              "tier": "down",
-              "type": "damage"
-            },
-            {
-              "target_id": "companion_0",
-              "target_name": "Lyra",
-              "type": "down"
-            }
-          ]
-        },
-        {
-          "next": [
-            {
-              "actor_id": "comb_player",
-              "actor_name": "Hiroki",
-              "round": 6,
-              "type": "turn_start"
-            }
-          ]
-        },
-        {
-          "events": [
-            {
-              "caster_id": "comb_player",
-              "caster_name": "Hiroki",
-              "slot_level": 0,
-              "spell_id": "sacred_flame",
-              "spell_name": {
-                "de": "Heilige Flamme",
-                "en": "Sacred flame",
-                "ru": "Священное пламя"
-              },
-              "type": "spell_cast"
-            },
-            {
-              "ability": "dex",
-              "bonus": 2,
-              "dc": 12,
-              "roll": {
-                "mode": "normal",
-                "natural": 12,
-                "rolls": [
-                  12
-                ]
-              },
-              "success": true,
-              "target_id": "enemy_1700000000000_2",
-              "target_name": "Wolf 3",
-              "total": 14,
-              "type": "save"
-            }
-          ],
-          "player": "cast:sacred_flame:0:enemy_1700000000000_2",
-          "turn_over": true
-        },
-        {
-          "next": [
-            {
-              "actor_id": "companion_1",
-              "actor_name": "Finn",
-              "round": 6,
+              "round": 7,
               "type": "turn_start"
             }
           ]
@@ -10827,16 +11120,16 @@
               "type": "feature"
             },
             {
-              "amount": 9,
+              "amount": 10,
               "damage_type": "piercing",
               "hp_after": 0,
               "roll": {
                 "modifier": 2,
                 "rolls": [
-                  5,
-                  2
+                  4,
+                  4
                 ],
-                "total": 9
+                "total": 10
               },
               "scaling": "normal",
               "target_id": "enemy_1700000000000_2",
@@ -10985,6 +11278,127 @@
             },
             {
               "conditions": [],
+              "hp": 1,
+              "id": "companion_0",
+              "initiative": 0,
+              "max_hp": 12,
+              "max_stress": 100,
+              "name": "Lyra",
+              "position": null,
+              "role": "companion",
+              "skills": {},
+              "stats5e": {
+                "abilities": [
+                  8,
+                  14,
+                  13,
+                  15,
+                  12,
+                  10
+                ],
+                "armor_class": 12,
+                "attacks": [
+                  {
+                    "damage": "1d6-1",
+                    "damage_type": "bludgeoning",
+                    "id": "quarterstaff",
+                    "kind": "melee",
+                    "long_range_ft": 0,
+                    "name": {
+                      "de": "Kampfstab",
+                      "en": "Quarterstaff",
+                      "ru": "Боевой посох"
+                    },
+                    "range_ft": 0,
+                    "to_hit": 1
+                  },
+                  {
+                    "damage": "1d10",
+                    "damage_type": "fire",
+                    "id": "fire_bolt",
+                    "kind": "spell",
+                    "long_range_ft": 0,
+                    "name": {
+                      "de": "Feuerpfeil",
+                      "en": "Fire bolt",
+                      "ru": "Огненный снаряд"
+                    },
+                    "range_ft": 120,
+                    "to_hit": 4
+                  }
+                ],
+                "class_id": "wizard",
+                "concentration": null,
+                "creature_type": "humanoid",
+                "death_saves": {
+                  "dead": false,
+                  "failures": 0,
+                  "stable": false,
+                  "successes": 0
+                },
+                "equipped": [
+                  "quarterstaff"
+                ],
+                "hit_dice_left": 2,
+                "hit_die": 6,
+                "immunities": [],
+                "level": 2,
+                "monster_id": "",
+                "never_flees": true,
+                "resistances": [],
+                "resources_used": {},
+                "save_proficiencies": [
+                  "int",
+                  "wis"
+                ],
+                "skill_proficiencies": [
+                  "arcana",
+                  "history"
+                ],
+                "speed_ft": 30,
+                "spellcasting": {
+                  "ability": "int",
+                  "slots_max": [
+                    3,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "slots_used": [
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "spells": [
+                    "ray_of_frost",
+                    "chill_touch",
+                    "acid_splash",
+                    "magic_missile",
+                    "burning_hands",
+                    "thunderwave",
+                    "sleep",
+                    "mage_armor",
+                    "shocking_grasp",
+                    "shield"
+                  ]
+                },
+                "vulnerabilities": []
+              },
+              "stress": 0
+            },
+            {
+              "conditions": [],
               "hp": 17,
               "id": "companion_1",
               "initiative": 0,
@@ -11100,189 +11514,69 @@
                 "vulnerabilities": []
               },
               "stress": 0
-            },
-            {
-              "conditions": [],
-              "hp": 1,
-              "id": "companion_0",
-              "initiative": 0,
-              "max_hp": 12,
-              "max_stress": 100,
-              "name": "Lyra",
-              "position": null,
-              "role": "companion",
-              "skills": {},
-              "stats5e": {
-                "abilities": [
-                  8,
-                  14,
-                  13,
-                  15,
-                  12,
-                  10
-                ],
-                "armor_class": 12,
-                "attacks": [
-                  {
-                    "damage": "1d6-1",
-                    "damage_type": "bludgeoning",
-                    "id": "quarterstaff",
-                    "kind": "melee",
-                    "long_range_ft": 0,
-                    "name": {
-                      "de": "Kampfstab",
-                      "en": "Quarterstaff",
-                      "ru": "Боевой посох"
-                    },
-                    "range_ft": 0,
-                    "to_hit": 1
-                  },
-                  {
-                    "damage": "1d10",
-                    "damage_type": "fire",
-                    "id": "fire_bolt",
-                    "kind": "spell",
-                    "long_range_ft": 0,
-                    "name": {
-                      "de": "Feuerpfeil",
-                      "en": "Fire bolt",
-                      "ru": "Огненный снаряд"
-                    },
-                    "range_ft": 120,
-                    "to_hit": 4
-                  }
-                ],
-                "class_id": "wizard",
-                "concentration": null,
-                "creature_type": "humanoid",
-                "death_saves": {
-                  "dead": false,
-                  "failures": 0,
-                  "stable": false,
-                  "successes": 0
-                },
-                "equipped": [
-                  "quarterstaff"
-                ],
-                "hit_dice_left": 2,
-                "hit_die": 6,
-                "immunities": [],
-                "level": 2,
-                "monster_id": "",
-                "never_flees": true,
-                "resistances": [],
-                "resources_used": {},
-                "save_proficiencies": [
-                  "int",
-                  "wis"
-                ],
-                "skill_proficiencies": [
-                  "arcana",
-                  "history"
-                ],
-                "speed_ft": 30,
-                "spellcasting": {
-                  "ability": "int",
-                  "slots_max": [
-                    3,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0
-                  ],
-                  "slots_used": [
-                    3,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0
-                  ],
-                  "spells": [
-                    "ray_of_frost",
-                    "chill_touch",
-                    "acid_splash",
-                    "magic_missile",
-                    "burning_hands",
-                    "thunderwave",
-                    "sleep",
-                    "mage_armor",
-                    "shocking_grasp",
-                    "shield"
-                  ]
-                },
-                "vulnerabilities": []
-              },
-              "stress": 0
             }
           ],
-          "current_turn_index": 4,
+          "current_turn_index": 2,
           "difficulty": "easy",
           "effects": [],
           "events": [
             {
               "order": [
                 {
-                  "id": "enemy_1700000000000_2",
-                  "name": "Wolf 3",
-                  "roll": 20,
-                  "total": 22
-                },
-                {
-                  "id": "enemy_1700000000000_0",
-                  "name": "Wolf 1",
-                  "roll": 16,
-                  "total": 18
-                },
-                {
                   "id": "comb_player",
                   "name": "Hiroki",
-                  "roll": 14,
-                  "total": 14
-                },
-                {
-                  "id": "enemy_1700000000000_1",
-                  "name": "Wolf 2",
-                  "roll": 8,
-                  "total": 10
-                },
-                {
-                  "id": "companion_1",
-                  "name": "Finn",
-                  "roll": 7,
-                  "total": 9
+                  "roll": 20,
+                  "total": 20
                 },
                 {
                   "id": "companion_0",
                   "name": "Lyra",
-                  "roll": 5,
-                  "total": 7
+                  "roll": 17,
+                  "total": 19
+                },
+                {
+                  "id": "companion_1",
+                  "name": "Finn",
+                  "roll": 13,
+                  "total": 15
+                },
+                {
+                  "id": "enemy_1700000000000_1",
+                  "name": "Wolf 2",
+                  "roll": 10,
+                  "total": 12
+                },
+                {
+                  "id": "enemy_1700000000000_0",
+                  "name": "Wolf 1",
+                  "roll": 7,
+                  "total": 9
+                },
+                {
+                  "id": "enemy_1700000000000_2",
+                  "name": "Wolf 3",
+                  "roll": 4,
+                  "total": 6
                 }
               ],
               "type": "initiative"
             },
             {
-              "actor_id": "enemy_1700000000000_2",
-              "actor_name": "Wolf 3",
+              "actor_id": "comb_player",
+              "actor_name": "Hiroki",
               "round": 1,
               "type": "turn_start"
             }
           ],
           "is_active": false,
           "reactions_used": [],
-          "round": 6,
+          "round": 7,
           "turn": {
             "action_used": true,
             "bonus_action_used": false,
             "disengaged": false,
             "movement_left_ft": 0,
+            "offhand_from": "shortsword",
             "sneak_used": true
           }
         },

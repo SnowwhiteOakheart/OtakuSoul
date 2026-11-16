@@ -49,13 +49,22 @@ pub fn act<R: Rng + ?Sized>(
     if let TurnDecision::Feature(id) = &decision {
         return use_feature(t, id, rng);
     }
+    if let TurnDecision::Maneuver(id) = &decision {
+        return perform(t, id, rng);
+    }
+    // Something else already took the action (a potion before the engine's turn plan).
+    if decision == TurnDecision::Pass && t.combat.turn.action_used {
+        return Vec::new();
+    }
     t.combat.turn.action_used = true;
     let heroic_death = t.heroic_death();
     let map = t.map.as_ref();
     let combat = &mut *t.combat;
     let index = combat.current_turn_index;
     match decision {
-        TurnDecision::Cast(_) | TurnDecision::Feature(_) => unreachable!("handled above"),
+        TurnDecision::Cast(_) | TurnDecision::Feature(_) | TurnDecision::Maneuver(_) => {
+            unreachable!("handled above")
+        }
         TurnDecision::Attack {
             attack_id,
             target_id,
@@ -125,13 +134,18 @@ pub fn act<R: Rng + ?Sized>(
                         cover: setup.cover,
                         flanked: setup.flanked,
                     };
-                    let events = resolve_attack_with(&actor, &attack, target, &situation, rng);
+                    let mut events = resolve_attack_with(&actor, &attack, target, &situation, rng);
+                    // A light melee weapon lets another light one strike as a bonus action.
+                    if attack.kind == AttackKind::Melee && is_light_melee(&attack.id) {
+                        combat.turn.offhand_from = Some(attack.id.clone());
+                    }
                     if events.iter().any(|e| matches!(e, CombatEvent::Feature { feature, .. } if feature == SNEAK_ATTACK)) {
                         combat.turn.sneak_used = true;
                     }
                     if events.iter().any(|e| matches!(e, CombatEvent::Feature { feature, actor_id, .. } if feature == "shield" && *actor_id == target_id)) {
                         combat.reactions_used.push(target_id.clone());
                     }
+                    events.extend(reveal_hidden(&mut combat.combatants[index]));
                     events
                 }
                 _ => vec![CombatEvent::Pass {
@@ -171,6 +185,8 @@ pub fn next_turn<R: Rng + ?Sized>(t: &mut Table, rng: &mut R) -> Vec<CombatEvent
         if combat_outcome(&t.combat.combatants).is_some() || !advance_turn(t.combat) {
             break;
         }
+        // A grapple whose holder is gone ends before the speed is counted.
+        events.extend(release_grapple(t.combat));
         events.push(begin_turn(t));
         let index = t.combat.current_turn_index;
         let actor = &mut t.combat.combatants[index];
@@ -279,6 +295,8 @@ pub fn combat_options(combat: &EncounterState, map: Option<&BattleMap>) -> Comba
     if turn.action_used {
         actions.clear();
     }
+    // Help, Hide, grappling … with the action; standing up and the off-hand strike also after.
+    actions.extend(maneuver_options(combat, map));
     CombatOptions {
         actor_id: actor.id.clone(),
         reachable,
@@ -330,6 +348,11 @@ pub fn parse_player_action(
             .iter()
             .any(|o| o.id == id)
             .then(|| PlayerAction::Act(TurnDecision::Feature(id.to_string())));
+    }
+    // Potions depend on the inventory, which the options don't see; `perform` checks them.
+    if action.starts_with("potion:") {
+        return (!options.action_used)
+            .then(|| PlayerAction::Act(TurnDecision::Maneuver(action.to_string())));
     }
     if action.starts_with("cast:") {
         let request = CastRequest::parse(action)?;

@@ -14,6 +14,7 @@
 mod actions;
 mod encounter;
 mod loop_plan;
+mod maneuvers;
 mod setup;
 mod spells_features;
 #[cfg(test)]
@@ -29,6 +30,11 @@ pub use encounter::{
 pub use loop_plan::{
     CompanionChoice, EnginePlan, PlannedTurn, engine_plan, engine_turn, engine_turn_prelude,
     play_turn, play_until_player, record_round,
+};
+pub use maneuvers::{
+    CUNNING_HIDE, ESCAPE, GRAPPLE, HELP, HIDE, OFFHAND, POTION, READIED_ATTACK, READY, SHOVE_PRONE,
+    SHOVE_PUSH, STAND_UP, can_hide, engine_maneuvers, hide, is_light_melee, item_options,
+    maneuver_options, passive_perception, perform, release_grapple, reveal_hidden,
 };
 pub use setup::{
     MAX_COMBAT_EVENTS, MAX_ENEMIES, MAX_TURNS_PER_CALL, TURN_UNDEAD_FT, URGENT_CAST, card_class,

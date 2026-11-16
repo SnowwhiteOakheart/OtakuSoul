@@ -194,6 +194,7 @@ pub fn begin_turn(t: &mut Table) -> CombatEvent {
         bonus_action_used: false,
         disengaged: false,
         sneak_used: false,
+        offhand_from: None,
     };
     event
 }
@@ -224,7 +225,11 @@ pub fn end_encounter(t: &mut Table) {
     }
     // Conditions that only make sense within a fight; long-lasting buffs (Mage Armor, Aid)
     // and narrative conditions stay.
-    const FIGHT_ONLY: [&str; 10] = [
+    const FIGHT_ONLY: [&str; 14] = [
+        HIDDEN,
+        HELPED,
+        READIED,
+        GRAPPLED,
         DODGING,
         FLED,
         BLESSED,

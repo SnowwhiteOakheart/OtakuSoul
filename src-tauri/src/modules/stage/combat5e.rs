@@ -159,7 +159,14 @@ pub(super) fn next_turn<R: Rng + ?Sized>(state: &mut SceneState, rng: &mut R) ->
 
 /// What the current combatant may do now, for the UI (and to check the player's action).
 pub fn combat_options(state: &SceneState) -> rules5e::CombatOptions {
-    rules5e::combat_options(&state.combat, state.map.as_ref())
+    let mut options = rules5e::combat_options(&state.combat, state.map.as_ref());
+    // Healing potions come from the party's inventory, which the rules options don't see.
+    options.actions.extend(rules5e::item_options(
+        &state.combat,
+        state.map.as_ref(),
+        &state.inventory,
+    ));
+    options
 }
 
 /// The player's input for the current combatant, if it is allowed now.
@@ -325,6 +332,34 @@ pub(super) async fn engine_turn<R: Rng + Send + ?Sized>(
     events
 }
 
+/// A standard action for the narrator (English, like the other facts).
+fn maneuver_report(actor: &str, maneuver: &str, target: &str, success: bool) -> String {
+    match (maneuver, success) {
+        (rules5e::HELP, _) => format!("{actor} distracts {target}, opening it up for an ally."),
+        (rules5e::HIDE, true) => format!("{actor} slips out of sight and hides."),
+        (rules5e::HIDE, false) => format!("{actor} tries to hide, but is spotted."),
+        (rules5e::READY, _) => {
+            format!("{actor} holds a strike ready for the first foe to come close.")
+        }
+        (rules5e::READIED_ATTACK, _) => {
+            format!("{actor} strikes the moment {target} steps into reach:")
+        }
+        (rules5e::GRAPPLE, true) => format!("{actor} seizes {target} in a firm grip."),
+        (rules5e::GRAPPLE, false) => format!("{actor} tries to grab {target}, but it twists free."),
+        (rules5e::SHOVE_PRONE, true) => format!("{actor} knocks {target} to the ground."),
+        (rules5e::SHOVE_PUSH, true) => format!("{actor} shoves {target} back."),
+        (rules5e::SHOVE_PRONE | rules5e::SHOVE_PUSH, false) => {
+            format!("{actor} tries to shove {target}, but it holds its ground.")
+        }
+        (rules5e::ESCAPE, true) => format!("{actor} breaks free of the grip."),
+        (rules5e::ESCAPE, false) => format!("{actor} struggles against the grip in vain."),
+        (rules5e::STAND_UP, _) => format!("{actor} gets back on their feet."),
+        (rules5e::POTION, _) if actor == target => format!("{actor} drinks a healing potion."),
+        (rules5e::POTION, _) => format!("{actor} gives {target} a healing potion."),
+        (other, _) => format!("{actor}: {}.", other.replace('_', " ")),
+    }
+}
+
 /// Plain facts of the events for the narrator (English; it narrates in the reply language).
 fn report(events: &[CombatEvent]) -> String {
     events
@@ -443,7 +478,7 @@ fn report(events: &[CombatEvent]) -> String {
                 rules5e::TURN_UNDEAD => {
                     format!("{actor_name} raises the holy symbol against the undead.")
                 }
-                "cunning_dash" | "cunning_disengage" => {
+                "cunning_dash" | "cunning_disengage" | rules5e::CUNNING_HIDE => {
                     format!("{actor_name} moves with cunning agility.")
                 }
                 other => format!("{actor_name} uses {}.", other.replace('_', " ")),
@@ -451,6 +486,18 @@ fn report(events: &[CombatEvent]) -> String {
             CombatEvent::Teleport { actor_name, .. } => {
                 Some(format!("{actor_name} vanishes and reappears nearby."))
             }
+            CombatEvent::Maneuver {
+                actor_name,
+                maneuver,
+                target_name,
+                success,
+                ..
+            } => Some(maneuver_report(
+                actor_name,
+                maneuver,
+                target_name.as_deref().unwrap_or("the foe"),
+                *success,
+            )),
             CombatEvent::CombatEnd { outcome } => Some(match outcome {
                 CombatOutcome::Victory => {
                     "The fight is won: no enemy is left standing.".to_string()

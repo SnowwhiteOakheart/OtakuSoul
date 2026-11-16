@@ -393,7 +393,8 @@ fn a_seeded_fight_runs_to_the_end() {
             TurnDecision::Dodge
             | TurnDecision::Pass
             | TurnDecision::Cast(_)
-            | TurnDecision::Feature(_) => {}
+            | TurnDecision::Feature(_)
+            | TurnDecision::Maneuver(_) => {}
         }
         advance_turn(&mut encounter);
         turns += 1;
@@ -1940,5 +1941,480 @@ fn equipping_changes_armor_class_and_attacks_within_proficiencies() {
         finn.stats5e.as_ref().unwrap().armor_class,
         14,
         "gear survives a level-up"
+    );
+}
+
+// --- Standard actions: Help, Hide, Ready, grapple, shove, escape, stand up, off-hand, potion ---
+
+/// A running fight on `rows` with the fighters on their squares; the first one's turn.
+fn arena(rows: &[&str], fighters: Vec<(Combatant, (i32, i32))>) -> TableState {
+    let mut state = TableState {
+        rules: Some(SceneRules {
+            ruleset: "5e".into(),
+            ..Default::default()
+        }),
+        map: Some(small_map(rows)),
+        ..Default::default()
+    };
+    state.combat.is_active = true;
+    state.combat.combatants = fighters
+        .into_iter()
+        .map(|(mut c, (x, y))| {
+            c.position = Some(GridPos::new(x, y));
+            c
+        })
+        .collect();
+    begin_turn(&mut state.table());
+    state
+}
+
+const ROOM: [&str; 5] = [
+    "#########",
+    "#p......#",
+    "#.......#",
+    "#.......#",
+    "#########",
+];
+
+fn option_ids(state: &TableState) -> Vec<String> {
+    combat_options(&state.combat, state.map.as_ref())
+        .actions
+        .into_iter()
+        .map(|o| o.id)
+        .collect()
+}
+
+fn rolled_mode(events: &[CombatEvent]) -> Option<RollMode> {
+    events.iter().find_map(|e| match e {
+        CombatEvent::Attack { roll, .. } => Some(roll.mode),
+        _ => None,
+    })
+}
+
+#[test]
+fn maneuver_ids_are_not_read_as_dodge() {
+    let options = vec![
+        ActionOption {
+            id: "help:g".into(),
+            target_id: Some("g".into()),
+            ..Default::default()
+        },
+        ActionOption {
+            id: "dodge".into(),
+            ..Default::default()
+        },
+    ];
+    assert_eq!(
+        parse_action("help:g", &options),
+        Some(TurnDecision::Maneuver("help:g".into()))
+    );
+    assert_eq!(parse_action("dodge", &options), Some(TurnDecision::Dodge));
+}
+
+#[test]
+fn help_gives_the_next_attack_against_the_target_advantage() {
+    let mut state = arena(
+        &ROOM,
+        vec![
+            (hero("player", "fighter", "player"), (2, 2)),
+            (hero("lyra", "cleric", "companion"), (4, 2)),
+            (goblin("g"), (3, 2)),
+        ],
+    );
+    let mut rng = StdRng::seed_from_u64(1);
+    assert!(option_ids(&state).contains(&"help:g".to_string()));
+    let action = parse_player_action(&state.combat, state.map.as_ref(), "help:g").unwrap();
+    let (events, _) = apply_player_action(&mut state.table(), action, &mut rng);
+    assert!(
+        matches!(&events[0], CombatEvent::Maneuver { maneuver, target_id: Some(t), .. } if maneuver == HELP && t == "g")
+    );
+    assert!(state.combat.turn.action_used);
+    assert!(has_condition(&state.combat.combatants[2], HELPED));
+    // The goblin's own turn does not end it yet; the ally's attack uses it up.
+    state.combat.current_turn_index = 2;
+    begin_turn(&mut state.table());
+    assert!(has_condition(&state.combat.combatants[2], HELPED));
+    state.combat.current_turn_index = 1;
+    begin_turn(&mut state.table());
+    let events = act(
+        &mut state.table(),
+        TurnDecision::Attack {
+            attack_id: "mace".into(),
+            target_id: "g".into(),
+        },
+        &mut rng,
+    );
+    assert_eq!(rolled_mode(&events), Some(RollMode::Advantage));
+    assert!(!has_condition(&state.combat.combatants[2], HELPED));
+}
+
+#[test]
+fn hiding_needs_cover_and_distance_and_gives_advantage_until_the_attack() {
+    // A pillar between the rogue and the goblin: hiding works; in the open or next to it, not.
+    let behind = [
+        "#########",
+        "#p......#",
+        "#..O....#",
+        "#.......#",
+        "#########",
+    ];
+    let mut state = arena(
+        &behind,
+        vec![
+            (hero("finn", "rogue", "player"), (2, 2)),
+            (goblin("g"), (6, 2)),
+        ],
+    );
+    assert!(option_ids(&state).contains(&HIDE.to_string()));
+    let open = arena(
+        &ROOM,
+        vec![
+            (hero("finn", "rogue", "player"), (2, 2)),
+            (goblin("g"), (6, 2)),
+        ],
+    );
+    assert!(!option_ids(&open).contains(&HIDE.to_string()));
+    let close = arena(
+        &behind,
+        vec![
+            (hero("finn", "rogue", "player"), (2, 2)),
+            (goblin("g"), (1, 2)),
+        ],
+    );
+    assert!(!option_ids(&close).contains(&HIDE.to_string()));
+    // The check: Stealth against the best passive Perception.
+    for seed in 0..20 {
+        let mut copy = state.clone();
+        let events = perform(&mut copy.table(), HIDE, &mut StdRng::seed_from_u64(seed));
+        let CombatEvent::Maneuver {
+            total: Some(total),
+            against: Some(against),
+            success,
+            ..
+        } = &events[0]
+        else {
+            panic!("hide reports its check: {events:?}");
+        };
+        assert_eq!(*against, passive_perception(&copy.combat.combatants[1]));
+        assert_eq!(*success, total >= against);
+        assert_eq!(*success, has_condition(&copy.combat.combatants[0], HIDDEN));
+    }
+    // Hidden: the attack has advantage (and Sneak Attack), then the rogue is seen again.
+    add_condition(&mut state.combat.combatants[0], HIDDEN, 0);
+    state.combat.combatants[0].position = Some(GridPos::new(5, 2));
+    let events = act(
+        &mut state.table(),
+        TurnDecision::Attack {
+            attack_id: "shortsword".into(),
+            target_id: "g".into(),
+        },
+        &mut StdRng::seed_from_u64(3),
+    );
+    assert_eq!(rolled_mode(&events), Some(RollMode::Advantage));
+    assert!(
+        events.iter().any(
+            |e| matches!(e, CombatEvent::ConditionEnd { condition, .. } if condition == HIDDEN)
+        )
+    );
+    assert!(!has_condition(&state.combat.combatants[0], HIDDEN));
+    // Attacks against a hidden creature have disadvantage.
+    let mut seen = state.clone();
+    add_condition(&mut seen.combat.combatants[0], HIDDEN, 0);
+    let goblin = seen.combat.combatants[1].clone();
+    let attack = goblin.stats5e.as_ref().unwrap().attacks[0].clone();
+    let events = resolve_attack(
+        &goblin,
+        &attack,
+        &mut seen.combat.combatants[0],
+        &mut StdRng::seed_from_u64(4),
+    );
+    assert_eq!(rolled_mode(&events), Some(RollMode::Disadvantage));
+}
+
+#[test]
+fn grapple_holds_the_target_until_it_escapes_or_the_holder_is_gone() {
+    let mut won = None;
+    for seed in 0..40 {
+        let mut state = arena(
+            &ROOM,
+            vec![
+                (hero("player", "fighter", "player"), (2, 2)),
+                (goblin("g"), (3, 2)),
+            ],
+        );
+        let events = perform(
+            &mut state.table(),
+            "grapple:g",
+            &mut StdRng::seed_from_u64(seed),
+        );
+        let CombatEvent::Maneuver {
+            total,
+            against,
+            success,
+            ..
+        } = &events[0]
+        else {
+            panic!("{events:?}");
+        };
+        assert_eq!(*success, total.unwrap() >= against.unwrap());
+        assert_eq!(
+            *success,
+            has_condition(&state.combat.combatants[1], GRAPPLED)
+        );
+        if *success {
+            won = Some(state);
+            break;
+        }
+    }
+    let mut state = won.expect("a fighter wins a grapple against a goblin sometimes");
+    // Held: no speed, and the goblin may try to escape.
+    state.combat.current_turn_index = 1;
+    assert!(release_grapple(&mut state.combat).is_none());
+    begin_turn(&mut state.table());
+    assert_eq!(state.combat.turn.movement_left_ft, 0);
+    assert!(option_ids(&state).contains(&ESCAPE.to_string()));
+    // The holder moved away: the grapple ends at the goblin's turn.
+    state.combat.combatants[0].position = Some(GridPos::new(6, 3));
+    assert!(matches!(
+        release_grapple(&mut state.combat),
+        Some(CombatEvent::ConditionEnd { .. })
+    ));
+    assert!(!has_condition(&state.combat.combatants[1], GRAPPLED));
+}
+
+#[test]
+fn a_shove_pushes_one_square_away_or_knocks_prone() {
+    let fighters = || {
+        vec![
+            (hero("player", "fighter", "player"), (2, 2)),
+            (goblin("g"), (3, 2)),
+        ]
+    };
+    let state = arena(&ROOM, fighters());
+    let ids = option_ids(&state);
+    assert!(
+        ids.contains(&"shove_prone:g".to_string()) && ids.contains(&"shove_push:g".to_string())
+    );
+    // A wall right behind: no push.
+    let walled = arena(&["#####", "#p..#", "#...#", "#####"], fighters());
+    assert!(!option_ids(&walled).contains(&"shove_push:g".to_string()));
+    for seed in 0..40 {
+        let mut push = arena(&ROOM, fighters());
+        let events = perform(
+            &mut push.table(),
+            "shove_push:g",
+            &mut StdRng::seed_from_u64(seed),
+        );
+        let pushed = matches!(&events[0], CombatEvent::Maneuver { success: true, .. });
+        let expected = if pushed { (4, 2) } else { (3, 2) };
+        assert_eq!(
+            push.combat.combatants[1].position,
+            Some(GridPos::new(expected.0, expected.1))
+        );
+        // Forced movement provokes nothing.
+        assert!(
+            !events
+                .iter()
+                .any(|e| matches!(e, CombatEvent::OpportunityAttack { .. }))
+        );
+        let mut prone = arena(&ROOM, fighters());
+        let events = perform(
+            &mut prone.table(),
+            "shove_prone:g",
+            &mut StdRng::seed_from_u64(seed),
+        );
+        let down = matches!(&events[0], CombatEvent::Maneuver { success: true, .. });
+        assert_eq!(down, has_condition(&prone.combat.combatants[1], PRONE));
+    }
+}
+
+#[test]
+fn standing_up_costs_half_the_movement_and_engine_creatures_do_it_themselves() {
+    let mut goblin_down = goblin("g");
+    add_condition(&mut goblin_down, PRONE, 0);
+    let mut state = arena(
+        &ROOM,
+        vec![
+            (goblin_down, (6, 2)),
+            (hero("player", "fighter", "player"), (2, 2)),
+        ],
+    );
+    let speed = state.combat.turn.movement_left_ft;
+    assert!(option_ids(&state).contains(&STAND_UP.to_string()));
+    let events = engine_turn_prelude(&mut state.table(), &mut StdRng::seed_from_u64(1));
+    assert!(matches!(&events[0], CombatEvent::Maneuver { maneuver, .. } if maneuver == STAND_UP));
+    assert!(!has_condition(&state.combat.combatants[0], PRONE));
+    assert_eq!(state.combat.turn.movement_left_ft, speed - speed / 2);
+    // Not enough movement left: no standing up.
+    add_condition(&mut state.combat.combatants[0], PRONE, 0);
+    state.combat.turn.movement_left_ft = 5;
+    assert!(!option_ids(&state).contains(&STAND_UP.to_string()));
+}
+
+#[test]
+fn two_light_weapons_give_an_off_hand_strike_without_the_ability_bonus() {
+    let mut state = arena(
+        &ROOM,
+        vec![
+            (hero("finn", "rogue", "player"), (2, 2)),
+            (goblin("g"), (3, 2)),
+        ],
+    );
+    let mut rng = StdRng::seed_from_u64(5);
+    // Before attacking with a light weapon there is no off-hand strike.
+    assert!(
+        !option_ids(&state)
+            .iter()
+            .any(|id| id.starts_with("offhand:"))
+    );
+    let action =
+        parse_player_action(&state.combat, state.map.as_ref(), "attack:shortsword:g").unwrap();
+    apply_player_action(&mut state.table(), action, &mut rng);
+    if !is_up(&state.combat.combatants[1]) {
+        state.combat.combatants[1].hp = 3;
+    }
+    assert_eq!(
+        state.combat.turn.offhand_from.as_deref(),
+        Some("shortsword")
+    );
+    let ids = option_ids(&state);
+    assert!(ids.contains(&"offhand:dagger:g".to_string()), "{ids:?}");
+    let action =
+        parse_player_action(&state.combat, state.map.as_ref(), "offhand:dagger:g").unwrap();
+    let (events, _) = apply_player_action(&mut state.table(), action, &mut rng);
+    assert!(state.combat.turn.bonus_action_used);
+    assert!(matches!(&events[0], CombatEvent::Attack { attack_id, .. } if attack_id == "dagger"));
+    if let Some(CombatEvent::Damage { roll, .. }) = events
+        .iter()
+        .find(|e| matches!(e, CombatEvent::Damage { .. }))
+    {
+        assert!(
+            roll.total <= 4,
+            "no DEX bonus on the off-hand damage: {roll:?}"
+        );
+    }
+    // A ranged or heavy weapon opens nothing.
+    assert!(
+        !is_light_melee("shortbow") && !is_light_melee("longsword") && is_light_melee("dagger")
+    );
+    // The new turn field stays out of the JSON when empty (older readers).
+    let json = serde_json::to_value(TurnBudget::default()).unwrap();
+    assert!(json.get("offhand_from").is_none());
+}
+
+#[test]
+fn a_healing_potion_brings_a_dying_ally_back_and_is_used_up() {
+    let mut lyra = hero("lyra", "cleric", "companion");
+    lyra.hp = 0;
+    add_condition(&mut lyra, UNCONSCIOUS, 0);
+    let mut state = arena(
+        &ROOM,
+        vec![
+            (hero("player", "fighter", "player"), (2, 2)),
+            (lyra, (3, 2)),
+            (goblin("g"), (6, 2)),
+        ],
+    );
+    state.inventory = vec![InventoryItem {
+        id: "potion".into(),
+        name: "Heiltrank".into(),
+        description: String::new(),
+        quantity: 2,
+        item_type: "consumable".into(),
+        hp_restore: 0,
+        stress_restore: 0,
+        clears_condition: None,
+        srd_id: Some("potion_of_healing".into()),
+    }];
+    let options = item_options(&state.combat, state.map.as_ref(), &state.inventory);
+    assert_eq!(
+        options.iter().map(|o| o.id.as_str()).collect::<Vec<_>>(),
+        vec!["potion:potion:lyra"]
+    );
+    let action =
+        parse_player_action(&state.combat, state.map.as_ref(), "potion:potion:lyra").unwrap();
+    let (events, _) =
+        apply_player_action(&mut state.table(), action, &mut StdRng::seed_from_u64(2));
+    assert!(matches!(&events[0], CombatEvent::Maneuver { maneuver, .. } if maneuver == POTION));
+    let lyra = &state.combat.combatants[1];
+    assert!(lyra.hp >= 4 && !has_condition(lyra, UNCONSCIOUS));
+    assert_eq!(state.inventory[0].quantity, 1);
+    // Without the action left, no potion.
+    assert!(item_options(&state.combat, state.map.as_ref(), &state.inventory).is_empty());
+    // An engine companion gives the last potion to a dying friend on its own.
+    state.combat.combatants[0].hp = 0;
+    state.combat.current_turn_index = 1;
+    begin_turn(&mut state.table());
+    let events = engine_turn_prelude(&mut state.table(), &mut StdRng::seed_from_u64(3));
+    // A cleric heals with a spell instead, if one is ready.
+    if urgent_cast(
+        &state.combat,
+        state.map.as_ref(),
+        &state.combat.combatants[1],
+    )
+    .is_none()
+    {
+        assert!(
+            events
+                .iter()
+                .any(|e| matches!(e, CombatEvent::Maneuver { maneuver, .. } if maneuver == POTION))
+        );
+        assert!(state.inventory.is_empty());
+        assert!(matches!(
+            engine_plan(&state.combat, state.map.as_ref()),
+            EnginePlan::Decided(PlannedTurn::InPlace(TurnDecision::Pass))
+        ));
+    }
+}
+
+#[test]
+fn a_readied_strike_hits_the_foe_that_steps_into_reach() {
+    let mut state = arena(
+        &ROOM,
+        vec![
+            (hero("player", "fighter", "player"), (2, 2)),
+            (goblin("g"), (6, 2)),
+        ],
+    );
+    let mut rng = StdRng::seed_from_u64(7);
+    let action = parse_player_action(&state.combat, state.map.as_ref(), READY).unwrap();
+    apply_player_action(&mut state.table(), action, &mut rng);
+    assert!(has_condition(&state.combat.combatants[0], READIED));
+    // The goblin walks up (and is struck as it arrives, even when disengaged).
+    let path = [GridPos::new(5, 2), GridPos::new(4, 2), GridPos::new(3, 2)];
+    let events = walk(
+        &mut state.combat.combatants,
+        1,
+        &path,
+        true,
+        &mut state.combat.reactions_used,
+        &mut rng,
+    );
+    let at = events
+        .iter()
+        .position(
+            |e| matches!(e, CombatEvent::Maneuver { maneuver, .. } if maneuver == READIED_ATTACK),
+        )
+        .expect("the readied strike goes off");
+    assert!(matches!(events[at + 1], CombatEvent::Attack { .. }));
+    assert!(!has_condition(&state.combat.combatants[0], READIED));
+    assert!(state.combat.reactions_used.contains(&"player".to_string()));
+}
+
+#[test]
+fn the_maneuver_event_keeps_its_json_small() {
+    let event = CombatEvent::Maneuver {
+        actor_id: "a".into(),
+        actor_name: "A".into(),
+        maneuver: STAND_UP.into(),
+        target_id: None,
+        target_name: None,
+        total: None,
+        against: None,
+        success: true,
+    };
+    assert_eq!(
+        serde_json::to_value(&event).unwrap(),
+        serde_json::json!({ "type": "maneuver", "actor_id": "a", "actor_name": "A", "maneuver": "stand_up", "success": true })
     );
 }

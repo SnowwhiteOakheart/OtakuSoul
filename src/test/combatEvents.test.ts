@@ -26,6 +26,19 @@ describe('combat log lines', () => {
     expect(combatEventText({ ...damage, damage_type: 'sonic boom' }, 'de')).toContain('(sonic boom)');
     expect(combatEventText({ type: 'combat_end', outcome: 'victory' }, 'de')).toBe('Sieg – kein Gegner steht mehr');
   });
+
+  it('formats standard actions with their checks', () => {
+    const grapple: CombatEvent = {
+      type: 'maneuver', actor_id: 'p', actor_name: 'Thorin', maneuver: 'grapple', target_id: 'g', target_name: 'Goblin 1',
+      total: 17, against: 12, success: true,
+    };
+    expect(combatEventText(grapple, 'de')).toBe('Thorin packt Goblin 1 (Athletik 17 gegen 12)');
+    expect(combatEventText({ ...grapple, success: false, total: undefined }, 'de')).toBe('Thorin bekommt Goblin 1 nicht zu fassen (– gegen 12)');
+    const potion: CombatEvent = { type: 'maneuver', actor_id: 'p', actor_name: 'Thorin', maneuver: 'potion', target_id: 'p', target_name: 'Thorin', success: true };
+    expect(combatEventText(potion, 'de')).toBe('Thorin trinkt einen Heiltrank');
+    expect(combatEventText({ ...potion, target_id: 'l', target_name: 'Lyra' }, 'de')).toBe('Thorin gibt Lyra einen Heiltrank');
+    expect(combatEventText({ type: 'maneuver', actor_id: 'p', actor_name: 'Thorin', maneuver: 'stand_up', success: true }, 'de')).toBe('Thorin steht auf');
+  });
 });
 
 describe('combatAwaitsEngine', () => {

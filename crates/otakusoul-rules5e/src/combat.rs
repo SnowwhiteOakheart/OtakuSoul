@@ -24,6 +24,11 @@ pub struct TurnBudget {
     /// Sneak Attack is once per turn.
     #[serde(default)]
     pub sneak_used: bool,
+    /// The light melee weapon the action attacked with: another light weapon may strike as
+    /// a bonus action (two-weapon fighting).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub offhand_from: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
@@ -201,6 +206,28 @@ pub enum CombatEvent {
         actor_name: String,
         to: GridPos,
     },
+    /// A standard action besides attacking and casting: `help`, `hide`, `ready`,
+    /// `readied_attack` (the readied strike goes off), `grapple`, `shove_prone`, `shove_push`,
+    /// `escape`, `stand_up`, `potion`. Checks carry the actor's total and what it had to beat
+    /// (the target's check, the best passive Perception).
+    Maneuver {
+        actor_id: String,
+        actor_name: String,
+        maneuver: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        target_id: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        target_name: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        total: Option<i32>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        against: Option<i32>,
+        success: bool,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
@@ -359,6 +386,7 @@ pub fn resolve_attack_with<R: Rng + ?Sized>(
         mode == RollMode::Disadvantage || situation.disadvantage,
     );
     remove_condition(target, GUIDED);
+    remove_condition(target, HELPED);
     let roll = roll_d20(rng, mode);
     let bonus_die = has_condition(attacker, BLESSED).then(|| rng.random_range(1..=4u32));
     let cover_ac = situation.cover.ac_bonus();
@@ -728,7 +756,9 @@ pub fn advance_turn(encounter: &mut EncounterState) -> bool {
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct ActionOption {
-    /// `attack:<attack id>:<target id>` or `dodge`.
+    /// `attack:<attack id>:<target id>`, `dodge`, or a standard action (`help:<target>`,
+    /// `hide`, `ready`, `grapple:<target>`, `shove_prone:<target>`, `shove_push:<target>`,
+    /// `escape`, `stand_up`, `offhand:<weapon>:<target>`, `potion:<item>:<target>`).
     pub id: String,
     pub attack_id: Option<String>,
     pub target_id: Option<String>,

@@ -7,7 +7,9 @@ import type { Cover } from "./Cover";
  */
 export type ActionOption = { 
 /**
- * `attack:<attack id>:<target id>` or `dodge`.
+ * `attack:<attack id>:<target id>`, `dodge`, or a standard action (`help:<target>`,
+ * `hide`, `ready`, `grapple:<target>`, `shove_prone:<target>`, `shove_push:<target>`,
+ * `escape`, `stand_up`, `offhand:<weapon>:<target>`, `potion:<item>:<target>`).
  */
 id: string, attack_id: string | null, target_id: string | null, 
 /**

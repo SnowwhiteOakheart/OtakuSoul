@@ -221,7 +221,7 @@ export const StageBattleMap: React.FC<Props> = ({
 
   const attackFor = (target: Combatant) =>
     options?.actions
-      .filter((o) => o.target_id === target.id)
+      .filter((o) => o.id.startsWith('attack:') && o.target_id === target.id)
       .sort((a, b) =>
         Number(a.disadvantage) - Number(b.disadvantage)
         || COVER_RANK[a.cover ?? 'none'] - COVER_RANK[b.cover ?? 'none']

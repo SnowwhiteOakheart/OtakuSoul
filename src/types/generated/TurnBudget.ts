@@ -11,4 +11,9 @@ disengaged: boolean,
 /**
  * Sneak Attack is once per turn.
  */
-sneak_used: boolean, };
+sneak_used: boolean, 
+/**
+ * The light melee weapon the action attacked with: another light weapon may strike as
+ * a bonus action (two-weapon fighting).
+ */
+offhand_from?: string, };

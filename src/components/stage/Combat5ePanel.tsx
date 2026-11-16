@@ -10,7 +10,11 @@ import { Combat5eSpells } from './Combat5eSpells';
 import { usePersistentFlag } from '../../hooks/usePersistentFlag';
 import { boardTokenImage } from './StageBattleMap';
 
-const COMBAT_TIPS: TranslationKey[] = ['fightGuide.order', 'fightGuide.attack', 'fightGuide.cover', 'fightGuide.hp', 'fightGuide.spells', 'fightGuide.engine'];
+const COMBAT_TIPS: TranslationKey[] = ['fightGuide.order', 'fightGuide.attack', 'fightGuide.cover', 'fightGuide.maneuvers', 'fightGuide.hp', 'fightGuide.spells', 'fightGuide.engine'];
+
+/** Standard actions besides attacking (Help, Hide, grappling …): the option id's first part. */
+const maneuverKind = (id: string) => id.split(':')[0] ?? id;
+const isManeuver = (id: string) => !id.startsWith('attack:') && id !== 'dodge';
 
 /** Lines of the fight log shown under the actions. */
 const LOG_LINES = 8;
@@ -87,7 +91,20 @@ export const Combat5ePanel: React.FC<{ boardControls?: BoardControls }> = ({ boa
   // On a board only the engine's options count (reach, sight); without one every attack works.
   const onBoard = !!stageState.map;
   const options = stageCombatOptions;
-  const enemies = combat.combatants.filter((c) => !isParty(c) && isUp(c) && (!boardControls || options?.actions.some((option) => option.target_id === c.id)));
+  const enemies = combat.combatants.filter((c) => !isParty(c) && isUp(c) && (!boardControls || options?.actions.some((option) => option.id.startsWith('attack:') && option.target_id === c.id)));
+  const maneuvers = (options?.actions ?? []).filter((option) => isManeuver(option.id));
+  const maneuverLabel = (option: ActionOption) => {
+    const kind = maneuverKind(option.id);
+    const target = combat.combatants.find((c) => c.id === option.target_id);
+    if (kind === 'potion') {
+      return target?.id === actor?.id ? t('fight.maneuver.potionSelf') : t('fight.maneuver.potion', { target: target?.name ?? '' });
+    }
+    if (kind === 'offhand') {
+      const weapon = attacks.find((attack) => attack.id === option.attack_id);
+      return t('fight.maneuver.offhand', { weapon: weapon ? localizedName(weapon.name, appLanguage) : '', target: target?.name ?? '' });
+    }
+    return t(`fight.maneuver.${kind}` as TranslationKey, { target: target?.name ?? '' });
+  };
   const selectedEnemy = enemies.find((enemy) => enemy.id === boardControls?.target);
   const shownEnemies = selectedEnemy ? [selectedEnemy] : enemies;
   const canCast = !!actor?.stats5e?.spellcasting && (options?.spells.length ?? 0) > 0;
@@ -281,6 +298,23 @@ export const Combat5ePanel: React.FC<{ boardControls?: BoardControls }> = ({ boa
                     <span className="ml-1 font-normal text-emerald-300/70">
                       ({t(`fight.cost.${feature.cost}` as TranslationKey)}{feature.uses_left != null ? ` · ${feature.uses_left}×` : ''})
                     </span>
+                  </button>
+                ))}
+              </div>
+            )}
+            {showMore && maneuvers.length > 0 && (
+              <div className="flex flex-wrap gap-1.5" data-testid="fight-maneuvers">
+                {maneuvers.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    data-maneuver={option.id}
+                    disabled={isProcessingStageTurn}
+                    onClick={() => void runStageCombat(option.id)}
+                    title={t(`fight.maneuverHint.${maneuverKind(option.id)}` as TranslationKey)}
+                    className="rounded-lg border border-amber-500/40 bg-amber-950/40 px-2 py-1 font-semibold text-amber-100 hover:bg-amber-900/60 disabled:opacity-40"
+                  >
+                    {maneuverLabel(option)}
                   </button>
                 ))}
               </div>
