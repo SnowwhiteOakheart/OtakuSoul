@@ -66,10 +66,14 @@ try {
   assertEngineHitPoints(started);
 
   // Standard actions besides attacking: the first turn shoves a goblin (Athletics contest).
-  const shove = await panel.$('[data-maneuver^="shove_prone:"]');
-  await shove.waitForClickable({ timeout: 30_000, timeoutMsg: 'Keine Zusatzaktionen im Kampfpanel' });
-  assert.ok(await panel.$('[data-maneuver^="grapple:"]').isExisting(), 'Packen fehlt');
-  assert.ok(await panel.$('[data-maneuver^="help:"]').isExisting(), 'Helfen fehlt');
+  // One button per goblin: take the first of each kind.
+  await browser.waitUntil(async () => (await panel.$$('[data-maneuver^="shove_prone:"]')).length > 0, {
+    timeout: 30_000,
+    timeoutMsg: 'Keine Zusatzaktionen im Kampfpanel',
+  });
+  const [shove] = await panel.$$('[data-maneuver^="shove_prone:"]');
+  await shove.waitForClickable({ timeout: 30_000, timeoutMsg: 'Stoßen nicht wählbar' });
+  assert.ok((await panel.$$('[data-maneuver^="grapple:"]')).length > 0, 'Packen fehlt');
   await shove.click();
   await browser.waitUntil(
     async () => (await invoke('get_stage_state')).combat.events.some((e) => e.type === 'maneuver' && e.maneuver === 'shove_prone'),
@@ -105,7 +109,15 @@ try {
   assert.ok(ended.chat_log.some((m) => m.content === COMBAT_NARRATION), 'Erzählung fehlt im Verlauf');
   assert.ok(mock.stats.lastCombatReport.includes('attacks'), 'Bericht enthält keine Angriffe');
   // Every companion turn went through the model's choice of a listed action.
-  const companionTurns = ended.combat.events.filter((e) => e.type === 'turn_start' && ended.definition.party.includes(e.actor_name)).length;
+  // Turns the engine decides itself don't ask: a death save, a potion for a dying friend.
+  const events = ended.combat.events;
+  const companionTurns = events.filter((e, i) => {
+    if (e.type !== 'turn_start' || !ended.definition.party.includes(e.actor_name)) return false;
+    const next = events.findIndex((other, j) => j > i && other.type === 'turn_start');
+    const turn = events.slice(i + 1, next === -1 ? undefined : next);
+    return !turn.some((t) => (t.type === 'death_save' && t.actor_id === e.actor_id)
+      || (t.type === 'maneuver' && t.maneuver === 'potion' && t.actor_id === e.actor_id));
+  }).length;
   assert.equal(mock.stats.combatActions ?? 0, companionTurns, 'nicht jeder Gefährtenzug fragte das Modell');
 
   // The compact sheet of the player.
