@@ -57,6 +57,21 @@ describe('AmbientLoop', () => {
     expect(first.paused).toBe(true);
   });
 
+  it('loops a short sound as soon as its length is known, before any timeupdate', () => {
+    const { loop, made } = setup();
+    loop.start();
+    const first = made[0]!;
+    first.duration = 0.1;
+    first.dispatchEvent(new Event('loadedmetadata'));
+    expect(first.loop).toBe(true);
+    // A long sound keeps the overlapping passes instead.
+    const long = setup();
+    long.loop.start();
+    long.made[0]!.duration = SEAM_SECONDS * 10;
+    long.made[0]!.dispatchEvent(new Event('durationchange'));
+    expect(long.made[0]!.loop).toBe(false);
+  });
+
   it('overlaps the next pass at the loop point instead of a hard seam', () => {
     const { loop, made } = setup();
     loop.start();

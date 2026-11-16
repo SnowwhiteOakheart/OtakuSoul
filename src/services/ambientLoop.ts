@@ -49,6 +49,11 @@ export class AmbientLoop {
     if (!audio) {
       audio = this.createAudio(this.src);
       audio.addEventListener('timeupdate', () => this.onTime(audio!));
+      // A short sound loops plainly; decided as soon as its length is known, because a clip
+      // shorter than the browser's timeupdate interval (WebKitGTK: about 250 ms) may end before
+      // the first one and would otherwise restart with a gap every time.
+      audio.addEventListener('loadedmetadata', () => this.loopIfShort(audio!));
+      audio.addEventListener('durationchange', () => this.loopIfShort(audio!));
       audio.addEventListener('ended', () => {
         // Fallback when the overlap was missed (a stalled tab): restart without a fade.
         if (audio === this.current && !this.stopped) this.begin(audio, 0);
@@ -67,14 +72,18 @@ export class AmbientLoop {
     if (fadeMs > 0) this.fader.fadeTo(audio, this.volume, fadeMs);
   }
 
+  /** Whether the sound is too short to overlap; it then simply loops. */
+  private loopIfShort(audio: HTMLAudioElement) {
+    const { duration } = audio;
+    if (!Number.isFinite(duration) || duration <= 0 || duration >= SEAM_SECONDS * 3) return false;
+    audio.loop = true;
+    return true;
+  }
+
   private onTime(audio: HTMLAudioElement) {
     if (audio !== this.current || this.stopped) return;
     const { duration, currentTime } = audio;
-    if (!Number.isFinite(duration) || duration <= 0) return;
-    if (duration < SEAM_SECONDS * 3) {
-      audio.loop = true;
-      return;
-    }
+    if (!Number.isFinite(duration) || duration <= 0 || this.loopIfShort(audio)) return;
     if (duration - currentTime > SEAM_SECONDS) return;
     const next = this.pass(this.passes.indexOf(audio) === 0 ? 1 : 0);
     this.begin(next, SEAM_SECONDS * 1000);
