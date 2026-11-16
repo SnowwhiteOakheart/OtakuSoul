@@ -84,7 +84,11 @@ try {
   await browser.keys('Enter');
   await browser.waitUntil(() => mock.stats.stagePlanner > plannerBefore, { timeout: 20_000 });
   await browser.$('button=Stopp').waitForExist({ reverse: true, timeout: 40_000 });
-  await browser.waitUntil(() => (mock.stats.tts ?? 0) >= ttsBefore + 2, { timeout: 20_000, timeoutMsg: 'Beiträge werden nicht vorgelesen' });
+  // Long texts go to the voice in pieces of sentences: wait for both voices, not a count.
+  await browser.waitUntil(() => {
+    const models = (mock.stats.ttsModels ?? []).slice(ttsBefore);
+    return models.includes('narrator-voice') && models.includes('companion-voice');
+  }, { timeout: 20_000, timeoutMsg: 'Beiträge werden nicht vorgelesen' });
   const read = mock.stats.ttsInputs.slice(ttsBefore);
   assert.ok(read.some((text) => text.includes('Der Nebel lichtet sich')), 'Erzählung nicht vorgelesen');
   assert.ok(!read.some((text) => text.includes('hörst du den Regen')), 'eigene Eingabe wurde vorgelesen');
