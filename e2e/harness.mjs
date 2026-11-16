@@ -125,7 +125,11 @@ export async function launch(settings = {}, { hubFiles, homeFiles = {} } = {}) {
       await browser.deleteSession().catch(() => {});
       throw new Error('Webview-Speicher ist nicht isoliert (Marker eines früheren Laufs gefunden)');
     }
-    await browser.execute(() => localStorage.setItem('otakusoul.e2eRun', '1'));
+    await browser.execute(() => {
+      localStorage.setItem('otakusoul.e2eRun', '1');
+      // Stage text appears at once: tests read it right away (the pace has its own unit test).
+      localStorage.setItem('otakusoul.stageTextPace', 'instant');
+    });
     const close = async () => {
       closing = true;
       await browser.deleteSession().catch(() => {});

@@ -14,7 +14,7 @@ import { bubbleText } from '../companion/petBehavior';
  */
 export const StageSpeakerBubble = () => {
   const { t } = useTranslation();
-  const line = useStageSpeech((s) => s.line);
+  const line = useStageSpeech((s) => (s.enabled ? s.line : null));
   const { availableCharacters } = useStoreFields('availableCharacters');
   const [brokenSrc, setBrokenSrc] = useState<string | null>(null);
   if (!line) return null;

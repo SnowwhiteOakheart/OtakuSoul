@@ -1,6 +1,6 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 vi.mock('../services/api', async () => (await import('./mockApi')).apiModule);
-vi.mock('../services/stageVoice', () => ({ stopStageVoice: vi.fn(), speakStageMessages: vi.fn() }));
+vi.mock('../services/stageVoice', () => ({ stopStageVoice: vi.fn(), speakStageMessages: vi.fn(), silenceStageMessages: vi.fn() }));
 import { api } from '../services/api';
 import { useAppStore } from '../store/useAppStore';
 import { stopStageVoice } from '../services/stageVoice';

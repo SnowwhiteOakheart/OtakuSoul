@@ -4835,5 +4835,13 @@
   "fight.event.flanked": "flanked",
   "fightGuide.cover": "Cover: if something stands between attacker and target – a pillar, tree, rock, crate or another creature – the target is harder to hit: half cover +2 AC, three-quarters cover +5 AC. Enemies look for targets without cover.",
   "sceneRules.flanking": "Flanking (optional rule)",
-  "sceneRules.flankingHint": "On: when an ally stands right on the other side of the target, a melee attack has advantage – for heroes and enemies alike."
+  "sceneRules.flankingHint": "On: when an ally stands right on the other side of the target, a melee attack has advantage – for heroes and enemies alike.",
+  "stage.menuTextPace": "Text speed: {{pace}}",
+  "stage.textPace.instant": "instant",
+  "stage.textPace.read": "reading pace",
+  "stage.textPace.slow": "slow",
+  "stage.textPaceHint": "How fast new text of the characters and the game master appears – so you can read along, also while it is read aloud",
+  "stage.menuSpeakerBubbleOn": "Speaker bubble while reading aloud: on",
+  "stage.menuSpeakerBubbleOff": "Speaker bubble while reading aloud: off",
+  "stage.speakerBubbleHint": "While reading aloud, shows at the bottom of the picture who is speaking, with the current sentence"
 }

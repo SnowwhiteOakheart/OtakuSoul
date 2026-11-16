@@ -21,6 +21,8 @@ import { StageMusicModal } from './StageMusicModal';
 import { usePersistentFlag } from '../../hooks/usePersistentFlag';
 import { CharacterVoiceModal } from '../voice/CharacterVoiceModal';
 import { STAGE_NARRATOR_VOICE_ID } from '../../services/stageVoice';
+import { useStageSpeech } from '../../services/stageSpeech';
+import { STAGE_TEXT_PACES, useStageTextPace } from '../../services/stageTextPace';
 import { StageCampaignPanel } from './StageCampaignPanel';
 import { soundFx } from '../../services/soundFx';
 import {
@@ -52,6 +54,8 @@ import {
   Music,
   SlidersHorizontal,
   Sparkles,
+  MessageCircle,
+  Gauge,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { ContributeDialog } from '../hub/ContributeDialog';
@@ -214,6 +218,10 @@ export const StageView: React.FC = () => {
   // longer computes (auto-play keeps the wish until it ends), only when switched on and the
   // background may change.
   const [autoImages, setAutoImages] = usePersistentFlag('otakusoul.stageAutoImages', false);
+  const speakerBubble = useStageSpeech((s) => s.enabled);
+  const setSpeakerBubble = useStageSpeech((s) => s.setEnabled);
+  const { pace: textPace, setPace: setTextPace, reload: reloadTextPace } = useStageTextPace();
+  useEffect(reloadTextPace, [reloadTextPace]);
   useEffect(() => {
     if (!stageSceneImageWanted || isProcessingStageTurn || stageAutoPlay) return;
     setStageSceneImageWanted(false);
@@ -593,6 +601,19 @@ export const StageView: React.FC = () => {
                 description: t('stage.autoImagesHint'),
                 icon: Sparkles,
                 onSelect: () => setAutoImages(!autoImages),
+              },
+              {
+                label: t('stage.menuTextPace', { pace: t(`stage.textPace.${textPace}`) }),
+                description: t('stage.textPaceHint'),
+                icon: Gauge,
+                onSelect: () =>
+                  setTextPace(STAGE_TEXT_PACES[(STAGE_TEXT_PACES.indexOf(textPace) + 1) % STAGE_TEXT_PACES.length]!),
+              },
+              {
+                label: speakerBubble ? t('stage.menuSpeakerBubbleOn') : t('stage.menuSpeakerBubbleOff'),
+                description: t('stage.speakerBubbleHint'),
+                icon: MessageCircle,
+                onSelect: () => setSpeakerBubble(!speakerBubble),
               },
               ...(improvisedScene && paintersReady
                 ? [

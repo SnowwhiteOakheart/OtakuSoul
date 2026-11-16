@@ -4835,5 +4835,13 @@
   "fight.event.flanked": "flankiert",
   "fightGuide.cover": "Deckung: Steht etwas zwischen Angreifer und Ziel – Säule, Baum, Fels, Kiste oder eine andere Figur –, ist das Ziel schwerer zu treffen: halbe Deckung +2 RK, Dreivierteldeckung +5 RK. Die Gegner suchen sich Ziele ohne Deckung.",
   "sceneRules.flanking": "Flankieren (optionale Regel)",
-  "sceneRules.flankingHint": "An: Steht ein Verbündeter genau gegenüber auf der anderen Seite des Ziels, hat ein Nahkampfangriff Vorteil – für Helden wie für Gegner."
+  "sceneRules.flankingHint": "An: Steht ein Verbündeter genau gegenüber auf der anderen Seite des Ziels, hat ein Nahkampfangriff Vorteil – für Helden wie für Gegner.",
+  "stage.menuTextPace": "Texttempo: {{pace}}",
+  "stage.textPace.instant": "sofort",
+  "stage.textPace.read": "Lesetempo",
+  "stage.textPace.slow": "langsam",
+  "stage.textPaceHint": "Wie schnell neuer Text der Figuren und des Spielleiters erscheint – so kannst du mitlesen, auch während vorgelesen wird",
+  "stage.menuSpeakerBubbleOn": "Sprecher-Blase beim Vorlesen: an",
+  "stage.menuSpeakerBubbleOff": "Sprecher-Blase beim Vorlesen: aus",
+  "stage.speakerBubbleHint": "Zeigt beim Vorlesen unten im Bild, wer gerade spricht, mit dem aktuellen Satz"
 }

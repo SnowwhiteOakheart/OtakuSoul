@@ -4,7 +4,7 @@ import { api } from '../../services/api';
 import { speakStageMessages } from '../../services/stageVoice';
 import type { SceneTurnMessage } from '../../types';
 import { StageEventCardView } from './StageEventCardView';
-import { StageText } from './StageText';
+import { PacedStageText } from './StageText';
 import { findCharacterByName } from '../../utils/characterName';
 import {
   Compass,
@@ -84,6 +84,25 @@ export const StageChatLog: React.FC<{ visible?: boolean }> = ({ visible = true }
     const log = logRef.current;
     if (visible && log) log.scrollTop = log.scrollHeight;
   }, [stageState?.chat_log?.length, isProcessingStageTurn, liveLength, visible]);
+  // Text revealed at the reading pace grows without new messages: stay at the bottom while
+  // the player is there (a few lines of leeway), but leave them alone when they scrolled up.
+  useEffect(() => {
+    const log = logRef.current;
+    if (!visible || !log) return;
+    let atBottom = true;
+    const onScroll = () => {
+      atBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 80;
+    };
+    const observer = new MutationObserver(() => {
+      if (atBottom) log.scrollTop = log.scrollHeight;
+    });
+    observer.observe(log, { childList: true, subtree: true, characterData: true });
+    log.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      observer.disconnect();
+      log.removeEventListener('scroll', onScroll);
+    };
+  }, [visible]);
   // While text streams, the "GM is thinking" note only shows between speakers.
   const waiting = isProcessingStageTurn && stageLive.every((m) => m.done);
   const messages = stageState?.chat_log || [];
@@ -302,7 +321,7 @@ export const StageChatLog: React.FC<{ visible?: boolean }> = ({ visible = true }
                 </div>
               ) : (
                 <div className="text-xs sm:text-sm text-slate-200 leading-relaxed whitespace-pre-wrap font-sans">
-                  <StageText text={msg.content} />
+                  <PacedStageText id={msg.id} text={msg.content} />
                   {translationBlock(msg)}
                 </div>
               )}
@@ -421,7 +440,7 @@ export const StageChatLog: React.FC<{ visible?: boolean }> = ({ visible = true }
                       : 'bg-slate-800/80 border border-slate-700 text-slate-200 rounded-tl-sm'
                   }`}
                 >
-                  <StageText text={msg.content} />
+                  <PacedStageText id={msg.id} text={msg.content} />
                   {translationBlock(msg)}
 
                   {/* Event Card if attached */}
@@ -456,7 +475,7 @@ export const StageChatLog: React.FC<{ visible?: boolean }> = ({ visible = true }
               <span className="text-xs font-bold text-accent-200 uppercase tracking-wider">{gmName(live.sender_name)}</span>
             </div>
             <div className="text-xs sm:text-sm text-slate-200 leading-relaxed whitespace-pre-wrap font-sans">
-              {live.text}
+              <PacedStageText id={live.message_id} text={live.text} live />
               {!live.done && <span className="inline-block w-1.5 h-3.5 ml-0.5 bg-accent-400 animate-pulse align-middle" />}
             </div>
           </div>
@@ -469,7 +488,7 @@ export const StageChatLog: React.FC<{ visible?: boolean }> = ({ visible = true }
               <span className="text-xs font-bold text-slate-300">{live.sender_name}</span>
             </div>
             <div className="max-w-[85%] sm:max-w-[75%] p-3.5 rounded-2xl rounded-tl-sm text-xs sm:text-sm shadow-md leading-relaxed whitespace-pre-wrap bg-accent-900/30 border border-accent-500/40 text-accent-100">
-              {live.text}
+              <PacedStageText id={live.message_id} text={live.text} live />
               {!live.done && <span className="inline-block w-1.5 h-3.5 ml-0.5 bg-accent-400 animate-pulse align-middle" />}
             </div>
           </div>

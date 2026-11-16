@@ -15,9 +15,34 @@ export interface StageSpeechLine {
 
 interface StageSpeechState {
   line: StageSpeechLine | null;
+  /** The bubble can be switched off (long 5e adventures); then nothing is scheduled. */
+  enabled: boolean;
+  setEnabled: (on: boolean) => void;
 }
 
-export const useStageSpeech = create<StageSpeechState>(() => ({ line: null }));
+const BUBBLE_KEY = 'otakusoul.stageSpeakerBubble';
+
+function storedEnabled(): boolean {
+  try {
+    return localStorage.getItem(BUBBLE_KEY) !== 'false';
+  } catch {
+    return true;
+  }
+}
+
+export const useStageSpeech = create<StageSpeechState>((set) => ({
+  line: null,
+  enabled: storedEnabled(),
+  setEnabled: (on) => {
+    if (!on) clearStageSpeech();
+    set({ enabled: on });
+    try {
+      localStorage.setItem(BUBBLE_KEY, String(on));
+    } catch (error) {
+      console.warn('Sprecher-Blase konnte nicht gespeichert werden:', error);
+    }
+  },
+}));
 
 /** After the last sentence the bubble stays a moment, so it can still be read. */
 export const LINGER_MS = 1500;
@@ -80,6 +105,8 @@ export function clearStageSpeech() {
  * show one after another while it plays; the feeling of each is read before it shows.
  */
 export function scheduleSpeech(message: Pick<SceneTurnMessage, 'sender_name' | 'sender_role'>, text: string, start: number, end: number) {
+  // Switched off: no bubble, and no feeling to read for it either.
+  if (!useStageSpeech.getState().enabled) return;
   const current = session;
   const now = audioPlayer.now();
   const clip = ++lastClip;

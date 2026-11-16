@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('../services/api', async () => (await import('./mockApi')).apiModule);
-vi.mock('../services/stageVoice', () => ({ stopStageVoice: vi.fn(), speakStageMessages: vi.fn() }));
+vi.mock('../services/stageVoice', () => ({ stopStageVoice: vi.fn(), speakStageMessages: vi.fn(), silenceStageMessages: vi.fn() }));
 vi.mock('../services/soundFx', () => ({ soundFx: new Proxy({}, { get: () => vi.fn() }) }));
 import { api } from '../services/api';
-import { speakStageMessages } from '../services/stageVoice';
+import { silenceStageMessages, speakStageMessages, stopStageVoice } from '../services/stageVoice';
 import { useAppStore } from '../store/useAppStore';
 import { resetApiMocks } from './mockApi';
 import type { SceneState, SceneTurnMessage, StageTurnRequest } from '../types';
@@ -83,7 +83,31 @@ describe('stage turns', () => {
     vi.mocked(api.regenerateStageTurn).mockResolvedValue(stored);
     await useAppStore.getState().regenerateStageTurn();
     expect(useAppStore.getState().stageState).toBe(stored);
-    expect(speakStageMessages).toHaveBeenCalledWith([stored.chat_log[2]], expect.anything(), true);
+    // The old voice stopped when regenerating began; the new lines queue up (no second stop).
+    expect(stopStageVoice).toHaveBeenCalledTimes(1);
+    expect(speakStageMessages).toHaveBeenCalledWith([stored.chat_log[2]], expect.anything());
+  });
+
+  it('reads a message as soon as its stream ends, not before, and only with read-aloud on', () => {
+    const { applyStageStream } = useAppStore.getState();
+    applyStageStream({ message_id: 'm1', sender_name: 'Ayu', sender_role: 'companion', text: 'Hallo!', done: false } as never);
+    applyStageStream({ message_id: 'm1', sender_name: 'Ayu', sender_role: 'companion', text: '', done: true } as never);
+    expect(speakStageMessages).not.toHaveBeenCalled();
+    useAppStore.setState({ stageReadAloud: true, stageLive: [] });
+    applyStageStream({ message_id: 'm2', sender_name: 'Ayu', sender_role: 'companion', text: 'Seht mal.', done: false } as never);
+    expect(speakStageMessages).not.toHaveBeenCalled();
+    applyStageStream({ message_id: 'm2', sender_name: 'Ayu', sender_role: 'companion', text: '', done: true } as never);
+    expect(speakStageMessages).toHaveBeenCalledWith(
+      [{ id: 'm2', sender_name: 'Ayu', sender_role: 'companion', content: 'Seht mal.' }],
+      expect.anything(),
+    );
+  });
+
+  it('stopping silences the streams of the stopped turn', async () => {
+    useAppStore.setState({ stageLive: [{ message_id: 'm1', sender_name: 'GM', sender_role: 'gm', text: 'Es', done: false }] as never });
+    await useAppStore.getState().stopStageTurn();
+    expect(stopStageVoice).toHaveBeenCalled();
+    expect(silenceStageMessages).toHaveBeenCalledWith(['m1']);
   });
 
   it('merges streamed chunks per message', () => {

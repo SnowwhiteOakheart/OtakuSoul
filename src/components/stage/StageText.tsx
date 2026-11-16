@@ -1,4 +1,5 @@
 import React from 'react';
+import { usePacedText } from '../../services/stageTextPace';
 
 const EMPHASIS = /\*\*([^*\n]+)\*\*|\*([^*\n]+)\*/g;
 
@@ -20,3 +21,8 @@ export const StageText: React.FC<{ text: string }> = ({ text }) => {
   if (last < text.length) parts.push(text.slice(last));
   return <>{parts}</>;
 };
+
+/** Stage text that appears at the chosen text pace when it arrived live (`live` while streaming). */
+export const PacedStageText: React.FC<{ id: string; text: string; live?: boolean }> = ({ id, text, live = false }) => (
+  <StageText text={usePacedText(id, text, live)} />
+);

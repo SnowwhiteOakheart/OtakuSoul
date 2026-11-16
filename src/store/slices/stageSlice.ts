@@ -2,7 +2,7 @@ import { api } from '../../services/api';
 import { isAdultMarked } from '../../utils/adultContent';
 import { soundFx } from '../../services/soundFx';
 import { audioPlayer } from '../../services/audioPlayer';
-import { speakStageMessages, stopStageVoice } from '../../services/stageVoice';
+import { silenceStageMessages, speakStageMessages, stopStageVoice } from '../../services/stageVoice';
 import { stageOffscreenDue } from '../../utils/stageOffscreen';
 import type {
   CampaignClock,
@@ -166,7 +166,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
 
   setStageSceneImageWanted: (wanted) => set({ stageSceneImageWanted: wanted }),
 
-  applyStageStream: (event) =>
+  applyStageStream: (event) => {
     set((state) => {
       // Place, picture and sound of the plan: shown at once, before the narration arrives.
       if (event.media) {
@@ -190,11 +190,24 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
       const current = live[index]!;
       const next = { ...current, text: current.text + event.text, done: current.done || event.done };
       return { stageLive: live.map((m, i) => (i === index ? next : m)) };
-    }),
+    });
+    // A finished message is read at once, not only when the whole turn is over (the turn's
+    // other speakers may take a while); the turn's result then skips it.
+    if (!event.done || event.media || !get().stageReadAloud) return;
+    const live = get().stageLive.find((m) => m.message_id === event.message_id);
+    if (live) {
+      void speakStageMessages(
+        [{ id: live.message_id, sender_name: live.sender_name, sender_role: live.sender_role, content: live.text }],
+        get().availableCharacters,
+      );
+    }
+  },
 
   stopStageTurn: async () => {
     set({ stageAutoPlay: false });
     stopStageVoice();
+    // The stopped streams still report their end: what they wrote is not read any more.
+    silenceStageMessages(get().stageLive.map((m) => m.message_id));
     await api.abortStageTurn();
   },
 
@@ -354,6 +367,8 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
   regenerateStageTurn: async () => {
     const current = get().stageState;
     if (!current) return;
+    // The old answer is replaced: its voice stops now, the new one is read as it streams.
+    stopStageVoice();
     set({ isProcessingStageTurn: true, stageLive: [] });
     try {
       await get().ensureLocalAi();
@@ -361,7 +376,7 @@ export const createStageSlice: SliceCreator<StageSlice> = (set, get) => ({
       set({ stageState: updated, isProcessingStageTurn: false, stageLive: [] });
       if (get().stageReadAloud) {
         const lastPlayer = updated.chat_log.map((m) => m.sender_role).lastIndexOf('player');
-        void speakStageMessages(updated.chat_log.slice(lastPlayer + 1), get().availableCharacters, true);
+        void speakStageMessages(updated.chat_log.slice(lastPlayer + 1), get().availableCharacters);
       }
     } catch (e) {
       console.error('Failed to regenerate stage turn:', e);
