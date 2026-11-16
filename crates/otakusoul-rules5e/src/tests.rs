@@ -240,6 +240,7 @@ fn dodging_gives_attackers_disadvantage_until_the_next_turn() {
 fn initiative_order_and_turn_advance() {
     let mut encounter = EncounterState {
         is_active: true,
+        flanking: false,
         round: 1,
         current_turn_index: 0,
         combatants: vec![
@@ -343,6 +344,7 @@ fn a_seeded_fight_runs_to_the_end() {
     let mut rng = StdRng::seed_from_u64(42);
     let mut encounter = EncounterState {
         is_active: true,
+        flanking: false,
         round: 1,
         current_turn_index: 0,
         combatants: vec![
@@ -436,6 +438,10 @@ fn small_map(rows: &[&str]) -> BattleMap {
                 "O",
                 cell("floor_stone", CellKind::Floor, Some("pillar"), None),
             ),
+            (
+                "C",
+                cell("floor_stone", CellKind::Floor, Some("crates"), None),
+            ),
         ]
         .into_iter()
         .map(|(k, v)| (k.to_string(), v))
@@ -444,6 +450,179 @@ fn small_map(rows: &[&str]) -> BattleMap {
     }
     .build()
     .unwrap()
+}
+
+#[test]
+fn cover_follows_the_grid_rule() {
+    let p = GridPos::new;
+    // Open floor: none. A pillar between: half (+2). A crate between: at most half.
+    let open = small_map(&["#######", "#p....#", "#######"]);
+    assert_eq!(open.cover(p(1, 1), p(5, 1), &[]), Cover::None);
+    let pillar = small_map(&["#######", "#p.O..#", "#######"]);
+    assert_eq!(pillar.cover(p(1, 1), p(5, 1), &[]), Cover::Half);
+    assert_eq!(Cover::Half.ac_bonus(), 2);
+    let crate_ = small_map(&["#######", "#p.C..#", "#######"]);
+    assert_eq!(crate_.cover(p(1, 1), p(5, 1), &[]), Cover::Half);
+    // Another creature in the way: half; the attacker and the target themselves never count.
+    assert_eq!(open.cover(p(1, 1), p(5, 1), &[p(3, 1)]), Cover::Half);
+    assert_eq!(
+        open.cover(p(1, 1), p(5, 1), &[p(1, 1), p(5, 1)]),
+        Cover::None
+    );
+    // A line running along a wall face is not blocked by it.
+    let corridor = small_map(&["#######", "#p....#", "#.....#"]);
+    assert_eq!(corridor.cover(p(1, 1), p(5, 1), &[]), Cover::None);
+    // Close behind the corner of a wall, attacked at an angle: three-quarters (+5).
+    let corner = small_map(&[
+        "#######", "#p..#.#", "#...#.#", "#.....#", "#.....#", "#.....#", "#######",
+    ]);
+    assert_eq!(corner.cover(p(2, 5), p(5, 1), &[]), Cover::ThreeQuarters);
+    assert_eq!(Cover::ThreeQuarters.ac_bonus(), 5);
+    // A wall straight in between still ends the attack (sight line), as before.
+    let wall = small_map(&["#######", "#p.#..#", "#######"]);
+    let goblin = goblin("g");
+    let bow = goblin
+        .stats5e
+        .as_ref()
+        .unwrap()
+        .attack("shortbow")
+        .unwrap()
+        .clone();
+    assert!(attack_reach(&wall, &bow, p(1, 1), p(5, 1)).is_none());
+}
+
+#[test]
+fn flanking_needs_the_rule_an_ally_opposite_and_a_melee_attack() {
+    let map = open_map();
+    let fighter = at(hero("thorin", "fighter", "player"), 4, 2);
+    let target = at(goblin("g"), 5, 2);
+    let ally = at(hero("finn", "rogue", "companion"), 6, 2);
+    let sword = fighter
+        .stats5e
+        .as_ref()
+        .unwrap()
+        .attacks
+        .iter()
+        .find(|a| a.kind == AttackKind::Melee)
+        .unwrap()
+        .clone();
+    let setup = |ally: &Combatant, rule: bool, from: GridPos| {
+        let mut attacker = fighter.clone();
+        attacker.position = Some(from);
+        let all = vec![attacker.clone(), target.clone(), ally.clone()];
+        attack_setup(&map, &attacker, &sword, from, &target, &all, rule).unwrap()
+    };
+    assert!(setup(&ally, true, GridPos::new(4, 2)).flanked, "orthogonal");
+    assert!(!setup(&ally, false, GridPos::new(4, 2)).flanked, "rule off");
+    // Diagonal: attacker at the top left corner, ally at the bottom right one.
+    let diagonal = at(hero("finn", "rogue", "companion"), 6, 3);
+    assert!(
+        setup(&diagonal, true, GridPos::new(4, 1)).flanked,
+        "diagonal"
+    );
+    // Not opposite, or an ally who cannot act: no flanking.
+    let beside = at(hero("finn", "rogue", "companion"), 5, 3);
+    assert!(!setup(&beside, true, GridPos::new(4, 2)).flanked);
+    let mut stunned = ally.clone();
+    add_condition(&mut stunned, STUNNED, 1);
+    assert!(!setup(&stunned, true, GridPos::new(4, 2)).flanked);
+    // A creature in the way between shooter and target gives half cover.
+    let archer = at(goblin("a"), 9, 2);
+    let bow = archer
+        .stats5e
+        .as_ref()
+        .unwrap()
+        .attack("shortbow")
+        .unwrap()
+        .clone();
+    let hero_target = at(hero("lyra", "wizard", "companion"), 3, 2);
+    let blocker = at(goblin("b"), 6, 2);
+    let all = vec![archer.clone(), hero_target.clone(), blocker];
+    let shot = attack_setup(
+        &map,
+        &archer,
+        &bow,
+        GridPos::new(9, 2),
+        &hero_target,
+        &all,
+        true,
+    )
+    .unwrap();
+    assert_eq!(shot.cover, Cover::Half);
+    assert!(!shot.flanked, "flanking is for melee");
+}
+
+#[test]
+fn cover_raises_the_armor_class_and_flanking_gives_advantage() {
+    let attacker = hero("thorin", "fighter", "player");
+    let attack = attacker.stats5e.as_ref().unwrap().attacks[0].clone();
+    let base = armor_class(&goblin("g"));
+    let attack_with = |situation: AttackSituation| {
+        let mut target = goblin("g");
+        let mut rng = StdRng::seed_from_u64(9);
+        let events = resolve_attack_with(&attacker, &attack, &mut target, &situation, &mut rng);
+        events
+            .into_iter()
+            .find_map(|e| match e {
+                CombatEvent::Attack {
+                    target_ac,
+                    cover,
+                    flanked,
+                    roll,
+                    ..
+                } => Some((target_ac, cover, flanked, roll.mode)),
+                _ => None,
+            })
+            .unwrap()
+    };
+    assert_eq!(
+        attack_with(AttackSituation::default()),
+        (base, None, false, RollMode::Normal)
+    );
+    let covered = attack_with(AttackSituation {
+        cover: Cover::ThreeQuarters,
+        ..Default::default()
+    });
+    assert_eq!(
+        (covered.0, covered.1),
+        (base + 5, Some(Cover::ThreeQuarters))
+    );
+    let flanked = attack_with(AttackSituation {
+        flanked: true,
+        ..Default::default()
+    });
+    assert_eq!((flanked.2, flanked.3), (true, RollMode::Advantage));
+    // Flanking and disadvantage cancel out, as advantage and disadvantage always do.
+    let both = attack_with(AttackSituation {
+        flanked: true,
+        disadvantage: true,
+        ..Default::default()
+    });
+    assert_eq!(both.3, RollMode::Normal);
+    // Without cover and flanking the event's JSON is what it was before.
+    let json = serde_json::to_value(CombatEvent::Attack {
+        attacker_id: "a".into(),
+        attacker_name: "A".into(),
+        target_id: "t".into(),
+        target_name: "T".into(),
+        attack_id: "x".into(),
+        attack_name: LocalizedName::default(),
+        roll: D20Roll {
+            mode: RollMode::Normal,
+            rolls: vec![10],
+            natural: 10,
+        },
+        to_hit: 0,
+        total: 10,
+        target_ac: 10,
+        hit: true,
+        critical: false,
+        bonus_die: None,
+        cover: None,
+        flanked: false,
+    })
+    .unwrap();
+    assert!(json.get("cover").is_none() && json.get("flanked").is_none());
 }
 
 #[test]
@@ -712,7 +891,7 @@ fn monsters_close_in_and_archers_keep_their_distance() {
         4,
     );
     let fight = vec![thorin.clone(), zombie.clone()];
-    let plan = monster_board_plan(&map, &zombie, &fight, 20);
+    let plan = monster_board_plan(&map, &zombie, &fight, 20, false);
     assert_eq!(plan.action, TurnDecision::Pass);
     let target = plan.move_to.expect("moves");
     assert!(
@@ -726,7 +905,7 @@ fn monsters_close_in_and_archers_keep_their_distance() {
         4,
         1,
     );
-    let plan = monster_board_plan(&map, &orc, &[thorin.clone(), orc.clone()], 30);
+    let plan = monster_board_plan(&map, &orc, &[thorin.clone(), orc.clone()], 30, false);
     assert!(
         matches!(plan.action, TurnDecision::Attack { ref attack_id, .. } if attack_id == "greataxe")
     );
@@ -735,7 +914,7 @@ fn monsters_close_in_and_archers_keep_their_distance() {
         Some(1)
     );
     let archer = at(goblin("g"), 4, 1);
-    let plan = monster_board_plan(&map, &archer, &[thorin.clone(), archer.clone()], 30);
+    let plan = monster_board_plan(&map, &archer, &[thorin.clone(), archer.clone()], 30, false);
     assert!(
         matches!(plan.action, TurnDecision::Attack { ref attack_id, .. } if attack_id == "shortbow")
     );
@@ -752,7 +931,13 @@ fn monsters_close_in_and_archers_keep_their_distance() {
         .unwrap()
         .attacks
         .retain(|a| a.id == "sling");
-    let plan = monster_board_plan(&map, &slinger, &[thorin.clone(), slinger.clone()], 30);
+    let plan = monster_board_plan(
+        &map,
+        &slinger,
+        &[thorin.clone(), slinger.clone()],
+        30,
+        false,
+    );
     assert!(matches!(plan.action, TurnDecision::Attack { .. }));
     let from = plan.move_to.or(slinger.position).unwrap();
     assert!(
@@ -767,7 +952,12 @@ fn attacks_in_place_follow_reach_and_sight() {
     let lyra = at(hero("lyra", "wizard", "player"), 1, 1);
     let near = at(goblin("near"), 2, 1);
     let far = at(goblin("far"), 9, 4);
-    let options = actions_in_place(&map, &lyra, &[lyra.clone(), near.clone(), far.clone()]);
+    let options = actions_in_place(
+        &map,
+        &lyra,
+        &[lyra.clone(), near.clone(), far.clone()],
+        false,
+    );
     let ids: Vec<&str> = options.iter().map(|o| o.id.as_str()).collect();
     assert!(ids.contains(&"attack:quarterstaff:near"));
     assert!(!ids.contains(&"attack:quarterstaff:far"));
@@ -786,6 +976,7 @@ fn a_seeded_board_fight_runs_to_the_end() {
     let mut rng = StdRng::seed_from_u64(9);
     let mut encounter = EncounterState {
         is_active: true,
+        flanking: false,
         round: 1,
         current_turn_index: 0,
         combatants: vec![
@@ -807,9 +998,9 @@ fn a_seeded_board_fight_runs_to_the_end() {
         let index = encounter.current_turn_index;
         let actor = encounter.combatants[index].clone();
         let plan = if is_enemy(&actor) {
-            monster_board_plan(&map, &actor, &encounter.combatants, 30)
+            monster_board_plan(&map, &actor, &encounter.combatants, 30, false)
         } else {
-            hero_board_plan(&map, &actor, &encounter.combatants, 30)
+            hero_board_plan(&map, &actor, &encounter.combatants, 30, false)
         };
         if let Some(target) = plan.move_to {
             let reach = reachable(

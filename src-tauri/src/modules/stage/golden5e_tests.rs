@@ -72,6 +72,7 @@ fn scene(map_id: Option<&str>) -> SceneState {
         ]),
         control_companions: false,
         heroic_death: false,
+        flanking: false,
         map_id: map_id.map(str::to_string),
         goals: vec![
             SceneGoal {

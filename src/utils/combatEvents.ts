@@ -50,8 +50,12 @@ export function combatEventText(event: CombatEvent, language: Language): string 
         total: event.total,
         ac: event.target_ac,
       };
-      if (event.critical) return translate('fight.event.crit', params);
-      return translate(event.hit ? 'fight.event.hit' : 'fight.event.miss', params);
+      const line = translate(event.critical ? 'fight.event.crit' : event.hit ? 'fight.event.hit' : 'fight.event.miss', params);
+      const notes = [
+        event.cover ? translate('fight.event.cover', { bonus: event.cover === 'half' ? 2 : 5 }) : '',
+        event.flanked ? translate('fight.event.flanked') : '',
+      ].filter(Boolean);
+      return notes.length ? `${line} (${notes.join(', ')})` : line;
     }
     case 'damage':
       if (event.scaling === 'immune') {

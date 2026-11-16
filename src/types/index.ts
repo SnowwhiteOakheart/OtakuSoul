@@ -608,6 +608,8 @@ export interface Combatant {
 
 export interface EncounterState {
   is_active: boolean;
+  /** Optional flanking rule of the scene (missing = off). */
+  flanking?: boolean;
   round: number;
   current_turn_index: number;
   combatants: Combatant[];

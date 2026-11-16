@@ -29,8 +29,19 @@ fn hostile_adjacent(actor: &Combatant, at: GridPos, combatants: &[Combatant]) ->
     })
 }
 
-/// Whether the attack reaches from `from`, and with a disadvantage from the situation: long
-/// range, or a ranged attack while an enemy stands next to the attacker.
+/// How an attack from a square comes out on the board.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct AttackSetup {
+    /// Long range, or a ranged attack while an enemy stands next to the attacker.
+    pub disadvantage: bool,
+    /// Cover of the target (walls and pillars, low obstacles, other creatures in the way).
+    pub cover: Cover,
+    /// Flanking (optional rule): an ally stands right on the other side of the target.
+    pub flanked: bool,
+}
+
+/// Whether the attack reaches from `from` (`None`: out of range or sight, as before) and how:
+/// disadvantage, the target's cover, and – with `flanking` on – advantage from an ally opposite.
 pub fn attack_setup(
     map: &BattleMap,
     actor: &Combatant,
@@ -38,11 +49,48 @@ pub fn attack_setup(
     from: GridPos,
     target: &Combatant,
     combatants: &[Combatant],
-) -> Option<bool> {
+    flanking: bool,
+) -> Option<AttackSetup> {
     let to = target.position?;
     let mode = attack_reach(map, attack, from, to)?;
     let close_shot = attack.kind != AttackKind::Melee && hostile_adjacent(actor, from, combatants);
-    Some(mode == RollMode::Disadvantage || close_shot)
+    // Other creatures (friend or foe) in the way give half cover; attacker and target never.
+    let creatures: Vec<GridPos> = combatants
+        .iter()
+        .filter(|c| c.id != actor.id && c.id != target.id && is_up(c))
+        .filter_map(|c| c.position)
+        .collect();
+    let opposite = GridPos::new(2 * to.x - from.x, 2 * to.y - from.y);
+    let flanked = flanking
+        && attack.kind == AttackKind::Melee
+        && from.squares_to(to) == 1
+        && combatants.iter().any(|c| {
+            c.id != actor.id
+                && is_enemy(c) == is_enemy(actor)
+                && is_up(c)
+                && !incapacitated(c)
+                && c.position == Some(opposite)
+        });
+    Some(AttackSetup {
+        disadvantage: mode == RollMode::Disadvantage || close_shot,
+        cover: map.cover(from, to, &creatures),
+        flanked,
+    })
+}
+
+/// Cover a shooter has on `square` against the nearest enemy (archers like to stand behind something).
+fn own_cover(
+    map: &BattleMap,
+    actor: &Combatant,
+    square: GridPos,
+    combatants: &[Combatant],
+) -> Cover {
+    combatants
+        .iter()
+        .filter(|c| is_up(c) && is_enemy(c) != is_enemy(actor))
+        .filter_map(|c| c.position)
+        .min_by_key(|p| (p.squares_to(square), *p))
+        .map_or(Cover::None, |enemy| map.cover(enemy, square, &[]))
 }
 
 /// A turn on the board: an optional move first, then one action.
@@ -52,9 +100,11 @@ pub struct BoardPlan {
     pub action: TurnDecision,
 }
 
-/// The best way to attack `target` with `attack` this turn: the cheapest square within the
-/// movement budget from which it reaches, preferring squares without disadvantage. Returns
-/// the square, the disadvantage flag and the movement cost.
+/// The best way to attack `target` with `attack` this turn: a square within the movement budget
+/// from which it reaches, preferring no disadvantage, less cover for the target, flanking, then
+/// (shooters) cover for oneself, then the cheapest. Returns the square, the setup and the cost of
+/// the cheapest square that sets the attack up as well – the weapon choice compares that, so a
+/// shooter stepping behind a pillar does not make its bow look dearer than a sword.
 pub fn approach(
     map: &BattleMap,
     actor: &Combatant,
@@ -62,17 +112,35 @@ pub fn approach(
     target: &Combatant,
     combatants: &[Combatant],
     budget_ft: u32,
-) -> Option<(GridPos, bool, u32)> {
+    flanking: bool,
+) -> Option<(GridPos, AttackSetup, u32)> {
     let start = actor.position?;
     let reach = reachable(map, start, budget_ft, &occupancy(actor, combatants));
-    reach
+    let shooter = attack.kind != AttackKind::Melee;
+    let options: Vec<(GridPos, AttackSetup, u32)> = reach
         .ends()
         .into_iter()
         .filter_map(|(square, cost)| {
-            attack_setup(map, actor, attack, square, target, combatants)
-                .map(|disadvantage| (square, disadvantage, cost))
+            attack_setup(map, actor, attack, square, target, combatants, flanking)
+                .map(|setup| (square, setup, cost))
         })
-        .min_by_key(|(square, disadvantage, cost)| (*disadvantage, *cost, *square))
+        .collect();
+    let quality = |setup: &AttackSetup| (setup.disadvantage, setup.cover, !setup.flanked);
+    let best = options.iter().min_by_key(|(square, setup, cost)| {
+        let shelter = if shooter {
+            own_cover(map, actor, *square, combatants)
+        } else {
+            Cover::None
+        };
+        (quality(setup), std::cmp::Reverse(shelter), *cost, *square)
+    })?;
+    let cheapest = options
+        .iter()
+        .filter(|(_, setup, _)| quality(setup) == quality(&best.1))
+        .map(|(_, _, cost)| *cost)
+        .min()
+        .unwrap_or(best.2);
+    Some((best.0, best.1, cheapest))
 }
 
 /// Every attack the actor can make this turn (after moving if needed), best first:
@@ -82,6 +150,7 @@ pub fn attack_plans(
     actor: &Combatant,
     combatants: &[Combatant],
     budget_ft: u32,
+    flanking: bool,
     prefer: impl Fn(&Combatant) -> i32,
 ) -> Vec<(BoardPlan, bool)> {
     let Some(stats) = &actor.stats5e else {
@@ -93,9 +162,10 @@ pub fn attack_plans(
         .filter(|c| is_up(c) && is_enemy(c) != is_enemy(actor))
     {
         for attack in &stats.attacks {
-            if let Some((square, disadvantage, cost)) =
-                approach(map, actor, attack, target, combatants, budget_ft)
+            if let Some((square, setup, cost)) =
+                approach(map, actor, attack, target, combatants, budget_ft, flanking)
             {
+                let disadvantage = setup.disadvantage;
                 let damage = expected_damage(attack) * if disadvantage { 1 } else { 2 };
                 let plan = BoardPlan {
                     move_to: (Some(square) != actor.position).then_some(square),
@@ -105,7 +175,7 @@ pub fn attack_plans(
                     },
                 };
                 plans.push((
-                    (disadvantage, -damage, prefer(target), cost),
+                    (disadvantage, setup.cover, -damage, prefer(target), cost),
                     plan,
                     disadvantage,
                 ));
@@ -176,6 +246,7 @@ pub fn monster_board_plan(
     actor: &Combatant,
     combatants: &[Combatant],
     budget_ft: u32,
+    flanking: bool,
 ) -> BoardPlan {
     match monster_decision(actor, combatants) {
         TurnDecision::Flee => {
@@ -193,7 +264,7 @@ pub fn monster_board_plan(
         _ => {}
     }
     let lowest_ac = |c: &Combatant| c.stats5e.as_ref().map_or(10, |s| s.armor_class) * 100 + c.hp;
-    attack_plans(map, actor, combatants, budget_ft, lowest_ac)
+    attack_plans(map, actor, combatants, budget_ft, flanking, lowest_ac)
         .into_iter()
         .next()
         .map(|(plan, _)| plan)
@@ -209,8 +280,9 @@ pub fn hero_board_plan(
     actor: &Combatant,
     combatants: &[Combatant],
     budget_ft: u32,
+    flanking: bool,
 ) -> BoardPlan {
-    attack_plans(map, actor, combatants, budget_ft, |c| c.hp)
+    attack_plans(map, actor, combatants, budget_ft, flanking, |c| c.hp)
         .into_iter()
         .next()
         .map(|(plan, _)| plan)
@@ -367,6 +439,7 @@ pub fn actions_in_place(
     map: &BattleMap,
     actor: &Combatant,
     combatants: &[Combatant],
+    flanking: bool,
 ) -> Vec<ActionOption> {
     let mut options = Vec::new();
     if let (Some(stats), Some(from)) = (&actor.stats5e, actor.position) {
@@ -375,14 +448,16 @@ pub fn actions_in_place(
             .filter(|c| is_up(c) && is_enemy(c) != is_enemy(actor))
         {
             for attack in &stats.attacks {
-                if let Some(disadvantage) =
-                    attack_setup(map, actor, attack, from, target, combatants)
+                if let Some(setup) =
+                    attack_setup(map, actor, attack, from, target, combatants, flanking)
                 {
                     options.push(ActionOption {
                         id: format!("attack:{}:{}", attack.id, target.id),
                         attack_id: Some(attack.id.clone()),
                         target_id: Some(target.id.clone()),
-                        disadvantage,
+                        disadvantage: setup.disadvantage,
+                        cover: setup.cover,
+                        flanked: setup.flanked,
                     });
                 }
             }
@@ -393,6 +468,7 @@ pub fn actions_in_place(
         attack_id: None,
         target_id: None,
         disadvantage: false,
+        ..Default::default()
     });
     options
 }

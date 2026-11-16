@@ -5,11 +5,12 @@ import { combatAwaitsEngine } from '../../store/slices/stageSlice';
 import { useTranslation, type TranslationKey } from '../../i18n';
 import { combatEventText, localizedName, tierLabel } from '../../utils/combatEvents';
 import type { CharacterProfile, Combatant } from '../../types';
+import type { ActionOption } from '../../types/generated/ActionOption';
 import { Combat5eSpells } from './Combat5eSpells';
 import { usePersistentFlag } from '../../hooks/usePersistentFlag';
 import { boardTokenImage } from './StageBattleMap';
 
-const COMBAT_TIPS: TranslationKey[] = ['fightGuide.order', 'fightGuide.attack', 'fightGuide.hp', 'fightGuide.spells', 'fightGuide.engine'];
+const COMBAT_TIPS: TranslationKey[] = ['fightGuide.order', 'fightGuide.attack', 'fightGuide.cover', 'fightGuide.hp', 'fightGuide.spells', 'fightGuide.engine'];
 
 /** Lines of the fight log shown under the actions. */
 const LOG_LINES = 8;
@@ -94,7 +95,7 @@ export const Combat5ePanel: React.FC<{ boardControls?: BoardControls }> = ({ boa
   const showSpells = canCast && (!boardControls || boardControls.mode === 'spell');
   const showMore = !boardControls || boardControls.mode === 'more';
   const showGuide = guideOpen || (!boardControls && !guideSeen);
-  const optionFor = (id: string) => (onBoard ? options?.actions.find((o) => o.id === id) : { id, disadvantage: false });
+  const optionFor = (id: string) => (onBoard ? options?.actions.find((o) => o.id === id) : ({ id, disadvantage: false } as ActionOption));
   const actionUsed = onBoard && !!options?.action_used;
   const board = (action: string, label: string, hint: string) => (
     <button
@@ -250,6 +251,12 @@ export const Combat5ePanel: React.FC<{ boardControls?: BoardControls }> = ({ boa
                         {attack.to_hit >= 0 ? `+${attack.to_hit}` : attack.to_hit} · {attack.damage}
                       </span>
                       {option?.disadvantage && <span className="ml-1 text-amber-300">({t('fight.disadvantage')})</span>}
+                      {option?.cover && (
+                        <span className="ml-1 text-sky-300" data-attack-cover={option.cover}>
+                          ({t(option.cover === 'half' ? 'fight.coverHalf' : 'fight.coverThreeQuarters')})
+                        </span>
+                      )}
+                      {option?.flanked && <span className="ml-1 text-emerald-300" data-attack-flanked>({t('fight.flanked')})</span>}
                     </button>
                   );
                 })}

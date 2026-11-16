@@ -22,6 +22,11 @@ pub struct SceneRules {
     /// afterwards with 1 hit point (default, so beloved companions cannot die by a roll).
     #[serde(default)]
     pub heroic_death: bool,
+    /// Optional rule (DMG): a melee attack has advantage when an ally stands right on the other
+    /// side of the target. Off by default.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    #[ts(as = "Option<bool>", optional)]
+    pub flanking: bool,
     /// Battle map for fights (`presets/srd5/maps`); without one fights run without a board.
     #[serde(default)]
     #[ts(optional)]

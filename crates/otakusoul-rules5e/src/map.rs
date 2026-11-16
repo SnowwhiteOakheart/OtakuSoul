@@ -550,6 +550,126 @@ pub fn reachable(map: &BattleMap, start: GridPos, budget_ft: u32, occupancy: &Oc
     }
 }
 
+/// Cover of a target against an attack (SRD): half +2 AC, three-quarters +5. Whether the target
+/// can be attacked at all stays with [`attack_reach`] (sight line, range).
+#[derive(
+    Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, TS,
+)]
+#[serde(rename_all = "snake_case")]
+#[ts(export)]
+pub enum Cover {
+    #[default]
+    None,
+    Half,
+    ThreeQuarters,
+}
+
+impl Cover {
+    pub fn is_none(&self) -> bool {
+        *self == Cover::None
+    }
+
+    pub fn ac_bonus(self) -> i32 {
+        match self {
+            Cover::None => 0,
+            Cover::Half => 2,
+            Cover::ThreeQuarters => 5,
+        }
+    }
+}
+
+/// Whether the segment between two lattice points crosses the open interior of the square at
+/// `cell` (touching an edge or a corner does not count). Exact: Liang–Barsky on integers,
+/// fractions compared by cross-multiplying.
+fn crosses_square(a: (i64, i64), b: (i64, i64), cell: GridPos) -> bool {
+    let (dx, dy) = (b.0 - a.0, b.1 - a.1);
+    let (cx, cy) = (i64::from(cell.x), i64::from(cell.y));
+    // t lies strictly between `low` and `high` (fractions num/den, den > 0).
+    let mut low = (0i64, 1i64);
+    let mut high = (1i64, 1i64);
+    for (p, q) in [
+        (-dx, a.0 - cx),
+        (dx, cx + 1 - a.0),
+        (-dy, a.1 - cy),
+        (dy, cy + 1 - a.1),
+    ] {
+        if p == 0 {
+            // Parallel to this side: inside its slab only strictly (q > 0); on the side line is outside.
+            if q <= 0 {
+                return false;
+            }
+            continue;
+        }
+        let bound = if p < 0 { (-q, -p) } else { (q, p) };
+        if p < 0 {
+            // Entering: t > q/p.
+            if bound.0 * low.1 > low.0 * bound.1 {
+                low = bound;
+            }
+        } else if bound.0 * high.1 < high.0 * bound.1 {
+            // Leaving: t < q/p.
+            high = bound;
+        }
+    }
+    low.0 * high.1 < high.0 * low.1
+}
+
+impl BattleMap {
+    /// Cover a creature on `to` has against an attack from `from` (DMG grid variant): the attacker
+    /// picks the corner of its square with the clearest view and draws lines to the four corners
+    /// of the target's square. Walls and what blocks sight (pillars, trees, closed doors, wagons)
+    /// on 1–2 lines give half cover, on 3–4 three-quarters. Low obstacles (rocks, crates, chests,
+    /// altars …) and other creatures (`creatures`, their squares) give at most half cover.
+    pub fn cover(&self, from: GridPos, to: GridPos, creatures: &[GridPos]) -> Cover {
+        let corners = |p: GridPos| {
+            let (x, y) = (i64::from(p.x), i64::from(p.y));
+            [(x, y), (x + 1, y), (x, y + 1), (x + 1, y + 1)]
+        };
+        let (x0, x1) = (from.x.min(to.x), from.x.max(to.x));
+        let (y0, y1) = (from.y.min(to.y), from.y.max(to.y));
+        let mut hard = Vec::new();
+        let mut low = Vec::new();
+        for y in y0..=y1 {
+            for x in x0..=x1 {
+                let pos = GridPos::new(x, y);
+                if pos == from || pos == to {
+                    continue;
+                }
+                match self.cell(pos) {
+                    Some(c) if c.blocks_sight() => hard.push(pos),
+                    Some(c) if c.blocks_movement() => low.push(pos),
+                    _ if creatures.contains(&pos) => low.push(pos),
+                    _ => {}
+                }
+            }
+        }
+        if hard.is_empty() && low.is_empty() {
+            return Cover::None;
+        }
+        corners(from)
+            .into_iter()
+            .map(|a| {
+                let mut blocked = 0;
+                let mut partly = false;
+                for b in corners(to) {
+                    if hard.iter().any(|&c| crosses_square(a, b, c)) {
+                        blocked += 1;
+                    } else if low.iter().any(|&c| crosses_square(a, b, c)) {
+                        partly = true;
+                    }
+                }
+                match blocked {
+                    3.. => Cover::ThreeQuarters,
+                    1.. => Cover::Half,
+                    _ if partly => Cover::Half,
+                    _ => Cover::None,
+                }
+            })
+            .min()
+            .unwrap_or_default()
+    }
+}
+
 /// Whether an attack can reach and how: `None` when out of range or sight, otherwise the
 /// roll mode the distance forces (long range: disadvantage).
 pub fn attack_reach(

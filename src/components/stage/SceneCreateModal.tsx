@@ -32,7 +32,7 @@ const SceneRulesFields: React.FC<{ rules: SceneRules | null; party: string[]; on
         id="scene-ruleset"
         value={fiveE ? '5e' : 'standard'}
         onChange={(e) =>
-          onChange(e.target.value === '5e' ? { ruleset: '5e', hero_classes: rules?.hero_classes ?? {}, control_companions: rules?.control_companions ?? false, heroic_death: rules?.heroic_death ?? false, goals: rules?.goals ?? [] } : null)
+          onChange(e.target.value === '5e' ? { ruleset: '5e', hero_classes: rules?.hero_classes ?? {}, control_companions: rules?.control_companions ?? false, heroic_death: rules?.heroic_death ?? false, flanking: rules?.flanking ?? false, goals: rules?.goals ?? [] } : null)
         }
         className="w-full p-2 bg-app border border-slate-700 rounded-xl"
       >
@@ -91,6 +91,17 @@ const SceneRulesFields: React.FC<{ rules: SceneRules | null; party: string[]; on
             {t('sceneRules.heroicDeath')}
           </label>
           <p className="text-slate-500">{t('sceneRules.heroicDeathHint')}</p>
+          <label className="flex items-center gap-2 text-slate-300">
+            <input
+              type="checkbox"
+              checked={rules?.flanking ?? false}
+              onChange={(e) => rules && onChange({ ...rules, flanking: e.target.checked })}
+              className="w-4 h-4 accent-accent-600"
+              data-rule-flanking
+            />
+            {t('sceneRules.flanking')}
+          </label>
+          <p className="text-slate-500">{t('sceneRules.flankingHint')}</p>
         </>
       )}
     </fieldset>

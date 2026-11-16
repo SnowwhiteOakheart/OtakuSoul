@@ -4828,5 +4828,13 @@
   "backend.battlemap.image": "画像を読み取れません: {{error}}",
   "backend.battlemap.noPainter": "Flux画像モデルがインストールされていません（画像スタジオまたは設定 → 画像）。",
   "backend.battlemap.notWanted": "バトルマップは独自マップのない5eストーリーで、場所がある場合のみです。",
-  "backend.battlemap.missing": "バトルマップの画像がありません。"
+  "backend.battlemap.missing": "バトルマップの画像がありません。",
+  "fight.coverHalf": "半遮蔽 +2",
+  "fight.coverThreeQuarters": "3/4遮蔽 +5",
+  "fight.flanked": "挟撃: 有利",
+  "fight.event.cover": "遮蔽 AC+{{bonus}}",
+  "fight.event.flanked": "挟撃",
+  "fightGuide.cover": "遮蔽: 攻撃者と対象の間に柱、木、岩、木箱、他のクリーチャーなどがあると当てにくくなります。半遮蔽はAC+2、3/4遮蔽はAC+5。敵は遮蔽のない対象を狙います。",
+  "sceneRules.flanking": "挟撃（オプションルール）",
+  "sceneRules.flankingHint": "オン: 味方が対象のちょうど反対側にいると、近接攻撃が有利になります（英雄にも敵にも適用）。"
 }

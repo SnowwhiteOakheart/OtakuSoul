@@ -101,6 +101,7 @@ pub fn start_encounter_at<R: Rng + ?Sized>(
     place_on_map(t, zone);
     let initiative = roll_initiative(&mut t.combat.combatants, rng);
     t.combat.is_active = true;
+    t.combat.flanking = t.rules.is_some_and(|r| r.flanking);
     t.combat.difficulty = Some(difficulty);
     t.combat.round = 1;
     t.combat.current_turn_index = 0;

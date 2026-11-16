@@ -23,6 +23,11 @@ control_companions: boolean,
  */
 heroic_death: boolean, 
 /**
+ * Optional rule (DMG): a melee attack has advantage when an ally stands right on the other
+ * side of the target. Off by default.
+ */
+flanking?: boolean, 
+/**
  * Battle map for fights (`presets/srd5/maps`); without one fights run without a board.
  */
 map_id?: string, 

@@ -7,6 +7,7 @@ import { useTranslation, type TranslationKey } from '../../i18n';
 import { localizedName, tierLabel } from '../../utils/combatEvents';
 import { areaSquares, squaresBetween } from '../../utils/spellArea';
 import type { BattleMap, CharacterProfile, Combatant, CombatOptions, GridPos } from '../../types';
+import type { Cover } from '../../types/generated/Cover';
 import { usePersistentFlag } from '../../hooks/usePersistentFlag';
 import { boardBounds, DIORAMA_TRANSFORM, isRevealed, projectBoardPoint, TILE } from './stageBoardProjection';
 import { StageDiorama } from './StageDiorama';
@@ -21,6 +22,9 @@ const BLOCKING = new Set([
   'door_locked', 'pillar', 'chest_closed', 'chest_open', 'altar', 'altar_dark', 'sarcophagus', 'brazier',
   'tree', 'tree_pine', 'rock', 'wagon_left', 'wagon_right', 'crates', 'campfire',
 ]);
+/** Cover of a target: the board's best attack avoids it. */
+const COVER_RANK: Record<Cover, number> = { none: 0, half: 1, three_quarters: 2 };
+
 /** Objects the party can use while exploring. */
 const USABLE = new Set(['door_closed', 'door_open', 'door_locked', 'chest_closed']);
 
@@ -218,7 +222,10 @@ export const StageBattleMap: React.FC<Props> = ({
   const attackFor = (target: Combatant) =>
     options?.actions
       .filter((o) => o.target_id === target.id)
-      .sort((a, b) => Number(a.disadvantage) - Number(b.disadvantage))[0];
+      .sort((a, b) =>
+        Number(a.disadvantage) - Number(b.disadvantage)
+        || COVER_RANK[a.cover ?? 'none'] - COVER_RANK[b.cover ?? 'none']
+        || Number(!!b.flanked) - Number(!!a.flanked))[0];
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
@@ -411,7 +418,12 @@ export const StageBattleMap: React.FC<Props> = ({
             const attack = !disabled && !aimed && !isParty(c) ? attackFor(c) : undefined;
             const attackName = actor?.stats5e?.attacks.find((a) => a.id === attack?.attack_id)?.name;
             const attackLabel = attack && attackName
-              ? `${t('fight.attackOn', { attack: localizedName(attackName, appLanguage), target: c.name })}${attack.disadvantage ? ` · ${t('fight.disadvantage')}` : ''}`
+              ? [
+                  t('fight.attackOn', { attack: localizedName(attackName, appLanguage), target: c.name }),
+                  attack.disadvantage ? t('fight.disadvantage') : '',
+                  attack.cover ? t(attack.cover === 'half' ? 'fight.coverHalf' : 'fight.coverThreeQuarters') : '',
+                  attack.flanked ? t('fight.flanked') : '',
+                ].filter(Boolean).join(' · ')
               : t('board.attack', { target: c.name });
             const activate = attack ? () => onTarget ? onTarget(c.id) : onAction(attack.id) : undefined;
             const label = isParty(c)

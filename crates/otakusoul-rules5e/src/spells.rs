@@ -569,8 +569,9 @@ pub fn cast_spell<R: Rng + ?Sized>(
                     (Some(a), Some(b)) => Some(a.feet_to(b)),
                     _ => None,
                 };
-                let situation = AttackSituation {
-                    disadvantage: map.zip(caster.position).is_some_and(|(map, from)| {
+                let setup = map
+                    .zip(caster.position)
+                    .and_then(|(map, from)| {
                         attack_setup(
                             map,
                             &caster,
@@ -578,10 +579,15 @@ pub fn cast_spell<R: Rng + ?Sized>(
                             from,
                             &combatants[target_index],
                             combatants,
-                        ) == Some(true)
-                    }),
+                            false,
+                        )
+                    })
+                    .unwrap_or_default();
+                let situation = AttackSituation {
+                    disadvantage: setup.disadvantage,
                     distance_ft: distance,
                     heroic_death,
+                    cover: setup.cover,
                     ..Default::default()
                 };
                 let attack_events = resolve_attack_with(

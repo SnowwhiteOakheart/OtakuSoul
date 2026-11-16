@@ -4827,5 +4827,13 @@
   "backend.battlemap.image": "Bild nicht lesbar: {{error}}",
   "backend.battlemap.noPainter": "Kein Flux-Bildmodell installiert (Bild-Studio oder Einstellungen → Bilder).",
   "backend.battlemap.notWanted": "Kampfkarten gibt es nur in 5e-Geschichten ohne eigene Karte und mit einem Ort.",
-  "backend.battlemap.missing": "Das Bild der Kampfkarte fehlt."
+  "backend.battlemap.missing": "Das Bild der Kampfkarte fehlt.",
+  "fight.coverHalf": "halbe Deckung +2",
+  "fight.coverThreeQuarters": "Dreivierteldeckung +5",
+  "fight.flanked": "flankiert: Vorteil",
+  "fight.event.cover": "Deckung +{{bonus}} RK",
+  "fight.event.flanked": "flankiert",
+  "fightGuide.cover": "Deckung: Steht etwas zwischen Angreifer und Ziel – Säule, Baum, Fels, Kiste oder eine andere Figur –, ist das Ziel schwerer zu treffen: halbe Deckung +2 RK, Dreivierteldeckung +5 RK. Die Gegner suchen sich Ziele ohne Deckung.",
+  "sceneRules.flanking": "Flankieren (optionale Regel)",
+  "sceneRules.flankingHint": "An: Steht ein Verbündeter genau gegenüber auf der anderen Seite des Ziels, hat ein Nahkampfangriff Vorteil – für Helden wie für Gegner."
 }

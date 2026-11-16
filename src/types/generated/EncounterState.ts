@@ -5,7 +5,11 @@ import type { Combatant } from "./Combatant";
 import type { Difficulty } from "./Difficulty";
 import type { TurnBudget } from "./TurnBudget";
 
-export type EncounterState = { is_active: boolean, round: number, current_turn_index: number, combatants: Array<Combatant>, combat_log: Array<string>, 
+export type EncounterState = { is_active: boolean, 
+/**
+ * The scene's flanking rule, copied when the fight starts (the AI and attacks read it here).
+ */
+flanking?: boolean, round: number, current_turn_index: number, combatants: Array<Combatant>, combat_log: Array<string>, 
 /**
  * Rules events of the current fight (5e scenes), newest last.
  */

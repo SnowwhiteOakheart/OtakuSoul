@@ -80,7 +80,11 @@ pub fn engine_plan(combat: &EncounterState, map: Option<&BattleMap>) -> EnginePl
     };
     if is_enemy(actor) {
         return EnginePlan::Decided(PlannedTurn::Board(monster_board_plan(
-            map, actor, combatants, budget,
+            map,
+            actor,
+            combatants,
+            budget,
+            combat.flanking,
         )));
     }
     if let Some(id) = urgent_cast(combat, Some(map), actor) {
@@ -90,7 +94,9 @@ pub fn engine_plan(combat: &EncounterState, map: Option<&BattleMap>) -> EnginePl
         }));
     }
     let mut plans: Vec<(ActionOption, BoardPlan)> = Vec::new();
-    for (plan, disadvantage) in attack_plans(map, actor, combatants, budget, |c| c.hp) {
+    for (plan, disadvantage) in
+        attack_plans(map, actor, combatants, budget, combat.flanking, |c| c.hp)
+    {
         if let TurnDecision::Attack {
             attack_id,
             target_id,
@@ -103,6 +109,7 @@ pub fn engine_plan(combat: &EncounterState, map: Option<&BattleMap>) -> EnginePl
                     attack_id: Some(attack_id.clone()),
                     target_id: Some(target_id.clone()),
                     disadvantage,
+                    ..Default::default()
                 };
                 plans.push((option, plan));
             }
@@ -119,7 +126,7 @@ pub fn engine_plan(combat: &EncounterState, map: Option<&BattleMap>) -> EnginePl
             },
         ));
     }
-    let fallback = || hero_board_plan(map, actor, combatants, budget);
+    let fallback = || hero_board_plan(map, actor, combatants, budget, combat.flanking);
     if plans.is_empty() {
         // Nothing to attack this turn: no choice to make, the companion closes in.
         return EnginePlan::Decided(PlannedTurn::Board(fallback()));
@@ -130,6 +137,7 @@ pub fn engine_plan(combat: &EncounterState, map: Option<&BattleMap>) -> EnginePl
             attack_id: None,
             target_id: None,
             disadvantage: false,
+            ..Default::default()
         },
         BoardPlan {
             move_to: None,

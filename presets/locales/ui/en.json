@@ -4827,5 +4827,13 @@
   "backend.battlemap.image": "Picture not readable: {{error}}",
   "backend.battlemap.noPainter": "No Flux image model installed (Image Studio or Settings → Images).",
   "backend.battlemap.notWanted": "Battle maps are only for 5e stories without a map of their own and with a place.",
-  "backend.battlemap.missing": "The battle map picture is missing."
+  "backend.battlemap.missing": "The battle map picture is missing.",
+  "fight.coverHalf": "half cover +2",
+  "fight.coverThreeQuarters": "three-quarters cover +5",
+  "fight.flanked": "flanked: advantage",
+  "fight.event.cover": "cover +{{bonus}} AC",
+  "fight.event.flanked": "flanked",
+  "fightGuide.cover": "Cover: if something stands between attacker and target – a pillar, tree, rock, crate or another creature – the target is harder to hit: half cover +2 AC, three-quarters cover +5 AC. Enemies look for targets without cover.",
+  "sceneRules.flanking": "Flanking (optional rule)",
+  "sceneRules.flankingHint": "On: when an ally stands right on the other side of the target, a melee attack has advantage – for heroes and enemies alike."
 }

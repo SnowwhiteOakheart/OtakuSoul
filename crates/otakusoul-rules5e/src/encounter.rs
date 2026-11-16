@@ -39,6 +39,10 @@ pub struct Combatant {
 #[ts(export)]
 pub struct EncounterState {
     pub is_active: bool,
+    /// The scene's flanking rule, copied when the fight starts (the AI and attacks read it here).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    #[ts(as = "Option<bool>", optional)]
+    pub flanking: bool,
     pub round: u32,
     pub current_turn_index: usize,
     pub combatants: Vec<Combatant>,
@@ -65,6 +69,7 @@ impl Default for EncounterState {
     fn default() -> Self {
         Self {
             is_active: false,
+            flanking: false,
             round: 1,
             current_turn_index: 0,
             combatants: Vec::new(),

@@ -89,6 +89,14 @@ pub enum CombatEvent {
         #[serde(default)]
         #[ts(optional)]
         bonus_die: Option<u32>,
+        /// Cover of the target (its bonus is in `target_ac`).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        cover: Option<Cover>,
+        /// Flanking gave the attack advantage.
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        #[ts(as = "Option<bool>", optional)]
+        flanked: bool,
     },
     Damage {
         target_id: String,
@@ -221,6 +229,10 @@ pub struct AttackSituation {
     pub critical_from: u32,
     /// The target still has its reaction (for Shield).
     pub target_can_react: bool,
+    /// Cover of the target from the board (added to its AC).
+    pub cover: Cover,
+    /// Advantage from the board (flanking).
+    pub flanked: bool,
 }
 
 /// The lowest spell slot for Shield, if the creature knows it and has one left.
@@ -342,15 +354,15 @@ pub fn resolve_attack_with<R: Rng + ?Sized>(
     rng: &mut R,
 ) -> Vec<CombatEvent> {
     let (mode, auto_crit) = attack_conditions(attacker, target, situation.distance_ft);
-    let mode = match (mode, situation.disadvantage) {
-        (RollMode::Advantage, true) => RollMode::Normal,
-        (_, true) => RollMode::Disadvantage,
-        (mode, false) => mode,
-    };
+    let mode = RollMode::combine(
+        mode == RollMode::Advantage || situation.flanked,
+        mode == RollMode::Disadvantage || situation.disadvantage,
+    );
     remove_condition(target, GUIDED);
     let roll = roll_d20(rng, mode);
     let bonus_die = has_condition(attacker, BLESSED).then(|| rng.random_range(1..=4u32));
-    let mut target_ac = armor_class(target);
+    let cover_ac = situation.cover.ac_bonus();
+    let mut target_ac = armor_class(target) + cover_ac;
     let total = roll.natural as i32 + attack.to_hit + bonus_die.map_or(0, |d| d as i32);
     let crit_on = match situation.critical_from {
         0 => 20,
@@ -378,10 +390,12 @@ pub fn resolve_attack_with<R: Rng + ?Sized>(
             actor_name: target.name.clone(),
             feature: "shield".to_string(),
         });
-        target_ac = armor_class(target);
+        target_ac = armor_class(target) + cover_ac;
         hit = false;
     }
     let critical = hit && (crit_roll || auto_crit);
+    let cover = (!situation.cover.is_none()).then_some(situation.cover);
+    let flanked = situation.flanked;
     events.push(CombatEvent::Attack {
         attacker_id: attacker.id.clone(),
         attacker_name: attacker.name.clone(),
@@ -396,6 +410,8 @@ pub fn resolve_attack_with<R: Rng + ?Sized>(
         hit,
         critical,
         bonus_die,
+        cover,
+        flanked,
     });
     if hit {
         let formula = DiceFormula::parse(&attack.damage).unwrap_or(DiceFormula {
@@ -709,7 +725,7 @@ pub fn advance_turn(encounter: &mut EncounterState) -> bool {
 
 /// What a hero may do on its turn: every attack against every enemy still standing, and
 /// Dodge. The ids are what the UI and the companion model send back.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct ActionOption {
     /// `attack:<attack id>:<target id>` or `dodge`.
@@ -719,6 +735,14 @@ pub struct ActionOption {
     /// The attack would have disadvantage (long range, enemy next to the shooter).
     #[serde(default)]
     pub disadvantage: bool,
+    /// Cover of the target from where the attacker stands (board).
+    #[serde(default, skip_serializing_if = "Cover::is_none")]
+    #[ts(as = "Option<Cover>", optional)]
+    pub cover: Cover,
+    /// Flanking would give advantage (board, optional rule).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    #[ts(as = "Option<bool>", optional)]
+    pub flanked: bool,
 }
 
 pub fn legal_actions(actor: &Combatant, combatants: &[Combatant]) -> Vec<ActionOption> {
@@ -733,6 +757,7 @@ pub fn legal_actions(actor: &Combatant, combatants: &[Combatant]) -> Vec<ActionO
                     attack_id: Some(attack.id.clone()),
                     target_id: Some(target.id.clone()),
                     disadvantage: false,
+                    ..Default::default()
                 });
             }
         }
@@ -742,6 +767,7 @@ pub fn legal_actions(actor: &Combatant, combatants: &[Combatant]) -> Vec<ActionO
         attack_id: None,
         target_id: None,
         disadvantage: false,
+        ..Default::default()
     });
     options
 }

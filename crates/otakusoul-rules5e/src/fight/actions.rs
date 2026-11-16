@@ -66,17 +66,26 @@ pub fn act<R: Rng + ?Sized>(
                 .as_ref()
                 .and_then(|s| s.attack(&attack_id))
                 .cloned();
-            let disadvantage = match (map, &attack, actor.position) {
+            let setup = match (map, &attack, actor.position) {
                 (Some(map), Some(attack), Some(from)) => combat
                     .combatants
                     .iter()
                     .find(|c| c.id == target_id)
                     .and_then(|target| {
-                        attack_setup(map, &actor, attack, from, target, &combat.combatants)
+                        attack_setup(
+                            map,
+                            &actor,
+                            attack,
+                            from,
+                            target,
+                            &combat.combatants,
+                            combat.flanking,
+                        )
                     })
-                    .unwrap_or(false),
-                _ => false,
+                    .unwrap_or_default(),
+                _ => AttackSetup::default(),
             };
+            let disadvantage = setup.disadvantage;
             // Allies of the attacker who stand ready (for Sneak Attack).
             let allies: Vec<(Option<GridPos>, bool)> = combat
                 .combatants
@@ -113,6 +122,8 @@ pub fn act<R: Rng + ?Sized>(
                         sneak_dice,
                         critical_from: stats.map_or(20, critical_from),
                         target_can_react,
+                        cover: setup.cover,
+                        flanked: setup.flanked,
                     };
                     let events = resolve_attack_with(&actor, &attack, target, &situation, rng);
                     if events.iter().any(|e| matches!(e, CombatEvent::Feature { feature, .. } if feature == SNEAK_ATTACK)) {
@@ -258,7 +269,10 @@ pub fn combat_options(combat: &EncounterState, map: Option<&BattleMap>) -> Comba
                     path: reach.path(pos),
                 })
                 .collect();
-            (squares, actions_in_place(map, actor, combatants))
+            (
+                squares,
+                actions_in_place(map, actor, combatants, combat.flanking),
+            )
         }
         _ => (Vec::new(), legal_actions(actor, combatants)),
     };
@@ -410,6 +424,7 @@ pub fn cast_options(
             attack_id: None,
             target_id: None,
             disadvantage: false,
+            ..Default::default()
         })
         .chain(
             // Channel Divinity against undead is an action the model may pick.
@@ -421,6 +436,7 @@ pub fn cast_options(
                     attack_id: None,
                     target_id: None,
                     disadvantage: false,
+                    ..Default::default()
                 }),
         )
         .collect()
